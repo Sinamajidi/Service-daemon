@@ -6,6 +6,10 @@ Demonstrates how to use the database initialization and communication layer.
 from pathlib import Path
 from datetime import date, datetime, timedelta
 import logging
+import sys
+
+# Add project root to path so imports work from anywhere
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import our modules
 from database.db_init import DatabaseInitializer

@@ -3,7 +3,15 @@ QUICK START GUIDE
 =================
 
 This file provides the absolute minimum code needed to get started.
+NOTE: This file should be placed in docs/ folder. 
+To run examples, use: python examples/example_usage.py
 """
+
+import sys
+from pathlib import Path
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # =============================================================================
 # STEP 1: INSTALL DEPENDENCIES
@@ -16,8 +24,7 @@ This file provides the absolute minimum code needed to get started.
 # STEP 2: INITIALIZE DATABASE (Run once)
 # =============================================================================
 
-from db_init import DatabaseInitializer
-from pathlib import Path
+from database.db_init import DatabaseInitializer
 
 # Configure your database
 db_init = DatabaseInitializer(
@@ -28,8 +35,9 @@ db_init = DatabaseInitializer(
     password='your_password_here'
 )
 
-# Initialize with your schema file
-schema_file = Path('/mnt/user-data/uploads/Database_Scheme.sql')
+# Initialize with your schema file (relative to project root)
+project_root = Path(__file__).parent.parent
+schema_file = project_root / 'database' / 'schema.sql'
 db_init.initialize(schema_file, drop_if_exists=True)
 
 print("Database initialized!")
@@ -39,7 +47,7 @@ print("Database initialized!")
 # STEP 3: USE THE COMMUNICATION LAYER
 # =============================================================================
 
-from entity_access import (
+from database.entity_access import (
     get_user_access,
     get_tenant_access,
     get_unit_access,
@@ -127,7 +135,7 @@ def show_booking_full_view(booking_id):
 # CUSTOM QUERIES
 # =============================================================================
 
-from data_access_layer import get_dal
+from database.data_access_layer import get_dal
 
 dal = get_dal()
 

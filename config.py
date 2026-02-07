@@ -23,7 +23,7 @@ POOL_CONFIG = {
 
 # File Paths
 BASE_DIR = Path(__file__).parent
-SCHEMA_FILE = Path('/mnt/user-data/uploads/Database_Scheme.sql')
+SCHEMA_FILE = BASE_DIR / 'database' / 'schema.sql'
 
 # Logging Configuration
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')

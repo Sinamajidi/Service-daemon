@@ -7,7 +7,7 @@ All heavy processing is delegated to the database.
 from typing import List, Dict, Any, Optional, Union
 from uuid import UUID
 from datetime import datetime, date
-from db_connection import get_db
+from .db_connection import get_db
 import logging
 
 logger = logging.getLogger(__name__)
@@ -296,15 +296,19 @@ class DataAccessLayer:
         return self.db.execute_query(query, params, fetch=fetch)
 
 
-# Global instance
-dal = DataAccessLayer()
+# Global instance (lazy initialization)
+_dal_instance: Optional[DataAccessLayer] = None
 
 
 def get_dal() -> DataAccessLayer:
     """
     Get the global DataAccessLayer instance.
+    Uses lazy initialization - creates instance only when first needed.
     
     Returns:
         DataAccessLayer instance
     """
-    return dal
+    global _dal_instance
+    if _dal_instance is None:
+        _dal_instance = DataAccessLayer()
+    return _dal_instance

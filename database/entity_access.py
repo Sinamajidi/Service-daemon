@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional, Union
 from uuid import UUID
 from datetime import datetime, date
 from dataclasses import dataclass
-from database.data_access_layer import get_dal
+from .data_access_layer import get_dal
 import logging
 
 logger = logging.getLogger(__name__)

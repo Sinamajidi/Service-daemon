@@ -153,21 +153,58 @@ def update_imports_simple(base_path: Path):
     print("\nUpdating imports for simple structure...")
     
     # Files that need import updates
-    files_to_update = [
-        'database/db_init.py',
-        'database/entity_access.py',
-        'examples/example_usage.py',
-    ]
-    
-    import_replacements = {
-        'from db_connection import': 'from database.db_connection import',
-        'from data_access_layer import': 'from database.data_access_layer import',
-        'from entity_access import': 'from database.entity_access import',
-        'from db_init import': 'from database.db_init import',
-        'from config import': 'from config import',
+    files_to_update = {
+        'database/entity_access.py': {
+            'from data_access_layer import': 'from .data_access_layer import',
+        },
+        'database/data_access_layer.py': {
+            'from db_connection import': 'from .db_connection import',
+        },
+        'examples/example_usage.py': {
+            'from db_init import DatabaseInitializer': 'from database.db_init import DatabaseInitializer',
+            'from db_connection import get_db': 'from database.db_connection import get_db',
+            'from data_access_layer import get_dal': 'from database.data_access_layer import get_dal',
+            'from entity_access import': 'from database.entity_access import',
+            'from config import DB_CONFIG': 'from config import DB_CONFIG',
+            'from pathlib import Path\nfrom datetime import': 'from pathlib import Path\nfrom datetime import',
+            'import logging\n\n# Import our modules': 'import logging\nimport sys\n\n# Add project root to path\nsys.path.insert(0, str(Path(__file__).parent.parent))\n\n# Import our modules',
+        },
+        'docs/QUICK_START.py': {
+            'from db_init import DatabaseInitializer': 'from database.db_init import DatabaseInitializer',
+            'from entity_access import': 'from database.entity_access import',
+            'from data_access_layer import get_dal': 'from database.data_access_layer import get_dal',
+        },
+        'config.py': {
+            "SCHEMA_FILE = Path('/mnt/user-data/uploads/Database_Scheme.sql')": "SCHEMA_FILE = BASE_DIR / 'database' / 'schema.sql'",
+        },
     }
     
-    update_imports(base_path, files_to_update, import_replacements)
+    for file_path, replacements in files_to_update.items():
+        full_path = base_path / file_path
+        if not full_path.exists():
+            print(f"  ⚠ Skipped (not found): {file_path}")
+            continue
+        
+        try:
+            content = full_path.read_text()
+            updated = False
+            
+            for old_text, new_text in replacements.items():
+                if old_text in content:
+                    content = content.replace(old_text, new_text)
+                    updated = True
+            
+            if updated:
+                full_path.write_text(content)
+                print(f"  ✓ Updated imports: {file_path}")
+            else:
+                print(f"  - No changes needed: {file_path}")
+                
+        except Exception as e:
+            print(f"  ✗ Error updating {file_path}: {e}")
+    
+    # Create database/__init__.py
+    create_database_init(base_path)
 
 
 def update_imports_full(base_path: Path):
@@ -218,15 +255,66 @@ def update_imports(base_path: Path, files: list, replacements: dict):
             print(f"  ✗ Error updating {file_path}: {e}")
 
 
+def create_database_init(base_path: Path):
+    """Create a proper __init__.py for the database package."""
+    init_content = '''"""
+Database Package
+Provides database initialization, connection management, and data access.
+"""
+
+from .db_init import DatabaseInitializer
+from .db_connection import DatabaseConnection, get_db
+from .data_access_layer import DataAccessLayer, get_dal
+from .entity_access import (
+    User, Tenant, Unit, Booking,
+    UserAccess, TenantAccess, UnitAccess, BookingAccess,
+    get_user_access, get_tenant_access, get_unit_access, get_booking_access
+)
+
+__all__ = [
+    # Initialization
+    'DatabaseInitializer',
+    
+    # Connection
+    'DatabaseConnection',
+    'get_db',
+    
+    # Data Access Layer
+    'DataAccessLayer',
+    'get_dal',
+    
+    # Entity Classes
+    'User',
+    'Tenant',
+    'Unit',
+    'Booking',
+    
+    # Entity Access Classes
+    'UserAccess',
+    'TenantAccess',
+    'UnitAccess',
+    'BookingAccess',
+    
+    # Factory Functions
+    'get_user_access',
+    'get_tenant_access',
+    'get_unit_access',
+    'get_booking_access',
+]
+'''
+    
+    init_file = base_path / 'database' / '__init__.py'
+    init_file.write_text(init_content)
+    print(f"  ✓ Created: database/__init__.py")
+
+
 def create_init_script(base_path: Path, simple: bool):
     """Create an initialization script in the scripts directory."""
     if simple:
         script_path = base_path / 'database' / 'init_db.py'
-        import_line = 'from database.db_init import DatabaseInitializer'
         schema_path = 'database/schema.sql'
     else:
         script_path = base_path / 'scripts' / 'init_db.py'
-        import_line = 'from src.database.db_init import DatabaseInitializer'
         schema_path = 'database/schema/Database_Scheme.sql'
     
     script_content = f'''#!/usr/bin/env python3
@@ -235,32 +323,71 @@ Database Initialization Script
 Run this script to initialize the database.
 
 Usage:
-    python {script_path.name}
+    python database/init_db.py
+    
+Or from anywhere:
+    python -m database.init_db
 """
 
+import sys
 from pathlib import Path
-{import_line}
+
+# Add project root to path so imports work
+# This script is in database/, so parent is the project root
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from database.db_init import DatabaseInitializer
 from config import DB_CONFIG
 
 def main():
     """Initialize the database."""
-    # Get the schema file path
-    base_dir = Path(__file__).parent.parent
-    schema_file = base_dir / '{schema_path}'
+    # Get the schema file path (relative to project root)
+    project_root = Path(__file__).parent.parent
+    schema_file = project_root / '{schema_path}'
     
     if not schema_file.exists():
         print(f"Error: Schema file not found at {{schema_file}}")
-        return
+        print("Expected location: {schema_path}")
+        return 1
     
     # Initialize database
     print("Initializing database...")
-    db_init = DatabaseInitializer(**DB_CONFIG)
-    db_init.initialize(schema_file, drop_if_exists=True)
+    print(f"Using schema: {{schema_file}}")
+    print(f"Database: {{DB_CONFIG['database']}}@{{DB_CONFIG['host']}}:{{DB_CONFIG['port']}}")
+    print()
     
-    print("✓ Database initialized successfully!")
+    try:
+        db_init = DatabaseInitializer(**DB_CONFIG)
+        db_init.initialize(schema_file, drop_if_exists=True)
+        
+        print()
+        print("="*60)
+        print("✓ Database initialized successfully!")
+        print("="*60)
+        print()
+        print("Next steps:")
+        print("  python examples/example_usage.py")
+        print()
+        return 0
+        
+    except Exception as e:
+        print()
+        print("="*60)
+        print("✗ Database initialization failed!")
+        print("="*60)
+        print(f"Error: {{e}}")
+        print()
+        print("Troubleshooting:")
+        print("1. Make sure PostgreSQL is running:")
+        print("   sudo service postgresql status")
+        print("2. Check your .env file has correct credentials")
+        print("3. Test connection manually:")
+        print(f"   psql -h {{DB_CONFIG['host']}} -U {{DB_CONFIG['user']}} -d {{DB_CONFIG['database']}}")
+        print()
+        return 1
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
 '''
     
     script_path.parent.mkdir(parents=True, exist_ok=True)

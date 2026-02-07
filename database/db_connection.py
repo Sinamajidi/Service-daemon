@@ -30,6 +30,11 @@ class DatabaseConnection:
     
     def __init__(self):
         """Initialize the connection pool if not already initialized."""
+        # Don't initialize pool here - wait until first use
+        pass
+    
+    def _ensure_pool(self):
+        """Ensure the connection pool is initialized (lazy initialization)."""
         if self._pool is None:
             self._initialize_pool()
     
@@ -89,6 +94,8 @@ class DatabaseConnection:
         Yields:
             Database connection
         """
+        self._ensure_pool()  # Lazy initialization
+        
         if self._pool is None:
             raise RuntimeError("Connection pool not initialized")
         
@@ -211,15 +218,19 @@ class DatabaseConnection:
         self.close_all_connections()
 
 
-# Global database connection instance
-db = DatabaseConnection()
+# Global database connection instance (lazy initialization)
+_db_instance: Optional[DatabaseConnection] = None
 
 
 def get_db() -> DatabaseConnection:
     """
     Get the global database connection instance.
+    Uses lazy initialization - creates connection pool only when first needed.
     
     Returns:
         DatabaseConnection instance
     """
-    return db
+    global _db_instance
+    if _db_instance is None:
+        _db_instance = DatabaseConnection()
+    return _db_instance
