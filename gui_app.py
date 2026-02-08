@@ -1,738 +1,654 @@
 """
-Desktop GUI application for the Service-daemon project.
-Provides a corporate-themed Tkinter interface for database operations,
-settings management, and operational scheduling.
+Desktop GUI Application (Tkinter)
+Provides a corporative, tabbed interface for settings, database, and operations.
 """
 
 from __future__ import annotations
 
-import json
-import tkinter as tk
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from tkinter import ttk, messagebox
+import json
+import sys
+import tkinter as tk
+from tkinter import ttk
 
-from config import BOOKING_STATUSES
+PROJECT_ROOT = Path(__file__).parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
 from database.data_access_layer import get_dal
 from database.entity_access import get_booking_access
-from database.db_connection import DatabaseConnection
-
-
-BASE_DIR = Path(__file__).parent
-SETTINGS_FILE = BASE_DIR / "app_settings.json"
+from config import DB_CONFIG
 
 
 @dataclass
 class AppSettings:
-    """Application settings stored in a local JSON file."""
-
-    db_host: str = "localhost"
-    db_port: int = 5432
-    db_name: str = "apartment_mgmt"
-    db_user: str = "postgres"
-    db_password: str = "postgres"
-    operations_refresh_seconds: int = 15
-    operations_default_status: str = "requested"
-    notifications_max: int = 20
-    theme_primary: str = "#1F4E79"
-    theme_secondary: str = "#2F75B5"
+    env_path: Path
+    gui_settings_path: Path
+    db_host: str
+    db_port: int
+    db_name: str
+    db_user: str
+    db_password: str
+    refresh_interval_seconds: int
 
     @classmethod
-    def load(cls, path: Path) -> "AppSettings":
-        if path.exists():
-            data = json.loads(path.read_text(encoding="utf-8"))
-            return cls(**data)
-        return cls()
+    def from_defaults(cls) -> "AppSettings":
+        return cls(
+            env_path=PROJECT_ROOT / ".env",
+            gui_settings_path=PROJECT_ROOT / "gui_settings.json",
+            db_host=DB_CONFIG["host"],
+            db_port=DB_CONFIG["port"],
+            db_name=DB_CONFIG["database"],
+            db_user=DB_CONFIG["user"],
+            db_password=DB_CONFIG["password"],
+            refresh_interval_seconds=30,
+        )
 
-    def save(self, path: Path) -> None:
-        path.write_text(json.dumps(self.__dict__, indent=2), encoding="utf-8")
+    def load(self) -> None:
+        if self.env_path.exists():
+            self._load_env_file()
+        if self.gui_settings_path.exists():
+            self._load_gui_settings()
+
+    def save(self) -> None:
+        self._save_env_file()
+        self._save_gui_settings()
+
+    def _load_env_file(self) -> None:
+        values = {}
+        for line in self.env_path.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            values[key.strip()] = value.strip()
+        self.db_host = values.get("DB_HOST", self.db_host)
+        self.db_port = int(values.get("DB_PORT", self.db_port))
+        self.db_name = values.get("DB_NAME", self.db_name)
+        self.db_user = values.get("DB_USER", self.db_user)
+        self.db_password = values.get("DB_PASSWORD", self.db_password)
+
+    def _save_env_file(self) -> None:
+        content = [
+            f"DB_HOST={self.db_host}",
+            f"DB_PORT={self.db_port}",
+            f"DB_NAME={self.db_name}",
+            f"DB_USER={self.db_user}",
+            f"DB_PASSWORD={self.db_password}",
+        ]
+        self.env_path.write_text("\n".join(content) + "\n")
+
+    def _load_gui_settings(self) -> None:
+        data = json.loads(self.gui_settings_path.read_text())
+        self.refresh_interval_seconds = int(
+            data.get("refresh_interval_seconds", self.refresh_interval_seconds)
+        )
+
+    def _save_gui_settings(self) -> None:
+        data = {
+            "refresh_interval_seconds": self.refresh_interval_seconds,
+        }
+        self.gui_settings_path.write_text(json.dumps(data, indent=2) + "\n")
 
 
 class NotificationCenter:
-    """In-app notification center with a status bar and message list."""
+    def __init__(self, parent: tk.Widget) -> None:
+        self.frame = ttk.Frame(parent)
+        self.frame.grid_columnconfigure(0, weight=1)
+        self.message_var = tk.StringVar(value="Ready.")
+        self.message_label = ttk.Label(
+            self.frame,
+            textvariable=self.message_var,
+            anchor="w",
+            padding=(12, 6),
+        )
+        self.message_label.grid(row=0, column=0, sticky="ew")
 
-    def __init__(self, container: ttk.Frame, max_items: int = 20) -> None:
-        self.max_items = max_items
-        self.frame = ttk.LabelFrame(container, text="Notifications")
-        self.frame.grid(row=1, column=0, sticky="nsew", padx=12, pady=(0, 12))
-        self.frame.columnconfigure(0, weight=1)
-        self.frame.rowconfigure(0, weight=1)
-
-        self.listbox = tk.Listbox(self.frame, height=6)
-        self.listbox.grid(row=0, column=0, sticky="nsew", padx=8, pady=8)
-
-        self.status_var = tk.StringVar(value="Ready.")
-        self.status_label = ttk.Label(self.frame, textvariable=self.status_var, anchor="w")
-        self.status_label.grid(row=1, column=0, sticky="ew", padx=8, pady=(0, 8))
-
-    def notify(self, message: str, popup: bool = False) -> None:
+    def notify(self, message: str) -> None:
         timestamp = datetime.now().strftime("%H:%M:%S")
-        entry = f"[{timestamp}] {message}"
-        self.listbox.insert(0, entry)
-        self.status_var.set(message)
-        while self.listbox.size() > self.max_items:
-            self.listbox.delete(tk.END)
-        if popup:
-            messagebox.showinfo("Notification", message)
+        self.message_var.set(f"[{timestamp}] {message}")
+
+
+class CorporateStyle:
+    def __init__(self, root: tk.Tk) -> None:
+        self.style = ttk.Style(root)
+        self.root = root
+        self._configure()
+
+    def _configure(self) -> None:
+        self.style.theme_use("clam")
+        self.root.configure(bg="#f3f5f8")
+        self.style.configure("TFrame", background="#f3f5f8")
+        self.style.configure("TLabel", background="#f3f5f8", foreground="#1f2a44")
+        self.style.configure(
+            "Header.TLabel",
+            font=("Segoe UI", 14, "bold"),
+            foreground="#1f2a44",
+        )
+        self.style.configure(
+            "TButton",
+            font=("Segoe UI", 10, "bold"),
+            background="#1f5aa6",
+            foreground="white",
+            padding=6,
+        )
+        self.style.map(
+            "TButton",
+            background=[("active", "#184b8a")],
+            foreground=[("disabled", "#d0d0d0")],
+        )
+        self.style.configure(
+            "TNotebook",
+            background="#f3f5f8",
+            tabmargins=(8, 4, 8, 0),
+        )
+        self.style.configure(
+            "TNotebook.Tab",
+            padding=(12, 6),
+            font=("Segoe UI", 10, "bold"),
+        )
+        self.style.map(
+            "TNotebook.Tab",
+            background=[("selected", "#ffffff"), ("active", "#e0e6f0")],
+            foreground=[("selected", "#1f2a44"), ("active", "#1f2a44")],
+        )
+        self.style.configure(
+            "Treeview",
+            background="white",
+            fieldbackground="white",
+            foreground="#1f2a44",
+            rowheight=24,
+            bordercolor="#d9dee7",
+            borderwidth=1,
+        )
+        self.style.configure(
+            "Treeview.Heading",
+            font=("Segoe UI", 10, "bold"),
+            background="#d9dee7",
+            foreground="#1f2a44",
+        )
+        self.style.map("Treeview", background=[("selected", "#c7d6f2")])
 
 
 class BaseTab(ttk.Frame):
-    """Base class for tabs with access to the main app."""
-
-    def __init__(self, master: ttk.Notebook, app: "MainApplication") -> None:
-        super().__init__(master)
+    def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
+        super().__init__(parent)
         self.app = app
 
 
-class DashboardTab(BaseTab):
-    """Summary dashboard with key metrics."""
+class SettingsTab(BaseTab):
+    def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
+        super().__init__(parent, app)
+        self._build()
 
-    def __init__(self, master: ttk.Notebook, app: "MainApplication") -> None:
-        super().__init__(master, app)
-        self.configure(padding=16)
-        self.metrics_frame = ttk.Frame(self)
-        self.metrics_frame.grid(row=0, column=0, sticky="nsew")
-        self.columnconfigure(0, weight=1)
+    def _build(self) -> None:
+        header = ttk.Label(self, text="Settings", style="Header.TLabel")
+        header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
 
-        self.cards: Dict[str, tk.StringVar] = {}
-        self._build_cards()
-        self.refresh_metrics()
+        container = ttk.Frame(self)
+        container.grid(row=1, column=0, sticky="nsew", padx=12, pady=6)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
-    def _build_cards(self) -> None:
-        labels = [
-            ("Total Users", "users"),
-            ("Active Tenants", "tenants"),
-            ("Units", "units"),
-            ("Open Bookings", "bookings"),
-        ]
-        for index, (title, key) in enumerate(labels):
-            card = ttk.LabelFrame(self.metrics_frame, text=title)
-            card.grid(row=0, column=index, padx=8, pady=8, sticky="nsew")
-            self.metrics_frame.columnconfigure(index, weight=1)
-            value_var = tk.StringVar(value="-")
-            ttk.Label(card, textvariable=value_var, font=("Segoe UI", 20, "bold")).pack(
-                padx=12, pady=16
-            )
-            self.cards[key] = value_var
+        container.grid_columnconfigure(1, weight=1)
 
-        refresh_button = ttk.Button(self, text="Refresh Metrics", command=self.refresh_metrics)
-        refresh_button.grid(row=1, column=0, sticky="w", pady=(12, 0))
+        ttk.Label(container, text="Database Host").grid(row=0, column=0, sticky="w")
+        ttk.Label(container, text="Database Port").grid(row=1, column=0, sticky="w")
+        ttk.Label(container, text="Database Name").grid(row=2, column=0, sticky="w")
+        ttk.Label(container, text="Database User").grid(row=3, column=0, sticky="w")
+        ttk.Label(container, text="Database Password").grid(row=4, column=0, sticky="w")
+        ttk.Label(container, text="Refresh Interval (sec)").grid(
+            row=5, column=0, sticky="w"
+        )
 
-    def refresh_metrics(self) -> None:
-        dal = get_dal()
-        self.cards["users"].set(str(dal.count_records("users")))
-        self.cards["tenants"].set(str(dal.count_records("tenants")))
-        self.cards["units"].set(str(dal.count_records("units")))
-        open_count = dal.count_records("bookings", "status != 'completed'", ())
-        self.cards["bookings"].set(str(open_count))
-        self.app.notifications.notify("Dashboard metrics refreshed.")
+        self.host_var = tk.StringVar(value=self.app.settings.db_host)
+        self.port_var = tk.StringVar(value=str(self.app.settings.db_port))
+        self.name_var = tk.StringVar(value=self.app.settings.db_name)
+        self.user_var = tk.StringVar(value=self.app.settings.db_user)
+        self.password_var = tk.StringVar(value=self.app.settings.db_password)
+        self.refresh_var = tk.StringVar(
+            value=str(self.app.settings.refresh_interval_seconds)
+        )
+
+        ttk.Entry(container, textvariable=self.host_var).grid(
+            row=0, column=1, sticky="ew", padx=6, pady=4
+        )
+        ttk.Entry(container, textvariable=self.port_var).grid(
+            row=1, column=1, sticky="ew", padx=6, pady=4
+        )
+        ttk.Entry(container, textvariable=self.name_var).grid(
+            row=2, column=1, sticky="ew", padx=6, pady=4
+        )
+        ttk.Entry(container, textvariable=self.user_var).grid(
+            row=3, column=1, sticky="ew", padx=6, pady=4
+        )
+        ttk.Entry(container, textvariable=self.password_var, show="•").grid(
+            row=4, column=1, sticky="ew", padx=6, pady=4
+        )
+        ttk.Entry(container, textvariable=self.refresh_var).grid(
+            row=5, column=1, sticky="ew", padx=6, pady=4
+        )
+
+        button_frame = ttk.Frame(container)
+        button_frame.grid(row=6, column=1, sticky="e", pady=10)
+        ttk.Button(button_frame, text="Save Settings", command=self._save).grid(
+            row=0, column=0, padx=4
+        )
+        ttk.Button(button_frame, text="Reload", command=self._reload).grid(
+            row=0, column=1, padx=4
+        )
+
+    def _save(self) -> None:
+        self.app.settings.db_host = self.host_var.get().strip()
+        self.app.settings.db_port = int(self.port_var.get().strip() or 0)
+        self.app.settings.db_name = self.name_var.get().strip()
+        self.app.settings.db_user = self.user_var.get().strip()
+        self.app.settings.db_password = self.password_var.get().strip()
+        self.app.settings.refresh_interval_seconds = max(
+            5, int(self.refresh_var.get().strip() or 30)
+        )
+        self.app.settings.save()
+        self.app.notifications.notify("Settings saved. Restart to apply DB changes.")
+        self.app.operations_tab.update_refresh_interval()
+
+    def _reload(self) -> None:
+        self.app.settings.load()
+        self.host_var.set(self.app.settings.db_host)
+        self.port_var.set(str(self.app.settings.db_port))
+        self.name_var.set(self.app.settings.db_name)
+        self.user_var.set(self.app.settings.db_user)
+        self.password_var.set(self.app.settings.db_password)
+        self.refresh_var.set(str(self.app.settings.refresh_interval_seconds))
+        self.app.notifications.notify("Settings reloaded.")
 
 
 class DatabaseTab(BaseTab):
-    """Database browser tab for viewing and editing tables."""
-
-    def __init__(self, master: ttk.Notebook, app: "MainApplication") -> None:
-        super().__init__(master, app)
-        self.configure(padding=12)
+    def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
+        super().__init__(parent, app)
         self.dal = get_dal()
-        self.table_list = tk.Listbox(self, height=14)
-        self.table_list.grid(row=0, column=0, sticky="ns", padx=(0, 12))
-        self.table_list.bind("<<ListboxSelect>>", self._on_table_select)
+        self.columns: list[str] = []
+        self._build()
 
-        right_frame = ttk.Frame(self)
-        right_frame.grid(row=0, column=1, sticky="nsew")
-        self.columnconfigure(1, weight=1)
-        self.rowconfigure(0, weight=1)
-        right_frame.rowconfigure(1, weight=1)
-        right_frame.columnconfigure(0, weight=1)
+    def _build(self) -> None:
+        header = ttk.Label(self, text="Database", style="Header.TLabel")
+        header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
 
-        button_frame = ttk.Frame(right_frame)
-        button_frame.grid(row=0, column=0, sticky="ew")
+        toolbar = ttk.Frame(self)
+        toolbar.grid(row=1, column=0, sticky="ew", padx=12)
+        toolbar.grid_columnconfigure(2, weight=1)
 
-        ttk.Button(button_frame, text="Refresh Tables", command=self.load_tables).pack(
-            side=tk.LEFT, padx=(0, 8)
+        ttk.Label(toolbar, text="Table").grid(row=0, column=0, sticky="w")
+        self.table_var = tk.StringVar(value="users")
+        self.table_select = ttk.Combobox(
+            toolbar,
+            textvariable=self.table_var,
+            values=self._get_table_names(),
+            state="readonly",
+            width=24,
         )
-        ttk.Button(button_frame, text="Edit Selected", command=self.edit_selected).pack(
-            side=tk.LEFT, padx=(0, 8)
+        self.table_select.grid(row=0, column=1, sticky="w", padx=6)
+        self.table_select.bind("<<ComboboxSelected>>", lambda _: self.refresh())
+
+        ttk.Button(toolbar, text="Refresh", command=self.refresh).grid(
+            row=0, column=3, padx=6
         )
-        ttk.Button(button_frame, text="Delete Selected", command=self.delete_selected).pack(
-            side=tk.LEFT, padx=(0, 8)
+        ttk.Button(toolbar, text="Edit Selected", command=self._edit_selected).grid(
+            row=0, column=4, padx=6
         )
 
-        self.table_label = ttk.Label(right_frame, text="Select a table to view data")
-        self.table_label.grid(row=1, column=0, sticky="w", pady=(8, 4))
+        self.tree = ttk.Treeview(self, show="headings")
+        self.tree.grid(row=2, column=0, sticky="nsew", padx=12, pady=12)
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
-        self.tree = ttk.Treeview(right_frame, show="headings")
-        self.tree.grid(row=2, column=0, sticky="nsew")
-        right_frame.rowconfigure(2, weight=1)
-
-        scrollbar = ttk.Scrollbar(right_frame, orient="vertical", command=self.tree.yview)
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         scrollbar.grid(row=2, column=1, sticky="ns")
         self.tree.configure(yscrollcommand=scrollbar.set)
 
-        self.current_table: Optional[str] = None
-        self.current_rows: Dict[str, Dict[str, Any]] = {}
-        self.load_tables()
+        self.refresh()
 
-    def load_tables(self) -> None:
-        self.table_list.delete(0, tk.END)
-        tables = self.dal.execute_custom_query(
-            """
+    def _get_table_names(self) -> list[str]:
+        query = """
             SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = 'public'
             ORDER BY table_name
-            """,
-            fetch="all",
-        )
-        for row in tables:
-            self.table_list.insert(tk.END, row["table_name"])
-        self.app.notifications.notify("Database tables loaded.")
+        """
+        results = self.dal.execute_custom_query(query, fetch="all")
+        return [row["table_name"] for row in results] if results else []
 
-    def _on_table_select(self, event: tk.Event) -> None:
-        selection = self.table_list.curselection()
-        if not selection:
-            return
-        self.current_table = self.table_list.get(selection[0])
-        self.load_table_data(self.current_table)
-
-    def load_table_data(self, table: str) -> None:
-        self.table_label.configure(text=f"Table: {table}")
-        columns = self.dal.execute_custom_query(
-            """
+    def _get_columns(self, table: str) -> list[str]:
+        query = """
             SELECT column_name
             FROM information_schema.columns
             WHERE table_schema = 'public' AND table_name = %s
             ORDER BY ordinal_position
-            """,
-            (table,),
-            fetch="all",
-        )
-        column_names = [col["column_name"] for col in columns]
-        self.tree.configure(columns=column_names)
-        self.tree.delete(*self.tree.get_children())
-        for col in column_names:
-            self.tree.heading(col, text=col)
-            self.tree.column(col, width=140, anchor="w")
+        """
+        results = self.dal.execute_custom_query(query, (table,), fetch="all")
+        return [row["column_name"] for row in results] if results else []
 
-        order_column = "created_at" if "created_at" in column_names else "id"
-        rows = self.dal.execute_custom_query(
-            f"SELECT * FROM {table} ORDER BY {order_column} DESC LIMIT 200", fetch="all"
-        )
-        self.current_rows = {}
-        for row in rows or []:
-            row_id = str(row.get("id", ""))
-            self.current_rows[row_id] = row
-            values = [self._format_cell(row.get(col)) for col in column_names]
-            self.tree.insert("", tk.END, iid=row_id, values=values)
+    def refresh(self) -> None:
+        table = self.table_var.get()
+        try:
+            self.columns = self._get_columns(table)
+            self.tree.configure(columns=self.columns)
+            for col in self.columns:
+                self.tree.heading(col, text=col)
+                self.tree.column(col, width=140, anchor="w")
+            for item in self.tree.get_children():
+                self.tree.delete(item)
+            rows = self.dal.get_filtered_records(table, "1=1", (), limit=200)
+            for row in rows:
+                values = [row.get(col) for col in self.columns]
+                self.tree.insert("", "end", values=values)
+            self.app.notifications.notify(f"Loaded {len(rows)} rows from {table}.")
+        except Exception as exc:
+            self.app.notifications.notify(f"Database load failed: {exc}")
 
-        self.app.notifications.notify(f"Loaded {len(rows or [])} records from {table}.")
-
-    def _format_cell(self, value: Any) -> str:
-        if isinstance(value, datetime):
-            return value.strftime("%Y-%m-%d %H:%M")
-        if value is None:
-            return ""
-        return str(value)
-
-    def edit_selected(self) -> None:
-        if not self.current_table:
-            self.app.notifications.notify("Select a table first.", popup=True)
+    def _edit_selected(self) -> None:
+        selection = self.tree.selection()
+        if not selection:
+            self.app.notifications.notify("Select a row to edit.")
             return
-        selected = self.tree.selection()
-        if not selected:
-            self.app.notifications.notify("Select a record to edit.", popup=True)
+        values = self.tree.item(selection[0], "values")
+        data = dict(zip(self.columns, values))
+        if "id" not in data:
+            self.app.notifications.notify("Selected table lacks an 'id' column.")
             return
-        record_id = selected[0]
-        record = self.current_rows.get(record_id)
-        if not record:
-            self.app.notifications.notify("Record data not available.", popup=True)
-            return
-        RecordEditor(self, self.current_table, record, self._on_record_updated)
-
-    def delete_selected(self) -> None:
-        if not self.current_table:
-            self.app.notifications.notify("Select a table first.", popup=True)
-            return
-        selected = self.tree.selection()
-        if not selected:
-            self.app.notifications.notify("Select a record to delete.", popup=True)
-            return
-        record_id = selected[0]
-        confirm = messagebox.askyesno("Confirm Delete", "Delete the selected record?")
-        if not confirm:
-            return
-        success = self.dal.delete_record(self.current_table, record_id)
-        if success:
-            self.app.notifications.notify("Record deleted.")
-            self.load_table_data(self.current_table)
-        else:
-            self.app.notifications.notify("Delete failed.", popup=True)
-
-    def _on_record_updated(self) -> None:
-        if self.current_table:
-            self.load_table_data(self.current_table)
+        RecordEditorDialog(self, self.app, self.table_var.get(), data, self.refresh)
 
 
-class RecordEditor(tk.Toplevel):
-    """Modal dialog to edit a single database record."""
-
+class RecordEditorDialog(tk.Toplevel):
     def __init__(
         self,
-        parent: DatabaseTab,
+        parent: tk.Widget,
+        app: "ServiceDaemonApp",
         table: str,
-        record: Dict[str, Any],
-        on_saved,
+        data: dict,
+        on_save,
     ) -> None:
         super().__init__(parent)
-        self.parent_tab = parent
+        self.app = app
         self.table = table
-        self.record = record
-        self.on_saved = on_saved
+        self.data = data
+        self.on_save = on_save
+        self.entries: dict[str, tk.Entry] = {}
+        self.title(f"Edit {table} record")
+        self._build()
 
-        self.title(f"Edit Record - {table}")
-        self.resizable(False, False)
+    def _build(self) -> None:
+        container = ttk.Frame(self)
+        container.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
+        self.grid_columnconfigure(0, weight=1)
+        container.grid_columnconfigure(1, weight=1)
 
-        self.entries: Dict[str, tk.Entry] = {}
-        frame = ttk.Frame(self, padding=12)
-        frame.grid(row=0, column=0, sticky="nsew")
-
-        row_index = 0
-        for key, value in record.items():
-            ttk.Label(frame, text=key).grid(row=row_index, column=0, sticky="w", pady=4)
-            entry = ttk.Entry(frame, width=48)
-            entry.grid(row=row_index, column=1, sticky="ew", pady=4)
+        for idx, (key, value) in enumerate(self.data.items()):
+            ttk.Label(container, text=key).grid(row=idx, column=0, sticky="w")
+            entry = ttk.Entry(container)
             entry.insert(0, "" if value is None else str(value))
+            entry.grid(row=idx, column=1, sticky="ew", padx=6, pady=2)
             if key == "id":
                 entry.configure(state="disabled")
             self.entries[key] = entry
-            row_index += 1
 
-        button_frame = ttk.Frame(frame)
-        button_frame.grid(row=row_index, column=0, columnspan=2, pady=(12, 0), sticky="e")
-        ttk.Button(button_frame, text="Save", command=self.save).pack(side=tk.RIGHT, padx=4)
-        ttk.Button(button_frame, text="Cancel", command=self.destroy).pack(side=tk.RIGHT, padx=4)
+        button_frame = ttk.Frame(container)
+        button_frame.grid(row=len(self.data), column=1, sticky="e", pady=8)
+        ttk.Button(button_frame, text="Save", command=self._save).grid(
+            row=0, column=0, padx=4
+        )
+        ttk.Button(button_frame, text="Cancel", command=self.destroy).grid(
+            row=0, column=1, padx=4
+        )
 
-    def save(self) -> None:
-        updates = {}
+    def _save(self) -> None:
+        updated = {}
         for key, entry in self.entries.items():
             if key == "id":
                 continue
-            value = entry.get()
-            updates[key] = value if value != "" else None
-        record_id = self.record.get("id")
-        success = self.parent_tab.dal.update_record(self.table, record_id, updates)
-        if success:
-            self.parent_tab.app.notifications.notify("Record updated successfully.")
-            self.on_saved()
-            self.destroy()
-        else:
-            self.parent_tab.app.notifications.notify("Update failed.", popup=True)
+            updated[key] = entry.get() or None
+        record_id = self.data.get("id")
+        try:
+            success = get_dal().update_record(self.table, record_id, updated)
+            if success:
+                self.app.notifications.notify("Record updated successfully.")
+                self.on_save()
+                self.destroy()
+            else:
+                self.app.notifications.notify("No changes were saved.")
+        except Exception as exc:
+            self.app.notifications.notify(f"Update failed: {exc}")
 
 
 class OperationsTab(BaseTab):
-    """Operations tab for managing bookings."""
-
-    def __init__(self, master: ttk.Notebook, app: "MainApplication") -> None:
-        super().__init__(master, app)
-        self.configure(padding=12)
+    def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
+        super().__init__(parent, app)
         self.booking_access = get_booking_access()
-        self.dal = get_dal()
+        self.refresh_job: str | None = None
+        self._build()
+        self.schedule_refresh()
 
-        control_frame = ttk.Frame(self)
-        control_frame.grid(row=0, column=0, sticky="ew", pady=(0, 8))
-        self.columnconfigure(0, weight=1)
+    def _build(self) -> None:
+        header = ttk.Label(self, text="Operations", style="Header.TLabel")
+        header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
 
-        ttk.Label(control_frame, text="Status Filter:").pack(side=tk.LEFT)
-        self.status_var = tk.StringVar(value=self.app.settings.operations_default_status)
-        status_menu = ttk.Combobox(
-            control_frame, textvariable=self.status_var, values=["all"] + BOOKING_STATUSES
+        toolbar = ttk.Frame(self)
+        toolbar.grid(row=1, column=0, sticky="ew", padx=12)
+        toolbar.grid_columnconfigure(5, weight=1)
+
+        ttk.Button(toolbar, text="Refresh", command=self.refresh).grid(
+            row=0, column=0, padx=4
         )
-        status_menu.pack(side=tk.LEFT, padx=8)
-        ttk.Button(control_frame, text="Refresh", command=self.refresh_bookings).pack(
-            side=tk.LEFT, padx=8
+
+        ttk.Label(toolbar, text="Status").grid(row=0, column=1, padx=4)
+        self.status_var = tk.StringVar(value="scheduled")
+        self.status_combo = ttk.Combobox(
+            toolbar,
+            textvariable=self.status_var,
+            values=["requested", "scheduled", "assigned", "in_progress", "completed", "cancelled"],
+            width=16,
+            state="readonly",
+        )
+        self.status_combo.grid(row=0, column=2, padx=4)
+
+        ttk.Button(toolbar, text="Update Status", command=self.update_status).grid(
+            row=0, column=3, padx=4
+        )
+
+        ttk.Button(toolbar, text="Schedule", command=self.schedule_booking).grid(
+            row=0, column=4, padx=4
+        )
+
+        schedule_frame = ttk.Frame(self)
+        schedule_frame.grid(row=2, column=0, sticky="ew", padx=12, pady=(0, 8))
+        schedule_frame.grid_columnconfigure(1, weight=1)
+
+        ttk.Label(schedule_frame, text="Start (YYYY-MM-DD HH:MM)").grid(
+            row=0, column=0, sticky="w"
+        )
+        self.start_var = tk.StringVar()
+        ttk.Entry(schedule_frame, textvariable=self.start_var).grid(
+            row=0, column=1, sticky="ew", padx=6
+        )
+
+        ttk.Label(schedule_frame, text="End (YYYY-MM-DD HH:MM)").grid(
+            row=1, column=0, sticky="w"
+        )
+        self.end_var = tk.StringVar()
+        ttk.Entry(schedule_frame, textvariable=self.end_var).grid(
+            row=1, column=1, sticky="ew", padx=6
         )
 
         self.tree = ttk.Treeview(
             self,
-            columns=("status", "priority", "unit", "tenant", "service", "scheduled"),
+            columns=(
+                "id",
+                "status",
+                "priority",
+                "unit_id",
+                "scheduled_start",
+                "scheduled_end",
+            ),
             show="headings",
         )
-        self.tree.grid(row=1, column=0, sticky="nsew")
-        self.rowconfigure(1, weight=1)
+        self.tree.grid(row=3, column=0, sticky="nsew", padx=12, pady=12)
+        self.grid_rowconfigure(3, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
-        for col, label, width in [
-            ("status", "Status", 100),
-            ("priority", "Priority", 90),
-            ("unit", "Unit", 90),
-            ("tenant", "Tenant", 180),
-            ("service", "Service", 160),
-            ("scheduled", "Scheduled", 200),
-        ]:
-            self.tree.heading(col, text=label)
-            self.tree.column(col, width=width, anchor="w")
+        for col in self.tree["columns"]:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, width=140, anchor="w")
 
-        detail_frame = ttk.LabelFrame(self, text="Operation Details", padding=12)
-        detail_frame.grid(row=2, column=0, sticky="ew", pady=(8, 0))
-        detail_frame.columnconfigure(1, weight=1)
+        self.tree.bind("<<TreeviewSelect>>", self._populate_schedule_fields)
 
-        self.selected_booking_id: Optional[str] = None
-        self.detail_vars = {
-            "status": tk.StringVar(),
-            "priority": tk.StringVar(),
-            "notes": tk.StringVar(),
-            "scheduled_start": tk.StringVar(),
-            "scheduled_end": tk.StringVar(),
-        }
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
+        scrollbar.grid(row=3, column=1, sticky="ns")
+        self.tree.configure(yscrollcommand=scrollbar.set)
 
-        ttk.Label(detail_frame, text="Status:").grid(row=0, column=0, sticky="w")
-        self.status_combo = ttk.Combobox(
-            detail_frame, textvariable=self.detail_vars["status"], values=BOOKING_STATUSES
-        )
-        self.status_combo.grid(row=0, column=1, sticky="ew", pady=4)
+    def update_refresh_interval(self) -> None:
+        if self.refresh_job:
+            self.after_cancel(self.refresh_job)
+        self.schedule_refresh()
 
-        ttk.Label(detail_frame, text="Priority:").grid(row=1, column=0, sticky="w")
-        ttk.Entry(detail_frame, textvariable=self.detail_vars["priority"]).grid(
-            row=1, column=1, sticky="ew", pady=4
-        )
+    def schedule_refresh(self) -> None:
+        interval_ms = self.app.settings.refresh_interval_seconds * 1000
+        self.refresh_job = self.after(interval_ms, self._auto_refresh)
 
-        ttk.Label(detail_frame, text="Notes:").grid(row=2, column=0, sticky="w")
-        ttk.Entry(detail_frame, textvariable=self.detail_vars["notes"]).grid(
-            row=2, column=1, sticky="ew", pady=4
-        )
+    def _auto_refresh(self) -> None:
+        self.refresh()
+        self.schedule_refresh()
 
-        ttk.Label(detail_frame, text="Scheduled Start (YYYY-MM-DD HH:MM):").grid(
-            row=3, column=0, sticky="w"
-        )
-        ttk.Entry(detail_frame, textvariable=self.detail_vars["scheduled_start"]).grid(
-            row=3, column=1, sticky="ew", pady=4
-        )
+    def refresh(self) -> None:
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        try:
+            bookings = get_dal().get_filtered_records("bookings", "1=1", (), limit=200)
+            for booking in bookings:
+                self.tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        booking.get("id"),
+                        booking.get("status"),
+                        booking.get("priority"),
+                        booking.get("unit_id"),
+                        booking.get("scheduled_start"),
+                        booking.get("scheduled_end"),
+                    ),
+                )
+            self.app.notifications.notify(f"Loaded {len(bookings)} bookings.")
+        except Exception as exc:
+            self.app.notifications.notify(f"Booking refresh failed: {exc}")
 
-        ttk.Label(detail_frame, text="Scheduled End (YYYY-MM-DD HH:MM):").grid(
-            row=4, column=0, sticky="w"
-        )
-        ttk.Entry(detail_frame, textvariable=self.detail_vars["scheduled_end"]).grid(
-            row=4, column=1, sticky="ew", pady=4
-        )
+    def _selected_booking_id(self) -> str | None:
+        selection = self.tree.selection()
+        if not selection:
+            return None
+        return self.tree.item(selection[0], "values")[0]
 
-        ttk.Button(detail_frame, text="Save Changes", command=self.save_booking).grid(
-            row=5, column=1, sticky="e", pady=(8, 0)
-        )
-
-        self.tree.bind("<<TreeviewSelect>>", self._on_booking_select)
-        self.refresh_bookings()
-        self._schedule_refresh()
-
-    def refresh_bookings(self) -> None:
-        status_filter = self.status_var.get()
-        query = """
-            SELECT b.id,
-                   b.status,
-                   b.priority,
-                   b.notes,
-                   b.scheduled_start,
-                   b.scheduled_end,
-                   un.unit_number,
-                   u.full_name as tenant_name,
-                   st.name as service_name
-            FROM bookings b
-            LEFT JOIN tenants t ON b.tenant_id = t.id
-            LEFT JOIN users u ON t.user_id = u.id
-            LEFT JOIN units un ON b.unit_id = un.id
-            LEFT JOIN service_types st ON b.service_type_id = st.id
-        """
-        params: List[Any] = []
-        if status_filter and status_filter != "all":
-            query += " WHERE b.status = %s"
-            params.append(status_filter)
-        query += " ORDER BY b.created_at DESC"
-
-        records = self.dal.execute_custom_query(query, tuple(params), fetch="all")
-        self.tree.delete(*self.tree.get_children())
-        for record in records or []:
-            scheduled = self._format_schedule(record.get("scheduled_start"), record.get("scheduled_end"))
-            self.tree.insert(
-                "",
-                tk.END,
-                iid=str(record["id"]),
-                values=(
-                    record.get("status"),
-                    record.get("priority"),
-                    record.get("unit_number") or "-",
-                    record.get("tenant_name") or "-",
-                    record.get("service_name") or "-",
-                    scheduled,
-                ),
-            )
-        self.app.notifications.notify("Operations list refreshed.")
-
-    def _format_schedule(self, start: Optional[datetime], end: Optional[datetime]) -> str:
-        if not start and not end:
-            return "Not scheduled"
-        start_text = start.strftime("%Y-%m-%d %H:%M") if isinstance(start, datetime) else str(start)
-        end_text = end.strftime("%Y-%m-%d %H:%M") if isinstance(end, datetime) else str(end)
-        return f"{start_text} → {end_text}"
-
-    def _on_booking_select(self, event: tk.Event) -> None:
+    def _populate_schedule_fields(self, _event) -> None:
         selection = self.tree.selection()
         if not selection:
             return
-        booking_id = selection[0]
-        data = self.booking_access.get_booking_data(booking_id)
-        if not data:
-            self.app.notifications.notify("Booking details unavailable.", popup=True)
-            return
-        self.selected_booking_id = booking_id
-        self.detail_vars["status"].set(data.get("status", ""))
-        self.detail_vars["priority"].set(data.get("priority", ""))
-        self.detail_vars["notes"].set(data.get("notes", ""))
-        self.detail_vars["scheduled_start"].set(self._format_datetime_entry(data.get("scheduled_start")))
-        self.detail_vars["scheduled_end"].set(self._format_datetime_entry(data.get("scheduled_end")))
+        values = self.tree.item(selection[0], "values")
+        self.start_var.set(values[4] or "")
+        self.end_var.set(values[5] or "")
 
-    def _format_datetime_entry(self, value: Optional[datetime]) -> str:
-        if isinstance(value, datetime):
-            return value.strftime("%Y-%m-%d %H:%M")
-        return "" if value is None else str(value)
-
-    def save_booking(self) -> None:
-        if not self.selected_booking_id:
-            self.app.notifications.notify("Select an operation first.", popup=True)
+    def update_status(self) -> None:
+        booking_id = self._selected_booking_id()
+        if not booking_id:
+            self.app.notifications.notify("Select a booking first.")
             return
-        updates: Dict[str, Any] = {
-            "status": self.detail_vars["status"].get(),
-            "priority": self.detail_vars["priority"].get(),
-            "notes": self.detail_vars["notes"].get(),
-        }
-        schedule_updates = self._parse_schedule_fields()
-        if schedule_updates is None:
-            return
-        updates.update(schedule_updates)
-        success = self.booking_access.update_booking(self.selected_booking_id, **updates)
-        if success:
-            self.app.notifications.notify("Operation updated successfully.")
-            self.refresh_bookings()
-        else:
-            self.app.notifications.notify("Failed to update operation.", popup=True)
-
-    def _parse_schedule_fields(self) -> Optional[Dict[str, Any]]:
-        start_text = self.detail_vars["scheduled_start"].get().strip()
-        end_text = self.detail_vars["scheduled_end"].get().strip()
-        updates: Dict[str, Any] = {}
         try:
-            updates["scheduled_start"] = (
-                datetime.strptime(start_text, "%Y-%m-%d %H:%M") if start_text else None
+            success = self.booking_access.update_booking_status(
+                booking_id, self.status_var.get()
             )
-            updates["scheduled_end"] = (
-                datetime.strptime(end_text, "%Y-%m-%d %H:%M") if end_text else None
+            if success:
+                self.app.notifications.notify("Booking status updated.")
+                self.refresh()
+            else:
+                self.app.notifications.notify("Status update failed.")
+        except Exception as exc:
+            self.app.notifications.notify(f"Status update error: {exc}")
+
+    def schedule_booking(self) -> None:
+        booking_id = self._selected_booking_id()
+        if not booking_id:
+            self.app.notifications.notify("Select a booking first.")
+            return
+        try:
+            start = self._parse_datetime(self.start_var.get())
+            end = self._parse_datetime(self.end_var.get())
+            success = self.booking_access.update_booking(
+                booking_id,
+                scheduled_start=start,
+                scheduled_end=end,
             )
-        except ValueError:
-            self.app.notifications.notify(
-                "Invalid date format. Use YYYY-MM-DD HH:MM.", popup=True
-            )
+            if success:
+                self.app.notifications.notify("Booking scheduled.")
+                self.refresh()
+            else:
+                self.app.notifications.notify("Scheduling failed.")
+        except Exception as exc:
+            self.app.notifications.notify(f"Schedule error: {exc}")
+
+    def _parse_datetime(self, value: str | None) -> datetime | None:
+        if not value:
             return None
-        return updates
-
-    def _schedule_refresh(self) -> None:
-        refresh_ms = max(5, self.app.settings.operations_refresh_seconds) * 1000
-        self.after(refresh_ms, self._auto_refresh)
-
-    def _auto_refresh(self) -> None:
-        self.refresh_bookings()
-        self._schedule_refresh()
+        cleaned = value.strip()
+        return datetime.fromisoformat(cleaned)
 
 
-class SettingsTab(BaseTab):
-    """Settings tab for database and operations configuration."""
-
-    def __init__(self, master: ttk.Notebook, app: "MainApplication") -> None:
-        super().__init__(master, app)
-        self.configure(padding=16)
-
-        db_frame = ttk.LabelFrame(self, text="Database Settings", padding=12)
-        db_frame.grid(row=0, column=0, sticky="ew", pady=(0, 12))
-        db_frame.columnconfigure(1, weight=1)
-
-        self.db_vars = {
-            "db_host": tk.StringVar(value=app.settings.db_host),
-            "db_port": tk.StringVar(value=str(app.settings.db_port)),
-            "db_name": tk.StringVar(value=app.settings.db_name),
-            "db_user": tk.StringVar(value=app.settings.db_user),
-            "db_password": tk.StringVar(value=app.settings.db_password),
-        }
-
-        self._add_entry(db_frame, "Host", 0, self.db_vars["db_host"])
-        self._add_entry(db_frame, "Port", 1, self.db_vars["db_port"])
-        self._add_entry(db_frame, "Database", 2, self.db_vars["db_name"])
-        self._add_entry(db_frame, "User", 3, self.db_vars["db_user"])
-        self._add_entry(db_frame, "Password", 4, self.db_vars["db_password"], show="*")
-
-        ttk.Button(db_frame, text="Test Connection", command=self.test_connection).grid(
-            row=5, column=1, sticky="e", pady=(8, 0)
-        )
-
-        ops_frame = ttk.LabelFrame(self, text="Operations Settings", padding=12)
-        ops_frame.grid(row=1, column=0, sticky="ew", pady=(0, 12))
-        ops_frame.columnconfigure(1, weight=1)
-
-        self.ops_vars = {
-            "operations_refresh_seconds": tk.StringVar(
-                value=str(app.settings.operations_refresh_seconds)
-            ),
-            "operations_default_status": tk.StringVar(
-                value=app.settings.operations_default_status
-            ),
-            "notifications_max": tk.StringVar(value=str(app.settings.notifications_max)),
-        }
-
-        self._add_entry(
-            ops_frame,
-            "Refresh Interval (seconds)",
-            0,
-            self.ops_vars["operations_refresh_seconds"],
-        )
-        ttk.Label(ops_frame, text="Default Status Filter").grid(
-            row=1, column=0, sticky="w", pady=4
-        )
-        ttk.Combobox(
-            ops_frame,
-            textvariable=self.ops_vars["operations_default_status"],
-            values=["all"] + BOOKING_STATUSES,
-        ).grid(row=1, column=1, sticky="ew", pady=4)
-        self._add_entry(ops_frame, "Max Notifications", 2, self.ops_vars["notifications_max"])
-
-        action_frame = ttk.Frame(self)
-        action_frame.grid(row=2, column=0, sticky="e")
-        ttk.Button(action_frame, text="Save Settings", command=self.save_settings).pack(
-            side=tk.RIGHT, padx=8
-        )
-
-    def _add_entry(
-        self,
-        frame: ttk.LabelFrame,
-        label: str,
-        row: int,
-        variable: tk.StringVar,
-        show: Optional[str] = None,
-    ) -> None:
-        ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w", pady=4)
-        ttk.Entry(frame, textvariable=variable, show=show).grid(
-            row=row, column=1, sticky="ew", pady=4
-        )
-
-    def test_connection(self) -> None:
-        settings = self._collect_settings()
-        db = DatabaseConnection()
-        db._initialize_pool(
-            host=settings.db_host,
-            port=int(settings.db_port),
-            database=settings.db_name,
-            user=settings.db_user,
-            password=settings.db_password,
-        )
-        db.execute_query("SELECT 1", fetch="one")
-        db.close_all_connections()
-        self.app.notifications.notify("Connection test succeeded.", popup=True)
-
-    def save_settings(self) -> None:
-        settings = self._collect_settings()
-        self.app.settings = settings
-        settings.save(SETTINGS_FILE)
-        self.app.notifications.max_items = settings.notifications_max
-        self.app.notifications.notify("Settings saved. Restart app to apply DB changes.", popup=True)
-
-    def _collect_settings(self) -> AppSettings:
-        return AppSettings(
-            db_host=self.db_vars["db_host"].get(),
-            db_port=int(self.db_vars["db_port"].get()),
-            db_name=self.db_vars["db_name"].get(),
-            db_user=self.db_vars["db_user"].get(),
-            db_password=self.db_vars["db_password"].get(),
-            operations_refresh_seconds=int(self.ops_vars["operations_refresh_seconds"].get()),
-            operations_default_status=self.ops_vars["operations_default_status"].get(),
-            notifications_max=int(self.ops_vars["notifications_max"].get()),
-            theme_primary=self.app.settings.theme_primary,
-            theme_secondary=self.app.settings.theme_secondary,
-        )
-
-
-class MainApplication(tk.Tk):
-    """Main Tkinter application."""
-
+class ServiceDaemonApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.settings = AppSettings.load(SETTINGS_FILE)
+        self.title("Service Daemon Console")
+        self.geometry("1200x720")
+        self.minsize(980, 640)
+        CorporateStyle(self)
 
-        self.title("Service-daemon Control Center")
-        self.geometry("1200x760")
-        self.minsize(1024, 640)
+        self.settings = AppSettings.from_defaults()
+        self.settings.load()
 
-        self._configure_theme()
+        self._build_layout()
 
-        container = ttk.Frame(self)
-        container.pack(fill=tk.BOTH, expand=True)
-        container.columnconfigure(0, weight=1)
-        container.rowconfigure(0, weight=1)
+    def _build_layout(self) -> None:
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
-        self.notebook = ttk.Notebook(container)
-        self.notebook.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
+        content = ttk.Frame(self)
+        content.grid(row=0, column=0, sticky="nsew")
+        content.grid_rowconfigure(0, weight=1)
+        content.grid_columnconfigure(0, weight=1)
 
-        self.notifications = NotificationCenter(container, self.settings.notifications_max)
+        notebook = ttk.Notebook(content)
+        notebook.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
 
-        self._create_tabs()
+        self.settings_tab = SettingsTab(notebook, self)
+        self.database_tab = DatabaseTab(notebook, self)
+        self.operations_tab = OperationsTab(notebook, self)
 
-    def _configure_theme(self) -> None:
-        style = ttk.Style(self)
-        style.theme_use("clam")
-        style.configure(
-            "TFrame",
-            background="#F5F7FA",
-        )
-        style.configure(
-            "TLabel",
-            background="#F5F7FA",
-            foreground="#1E2B3C",
-        )
-        style.configure(
-            "TNotebook",
-            background="#F5F7FA",
-            tabmargins=(8, 8, 8, 0),
-        )
-        style.configure(
-            "TNotebook.Tab",
-            background="#D9E2EF",
-            padding=(14, 6),
-        )
-        style.map(
-            "TNotebook.Tab",
-            background=[("selected", self.settings.theme_primary)],
-            foreground=[("selected", "#FFFFFF")],
-        )
-        style.configure("TButton", padding=(10, 6))
-        style.configure(
-            "TLabelframe",
-            background="#F5F7FA",
-            foreground="#1E2B3C",
-        )
-        style.configure(
-            "TLabelframe.Label",
-            background="#F5F7FA",
-            foreground="#1E2B3C",
-        )
+        notebook.add(self.settings_tab, text="Settings")
+        notebook.add(self.database_tab, text="Database")
+        notebook.add(self.operations_tab, text="Operations")
 
-    def _create_tabs(self) -> None:
-        tabs = [
-            ("Dashboard", DashboardTab),
-            ("Database", DatabaseTab),
-            ("Operations", OperationsTab),
-            ("Settings", SettingsTab),
-        ]
-        for title, tab_class in tabs:
-            tab = tab_class(self.notebook, self)
-            self.notebook.add(tab, text=title)
+        self.notifications = NotificationCenter(content)
+        self.notifications.frame.grid(row=1, column=0, sticky="ew")
+
+        self.applications_menu = tk.Menu(self)
+        self.config(menu=self.applications_menu)
+        file_menu = tk.Menu(self.applications_menu, tearoff=0)
+        file_menu.add_command(label="Refresh", command=self._refresh_all)
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.destroy)
+        self.applications_menu.add_cascade(label="File", menu=file_menu)
+
+    def _refresh_all(self) -> None:
+        self.database_tab.refresh()
+        self.operations_tab.refresh()
+        self.notifications.notify("All tabs refreshed.")
 
 
 if __name__ == "__main__":
-    app = MainApplication()
+    app = ServiceDaemonApp()
     app.mainloop()
