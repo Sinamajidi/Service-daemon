@@ -1,5 +1,8 @@
 -- Enable extension (run once)
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+
 
 -- Users (system login / accounts)
 CREATE TABLE users (
@@ -95,23 +98,20 @@ CREATE TABLE bookings (
   requestor_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   unit_id uuid REFERENCES units(id) ON DELETE SET NULL,
   service_type_id uuid REFERENCES service_types(id),
+  provider_staff_id uuid,               -- for exclusion constraint on staff scheduling
   status text NOT NULL DEFAULT 'requested', -- requested, scheduled, assigned, in_progress, completed, cancelled
   priority text DEFAULT 'normal',       -- low, normal, high, emergency
   notes text,
   estimated_duration_minutes integer,   -- override or computed
   price_cents bigint,
+  scheduled_range tstzrange,            -- time range for the booking
+  scheduled_start timestamptz,          -- separate start/end for convenience
+  scheduled_end timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   cancelled_at timestamptz,
   cancelled_by uuid REFERENCES users(id)
 );
-
--- Booking schedule time range using tstzrange for conflict checks
-ALTER TABLE bookings ADD COLUMN scheduled_range tstzrange;
-
--- Example: store separate start/end columns as well (optional, convenient)
-ALTER TABLE bookings ADD COLUMN scheduled_start timestamptz;
-ALTER TABLE bookings ADD COLUMN scheduled_end timestamptz;
 
 -- Assignment (which provider / staff is assigned)
 CREATE TABLE assignments (
@@ -122,33 +122,6 @@ CREATE TABLE assignments (
   assigned_by uuid REFERENCES users(id),
   assigned_at timestamptz NOT NULL DEFAULT now(),
   status text DEFAULT 'assigned'       -- assigned, en_route, completed, cancelled
-);
-
--- Create exclusion constraint to prevent overlapping scheduled_range for same unit or same provider_staff
--- Requires gist index on ranges (we also create indexes for faster queries)
-CREATE INDEX idx_bookings_scheduled_range ON bookings USING GIST (scheduled_range);
-
--- Prevent overlapping bookings on the same unit:
-ALTER TABLE bookings
-  ADD CONSTRAINT no_overlap_unit EXCLUDE USING GIST (
-    unit_id WITH =,
-    scheduled_range WITH &&
-  );
-
--- Prevent overlapping bookings for the same provider_staff (optional)
-ALTER TABLE bookings
-  ADD CONSTRAINT no_overlap_provider_staff EXCLUDE USING GIST (
-    COALESCE((SELECT provider_staff_id FROM assignments WHERE assignments.booking_id = bookings.id), NULL) WITH =,
-    scheduled_range WITH &&
-  );
-
--- (Note: the above provider_staff exclusion referencing assignments is tricky in SQL constraints. 
--- Often you store provider_staff_id on bookings on assignment to allow exclusion constraints directly:
-ALTER TABLE bookings ADD COLUMN provider_staff_id uuid;
--- then:
-ALTER TABLE bookings ADD CONSTRAINT no_overlap_provider_staff2 EXCLUDE USING GIST (
-  provider_staff_id WITH =,
-  scheduled_range WITH &&
 );
 
 -- Invoices and payments
@@ -212,4 +185,20 @@ CREATE TABLE audit_logs (
 CREATE INDEX idx_bookings_status ON bookings(status);
 CREATE INDEX idx_bookings_unit ON bookings(unit_id);
 CREATE INDEX idx_bookings_tenant ON bookings(tenant_id);
+CREATE INDEX idx_bookings_scheduled_range ON bookings USING GIST (scheduled_range);
 CREATE INDEX idx_provider_staff_provider ON provider_staff(provider_id);
+
+-- Exclusion constraints to prevent overlapping bookings
+-- Prevent overlapping bookings on the same unit (only when both unit_id and scheduled_range are not null)
+ALTER TABLE bookings
+  ADD CONSTRAINT no_overlap_unit EXCLUDE USING GIST (
+    unit_id WITH =,
+    scheduled_range WITH &&
+  ) WHERE (unit_id IS NOT NULL AND scheduled_range IS NOT NULL);
+
+-- Prevent overlapping bookings for the same provider_staff (only when both provider_staff_id and scheduled_range are not null)
+ALTER TABLE bookings 
+  ADD CONSTRAINT no_overlap_provider_staff EXCLUDE USING GIST (
+    provider_staff_id WITH =,
+    scheduled_range WITH &&
+  ) WHERE (provider_staff_id IS NOT NULL AND scheduled_range IS NOT NULL);
