@@ -871,6 +871,57 @@ class JsonStore:
         self.path.write_text(json.dumps(records, indent=2) + "\n")
 
 
+def table_exists(app: "ServiceDaemonApp", table: str) -> bool:
+    """! @brief Check if a database table exists."""
+    query = """
+        SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = %s
+        ) AS exists
+    """
+    result = app.run_db_action(
+        lambda: get_dal().execute_custom_query(query, (table,), fetch="one"),
+        f"Unable to check {table} table",
+    )
+    return bool(result and result.get("exists"))
+
+
+def load_task_ids(dialog: "JsonRecordDialog") -> list[str]:
+    """! @brief Load task IDs from the database or disk."""
+    if table_exists(dialog.app, "task_templates"):
+        results = dialog.app.run_db_action(
+            lambda: get_dal().get_all_ids("task_templates"),
+            "Unable to load task IDs",
+        )
+        return results or []
+    store = JsonStore(PROJECT_ROOT / "task_templates.json")
+    return [record["id"] for record in store.load() if record.get("id")]
+
+
+def load_table_ids(dialog: "JsonRecordDialog", table: str) -> list[str]:
+    """! @brief Load IDs from a database table for selector fields."""
+    if table_exists(dialog.app, table):
+        results = dialog.app.run_db_action(
+            lambda: get_dal().get_all_ids(table),
+            f"Unable to load {table} IDs",
+        )
+        return results or []
+    return []
+
+
+def prepare_db_payload(field_specs: list[dict], data: dict[str, object]) -> dict[str, object]:
+    """! @brief Convert JSON fields to strings for database inserts."""
+    payload: dict[str, object] = {}
+    json_fields = {field["name"] for field in field_specs if field.get("json")}
+    for key, value in data.items():
+        if key in json_fields and value is not None and not isinstance(value, str):
+            payload[key] = json.dumps(value)
+        else:
+            payload[key] = value
+    return payload
+
+
 class JsonRecordDialog(tk.Toplevel):
     """! @brief Dialog for creating JSON-backed task records."""
     def __init__(
@@ -899,12 +950,7 @@ class JsonRecordDialog(tk.Toplevel):
 
         for idx, field in enumerate(self.field_specs):
             ttk.Label(container, text=field["label"]).grid(row=idx, column=0, sticky="w")
-            if field.get("widget") == "text":
-                widget = tk.Text(container, height=3, width=40)
-                widget.grid(row=idx, column=1, sticky="ew", padx=6, pady=2)
-            else:
-                widget = ttk.Entry(container)
-                widget.grid(row=idx, column=1, sticky="ew", padx=6, pady=2)
+            widget = self._build_input_widget(container, field, idx)
             if field.get("auto"):
                 widget.insert(0, "Auto-generated")
                 widget.configure(state="disabled")
@@ -919,6 +965,53 @@ class JsonRecordDialog(tk.Toplevel):
             row=0, column=1, padx=4
         )
 
+    def _build_input_widget(
+        self,
+        container: ttk.Frame,
+        field: dict,
+        row_index: int,
+    ) -> tk.Widget:
+        """! @brief Build the appropriate input widget for a field."""
+        widget_type = field.get("widget")
+        if widget_type == "text":
+            widget = tk.Text(container, height=3, width=40)
+            widget.grid(row=row_index, column=1, sticky="ew", padx=6, pady=2)
+            return widget
+        if widget_type == "select":
+            options = self._get_field_options(field)
+            state = "readonly" if options else "normal"
+            widget = ttk.Combobox(container, values=options, state=state)
+            widget.grid(row=row_index, column=1, sticky="ew", padx=6, pady=2)
+            return widget
+        if widget_type == "multiselect":
+            options = self._get_field_options(field)
+            if not options:
+                widget = ttk.Entry(container)
+                widget.grid(row=row_index, column=1, sticky="ew", padx=6, pady=2)
+                return widget
+            widget = tk.Listbox(
+                container,
+                height=min(6, max(3, len(options))),
+                selectmode="multiple",
+                exportselection=False,
+            )
+            for option in options:
+                widget.insert("end", option)
+            widget.grid(row=row_index, column=1, sticky="ew", padx=6, pady=2)
+            return widget
+        widget = ttk.Entry(container)
+        widget.grid(row=row_index, column=1, sticky="ew", padx=6, pady=2)
+        return widget
+
+    def _get_field_options(self, field: dict) -> list[str]:
+        """! @brief Get options for selector fields."""
+        if field.get("options"):
+            return list(field["options"])
+        options_fn = field.get("options_fn")
+        if callable(options_fn):
+            return list(options_fn(self))
+        return []
+
     def _save(self) -> None:
         """! @brief Validate and submit the JSON record."""
         payload: dict[str, object] = {}
@@ -928,6 +1021,8 @@ class JsonRecordDialog(tk.Toplevel):
             widget = self.inputs[field["name"]]
             if isinstance(widget, tk.Text):
                 value = widget.get("1.0", "end").strip()
+            elif isinstance(widget, tk.Listbox):
+                value = [widget.get(index) for index in widget.curselection()]
             else:
                 value = widget.get().strip()
 
@@ -937,7 +1032,7 @@ class JsonRecordDialog(tk.Toplevel):
                 )
                 return
 
-            if field.get("json") and value:
+            if field.get("json") and value and not isinstance(value, list):
                 parsed = self._parse_json_field(field, value)
                 if parsed is None:
                     return
@@ -967,18 +1062,19 @@ class JsonRecordDialog(tk.Toplevel):
 
 
 class TasksTab(BaseTab):
-    """! @brief Tab for managing task instances stored in JSON."""
+    """! @brief Tab for managing operation instances stored in JSON."""
     def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
         """! @brief Initialize the tasks tab and load records."""
         super().__init__(parent, app)
         self.store = JsonStore(PROJECT_ROOT / "task_instances.json")
+        self.use_db = table_exists(self.app, "task_instances")
         self.records: list[dict] = []
         self._build()
         self.refresh()
 
     def _build(self) -> None:
         """! @brief Build the tasks table layout."""
-        header = ttk.Label(self, text="Tasks", style="Header.TLabel")
+        header = ttk.Label(self, text="Operations", style="Header.TLabel")
         header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
 
         toolbar = ttk.Frame(self)
@@ -988,7 +1084,7 @@ class TasksTab(BaseTab):
         ttk.Button(toolbar, text="Refresh", command=self.refresh).grid(
             row=0, column=0, padx=4
         )
-        ttk.Button(toolbar, text="Add Task", command=self._add_task).grid(
+        ttk.Button(toolbar, text="Add Operation", command=self._add_task).grid(
             row=0, column=1, padx=4
         )
         ttk.Button(toolbar, text="Delete Selected", command=self._delete_selected).grid(
@@ -1015,8 +1111,16 @@ class TasksTab(BaseTab):
         self.grid_rowconfigure(2, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+        column_labels = {
+            "instance_id": "operation_id",
+            "template_id": "task_id",
+            "target_entity_id": "target_entity_id",
+            "scheduled_time": "scheduled_time",
+            "status": "status",
+            "assignee_ids": "assignee_ids",
+        }
         for col in self.tree["columns"]:
-            self.tree.heading(col, text=col)
+            self.tree.heading(col, text=column_labels.get(col, col))
             self.tree.column(col, width=140, anchor="w")
 
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
@@ -1027,7 +1131,7 @@ class TasksTab(BaseTab):
         """! @brief Reload task instances from disk and render them."""
         for item in self.tree.get_children():
             self.tree.delete(item)
-        self.records = self.store.load()
+        self.records = self._load_records()
         for record in self.records:
             self.tree.insert(
                 "",
@@ -1041,7 +1145,28 @@ class TasksTab(BaseTab):
                     self._format_cell(record.get("assignee_ids")),
                 ),
             )
-        self.app.notifications.notify(f"Loaded {len(self.records)} tasks.")
+        self.app.notifications.notify(f"Loaded {len(self.records)} operations.")
+
+    def _load_records(self) -> list[dict]:
+        """! @brief Load task instances from the database or disk."""
+        if not self.use_db:
+            return self.store.load()
+        results = self.app.run_db_action(
+            lambda: get_dal().get_filtered_records(
+                "task_instances",
+                "1=1",
+                (),
+                limit=200,
+                order_by="created_at DESC",
+            ),
+            "Unable to load operations from the database",
+        )
+        if results is None:
+            return self.store.load()
+        for record in results:
+            if "instance_id" not in record and record.get("id"):
+                record["instance_id"] = str(record["id"])
+        return results
 
     def _format_cell(self, value: object) -> str:
         """! @brief Format list/dict values for display in the table."""
@@ -1054,7 +1179,7 @@ class TasksTab(BaseTab):
         JsonRecordDialog(
             self,
             self.app,
-            "Add Task",
+            "Add Operation",
             TASK_INSTANCE_FIELDS,
             self._save_task,
         )
@@ -1063,30 +1188,48 @@ class TasksTab(BaseTab):
         """! @brief Persist a new task record."""
         if not data.get("instance_id"):
             data["instance_id"] = str(uuid4())
-        self.records.append(data)
-        self.store.save(self.records)
-        self.app.notifications.notify("Task added successfully.")
+        if self.use_db:
+            payload = prepare_db_payload(TASK_INSTANCE_FIELDS, data)
+            payload["id"] = payload.pop("instance_id")
+            self.app.run_db_action(
+                lambda: get_dal().insert_record("task_instances", payload),
+                "Unable to save operation",
+            )
+        else:
+            self.records.append(data)
+            self.store.save(self.records)
+        self.app.notifications.notify("Operation added successfully.")
         self.refresh()
 
     def _delete_selected(self) -> None:
         """! @brief Delete selected task instances."""
         selection = self.tree.selection()
         if not selection:
-            self.app.notifications.notify("Select one or more tasks to delete.")
+            self.app.notifications.notify("Select one or more operations to delete.")
             return
         if not messagebox.askyesno(
             "Confirm Delete",
-            f"Delete {len(selection)} selected task(s)?",
+            f"Delete {len(selection)} selected operation(s)?",
         ):
             return
         ids_to_remove = {self.tree.item(item, "values")[0] for item in selection}
-        self.records = [
-            record
-            for record in self.records
-            if record.get("instance_id") not in ids_to_remove
-        ]
-        self.store.save(self.records)
-        self.app.notifications.notify("Tasks deleted.")
+        if self.use_db:
+            for record_id in ids_to_remove:
+                self.app.run_db_action(
+                    lambda record_id=record_id: get_dal().delete_record(
+                        "task_instances",
+                        record_id,
+                    ),
+                    "Unable to delete operation",
+                )
+        else:
+            self.records = [
+                record
+                for record in self.records
+                if record.get("instance_id") not in ids_to_remove
+            ]
+            self.store.save(self.records)
+        self.app.notifications.notify("Operations deleted.")
         self.refresh()
 
     def _import_csv(self) -> None:
@@ -1118,13 +1261,25 @@ class TasksTab(BaseTab):
                     payload = self._parse_csv_row(row, TASK_INSTANCE_FIELDS)
                     if not payload.get("instance_id"):
                         payload["instance_id"] = str(uuid4())
-                    self.records.append(payload)
+                    if self.use_db:
+                        db_payload = prepare_db_payload(TASK_INSTANCE_FIELDS, payload)
+                        db_payload["id"] = db_payload.pop("instance_id")
+                        self.app.run_db_action(
+                            lambda db_payload=db_payload: get_dal().insert_record(
+                                "task_instances",
+                                db_payload,
+                            ),
+                            "Unable to import operation",
+                        )
+                    else:
+                        self.records.append(payload)
                     count += 1
         except Exception as exc:
             self.app.notifications.notify(f"CSV import failed: {exc}")
             return
-        self.store.save(self.records)
-        self.app.notifications.notify(f"Imported {count} task(s).")
+        if not self.use_db:
+            self.store.save(self.records)
+        self.app.notifications.notify(f"Imported {count} operation(s).")
         self.refresh()
 
     def _parse_csv_row(self, row: dict[str, str], fields: list[dict]) -> dict:
@@ -1147,18 +1302,19 @@ class TasksTab(BaseTab):
 
 
 class TaskTemplatesTab(BaseTab):
-    """! @brief Tab for managing task templates stored in JSON."""
+    """! @brief Tab for managing tasks stored in JSON."""
     def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
-        """! @brief Initialize the task templates tab."""
+        """! @brief Initialize the tasks tab."""
         super().__init__(parent, app)
         self.store = JsonStore(PROJECT_ROOT / "task_templates.json")
+        self.use_db = table_exists(self.app, "task_templates")
         self.records: list[dict] = []
         self._build()
         self.refresh()
 
     def _build(self) -> None:
-        """! @brief Build the task templates table layout."""
-        header = ttk.Label(self, text="Task Templates", style="Header.TLabel")
+        """! @brief Build the tasks table layout."""
+        header = ttk.Label(self, text="Tasks", style="Header.TLabel")
         header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
 
         toolbar = ttk.Frame(self)
@@ -1168,7 +1324,7 @@ class TaskTemplatesTab(BaseTab):
         ttk.Button(toolbar, text="Refresh", command=self.refresh).grid(
             row=0, column=0, padx=4
         )
-        ttk.Button(toolbar, text="Add Template", command=self._add_template).grid(
+        ttk.Button(toolbar, text="Add Task", command=self._add_template).grid(
             row=0, column=1, padx=4
         )
         ttk.Button(toolbar, text="Delete Selected", command=self._delete_selected).grid(
@@ -1195,8 +1351,16 @@ class TaskTemplatesTab(BaseTab):
         self.grid_rowconfigure(2, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+        column_labels = {
+            "id": "task_id",
+            "title": "title",
+            "category": "category",
+            "description": "description",
+            "safety_level": "safety_level",
+            "visibility": "visibility",
+        }
         for col in self.tree["columns"]:
-            self.tree.heading(col, text=col)
+            self.tree.heading(col, text=column_labels.get(col, col))
             self.tree.column(col, width=160, anchor="w")
 
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
@@ -1204,10 +1368,10 @@ class TaskTemplatesTab(BaseTab):
         self.tree.configure(yscrollcommand=scrollbar.set)
 
     def refresh(self) -> None:
-        """! @brief Reload task templates from disk and render them."""
+        """! @brief Reload tasks from disk and render them."""
         for item in self.tree.get_children():
             self.tree.delete(item)
-        self.records = self.store.load()
+        self.records = self._load_records()
         for record in self.records:
             self.tree.insert(
                 "",
@@ -1221,9 +1385,25 @@ class TaskTemplatesTab(BaseTab):
                     self._format_cell(record.get("visibility")),
                 ),
             )
-        self.app.notifications.notify(
-            f"Loaded {len(self.records)} task templates."
+        self.app.notifications.notify(f"Loaded {len(self.records)} tasks.")
+
+    def _load_records(self) -> list[dict]:
+        """! @brief Load task templates from the database or disk."""
+        if not self.use_db:
+            return self.store.load()
+        results = self.app.run_db_action(
+            lambda: get_dal().get_filtered_records(
+                "task_templates",
+                "1=1",
+                (),
+                limit=200,
+                order_by="created_at DESC",
+            ),
+            "Unable to load tasks from the database",
         )
+        if results is None:
+            return self.store.load()
+        return results
 
     def _format_cell(self, value: object) -> str:
         """! @brief Format list/dict values for display in the table."""
@@ -1232,45 +1412,62 @@ class TaskTemplatesTab(BaseTab):
         return "" if value is None else str(value)
 
     def _add_template(self) -> None:
-        """! @brief Open the dialog to create a new task template."""
+        """! @brief Open the dialog to create a new task."""
         JsonRecordDialog(
             self,
             self.app,
-            "Add Task Template",
+            "Add Task",
             TASK_TEMPLATE_FIELDS,
             self._save_template,
         )
 
     def _save_template(self, data: dict[str, object]) -> None:
-        """! @brief Persist a new task template record."""
+        """! @brief Persist a new task record."""
         if not data.get("id"):
             data["id"] = str(uuid4())
-        self.records.append(data)
-        self.store.save(self.records)
-        self.app.notifications.notify("Task template added successfully.")
+        if self.use_db:
+            payload = prepare_db_payload(TASK_TEMPLATE_FIELDS, data)
+            self.app.run_db_action(
+                lambda: get_dal().insert_record("task_templates", payload),
+                "Unable to save task",
+            )
+        else:
+            self.records.append(data)
+            self.store.save(self.records)
+        self.app.notifications.notify("Task added successfully.")
         self.refresh()
 
     def _delete_selected(self) -> None:
-        """! @brief Delete selected task templates."""
+        """! @brief Delete selected tasks."""
         selection = self.tree.selection()
         if not selection:
-            self.app.notifications.notify("Select templates to delete.")
+            self.app.notifications.notify("Select tasks to delete.")
             return
         if not messagebox.askyesno(
             "Confirm Delete",
-            f"Delete {len(selection)} selected template(s)?",
+            f"Delete {len(selection)} selected task(s)?",
         ):
             return
         ids_to_remove = {self.tree.item(item, "values")[0] for item in selection}
-        self.records = [
-            record for record in self.records if record.get("id") not in ids_to_remove
-        ]
-        self.store.save(self.records)
-        self.app.notifications.notify("Templates deleted.")
+        if self.use_db:
+            for record_id in ids_to_remove:
+                self.app.run_db_action(
+                    lambda record_id=record_id: get_dal().delete_record(
+                        "task_templates",
+                        record_id,
+                    ),
+                    "Unable to delete task",
+                )
+        else:
+            self.records = [
+                record for record in self.records if record.get("id") not in ids_to_remove
+            ]
+            self.store.save(self.records)
+        self.app.notifications.notify("Tasks deleted.")
         self.refresh()
 
     def _import_csv(self) -> None:
-        """! @brief Import task templates from a CSV file."""
+        """! @brief Import tasks from a CSV file."""
         filename = filedialog.askopenfilename(
             title="Select CSV File",
             filetypes=[("CSV Files", "*.csv")],
@@ -1298,17 +1495,28 @@ class TaskTemplatesTab(BaseTab):
                     payload = self._parse_csv_row(row, TASK_TEMPLATE_FIELDS)
                     if not payload.get("id"):
                         payload["id"] = str(uuid4())
-                    self.records.append(payload)
+                    if self.use_db:
+                        db_payload = prepare_db_payload(TASK_TEMPLATE_FIELDS, payload)
+                        self.app.run_db_action(
+                            lambda db_payload=db_payload: get_dal().insert_record(
+                                "task_templates",
+                                db_payload,
+                            ),
+                            "Unable to import task",
+                        )
+                    else:
+                        self.records.append(payload)
                     count += 1
         except Exception as exc:
             self.app.notifications.notify(f"CSV import failed: {exc}")
             return
-        self.store.save(self.records)
-        self.app.notifications.notify(f"Imported {count} template(s).")
+        if not self.use_db:
+            self.store.save(self.records)
+        self.app.notifications.notify(f"Imported {count} task(s).")
         self.refresh()
 
     def _parse_csv_row(self, row: dict[str, str], fields: list[dict]) -> dict:
-        """! @brief Parse a CSV row into a task template payload."""
+        """! @brief Parse a CSV row into a task payload."""
         payload: dict[str, object] = {}
         field_map = {field["name"]: field for field in fields}
         for key, value in row.items():
@@ -1511,8 +1719,8 @@ class ServiceDaemonApp(tk.Tk):
 
         notebook.add(self.settings_tab, text="Settings")
         notebook.add(self.database_tab, text="Database")
-        notebook.add(self.operations_tab, text="Tasks")
-        notebook.add(self.task_templates_tab, text="Task Templates")
+        notebook.add(self.operations_tab, text="Operations")
+        notebook.add(self.task_templates_tab, text="Tasks")
         notebook.add(self.sql_query_tab, text="SQL Query Execution")
 
         self.applications_menu = tk.Menu(self)
@@ -1532,7 +1740,7 @@ class ServiceDaemonApp(tk.Tk):
 
 
 TASK_TEMPLATE_FIELDS = [
-    {"name": "id", "label": "Template ID", "auto": True},
+    {"name": "id", "label": "Task ID", "auto": True},
     {"name": "title", "label": "Title", "required": True},
     {"name": "category", "label": "Category", "required": True},
     {"name": "description", "label": "Description", "required": True, "widget": "text"},
@@ -1646,15 +1854,35 @@ TASK_TEMPLATE_FIELDS = [
 ]
 
 TASK_INSTANCE_FIELDS = [
-    {"name": "instance_id", "label": "Instance ID", "auto": True},
-    {"name": "template_id", "label": "Template ID", "required": True},
-    {"name": "target_entity_id", "label": "Target Entity ID", "required": True},
-    {"name": "creator_id", "label": "Creator ID", "required": True},
+    {"name": "instance_id", "label": "Operation ID", "auto": True},
+    {
+        "name": "template_id",
+        "label": "Task ID",
+        "required": True,
+        "widget": "select",
+        "options_fn": lambda dialog: load_task_ids(dialog),
+    },
+    {
+        "name": "target_entity_id",
+        "label": "Target Entity ID",
+        "required": True,
+        "widget": "select",
+        "options_fn": lambda dialog: load_table_ids(dialog, "bookings"),
+    },
+    {
+        "name": "creator_id",
+        "label": "Creator ID",
+        "required": True,
+        "widget": "select",
+        "options_fn": lambda dialog: load_table_ids(dialog, "users"),
+    },
     {
         "name": "assignee_ids",
-        "label": "Assignee IDs (JSON)",
+        "label": "Assignee IDs",
         "json": True,
         "required": True,
+        "widget": "multiselect",
+        "options_fn": lambda dialog: load_table_ids(dialog, "users"),
     },
     {"name": "scheduled_time", "label": "Scheduled Time", "required": True},
     {
