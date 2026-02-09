@@ -166,13 +166,7 @@ Service-daemon/
 ├── docs/
 │   └── ... documentation
 │
-├── gui_app.py            # GUI launcher
-├── gui_app/              # GUI package
-│   ├── __init__.py
-│   ├── dialogs.py
-│   ├── main.py
-│   ├── tabs.py
-│   └── utils.py
+├── gui_app.py            # Desktop GUI
 ├── gui_app_info.json     # Info tab configuration
 ├── init_database.py      # Convenience init wrapper
 ├── sql_setup/            # Optional SQL scripts
