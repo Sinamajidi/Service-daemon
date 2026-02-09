@@ -37,11 +37,11 @@ class AppSettings:
         return cls(
             env_path=PROJECT_ROOT / ".env",
             gui_settings_path=PROJECT_ROOT / "gui_settings.json",
-            db_host=DB_CONFIG["host"],
-            db_port=DB_CONFIG["port"],
-            db_name=DB_CONFIG["database"],
-            db_user=DB_CONFIG["user"],
-            db_password=DB_CONFIG["password"],
+            db_host=DB_CONFIG["DB_HOST"],
+            db_port=DB_CONFIG["DB_PORT"],
+            db_name=DB_CONFIG["DB_NAME"],
+            db_user=DB_CONFIG["DB_USER"],
+            db_password=DB_CONFIG["DB_PASSWORD"],
             refresh_interval_seconds=30,
         )
 
