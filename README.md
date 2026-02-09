@@ -98,8 +98,6 @@ python test_setup.py
 
 If these complete without errors, your setup is correct.
 
----
-
 ### 10) (Optional) Run the GUI
 
 ```bash
