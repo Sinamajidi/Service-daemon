@@ -93,6 +93,8 @@ This creates sample data (buildings, units, tenants, bookings) and prints result
 
 ```bash
 python gui_app.py
+# or
+python -m gui_app
 ```
 
 The GUI lets you test DB connectivity and inspect booking data in a desktop interface.
@@ -169,7 +171,9 @@ The repository includes `examples/example_usage.py` for a full walkthrough of re
 - `test_setup.py`: larger end-to-end validation
 - `init_database.py`: convenience wrapper for initializing the schema
 - `setup_postgresql.sh`: WSL/Linux PostgreSQL setup automation
-- `sql_setup/`: optional SQL scripts (loaded via the GUI SQL panel)
+- `sql_setup/`: optional SQL scripts (legacy)
+- `manual_sql/`: SQL files exposed in the GUI SQL Query Execution tab
+- `gui_app_info.json`: Info tab content for the GUI
 
 ---
 
@@ -188,15 +192,25 @@ The repository includes `examples/example_usage.py` for a full walkthrough of re
 │   └── example_usage.py
 ├── init_database.py
 ├── gui_app.py
+├── gui_app/
+│   ├── __init__.py
+│   ├── dialogs.py
+│   ├── main.py
+│   ├── tabs.py
+│   └── utils.py
 ├── diagnostic_test.py
 ├── sql_setup/
 │   └── task_tables.sql
+├── manual_sql/
+│   ├── README.md
+│   └── task_templates_seed.sql
+├── gui_app_info.json
 └── test_setup.py
 ```
 
 ---
 
-## Need more detail?
+## Additional documentation
 
-- Full setup guide: `GETTING_STARTED.md`
+- Setup guide: `GETTING_STARTED.md`
 - PostgreSQL walkthrough: `POSTGRESQL_SETUP_GUIDE.md`

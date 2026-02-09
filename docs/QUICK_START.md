@@ -38,6 +38,8 @@ python examples/example_usage.py
 
 ```bash
 python gui_app.py
+# or
+python -m gui_app
 ```
 
 ## Minimal code sample
