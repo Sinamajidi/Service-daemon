@@ -28,13 +28,6 @@ from config import DB_CONFIG
 
 
 SQL_EXECUTION_DIR = PROJECT_ROOT / "manual_sql"
-INFO_CONFIG_PATH = PROJECT_ROOT / "gui_app_info.json"
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -251,6 +244,55 @@ def is_valid_uuid(value: str) -> bool:
         return False
 
 
+def is_valid_uuid(value: str) -> bool:
+    """! @brief Validate that a string is a valid UUID."""
+    try:
+        UUID(str(value))
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+class PostgresServiceManager:
+    """! @brief Cross-platform PostgreSQL service helper."""
+    def run(self, action: str) -> tuple[bool, str]:
+        """! @brief Run the service command and return status."""
+        commands: list[list[str]] = []
+        system = platform.system().lower()
+        if system == "windows":
+            commands.append(["sc", action, "postgresql"])
+        elif system == "darwin":
+            commands.append(["brew", "services", action, "postgresql"])
+        else:
+            commands.append(["systemctl", action, "postgresql"])
+            commands.append(["service", "postgresql", action])
+
+        errors: list[str] = []
+        for cmd in commands:
+            try:
+                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                message = result.stdout.strip() or f"PostgreSQL {action} command executed."
+                return True, message
+            except (OSError, subprocess.CalledProcessError) as exc:
+                detail = getattr(exc, "stderr", None) or str(exc)
+                errors.append(detail.strip())
+
+        error_summary = "; ".join(error for error in errors if error)
+        message = (
+            error_summary
+            or f"Unable to {action} PostgreSQL service. Check system permissions."
+        )
+        return False, message
+
+    def start(self) -> tuple[bool, str]:
+        """! @brief Start PostgreSQL service."""
+        return self.run("start")
+
+    def stop(self) -> tuple[bool, str]:
+        """! @brief Stop PostgreSQL service."""
+        return self.run("stop")
+
+
 class BaseTab(ttk.Frame):
     """! @brief Base class for tab content frames."""
     def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
@@ -340,6 +382,8 @@ class SettingsTab(BaseTab):
 
         self.after(200, self._test_connection)
 
+        self.after(200, self._test_connection)
+
     def _save(self) -> None:
         """! @brief Persist settings and refresh the application state."""
         self.app.settings.db_host = self.host_var.get().strip()
@@ -390,12 +434,27 @@ class SettingsTab(BaseTab):
             self.connection_status_label.configure(fg="#b91c1c")
             if not handled:
                 self.app.notifications.notify("Database connection failed.")
-                logger.exception("Database connection failed", exc_info=exc)
             return
         self.connection_status_var.set("Connection OK")
         self.connection_status_label.configure(fg="#15803d")
         self.app.notifications.notify("Database connection OK.")
 
+    def _start_postgres(self) -> None:
+        """! @brief Start the PostgreSQL service."""
+        self._run_service_command("start")
+
+    def _stop_postgres(self) -> None:
+        """! @brief Stop the PostgreSQL service."""
+        self._run_service_command("stop")
+
+    def _run_service_command(self, action: str) -> None:
+        """! @brief Run a platform-appropriate service command."""
+        success, message = self.app.service_manager.run(action)
+        if success:
+            self.service_status_var.set(f"Service status: {action.capitalize()} OK")
+        else:
+            self.service_status_var.set(f"Service status: {action.capitalize()} failed")
+        self.app.notifications.notify(message)
 
 
 class DatabaseTab(BaseTab):
@@ -557,7 +616,6 @@ class DatabaseTab(BaseTab):
         except Exception as exc:
             if not self.app.handle_db_exception(exc):
                 self.app.notifications.notify(f"Insert failed: {exc}")
-                logger.exception("Insert failed", exc_info=exc)
             return
         self.app.notifications.notify("Record added successfully.")
         self.refresh()
@@ -587,7 +645,6 @@ class DatabaseTab(BaseTab):
             except Exception as exc:
                 if not self.app.handle_db_exception(exc):
                     self.app.notifications.notify(f"Delete failed: {exc}")
-                    logger.exception("Delete failed", exc_info=exc)
                 return
         self.app.notifications.notify(f"Deleted {deleted} record(s).")
         self.refresh()
@@ -628,45 +685,17 @@ class DatabaseTab(BaseTab):
         except Exception as exc:
             if not self.app.handle_db_exception(exc):
                 self.app.notifications.notify(f"CSV import failed: {exc}")
-                logger.exception("CSV import failed", exc_info=exc)
             return
         self.app.notifications.notify(f"Imported {count} record(s).")
         self.refresh()
 
     def _build_field_specs(self, table: str, columns: list[str]) -> list[dict]:
         """! @brief Build field specifications for record dialogs."""
-        enum_options = {
-            "role": ["tenant", "manager", "provider_staff", "admin"],
-            "status": [
-                "requested",
-                "scheduled",
-                "assigned",
-                "in_progress",
-                "completed",
-                "cancelled",
-            ],
-            "priority": ["low", "normal", "high", "emergency"],
-            "safety_level": ["low", "medium", "high"],
-        }
         field_specs = []
         for column in columns:
             field = {"name": column, "label": column}
-            data_type = self.column_types.get(column)
-            if column in {"id", "created_at", "updated_at"}:
+            if column == "id":
                 field["auto"] = True
-            if data_type in {"timestamp with time zone", "timestamp without time zone"}:
-                field["label"] = f"{column} (YYYY-MM-DD HH:MM:SS+00)"
-                field["placeholder"] = "YYYY-MM-DD HH:MM:SS+00"
-            elif data_type == "date":
-                field["label"] = f"{column} (YYYY-MM-DD)"
-                field["placeholder"] = "YYYY-MM-DD"
-            elif data_type == "time without time zone":
-                field["label"] = f"{column} (HH:MM:SS)"
-                field["placeholder"] = "HH:MM:SS"
-            if data_type == "boolean":
-                field["options"] = ["true", "false"]
-            if column in enum_options:
-                field["options"] = enum_options[column]
             if table == "users" and column == "password_hash":
                 field["label"] = "password"
                 field["secret"] = True
@@ -718,22 +747,12 @@ class RecordEditorDialog(tk.Toplevel):
 
         field_map = {field["name"]: field for field in self.field_specs}
         for idx, (key, value) in enumerate(self.data.items()):
-            field = field_map.get(key, {"name": key, "label": key})
             label = "password" if self.table == "users" and key == "password_hash" else key
-            label = field.get("label", label)
             ttk.Label(container, text=label).grid(row=idx, column=0, sticky="w")
-            entry: tk.Widget
-            if field.get("options"):
-                entry = ttk.Combobox(
-                    container,
-                    values=field["options"],
-                    state="readonly",
-                )
-            else:
-                entry_kwargs = {}
-                if self.table == "users" and key == "password_hash":
-                    entry_kwargs["show"] = "•"
-                entry = ttk.Entry(container, **entry_kwargs)
+            entry_kwargs = {}
+            if self.table == "users" and key == "password_hash":
+                entry_kwargs["show"] = "•"
+            entry = ttk.Entry(container, **entry_kwargs)
             if not (self.table == "users" and key == "password_hash"):
                 entry.insert(0, "" if value is None else str(value))
             entry.grid(row=idx, column=1, sticky="ew", padx=6, pady=2)
@@ -810,24 +829,13 @@ class AddRecordDialog(tk.Toplevel):
             name = field["name"]
             label = field.get("label", name)
             ttk.Label(container, text=label).grid(row=idx, column=0, sticky="w")
-            entry: tk.Widget
-            if field.get("options"):
-                entry = ttk.Combobox(
-                    container,
-                    values=field["options"],
-                    state="readonly",
-                )
-            else:
-                entry_kwargs = {}
-                if field.get("secret"):
-                    entry_kwargs["show"] = "•"
-                entry = ttk.Entry(container, **entry_kwargs)
+            entry_kwargs = {}
+            if field.get("secret"):
+                entry_kwargs["show"] = "•"
+            entry = ttk.Entry(container, **entry_kwargs)
             if field.get("auto"):
                 entry.insert(0, "Auto-generated")
                 entry.configure(state="disabled")
-            elif field.get("placeholder") and isinstance(entry, ttk.Entry):
-                entry.insert(0, field["placeholder"])
-                self.placeholders[name] = field["placeholder"]
             entry.grid(row=idx, column=1, sticky="ew", padx=6, pady=2)
             self.entries[name] = entry
 
@@ -847,11 +855,7 @@ class AddRecordDialog(tk.Toplevel):
             name = field["name"]
             if field.get("auto"):
                 continue
-            raw_value = self.entries[name].get().strip()
-            placeholder = self.placeholders.get(name)
-            if placeholder and raw_value == placeholder:
-                raw_value = ""
-            value = raw_value or None
+            value = self.entries[name].get().strip() or None
             payload[name] = value
         self.on_save(payload)
         self.destroy()
@@ -1449,64 +1453,6 @@ class SQLQueryTab(BaseTab):
             if self.app.handle_db_exception(exc):
                 return
             self._append_log(f"{type(exc).__name__}: {exc}", is_error=True)
-            logger.exception("SQL execution failed", exc_info=exc)
-
-
-class InfoTab(BaseTab):
-    """! @brief Tab for displaying application information."""
-    def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
-        super().__init__(parent, app)
-        self._build()
-
-    def _build(self) -> None:
-        header = ttk.Label(self, text="Info", style="Header.TLabel")
-        header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
-
-        container = ttk.Frame(self)
-        container.grid(row=1, column=0, sticky="nsew", padx=12, pady=6)
-        container.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
-        self.grid_columnconfigure(0, weight=1)
-
-        info_text = tk.Text(container, wrap="word", height=18)
-        info_text.grid(row=0, column=0, sticky="nsew", padx=6, pady=6)
-        info_text.configure(state="disabled")
-
-        info = self._load_info()
-        info_text.configure(state="normal")
-        info_text.insert("1.0", self._format_info(info))
-        info_text.configure(state="disabled")
-
-    def _load_info(self) -> dict:
-        if not INFO_CONFIG_PATH.exists():
-            return {"title": "Service Daemon", "description": "Info file missing."}
-        try:
-            return json.loads(INFO_CONFIG_PATH.read_text())
-        except json.JSONDecodeError:
-            return {"title": "Service Daemon", "description": "Invalid info file."}
-
-    def _format_info(self, info: dict) -> str:
-        lines = []
-        title = info.get("title")
-        if title:
-            lines.append(title)
-            lines.append("=" * len(title))
-        description = info.get("description")
-        if description:
-            lines.append(description)
-            lines.append("")
-        authors = info.get("authors")
-        if authors:
-            lines.append("Authors:")
-            for author in authors:
-                lines.append(f"- {author}")
-            lines.append("")
-        metadata = info.get("metadata")
-        if isinstance(metadata, dict):
-            lines.append("Details:")
-            for key, value in metadata.items():
-                lines.append(f"- {key}: {value}")
-        return "\n".join(lines).strip() + "\n"
 
 
 class ServiceDaemonApp(tk.Tk):
@@ -1518,6 +1464,7 @@ class ServiceDaemonApp(tk.Tk):
         self.geometry("1200x720")
         self.minsize(980, 640)
         CorporateStyle(self)
+        self.service_manager = PostgresServiceManager()
 
         self.settings = AppSettings.from_defaults()
         self.settings.load()
@@ -1532,10 +1479,13 @@ class ServiceDaemonApp(tk.Tk):
         if not connection_error:
             return False
         if notify:
-            self.notifications.notify(
-                "Database connection error detected. Start PostgreSQL and retry."
-            )
-        logger.exception("Database connection error", exc_info=exc)
+            self.notifications.notify("Database connection error detected.")
+        if messagebox.askyesno(
+            "Database connection",
+            "PostgreSQL appears to be stopped. Start the service now?",
+        ):
+            success, message = self.service_manager.start()
+            self.notifications.notify(message)
         return True
 
     def run_db_action(self, action, failure_message: str):
@@ -1545,7 +1495,6 @@ class ServiceDaemonApp(tk.Tk):
         except Exception as exc:
             if not self.handle_db_exception(exc):
                 self.notifications.notify(f"{failure_message}: {exc}")
-                logger.exception(failure_message, exc_info=exc)
             return None
 
     def _build_layout(self) -> None:
@@ -1569,14 +1518,12 @@ class ServiceDaemonApp(tk.Tk):
         self.operations_tab = TasksTab(notebook, self)
         self.task_templates_tab = TaskTemplatesTab(notebook, self)
         self.sql_query_tab = SQLQueryTab(notebook, self)
-        self.info_tab = InfoTab(notebook, self)
 
         notebook.add(self.settings_tab, text="Settings")
         notebook.add(self.database_tab, text="Database")
         notebook.add(self.operations_tab, text="Tasks")
         notebook.add(self.task_templates_tab, text="Task Templates")
         notebook.add(self.sql_query_tab, text="SQL Query Execution")
-        notebook.add(self.info_tab, text="Info")
 
         self.applications_menu = tk.Menu(self)
         self.config(menu=self.applications_menu)
