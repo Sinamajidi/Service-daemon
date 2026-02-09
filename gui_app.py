@@ -34,11 +34,15 @@ class AppSettings:
 
     @classmethod
     def from_defaults(cls) -> "AppSettings":
+        try:
+            db_port = int(DB_CONFIG["DB_PORT"])
+        except (TypeError, ValueError):
+            db_port = 5432
         return cls(
             env_path=PROJECT_ROOT / ".env",
             gui_settings_path=PROJECT_ROOT / "gui_settings.json",
             db_host=DB_CONFIG["DB_HOST"],
-            db_port=DB_CONFIG["DB_PORT"],
+            db_port=db_port,
             db_name=DB_CONFIG["DB_NAME"],
             db_user=DB_CONFIG["DB_USER"],
             db_password=DB_CONFIG["DB_PASSWORD"],
@@ -64,7 +68,7 @@ class AppSettings:
             key, value = line.split("=", 1)
             values[key.strip()] = value.strip()
         self.db_host = values.get("DB_HOST", self.db_host)
-        self.db_port = int(values.get("DB_PORT", self.db_port))
+        self.db_port = self._safe_int(values.get("DB_PORT"), self.db_port)
         self.db_name = values.get("DB_NAME", self.db_name)
         self.db_user = values.get("DB_USER", self.db_user)
         self.db_password = values.get("DB_PASSWORD", self.db_password)
@@ -80,9 +84,13 @@ class AppSettings:
         self.env_path.write_text("\n".join(content) + "\n")
 
     def _load_gui_settings(self) -> None:
-        data = json.loads(self.gui_settings_path.read_text())
-        self.refresh_interval_seconds = int(
-            data.get("refresh_interval_seconds", self.refresh_interval_seconds)
+        try:
+            data = json.loads(self.gui_settings_path.read_text())
+        except (json.JSONDecodeError, OSError):
+            return
+        self.refresh_interval_seconds = self._safe_int(
+            data.get("refresh_interval_seconds"),
+            self.refresh_interval_seconds,
         )
 
     def _save_gui_settings(self) -> None:
@@ -90,6 +98,13 @@ class AppSettings:
             "refresh_interval_seconds": self.refresh_interval_seconds,
         }
         self.gui_settings_path.write_text(json.dumps(data, indent=2) + "\n")
+
+    @staticmethod
+    def _safe_int(value: str | int | None, default: int) -> int:
+        try:
+            return int(value) if value is not None else default
+        except (TypeError, ValueError):
+            return default
 
 
 class NotificationCenter:
@@ -241,13 +256,20 @@ class SettingsTab(BaseTab):
 
     def _save(self) -> None:
         self.app.settings.db_host = self.host_var.get().strip()
-        self.app.settings.db_port = int(self.port_var.get().strip() or 0)
+        try:
+            self.app.settings.db_port = int(self.port_var.get().strip())
+        except ValueError:
+            self.app.notifications.notify("Database port must be a number.")
+            return
         self.app.settings.db_name = self.name_var.get().strip()
         self.app.settings.db_user = self.user_var.get().strip()
         self.app.settings.db_password = self.password_var.get().strip()
-        self.app.settings.refresh_interval_seconds = max(
-            5, int(self.refresh_var.get().strip() or 30)
-        )
+        try:
+            refresh_interval = int(self.refresh_var.get().strip())
+        except ValueError:
+            self.app.notifications.notify("Refresh interval must be a number.")
+            return
+        self.app.settings.refresh_interval_seconds = max(5, refresh_interval)
         self.app.settings.save()
         self.app.notifications.notify("Settings saved. Restart to apply DB changes.")
         self.app.operations_tab.update_refresh_interval()
@@ -315,7 +337,11 @@ class DatabaseTab(BaseTab):
             WHERE table_schema = 'public'
             ORDER BY table_name
         """
-        results = self.dal.execute_custom_query(query, fetch="all")
+        try:
+            results = self.dal.execute_custom_query(query, fetch="all")
+        except Exception as exc:
+            self.app.notifications.notify(f"Unable to load tables: {exc}")
+            return []
         return [row["table_name"] for row in results] if results else []
 
     def _get_columns(self, table: str) -> list[str]:
@@ -325,7 +351,11 @@ class DatabaseTab(BaseTab):
             WHERE table_schema = 'public' AND table_name = %s
             ORDER BY ordinal_position
         """
-        results = self.dal.execute_custom_query(query, (table,), fetch="all")
+        try:
+            results = self.dal.execute_custom_query(query, (table,), fetch="all")
+        except Exception as exc:
+            self.app.notifications.notify(f"Unable to load columns: {exc}")
+            return []
         return [row["column_name"] for row in results] if results else []
 
     def refresh(self) -> None:
@@ -624,6 +654,9 @@ class ServiceDaemonApp(tk.Tk):
         notebook = ttk.Notebook(content)
         notebook.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
 
+        self.notifications = NotificationCenter(content)
+        self.notifications.frame.grid(row=1, column=0, sticky="ew")
+
         self.settings_tab = SettingsTab(notebook, self)
         self.database_tab = DatabaseTab(notebook, self)
         self.operations_tab = OperationsTab(notebook, self)
@@ -631,9 +664,6 @@ class ServiceDaemonApp(tk.Tk):
         notebook.add(self.settings_tab, text="Settings")
         notebook.add(self.database_tab, text="Database")
         notebook.add(self.operations_tab, text="Operations")
-
-        self.notifications = NotificationCenter(content)
-        self.notifications.frame.grid(row=1, column=0, sticky="ew")
 
         self.applications_menu = tk.Menu(self)
         self.config(menu=self.applications_menu)
