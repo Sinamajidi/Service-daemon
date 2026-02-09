@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""
-Database Initialization Script
+"""! @file db_init.py
+@brief Database initialization entry point.
+
 Run this script to initialize the database.
 
 Usage:
-    python database/init_db.py
-    
+    python database/db_init.py
+
 Or from anywhere:
-    python -m database.init_db
+    python -m database.db_init
 """
 
 import sys
@@ -73,7 +74,9 @@ def drop_all_tables(db_conf) -> None:
 
 
 class DatabaseInitializer:
+    """! @brief Initializes the database schema and optional reset."""
     def __init__(self, db_config: dict):
+        """! @brief Store database configuration for initialization."""
         self.db_host = db_config["DB_HOST"]
         self.db_port = db_config["DB_PORT"]
         self.db_name = db_config["DB_NAME"]
@@ -88,12 +91,11 @@ class DatabaseInitializer:
         }
     
     def initialize(self, schema_file_path: str, drop_if_exists: bool = True):
-        """
-        Initialize the database with the schema.
-        
+        """! @brief Initialize the database schema.
+
         Args:
-            schema_file_path: Path to the SQL schema file
-            drop_if_exists: If True, drop all existing tables before creating new ones
+            schema_file_path: Path to the SQL schema file.
+            drop_if_exists: If True, drop all existing tables before creating new ones.
         """
         if drop_if_exists:
             print("Dropping existing tables...")
@@ -105,7 +107,7 @@ class DatabaseInitializer:
 
 
 def main():
-    """Initialize the database."""
+    """! @brief Initialize the database from the default schema file."""
     # Get the schema file path (relative to project root)
     project_root = Path(__file__).parent.parent
     schema_file = project_root / 'database' / 'schema.sql'

@@ -1,4 +1,8 @@
 #!/bin/bash
+##! @file setup_postgresql.sh
+##  @brief PostgreSQL quick setup script for WSL/Linux.
+##
+##  This script automates PostgreSQL installation and setup.
 # PostgreSQL Quick Setup Script for WSL/Linux
 # This script automates the PostgreSQL installation and setup
 

@@ -1,3 +1,7 @@
+/*! \file task_tables.sql
+ *  \brief Additional task and operations tables for the service daemon.
+ */
+
 CREATE TABLE IF NOT EXISTS task_templates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   title text NOT NULL,

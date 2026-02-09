@@ -1,6 +1,7 @@
-"""
-Configuration file for database settings.
-Can be customized based on environment (development, production, etc.)
+"""! @file config.py
+@brief Configuration defaults for database connections and application settings.
+
+This module centralizes configuration values and environment overrides.
 """
 
 import os

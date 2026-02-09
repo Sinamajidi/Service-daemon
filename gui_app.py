@@ -1,5 +1,6 @@
-"""
-Desktop GUI Application (Tkinter)
+"""! @file gui_app.py
+@brief Desktop GUI application (Tkinter) for the service daemon.
+
 Provides a corporative, tabbed interface for settings, database, and operations.
 """
 
@@ -29,6 +30,7 @@ SQL_SCRIPTS_DIR = PROJECT_ROOT / "sql_setup"
 
 @dataclass
 class AppSettings:
+    """! @brief Persisted GUI and database connection settings."""
     env_path: Path
     gui_settings_path: Path
     db_host: str
@@ -40,6 +42,7 @@ class AppSettings:
 
     @classmethod
     def from_defaults(cls) -> "AppSettings":
+        """! @brief Build settings using defaults and config overrides."""
         try:
             db_port = int(DB_CONFIG["DB_PORT"])
         except (TypeError, ValueError):
@@ -56,16 +59,19 @@ class AppSettings:
         )
 
     def load(self) -> None:
+        """! @brief Load settings from the environment and GUI settings files."""
         if self.env_path.exists():
             self._load_env_file()
         if self.gui_settings_path.exists():
             self._load_gui_settings()
 
     def save(self) -> None:
+        """! @brief Persist settings to disk."""
         self._save_env_file()
         self._save_gui_settings()
 
     def _load_env_file(self) -> None:
+        """! @brief Load DB settings from the .env file."""
         values = {}
         for line in self.env_path.read_text().splitlines():
             line = line.strip()
@@ -80,6 +86,7 @@ class AppSettings:
         self.db_password = values.get("DB_PASSWORD", self.db_password)
 
     def _save_env_file(self) -> None:
+        """! @brief Write DB settings to the .env file."""
         content = [
             f"DB_HOST={self.db_host}",
             f"DB_PORT={self.db_port}",
@@ -90,6 +97,7 @@ class AppSettings:
         self.env_path.write_text("\n".join(content) + "\n")
 
     def _load_gui_settings(self) -> None:
+        """! @brief Load GUI-only settings from the settings JSON file."""
         try:
             data = json.loads(self.gui_settings_path.read_text())
         except (json.JSONDecodeError, OSError):
@@ -100,6 +108,7 @@ class AppSettings:
         )
 
     def _save_gui_settings(self) -> None:
+        """! @brief Persist GUI-only settings to the settings JSON file."""
         data = {
             "refresh_interval_seconds": self.refresh_interval_seconds,
         }
@@ -107,6 +116,7 @@ class AppSettings:
 
     @staticmethod
     def _safe_int(value: str | int | None, default: int) -> int:
+        """! @brief Convert a value to int, falling back to a default."""
         try:
             return int(value) if value is not None else default
         except (TypeError, ValueError):
@@ -114,7 +124,9 @@ class AppSettings:
 
 
 class NotificationCenter:
+    """! @brief Displays status notifications and transient toasts."""
     def __init__(self, parent: tk.Widget) -> None:
+        """! @brief Create the notification widget container."""
         self.frame = ttk.Frame(parent)
         self.frame.grid_columnconfigure(0, weight=1)
         self.message_var = tk.StringVar(value="Ready.")
@@ -127,11 +139,13 @@ class NotificationCenter:
         self.message_label.grid(row=0, column=0, sticky="ew")
 
     def notify(self, message: str) -> None:
+        """! @brief Update the status message and show a toast."""
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.message_var.set(f"[{timestamp}] {message}")
         self._show_toast(message)
 
     def _show_toast(self, message: str) -> None:
+        """! @brief Display a transient toast notification."""
         toast = tk.Toplevel(self.frame)
         toast.overrideredirect(True)
         toast.attributes("-topmost", True)
@@ -156,12 +170,15 @@ class NotificationCenter:
 
 
 class CorporateStyle:
+    """! @brief Apply consistent corporate styling for widgets."""
     def __init__(self, root: tk.Tk) -> None:
+        """! @brief Build the style configuration for the UI."""
         self.style = ttk.Style(root)
         self.root = root
         self._configure()
 
     def _configure(self) -> None:
+        """! @brief Configure style rules for the application."""
         self.style.theme_use("clam")
         self.root.configure(bg="#f3f5f8")
         self.style.configure("TFrame", background="#f3f5f8")
@@ -217,17 +234,22 @@ class CorporateStyle:
 
 
 class BaseTab(ttk.Frame):
+    """! @brief Base class for tab content frames."""
     def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
+        """! @brief Initialize the tab with a parent notebook and app context."""
         super().__init__(parent)
         self.app = app
 
 
 class SettingsTab(BaseTab):
+    """! @brief Tab for database and GUI settings."""
     def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
+        """! @brief Build the settings tab UI."""
         super().__init__(parent, app)
         self._build()
 
     def _build(self) -> None:
+        """! @brief Construct the settings form layout."""
         header = ttk.Label(self, text="Settings", style="Header.TLabel")
         header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
 
@@ -316,6 +338,7 @@ class SettingsTab(BaseTab):
         )
 
     def _save(self) -> None:
+        """! @brief Persist settings and refresh the application state."""
         self.app.settings.db_host = self.host_var.get().strip()
         try:
             self.app.settings.db_port = int(self.port_var.get().strip())
@@ -336,6 +359,7 @@ class SettingsTab(BaseTab):
         self._test_connection()
 
     def _reload(self) -> None:
+        """! @brief Reload settings from disk and refresh the form."""
         self.app.settings.load()
         self.host_var.set(self.app.settings.db_host)
         self.port_var.set(str(self.app.settings.db_port))
@@ -347,6 +371,7 @@ class SettingsTab(BaseTab):
         self._test_connection()
 
     def _test_connection(self) -> None:
+        """! @brief Attempt a direct database connection with current settings."""
         import psycopg2
 
         try:
@@ -368,12 +393,15 @@ class SettingsTab(BaseTab):
         self.app.notifications.notify("Database connection OK.")
 
     def _start_postgres(self) -> None:
+        """! @brief Start the PostgreSQL service."""
         self._run_service_command("start")
 
     def _stop_postgres(self) -> None:
+        """! @brief Stop the PostgreSQL service."""
         self._run_service_command("stop")
 
     def _run_service_command(self, action: str) -> None:
+        """! @brief Run a platform-appropriate service command."""
         commands: list[list[str]] = []
         system = platform.system().lower()
         if system == "windows":
@@ -404,13 +432,16 @@ class SettingsTab(BaseTab):
 
 
 class DatabaseTab(BaseTab):
+    """! @brief Tab for browsing and editing database tables."""
     def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
+        """! @brief Initialize the database tab and load table metadata."""
         super().__init__(parent, app)
         self.dal = get_dal()
         self.columns: list[str] = []
         self._build()
 
     def _build(self) -> None:
+        """! @brief Build the database browsing layout."""
         header = ttk.Label(self, text="Database", style="Header.TLabel")
         header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
 
@@ -458,6 +489,7 @@ class DatabaseTab(BaseTab):
         self.refresh()
 
     def _get_table_names(self) -> list[str]:
+        """! @brief Fetch available table names from the database."""
         query = """
             SELECT table_name
             FROM information_schema.tables
@@ -472,6 +504,7 @@ class DatabaseTab(BaseTab):
         return [row["table_name"] for row in results] if results else []
 
     def _get_columns(self, table: str) -> list[str]:
+        """! @brief Fetch column names for a selected table."""
         query = """
             SELECT column_name
             FROM information_schema.columns
@@ -486,6 +519,7 @@ class DatabaseTab(BaseTab):
         return [row["column_name"] for row in results] if results else []
 
     def refresh(self) -> None:
+        """! @brief Refresh the table listing and data view."""
         table = self.table_var.get()
         try:
             self.columns = self._get_columns(table)
@@ -504,6 +538,7 @@ class DatabaseTab(BaseTab):
             self.app.notifications.notify(f"Database load failed: {exc}")
 
     def _edit_selected(self) -> None:
+        """! @brief Open an editor for the selected row."""
         selection = self.tree.selection()
         if not selection:
             self.app.notifications.notify("Select a row to edit.")
@@ -516,6 +551,7 @@ class DatabaseTab(BaseTab):
         RecordEditorDialog(self, self.app, self.table_var.get(), data, self.refresh)
 
     def _add_entry(self) -> None:
+        """! @brief Open a dialog to add a new record."""
         if not self.columns:
             self.app.notifications.notify("Load a table before adding entries.")
             return
@@ -528,6 +564,7 @@ class DatabaseTab(BaseTab):
         )
 
     def _insert_record(self, data: dict[str, str | None]) -> None:
+        """! @brief Insert a new record and refresh the view."""
         cleaned = {key: value for key, value in data.items() if value not in (None, "")}
         try:
             get_dal().insert_record(self.table_var.get(), cleaned)
@@ -538,6 +575,7 @@ class DatabaseTab(BaseTab):
         self.refresh()
 
     def _delete_selected(self) -> None:
+        """! @brief Delete the selected record(s) from the table."""
         selection = self.tree.selection()
         if not selection:
             self.app.notifications.notify("Select one or more rows to delete.")
@@ -565,6 +603,7 @@ class DatabaseTab(BaseTab):
         self.refresh()
 
     def _import_csv(self) -> None:
+        """! @brief Import records from a CSV file into the selected table."""
         filename = filedialog.askopenfilename(
             title="Select CSV File",
             filetypes=[("CSV Files", "*.csv")],
@@ -602,6 +641,7 @@ class DatabaseTab(BaseTab):
 
 
 class RecordEditorDialog(tk.Toplevel):
+    """! @brief Dialog for editing a single database record."""
     def __init__(
         self,
         parent: tk.Widget,
@@ -610,6 +650,7 @@ class RecordEditorDialog(tk.Toplevel):
         data: dict,
         on_save,
     ) -> None:
+        """! @brief Initialize the record editor dialog."""
         super().__init__(parent)
         self.app = app
         self.table = table
@@ -620,6 +661,7 @@ class RecordEditorDialog(tk.Toplevel):
         self._build()
 
     def _build(self) -> None:
+        """! @brief Build the form inputs for editing."""
         container = ttk.Frame(self)
         container.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
         self.grid_columnconfigure(0, weight=1)
@@ -644,6 +686,7 @@ class RecordEditorDialog(tk.Toplevel):
         )
 
     def _save(self) -> None:
+        """! @brief Persist edits back to the database."""
         updated = {}
         for key, entry in self.entries.items():
             if key == "id":
@@ -663,6 +706,7 @@ class RecordEditorDialog(tk.Toplevel):
 
 
 class AddRecordDialog(tk.Toplevel):
+    """! @brief Dialog for adding a new database record."""
     def __init__(
         self,
         parent: tk.Widget,
@@ -671,6 +715,7 @@ class AddRecordDialog(tk.Toplevel):
         columns: list[str],
         on_save,
     ) -> None:
+        """! @brief Initialize the add-record dialog."""
         super().__init__(parent)
         self.app = app
         self.columns = columns
@@ -680,6 +725,7 @@ class AddRecordDialog(tk.Toplevel):
         self._build()
 
     def _build(self) -> None:
+        """! @brief Build the form inputs for a new record."""
         container = ttk.Frame(self)
         container.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
         self.grid_columnconfigure(0, weight=1)
@@ -701,16 +747,20 @@ class AddRecordDialog(tk.Toplevel):
         )
 
     def _save(self) -> None:
+        """! @brief Submit the new record payload."""
         payload = {key: entry.get().strip() or None for key, entry in self.entries.items()}
         self.on_save(payload)
         self.destroy()
 
 
 class JsonStore:
+    """! @brief Simple JSON file storage for task data."""
     def __init__(self, path: Path) -> None:
+        """! @brief Initialize the JSON store with a backing file path."""
         self.path = path
 
     def load(self) -> list[dict]:
+        """! @brief Load records from disk, returning an empty list on failure."""
         if not self.path.exists():
             return []
         try:
@@ -719,10 +769,12 @@ class JsonStore:
             return []
 
     def save(self, records: list[dict]) -> None:
+        """! @brief Persist records to disk as JSON."""
         self.path.write_text(json.dumps(records, indent=2) + "\n")
 
 
 class JsonRecordDialog(tk.Toplevel):
+    """! @brief Dialog for creating JSON-backed task records."""
     def __init__(
         self,
         parent: tk.Widget,
@@ -731,6 +783,7 @@ class JsonRecordDialog(tk.Toplevel):
         field_specs: list[dict],
         on_save,
     ) -> None:
+        """! @brief Initialize the JSON record dialog."""
         super().__init__(parent)
         self.app = app
         self.field_specs = field_specs
@@ -740,6 +793,7 @@ class JsonRecordDialog(tk.Toplevel):
         self._build()
 
     def _build(self) -> None:
+        """! @brief Build the form inputs for JSON-backed fields."""
         container = ttk.Frame(self)
         container.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
         self.grid_columnconfigure(0, weight=1)
@@ -765,6 +819,7 @@ class JsonRecordDialog(tk.Toplevel):
         )
 
     def _save(self) -> None:
+        """! @brief Validate and submit the JSON record."""
         payload: dict[str, object] = {}
         for field in self.field_specs:
             widget = self.inputs[field["name"]]
@@ -795,7 +850,9 @@ class JsonRecordDialog(tk.Toplevel):
 
 
 class TasksTab(BaseTab):
+    """! @brief Tab for managing task instances stored in JSON."""
     def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
+        """! @brief Initialize the tasks tab and load records."""
         super().__init__(parent, app)
         self.store = JsonStore(PROJECT_ROOT / "task_instances.json")
         self.records: list[dict] = []
@@ -803,6 +860,7 @@ class TasksTab(BaseTab):
         self.refresh()
 
     def _build(self) -> None:
+        """! @brief Build the tasks table layout."""
         header = ttk.Label(self, text="Tasks", style="Header.TLabel")
         header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
 
@@ -849,6 +907,7 @@ class TasksTab(BaseTab):
         self.tree.configure(yscrollcommand=scrollbar.set)
 
     def refresh(self) -> None:
+        """! @brief Reload task instances from disk and render them."""
         for item in self.tree.get_children():
             self.tree.delete(item)
         self.records = self.store.load()
@@ -868,11 +927,13 @@ class TasksTab(BaseTab):
         self.app.notifications.notify(f"Loaded {len(self.records)} tasks.")
 
     def _format_cell(self, value: object) -> str:
+        """! @brief Format list/dict values for display in the table."""
         if isinstance(value, (dict, list)):
             return json.dumps(value)
         return "" if value is None else str(value)
 
     def _add_task(self) -> None:
+        """! @brief Open the dialog to create a new task."""
         JsonRecordDialog(
             self,
             self.app,
@@ -882,6 +943,7 @@ class TasksTab(BaseTab):
         )
 
     def _save_task(self, data: dict[str, object]) -> None:
+        """! @brief Persist a new task record."""
         if not data.get("instance_id"):
             data["instance_id"] = str(uuid4())
         self.records.append(data)
@@ -890,6 +952,7 @@ class TasksTab(BaseTab):
         self.refresh()
 
     def _delete_selected(self) -> None:
+        """! @brief Delete selected task instances."""
         selection = self.tree.selection()
         if not selection:
             self.app.notifications.notify("Select one or more tasks to delete.")
@@ -910,6 +973,7 @@ class TasksTab(BaseTab):
         self.refresh()
 
     def _import_csv(self) -> None:
+        """! @brief Import task instances from a CSV file."""
         filename = filedialog.askopenfilename(
             title="Select CSV File",
             filetypes=[("CSV Files", "*.csv")],
@@ -947,6 +1011,7 @@ class TasksTab(BaseTab):
         self.refresh()
 
     def _parse_csv_row(self, row: dict[str, str], fields: list[dict]) -> dict:
+        """! @brief Parse a CSV row into a task payload."""
         payload: dict[str, object] = {}
         field_map = {field["name"]: field for field in fields}
         for key, value in row.items():
@@ -965,7 +1030,9 @@ class TasksTab(BaseTab):
 
 
 class TaskTemplatesTab(BaseTab):
+    """! @brief Tab for managing task templates stored in JSON."""
     def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
+        """! @brief Initialize the task templates tab."""
         super().__init__(parent, app)
         self.store = JsonStore(PROJECT_ROOT / "task_templates.json")
         self.records: list[dict] = []
@@ -973,6 +1040,7 @@ class TaskTemplatesTab(BaseTab):
         self.refresh()
 
     def _build(self) -> None:
+        """! @brief Build the task templates table layout."""
         header = ttk.Label(self, text="Task Templates", style="Header.TLabel")
         header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
 
@@ -1019,6 +1087,7 @@ class TaskTemplatesTab(BaseTab):
         self.tree.configure(yscrollcommand=scrollbar.set)
 
     def refresh(self) -> None:
+        """! @brief Reload task templates from disk and render them."""
         for item in self.tree.get_children():
             self.tree.delete(item)
         self.records = self.store.load()
@@ -1040,11 +1109,13 @@ class TaskTemplatesTab(BaseTab):
         )
 
     def _format_cell(self, value: object) -> str:
+        """! @brief Format list/dict values for display in the table."""
         if isinstance(value, (dict, list)):
             return json.dumps(value)
         return "" if value is None else str(value)
 
     def _add_template(self) -> None:
+        """! @brief Open the dialog to create a new task template."""
         JsonRecordDialog(
             self,
             self.app,
@@ -1054,6 +1125,7 @@ class TaskTemplatesTab(BaseTab):
         )
 
     def _save_template(self, data: dict[str, object]) -> None:
+        """! @brief Persist a new task template record."""
         if not data.get("id"):
             data["id"] = str(uuid4())
         self.records.append(data)
@@ -1062,6 +1134,7 @@ class TaskTemplatesTab(BaseTab):
         self.refresh()
 
     def _delete_selected(self) -> None:
+        """! @brief Delete selected task templates."""
         selection = self.tree.selection()
         if not selection:
             self.app.notifications.notify("Select templates to delete.")
@@ -1080,6 +1153,7 @@ class TaskTemplatesTab(BaseTab):
         self.refresh()
 
     def _import_csv(self) -> None:
+        """! @brief Load SQL or CSV content for task templates."""
         filename = filedialog.askopenfilename(
             title="Select CSV File",
             filetypes=[("CSV Files", "*.csv")],
@@ -1107,6 +1181,7 @@ class TaskTemplatesTab(BaseTab):
         self.app.notifications.notify(f"Loaded {selected_path.name}.")
 
     def _execute_queries(self) -> None:
+        """! @brief Execute SQL statements entered in the SQL panel."""
         raw = self.query_text.get("1.0", "end").strip()
         if not raw:
             self.app.notifications.notify("Enter SQL before executing.")
@@ -1126,6 +1201,7 @@ class TaskTemplatesTab(BaseTab):
             self.loaded_sql_path = None
 
     def _execute_statement(self, statement: str) -> None:
+        """! @brief Execute a single SQL statement."""
         db = get_db()
         try:
             with open(filename, newline="", encoding="utf-8") as handle:
@@ -1158,6 +1234,7 @@ class TaskTemplatesTab(BaseTab):
         self.refresh()
 
     def _parse_csv_row(self, row: dict[str, str], fields: list[dict]) -> dict:
+        """! @brief Parse a CSV row into a task template payload."""
         payload: dict[str, object] = {}
         field_map = {field["name"]: field for field in fields}
         for key, value in row.items():
@@ -1176,7 +1253,9 @@ class TaskTemplatesTab(BaseTab):
 
 
 class ServiceDaemonApp(tk.Tk):
+    """! @brief Main Tkinter application for Service Daemon."""
     def __init__(self) -> None:
+        """! @brief Initialize the GUI application window."""
         super().__init__()
         self.title("Service Daemon Console")
         self.geometry("1200x720")
@@ -1189,6 +1268,7 @@ class ServiceDaemonApp(tk.Tk):
         self._build_layout()
 
     def _build_layout(self) -> None:
+        """! @brief Build the main application layout."""
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
@@ -1222,6 +1302,7 @@ class ServiceDaemonApp(tk.Tk):
         self.applications_menu.add_cascade(label="File", menu=file_menu)
 
     def _refresh_all(self) -> None:
+        """! @brief Refresh all tabs and update status messaging."""
         self.database_tab.refresh()
         self.operations_tab.refresh()
         self.task_templates_tab.refresh()

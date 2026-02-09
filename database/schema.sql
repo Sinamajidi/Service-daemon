@@ -1,3 +1,7 @@
+/*! \file schema.sql
+ *  \brief Core database schema for the service daemon.
+ */
+
 -- Enable extension (run once)
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS btree_gist;

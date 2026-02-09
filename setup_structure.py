@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""
-Setup Script for Apartment Management Project
+"""! @file setup_structure.py
+@brief Utility to create the recommended project directory layout.
+
 This script creates the recommended directory structure and moves files to proper locations.
 
 Usage:
@@ -18,12 +19,11 @@ import sys
 
 
 def create_directory_structure(base_path: Path, simple: bool = True):
-    """
-    Create the directory structure.
-    
+    """! @brief Create the directory structure.
+
     Args:
-        base_path: Base path for the project
-        simple: If True, use simpler structure; if False, use full structure
+        base_path: Base path for the project.
+        simple: If True, use simpler structure; if False, use full structure.
     """
     if simple:
         print("Creating SIMPLE directory structure...")
@@ -64,7 +64,7 @@ def create_directory_structure(base_path: Path, simple: bool = True):
 
 
 def move_files_simple(base_path: Path):
-    """Move files to simple structure."""
+    """! @brief Move files to the simple structure layout."""
     print("\nMoving files to simple structure...")
     
     file_moves = {
@@ -100,7 +100,7 @@ def move_files_simple(base_path: Path):
 
 
 def move_files_full(base_path: Path):
-    """Move files to full structure."""
+    """! @brief Move files to the full structure layout."""
     print("\nMoving files to full structure...")
     
     file_moves = {
@@ -132,7 +132,7 @@ def move_files_full(base_path: Path):
 
 
 def move_files(base_path: Path, file_moves: dict):
-    """Move files according to the mapping."""
+    """! @brief Move files according to the mapping."""
     for source, destination in file_moves.items():
         source_path = base_path / source
         dest_path = base_path / destination
@@ -149,7 +149,7 @@ def move_files(base_path: Path, file_moves: dict):
 
 
 def update_imports_simple(base_path: Path):
-    """Update imports for simple structure."""
+    """! @brief Update imports for the simple structure."""
     print("\nUpdating imports for simple structure...")
     
     # Files that need import updates
@@ -208,7 +208,7 @@ def update_imports_simple(base_path: Path):
 
 
 def update_imports_full(base_path: Path):
-    """Update imports for full structure."""
+    """! @brief Update imports for the full structure."""
     print("\nUpdating imports for full structure...")
     
     files_to_update = [
@@ -229,7 +229,7 @@ def update_imports_full(base_path: Path):
 
 
 def update_imports(base_path: Path, files: list, replacements: dict):
-    """Update imports in files."""
+    """! @brief Update imports in files."""
     for file_path in files:
         full_path = base_path / file_path
         if not full_path.exists():
@@ -256,7 +256,7 @@ def update_imports(base_path: Path, files: list, replacements: dict):
 
 
 def create_database_init(base_path: Path):
-    """Create a proper __init__.py for the database package."""
+    """! @brief Create a proper __init__.py for the database package."""
     init_content = '''"""
 Database Package
 Provides database initialization, connection management, and data access.
@@ -309,7 +309,7 @@ __all__ = [
 
 
 def create_init_script(base_path: Path, simple: bool):
-    """Create an initialization script in the scripts directory."""
+    """! @brief Create an initialization script in the scripts directory."""
     if simple:
         script_path = base_path / 'database' / 'init_db.py'
         schema_path = 'database/schema.sql'
@@ -397,7 +397,7 @@ if __name__ == '__main__':
 
 
 def main():
-    """Main setup function."""
+    """! @brief Main setup function."""
     print("=" * 70)
     print("APARTMENT MANAGEMENT PROJECT - DIRECTORY SETUP")
     print("=" * 70)
