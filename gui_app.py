@@ -871,55 +871,19 @@ class JsonStore:
         self.path.write_text(json.dumps(records, indent=2) + "\n")
 
 
-def table_exists(app: "ServiceDaemonApp", table: str) -> bool:
-    """! @brief Check if a database table exists."""
-    query = """
-        SELECT EXISTS (
-            SELECT 1
-            FROM information_schema.tables
-            WHERE table_schema = 'public' AND table_name = %s
-        ) AS exists
-    """
-    result = app.run_db_action(
-        lambda: get_dal().execute_custom_query(query, (table,), fetch="one"),
-        f"Unable to check {table} table",
-    )
-    return bool(result and result.get("exists"))
-
-
-def load_task_ids(dialog: "JsonRecordDialog") -> list[str]:
-    """! @brief Load task IDs from the database or disk."""
-    if table_exists(dialog.app, "task_templates"):
-        results = dialog.app.run_db_action(
-            lambda: get_dal().get_all_ids("task_templates"),
-            "Unable to load task IDs",
-        )
-        return results or []
+def load_task_ids() -> list[str]:
+    """! @brief Load task IDs from disk."""
     store = JsonStore(PROJECT_ROOT / "task_templates.json")
     return [record["id"] for record in store.load() if record.get("id")]
 
 
 def load_table_ids(dialog: "JsonRecordDialog", table: str) -> list[str]:
     """! @brief Load IDs from a database table for selector fields."""
-    if table_exists(dialog.app, table):
-        results = dialog.app.run_db_action(
-            lambda: get_dal().get_all_ids(table),
-            f"Unable to load {table} IDs",
-        )
-        return results or []
-    return []
-
-
-def prepare_db_payload(field_specs: list[dict], data: dict[str, object]) -> dict[str, object]:
-    """! @brief Convert JSON fields to strings for database inserts."""
-    payload: dict[str, object] = {}
-    json_fields = {field["name"] for field in field_specs if field.get("json")}
-    for key, value in data.items():
-        if key in json_fields and value is not None and not isinstance(value, str):
-            payload[key] = json.dumps(value)
-        else:
-            payload[key] = value
-    return payload
+    results = dialog.app.run_db_action(
+        lambda: get_dal().get_all_ids(table),
+        f"Unable to load {table} IDs",
+    )
+    return results or []
 
 
 class JsonRecordDialog(tk.Toplevel):
@@ -1147,27 +1111,6 @@ class TasksTab(BaseTab):
             )
         self.app.notifications.notify(f"Loaded {len(self.records)} operations.")
 
-    def _load_records(self) -> list[dict]:
-        """! @brief Load task instances from the database or disk."""
-        if not self.use_db:
-            return self.store.load()
-        results = self.app.run_db_action(
-            lambda: get_dal().get_filtered_records(
-                "task_instances",
-                "1=1",
-                (),
-                limit=200,
-                order_by="created_at DESC",
-            ),
-            "Unable to load operations from the database",
-        )
-        if results is None:
-            return self.store.load()
-        for record in results:
-            if "instance_id" not in record and record.get("id"):
-                record["instance_id"] = str(record["id"])
-        return results
-
     def _format_cell(self, value: object) -> str:
         """! @brief Format list/dict values for display in the table."""
         if isinstance(value, (dict, list)):
@@ -1188,16 +1131,8 @@ class TasksTab(BaseTab):
         """! @brief Persist a new task record."""
         if not data.get("instance_id"):
             data["instance_id"] = str(uuid4())
-        if self.use_db:
-            payload = prepare_db_payload(TASK_INSTANCE_FIELDS, data)
-            payload["id"] = payload.pop("instance_id")
-            self.app.run_db_action(
-                lambda: get_dal().insert_record("task_instances", payload),
-                "Unable to save operation",
-            )
-        else:
-            self.records.append(data)
-            self.store.save(self.records)
+        self.records.append(data)
+        self.store.save(self.records)
         self.app.notifications.notify("Operation added successfully.")
         self.refresh()
 
@@ -1213,22 +1148,12 @@ class TasksTab(BaseTab):
         ):
             return
         ids_to_remove = {self.tree.item(item, "values")[0] for item in selection}
-        if self.use_db:
-            for record_id in ids_to_remove:
-                self.app.run_db_action(
-                    lambda record_id=record_id: get_dal().delete_record(
-                        "task_instances",
-                        record_id,
-                    ),
-                    "Unable to delete operation",
-                )
-        else:
-            self.records = [
-                record
-                for record in self.records
-                if record.get("instance_id") not in ids_to_remove
-            ]
-            self.store.save(self.records)
+        self.records = [
+            record
+            for record in self.records
+            if record.get("instance_id") not in ids_to_remove
+        ]
+        self.store.save(self.records)
         self.app.notifications.notify("Operations deleted.")
         self.refresh()
 
@@ -1277,8 +1202,7 @@ class TasksTab(BaseTab):
         except Exception as exc:
             self.app.notifications.notify(f"CSV import failed: {exc}")
             return
-        if not self.use_db:
-            self.store.save(self.records)
+        self.store.save(self.records)
         self.app.notifications.notify(f"Imported {count} operation(s).")
         self.refresh()
 
@@ -1387,24 +1311,6 @@ class TaskTemplatesTab(BaseTab):
             )
         self.app.notifications.notify(f"Loaded {len(self.records)} tasks.")
 
-    def _load_records(self) -> list[dict]:
-        """! @brief Load task templates from the database or disk."""
-        if not self.use_db:
-            return self.store.load()
-        results = self.app.run_db_action(
-            lambda: get_dal().get_filtered_records(
-                "task_templates",
-                "1=1",
-                (),
-                limit=200,
-                order_by="created_at DESC",
-            ),
-            "Unable to load tasks from the database",
-        )
-        if results is None:
-            return self.store.load()
-        return results
-
     def _format_cell(self, value: object) -> str:
         """! @brief Format list/dict values for display in the table."""
         if isinstance(value, (dict, list)):
@@ -1425,15 +1331,8 @@ class TaskTemplatesTab(BaseTab):
         """! @brief Persist a new task record."""
         if not data.get("id"):
             data["id"] = str(uuid4())
-        if self.use_db:
-            payload = prepare_db_payload(TASK_TEMPLATE_FIELDS, data)
-            self.app.run_db_action(
-                lambda: get_dal().insert_record("task_templates", payload),
-                "Unable to save task",
-            )
-        else:
-            self.records.append(data)
-            self.store.save(self.records)
+        self.records.append(data)
+        self.store.save(self.records)
         self.app.notifications.notify("Task added successfully.")
         self.refresh()
 
@@ -1449,20 +1348,10 @@ class TaskTemplatesTab(BaseTab):
         ):
             return
         ids_to_remove = {self.tree.item(item, "values")[0] for item in selection}
-        if self.use_db:
-            for record_id in ids_to_remove:
-                self.app.run_db_action(
-                    lambda record_id=record_id: get_dal().delete_record(
-                        "task_templates",
-                        record_id,
-                    ),
-                    "Unable to delete task",
-                )
-        else:
-            self.records = [
-                record for record in self.records if record.get("id") not in ids_to_remove
-            ]
-            self.store.save(self.records)
+        self.records = [
+            record for record in self.records if record.get("id") not in ids_to_remove
+        ]
+        self.store.save(self.records)
         self.app.notifications.notify("Tasks deleted.")
         self.refresh()
 
@@ -1510,8 +1399,7 @@ class TaskTemplatesTab(BaseTab):
         except Exception as exc:
             self.app.notifications.notify(f"CSV import failed: {exc}")
             return
-        if not self.use_db:
-            self.store.save(self.records)
+        self.store.save(self.records)
         self.app.notifications.notify(f"Imported {count} task(s).")
         self.refresh()
 
@@ -1860,7 +1748,7 @@ TASK_INSTANCE_FIELDS = [
         "label": "Task ID",
         "required": True,
         "widget": "select",
-        "options_fn": lambda dialog: load_task_ids(dialog),
+        "options_fn": lambda dialog: load_task_ids(),
     },
     {
         "name": "target_entity_id",
