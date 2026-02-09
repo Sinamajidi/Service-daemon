@@ -1,0 +1,294 @@
+\doxysection{\+\_\+copy.\+py}
+\hypertarget{__copy_8py_source}{}\label{__copy_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_copy.py@{venv/Lib/site-\/packages/psycopg/\_copy.py}}
+\doxymbox{\hyperlink{__copy_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__copy}{00001}}\ \textcolor{comment}{\#\ WARNING:\ this\ file\ is\ auto-\/generated\ by\ 'async\_to\_sync.py'}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00002}00002\ \textcolor{comment}{\#\ from\ the\ original\ file\ '\_copy\_async.py'}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00003}00003\ \textcolor{comment}{\#\ DO\ NOT\ CHANGE!\ Change\ the\ original\ file\ instead.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00004}00004\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00005}00005\ \textcolor{stringliteral}{Objects\ to\ support\ the\ COPY\ protocol\ (sync\ version).}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00006}00006\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00008}00008\ \textcolor{comment}{\#\ Copyright\ (C)\ 2023\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00012}00012\ \textcolor{keyword}{from}\ abc\ \textcolor{keyword}{import}\ ABC,\ abstractmethod}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00013}00013\ \textcolor{keyword}{from}\ types\ \textcolor{keyword}{import}\ TracebackType}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00014}00014\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00015}00015\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterator,\ Sequence}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00016}00016\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00017}00017\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00018}00018\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ pq}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00019}00019\ \textcolor{keyword}{from}\ .\_compat\ \textcolor{keyword}{import}\ Self}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00020}00020\ \textcolor{keyword}{from}\ .\_acompat\ \textcolor{keyword}{import}\ Queue,\ Worker,\ gather,\ spawn}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00021}00021\ \textcolor{keyword}{from}\ .\_copy\_base\ \textcolor{keyword}{import}\ MAX\_BUFFER\_SIZE,\ PREFER\_FLUSH,\ QUEUE\_SIZE,\ BaseCopy}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00022}00022\ \textcolor{keyword}{from}\ .generators\ \textcolor{keyword}{import}\ copy\_end,\ copy\_to}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00024}00024\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00025}00025\ \ \ \ \ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ Buffer}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00026}00026\ \ \ \ \ \textcolor{keyword}{from}\ .cursor\ \textcolor{keyword}{import}\ Cursor}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00027}00027\ \ \ \ \ \textcolor{keyword}{from}\ .connection\ \textcolor{keyword}{import}\ Connection\ \ \textcolor{comment}{\#\ noqa:\ F401}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00029}\doxymbox{\hyperlink{namespacepsycopg_1_1__copy_ab0ef03c04b98c012fcb94f53feab1c4f}{00029}}\ COPY\_IN\ =\ pq.ExecStatus.COPY\_IN}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00030}\doxymbox{\hyperlink{namespacepsycopg_1_1__copy_ad6f273e5eb214436bc1d556bbfa6ca56}{00030}}\ COPY\_OUT\ =\ pq.ExecStatus.COPY\_OUT}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00031}00031\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00032}\doxymbox{\hyperlink{namespacepsycopg_1_1__copy_a28b3f7ffa025cbe833c701ef41910146}{00032}}\ ACTIVE\ =\ pq.TransactionStatus.ACTIVE}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00035}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy}{00035}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy}{Copy}}(\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy}{BaseCopy}}[\textcolor{stringliteral}{"{}Connection[Any]"{}}]):}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00036}00036\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Manage\ an\ asynchronous\ :sql:\`{}COPY\`{}\ operation.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00037}00037\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00038}00038\ \textcolor{stringliteral}{\ \ \ \ :param\ cursor:\ the\ cursor\ where\ the\ operation\ is\ performed.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00039}00039\ \textcolor{stringliteral}{\ \ \ \ :param\ binary:\ if\ \`{}!True\`{},\ write\ binary\ format.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00040}00040\ \textcolor{stringliteral}{\ \ \ \ :param\ writer:\ the\ object\ to\ write\ to\ destination.\ If\ not\ specified,\ write}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00041}00041\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ to\ the\ \`{}!cursor\`{}\ connection.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00042}00042\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00043}00043\ \textcolor{stringliteral}{\ \ \ \ Choosing\ \`{}!binary\`{}\ is\ not\ necessary\ if\ the\ cursor\ has\ executed\ a}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00044}00044\ \textcolor{stringliteral}{\ \ \ \ :sql:\`{}COPY\`{}\ operation,\ because\ the\ operation\ result\ describes\ the\ format}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00045}00045\ \textcolor{stringliteral}{\ \ \ \ too.\ The\ parameter\ is\ useful\ when\ a\ \`{}!Copy\`{}\ object\ is\ created\ manually\ and}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00046}00046\ \textcolor{stringliteral}{\ \ \ \ no\ operation\ is\ performed\ on\ the\ cursor,\ such\ as\ when\ using\ \`{}\`{}writer=\`{}\`{}\(\backslash\)\(\backslash\)}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00047}00047\ \textcolor{stringliteral}{\ \ \ \ \`{}\string~psycopg.copy.FileWriter\`{}.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00048}00048\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00050}00050\ \ \ \ \ \_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00052}00052\ \ \ \ \ writer:\ Writer}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00054}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_ae3b0d5bd06392f4bf64586eeb4d17aaa}{00054}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_ae3b0d5bd06392f4bf64586eeb4d17aaa}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ cursor:\ Cursor[Any],}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ binary:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ writer:\ Writer\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00060}00060\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_ae3b0d5bd06392f4bf64586eeb4d17aaa}{\_\_init\_\_}}(cursor,\ binary=binary)}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ writer:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ \ \ \ \ writer\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer}{LibpqWriter}}(cursor)}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00065}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_afbf7e3134689b6cabfbf2ec01f03e8da}{00065}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_afbf7e3134689b6cabfbf2ec01f03e8da}{writer}}\ =\ writer}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00066}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a5565abe4ce477a133679107c1bc41d61}{00066}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a5565abe4ce477a133679107c1bc41d61}{\_write}}\ =\ writer.write}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00068}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_ab72c4c27e2b0b7732e241f9e20f02a67}{00068}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_ab72c4c27e2b0b7732e241f9e20f02a67}{\_\_enter\_\_}}(self)\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy_a49c8d340c801eed1a94ad539b4ec3cd8}{\_enter}}()}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00071}00071\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00072}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a76c1ef2ca245fb6d99d4a371bf79c078}{00072}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a76c1ef2ca245fb6d99d4a371bf79c078}{\_\_exit\_\_}}(}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ exc\_type:\ type[BaseException]\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ exc\_val:\ BaseException\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ exc\_tb:\ TracebackType\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00077}00077\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a791cfaebcedc4f5e3152eb23ed301c85}{finish}}(exc\_val)}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00080}00080\ \ \ \ \ \textcolor{comment}{\#\ End\ user\ sync\ interface}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00082}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_afb9517e215da530936641d43ee9dde55}{00082}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_afb9517e215da530936641d43ee9dde55}{\_\_iter\_\_}}(self)\ -\/>\ Iterator[Buffer]:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Implement\ block-\/by-\/block\ iteration\ on\ :sql:\`{}COPY\ TO\`{}."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ data\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_aafad7f03b37379b8e0c3305b4b2cf666}{read}}():}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ data}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00087}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_aafad7f03b37379b8e0c3305b4b2cf666}{00087}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_aafad7f03b37379b8e0c3305b4b2cf666}{read}}(self)\ -\/>\ Buffer:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00089}00089\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Read\ an\ unparsed\ row\ after\ a\ :sql:\`{}COPY\ TO\`{}\ operation.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00090}00090\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00091}00091\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ an\ empty\ string\ when\ the\ data\ is\ finished.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00092}00092\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy_a6e27c190b6897fb93441a8236421f697}{connection}}.wait(self.\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy_a0c81ed142a76c7c2e0ebc25870084e5a}{\_read\_gen}}())}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00095}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a1b6951e6119b14bbc820157a84c27d3c}{00095}}\ \ \ \ \ \textcolor{keyword}{def\ }rows(self)\ -\/>\ Iterator[tuple[Any,\ ...]]:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00097}00097\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Iterate\ on\ the\ result\ of\ a\ :sql:\`{}COPY\ TO\`{}\ operation\ record\ by\ record.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00098}00098\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00099}00099\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Note\ that\ the\ records\ returned\ will\ be\ tuples\ of\ unparsed\ strings\ or}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00100}00100\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ bytes,\ unless\ data\ types\ are\ specified\ using\ \`{}set\_types()\`{}.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00101}00101\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (record\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_ae7596c37107e275c4753c6958dc4bcf4}{read\_row}}())\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ record}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00105}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_ae7596c37107e275c4753c6958dc4bcf4}{00105}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_ae7596c37107e275c4753c6958dc4bcf4}{read\_row}}(self)\ -\/>\ tuple[Any,\ ...]\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00107}00107\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Read\ a\ parsed\ row\ of\ data\ from\ a\ table\ after\ a\ :sql:\`{}COPY\ TO\`{}\ operation.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00108}00108\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00109}00109\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ \`{}!None\`{}\ when\ the\ data\ is\ finished.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00110}00110\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00111}00111\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Note\ that\ the\ records\ returned\ will\ be\ tuples\ of\ unparsed\ strings\ or}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00112}00112\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ bytes,\ unless\ data\ types\ are\ specified\ using\ \`{}set\_types()\`{}.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00113}00113\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy_a6e27c190b6897fb93441a8236421f697}{connection}}.wait(self.\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy_a0899db554818d00556de2cb19d50131d}{\_read\_row\_gen}}())}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00115}00115\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00116}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_ad969e202fd77d1e5dcad0266ef558cf1}{00116}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_ad969e202fd77d1e5dcad0266ef558cf1}{write}}(self,\ buffer:\ Buffer\ |\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00118}00118\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Write\ a\ block\ of\ data\ to\ a\ table\ after\ a\ :sql:\`{}COPY\ FROM\`{}\ operation.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00119}00119\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00120}00120\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ the\ :sql:\`{}COPY\`{}\ is\ in\ binary\ format\ \`{}!buffer\`{}\ must\ be\ \`{}!bytes\`{}.\ In}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00121}00121\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ text\ mode\ it\ can\ be\ either\ \`{}!bytes\`{}\ or\ \`{}!str\`{}.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00122}00122\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ data\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy_aa6adbc97dd7bd78594b44209bfd509ae}{formatter}}.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_ad969e202fd77d1e5dcad0266ef558cf1}{write}}(buffer):}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a5565abe4ce477a133679107c1bc41d61}{\_write}}(data)}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00125}00125\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00126}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a672b09d493d928ac62cc8ca57273bb8d}{00126}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a672b09d493d928ac62cc8ca57273bb8d}{write\_row}}(self,\ row:\ Sequence[Any])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Write\ a\ record\ to\ a\ table\ after\ a\ :sql:\`{}COPY\ FROM\`{}\ operation."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ data\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy_aa6adbc97dd7bd78594b44209bfd509ae}{formatter}}.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a672b09d493d928ac62cc8ca57273bb8d}{write\_row}}(row):}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a5565abe4ce477a133679107c1bc41d61}{\_write}}(data)}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00130}00130\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00131}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a791cfaebcedc4f5e3152eb23ed301c85}{00131}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a791cfaebcedc4f5e3152eb23ed301c85}{finish}}(self,\ exc:\ BaseException\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Terminate\ the\ copy\ operation\ and\ free\ the\ resources\ allocated.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00133}00133\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00134}00134\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ You\ shouldn't\ need\ to\ call\ this\ function\ yourself:\ it\ is\ usually\ called}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00135}00135\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ by\ exit.\ It\ is\ available\ if,\ despite\ what\ is\ documented,\ you\ end\ up}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00136}00136\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ using\ the\ \`{}Copy\`{}\ object\ outside\ a\ block.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00137}00137\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00138}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy}{00138}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy}{\_direction}}\ ==\ COPY\_IN:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ exc:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ data\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy_aa6adbc97dd7bd78594b44209bfd509ae}{formatter}}.end():}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a5565abe4ce477a133679107c1bc41d61}{\_write}}(data)}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_afbf7e3134689b6cabfbf2ec01f03e8da}{writer}}.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy_a791cfaebcedc4f5e3152eb23ed301c85}{finish}}(exc)}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00143}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy}{00143}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_copy}{\_finished}}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ exc:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy_a17f6a7de873b66a0a6b44dc5288b6242}{\_pgconn}}.transaction\_status\ !=\ ACTIVE:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ server\ has\ already\ finished\ to\ send\ copy\ data.\ The\ connection}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ is\ already\ in\ a\ good\ state.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Throw\ a\ cancel\ to\ the\ server,\ then\ consume\ the\ rest\ of\ the\ copy\ data}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ (which\ might\ or\ might\ not\ have\ been\ already\ transferred\ entirely\ to}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ client,\ so\ we\ won't\ necessary\ see\ the\ exception\ associated\ with}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ canceling).}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy_a6e27c190b6897fb93441a8236421f697}{connection}}.\_try\_cancel()}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy_a6e27c190b6897fb93441a8236421f697}{connection}}.wait(self.\doxymbox{\hyperlink{classpsycopg_1_1__copy__base_1_1_base_copy_a3eba43c25fb36e852bd606a8dc70f468}{\_end\_copy\_out\_gen}}())}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00157}00157\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00158}00158\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00159}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_writer}{00159}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_writer}{Writer}}(ABC):}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00160}00160\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00161}00161\ \textcolor{stringliteral}{\ \ \ \ A\ class\ to\ write\ copy\ data\ somewhere\ (for\ async\ connections).}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00162}00162\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00163}00163\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00164}00164\ \ \ \ \ \textcolor{preprocessor}{@abstractmethod}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00165}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_writer_a0cdf8db5ea379f5029f55be33e496230}{00165}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_writer_a0cdf8db5ea379f5029f55be33e496230}{write}}(self,\ data:\ Buffer)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Write\ some\ data\ to\ destination."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ ...}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00168}00168\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00169}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_writer_aaab8a7ce7eb9f3d32f797c381c7fc837}{00169}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_writer_aaab8a7ce7eb9f3d32f797c381c7fc837}{finish}}(self,\ exc:\ BaseException\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00171}00171\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Called\ when\ write\ operations\ are\ finished.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00172}00172\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00173}00173\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ operations\ finished\ with\ an\ error,\ it\ will\ be\ passed\ to\ \`{}\`{}exc\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00174}00174\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00176}00176\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00177}00177\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00178}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer}{00178}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer}{LibpqWriter}}(\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_writer}{Writer}}):}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00179}00179\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00180}00180\ \textcolor{stringliteral}{\ \ \ \ An\ \`{}Writer\`{}\ to\ write\ copy\ data\ to\ a\ Postgres\ database.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00181}00181\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00182}00182\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00183}00183\ \ \ \ \ \_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg.copy"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00184}00184\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00185}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a7a8affdd02100b4ca377f16ef6ecf641}{00185}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a7a8affdd02100b4ca377f16ef6ecf641}{\_\_init\_\_}}(self,\ cursor:\ Cursor[Any]):}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00186}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_adc19a392eb110dbb6d3c98cf071c4981}{00186}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_adc19a392eb110dbb6d3c98cf071c4981}{cursor}}\ =\ cursor}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00187}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a5fc925ba4e47b46a85c86c247009c34c}{00187}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a5fc925ba4e47b46a85c86c247009c34c}{connection}}\ =\ cursor.connection}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00188}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a88dd31ef45ea5e300b4e2abefd084687}{00188}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a88dd31ef45ea5e300b4e2abefd084687}{\_pgconn}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a5fc925ba4e47b46a85c86c247009c34c}{connection}}.pgconn}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00189}00189\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00190}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a2ab74d538687574c0e6a2b47873994d7}{00190}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a2ab74d538687574c0e6a2b47873994d7}{write}}(self,\ data:\ Buffer)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(data)\ <=\ MAX\_BUFFER\_SIZE:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Most\ used\ path:\ we\ don't\ need\ to\ split\ the\ buffer\ in\ smaller}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ bits,\ so\ don't\ make\ a\ copy.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a5fc925ba4e47b46a85c86c247009c34c}{connection}}.wait(copy\_to(self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a88dd31ef45ea5e300b4e2abefd084687}{\_pgconn}},\ data,\ flush=PREFER\_FLUSH))}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Copy\ a\ buffer\ too\ large\ in\ chunks\ to\ avoid\ causing\ a\ memory}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ error\ in\ the\ libpq,\ which\ may\ cause\ an\ infinite\ loop\ (\#255).}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(0,\ len(data),\ MAX\_BUFFER\_SIZE):}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a5fc925ba4e47b46a85c86c247009c34c}{connection}}.wait(}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ copy\_to(}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a88dd31ef45ea5e300b4e2abefd084687}{\_pgconn}},\ data[i\ :\ i\ +\ MAX\_BUFFER\_SIZE],\ flush=PREFER\_FLUSH}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00204}00204\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00205}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_ae5685837cc7050cb28c141d7079826e6}{00205}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_ae5685837cc7050cb28c141d7079826e6}{finish}}(self,\ exc:\ BaseException\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ bmsg:\ bytes\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ exc:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}error\ from\ Python:\ \{type(exc).\_\_qualname\_\_\}\ -\/\ \{exc\}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \ \ \ \ bmsg\ =\ msg.encode(self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a88dd31ef45ea5e300b4e2abefd084687}{\_pgconn}}.\_encoding,\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \ \ \ \ bmsg\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00212}00212\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \ \ \ \ res\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a5fc925ba4e47b46a85c86c247009c34c}{connection}}.wait(copy\_end(self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a88dd31ef45ea5e300b4e2abefd084687}{\_pgconn}},\ bmsg))}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ QueryCanceled\ is\ expected\ if\ we\ sent\ an\ exception\ message\ to}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ pgconn.put\_copy\_end().\ The\ Python\ exception\ that\ generated\ that}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ cancelling\ is\ more\ important,\ so\ don't\ clobber\ it.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ e.QueryCanceled:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ bmsg:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_adc19a392eb110dbb6d3c98cf071c4981}{cursor}}.\_results\ =\ [res]}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00223}00223\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00224}00224\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00225}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer}{00225}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer}{QueuedLibpqWriter}}(\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer}{LibpqWriter}}):}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00226}00226\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00227}00227\ \textcolor{stringliteral}{\ \ \ \ \`{}Writer\`{}\ using\ a\ buffer\ to\ queue\ data\ to\ write.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00228}00228\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00229}00229\ \textcolor{stringliteral}{\ \ \ \ \`{}write()\`{}\ returns\ immediately,\ so\ that\ the\ main\ thread\ can\ be\ CPU-\/bound}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00230}00230\ \textcolor{stringliteral}{\ \ \ \ formatting\ messages,\ while\ a\ worker\ thread\ can\ be\ IO-\/bound\ waiting\ to\ write}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00231}00231\ \textcolor{stringliteral}{\ \ \ \ on\ the\ connection.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00232}00232\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00233}00233\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00234}00234\ \ \ \ \ \_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg.copy"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00235}00235\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00236}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a1ce93bb3dd3ce3c50d7ebe12a444948c}{00236}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a1ce93bb3dd3ce3c50d7ebe12a444948c}{\_\_init\_\_}}(self,\ cursor:\ Cursor[Any]):}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a1ce93bb3dd3ce3c50d7ebe12a444948c}{\_\_init\_\_}}(cursor)}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00238}00238\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00239}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a63ef2660895bacfb454afeedfcb5d2d4}{00239}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a63ef2660895bacfb454afeedfcb5d2d4}{\_queue}}:\ Queue[Buffer]\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__acompat_1_1_queue}{Queue}}(maxsize=QUEUE\_SIZE)}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00240}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a6dff4624f6f0e420470678b17ea315cf}{00240}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a6dff4624f6f0e420470678b17ea315cf}{\_worker}}:\ Worker\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00241}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a949a1e52e45d000f4836464df71d9803}{00241}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a949a1e52e45d000f4836464df71d9803}{\_worker\_error}}:\ BaseException\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00242}00242\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00243}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a9d9b210c7332560df0afedb216911269}{00243}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a9d9b210c7332560df0afedb216911269}{worker}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Push\ data\ to\ the\ server\ when\ available\ from\ the\ copy\ queue.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00245}00245\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00246}00246\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Terminate\ reading\ when\ the\ queue\ receives\ a\ false-\/y\ value,\ or\ in\ case}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00247}00247\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ of\ error.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00248}00248\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00249}00249\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ function\ is\ designed\ to\ be\ run\ in\ a\ separate\ task.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00250}00250\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ data\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a63ef2660895bacfb454afeedfcb5d2d4}{\_queue}}.get():}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00253}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer}{00253}}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a5fc925ba4e47b46a85c86c247009c34c}{connection}}.wait(copy\_to(self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_libpq_writer_a88dd31ef45ea5e300b4e2abefd084687}{\_pgconn}},\ data,\ flush=PREFER\_FLUSH))}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ BaseException\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Propagate\ the\ error\ to\ the\ main\ thread.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a949a1e52e45d000f4836464df71d9803}{\_worker\_error}}\ =\ ex}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00257}00257\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00258}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_ae46c099c4419a66d4df48d683e821a0f}{00258}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_ae46c099c4419a66d4df48d683e821a0f}{write}}(self,\ data:\ Buffer)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a6dff4624f6f0e420470678b17ea315cf}{\_worker}}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ warning:\ reference\ loop,\ broken\ by\ \_write\_end}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a6dff4624f6f0e420470678b17ea315cf}{\_worker}}\ =\ spawn(self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a9d9b210c7332560df0afedb216911269}{worker}})}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00262}00262\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ worker\ thread\ raies\ an\ exception,\ re-\/raise\ it\ to\ the\ caller.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a949a1e52e45d000f4836464df71d9803}{\_worker\_error}}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a949a1e52e45d000f4836464df71d9803}{\_worker\_error}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00266}00266\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(data)\ <=\ MAX\_BUFFER\_SIZE:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Most\ used\ path:\ we\ don't\ need\ to\ split\ the\ buffer\ in\ smaller}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ bits,\ so\ don't\ make\ a\ copy.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a63ef2660895bacfb454afeedfcb5d2d4}{\_queue}}.put(data)}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Copy\ a\ buffer\ too\ large\ in\ chunks\ to\ avoid\ causing\ a\ memory}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ error\ in\ the\ libpq,\ which\ may\ cause\ an\ infinite\ loop\ (\#255).}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(0,\ len(data),\ MAX\_BUFFER\_SIZE):}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a63ef2660895bacfb454afeedfcb5d2d4}{\_queue}}.put(data[i\ :\ i\ +\ MAX\_BUFFER\_SIZE])}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00276}00276\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00277}\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_aa211dbdeccdd02c1527922da0c651e07}{00277}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_aa211dbdeccdd02c1527922da0c651e07}{finish}}(self,\ exc:\ BaseException\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a63ef2660895bacfb454afeedfcb5d2d4}{\_queue}}.put(b\textcolor{stringliteral}{"{}"{}})}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00279}00279\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a6dff4624f6f0e420470678b17ea315cf}{\_worker}}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \ \ \ \ gather(self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a6dff4624f6f0e420470678b17ea315cf}{\_worker}})}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a6dff4624f6f0e420470678b17ea315cf}{\_worker}}\ =\ \textcolor{keywordtype}{None}\ \ \textcolor{comment}{\#\ break\ reference\ loops\ if\ any}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00283}00283\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ if\ the\ worker\ thread\ raised\ any\ exception\ before\ terminating.}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a949a1e52e45d000f4836464df71d9803}{\_worker\_error}}:}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_a949a1e52e45d000f4836464df71d9803}{\_worker\_error}}}
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00287}00287\ }
+\DoxyCodeLine{\Hypertarget{__copy_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1__copy_1_1_queued_libpq_writer_aa211dbdeccdd02c1527922da0c651e07}{finish}}(exc)}
+
+\end{DoxyCode}

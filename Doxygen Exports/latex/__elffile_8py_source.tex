@@ -1,0 +1,114 @@
+\doxysection{\+\_\+elffile.\+py}
+\hypertarget{__elffile_8py_source}{}\label{__elffile_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/packaging/\_elffile.py@{venv/Lib/site-\/packages/pip/\_vendor/packaging/\_elffile.py}}
+\doxymbox{\hyperlink{__elffile_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__elffile}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00002}00002\ \textcolor{stringliteral}{ELF\ file\ parser.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00003}00003\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00004}00004\ \textcolor{stringliteral}{This\ provides\ a\ class\ \`{}\`{}ELFFile\`{}\`{}\ that\ parses\ an\ ELF\ executable\ in\ a\ similar}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00005}00005\ \textcolor{stringliteral}{interface\ to\ \`{}\`{}ZipFile\`{}\`{}.\ Only\ the\ read\ interface\ is\ implemented.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00006}00006\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00007}00007\ \textcolor{stringliteral}{ELF\ header:\ https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00008}00008\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00012}00012\ \textcolor{keyword}{import}\ enum}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00013}00013\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00014}00014\ \textcolor{keyword}{import}\ struct}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00015}00015\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ IO}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00016}00016\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00018}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_invalid}{00018}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_invalid}{ELFInvalid}}(ValueError):}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00019}00019\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00020}00020\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00022}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_i_class}{00022}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_i_class}{EIClass}}(enum.IntEnum):}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00023}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_i_class_a2df3e80d02a5a1a135376556d9a4997c}{00023}}\ \ \ \ \ C32\ =\ 1}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00024}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_i_class_aec2c814131d61011762ddf193c7481d2}{00024}}\ \ \ \ \ C64\ =\ 2}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00027}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_i_data}{00027}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_i_data}{EIData}}(enum.IntEnum):}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00028}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_i_data_a150fbd3e9d8c7717ace1e625a3564339}{00028}}\ \ \ \ \ Lsb\ =\ 1}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00029}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_i_data_ad6788c9a820c4368748d17084d651c49}{00029}}\ \ \ \ \ Msb\ =\ 2}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00031}00031\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00032}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_machine}{00032}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_machine}{EMachine}}(enum.IntEnum):}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00033}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_machine_af64fd7b276f72491a63ba6bfcb73b24a}{00033}}\ \ \ \ \ I386\ =\ 3}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00034}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_machine_ab094ea913c7f0d647b1e5710b04a8089}{00034}}\ \ \ \ \ S390\ =\ 22}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00035}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_machine_a4029e1f39b62bc911c9faddadf8f5eed}{00035}}\ \ \ \ \ Arm\ =\ 40}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00036}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_machine_a7c3ecae553d776638becaafb74a39627}{00036}}\ \ \ \ \ X8664\ =\ 62}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00037}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_machine_a6ea5b91b67c09a5dbbb6813381b63ba7}{00037}}\ \ \ \ \ AArc64\ =\ 183}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00040}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file}{00040}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file}{ELFFile}}:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00041}00041\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00042}00042\ \textcolor{stringliteral}{\ \ \ \ Representation\ of\ an\ ELF\ executable.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00043}00043\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00045}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a1eb2e09c3fb50a0e284f24d7f900b2c3}{00045}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a1eb2e09c3fb50a0e284f24d7f900b2c3}{\_\_init\_\_}}(self,\ f:\ IO[bytes])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00046}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_aec336deb6d7c982f52758f308f4437ea}{00046}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_aec336deb6d7c982f52758f308f4437ea}{\_f}}\ =\ f}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00047}00047\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ ident\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a20c67d064965b98b9d0c5b873c7d2ae4}{\_read}}(\textcolor{stringliteral}{"{}16B"{}})}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ struct.error\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_invalid}{ELFInvalid}}(\textcolor{stringliteral}{"{}unable\ to\ parse\ identification"{}})\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ magic\ =\ bytes(ident[:4])}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ magic\ !=\ b\textcolor{stringliteral}{"{}\(\backslash\)x7fELF"{}}:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_invalid}{ELFInvalid}}(f\textcolor{stringliteral}{"{}invalid\ magic:\ \{magic!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00056}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a813e21ed61f783dcea9d28aa7f98aee0}{00056}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a813e21ed61f783dcea9d28aa7f98aee0}{capacity}}\ =\ ident[4]\ \ \textcolor{comment}{\#\ Format\ for\ program\ header\ (bitness).}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00057}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_ae5f3a1b0ad6e0369cf871162c668a402}{00057}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_ae5f3a1b0ad6e0369cf871162c668a402}{encoding}}\ =\ ident[5]\ \ \textcolor{comment}{\#\ Data\ structure\ encoding\ (endianness).}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ e\_fmt:\ Format\ for\ program\ header.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ p\_fmt:\ Format\ for\ section\ header.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ p\_idx:\ Indexes\ to\ find\ p\_type,\ p\_offset,\ and\ p\_filesz.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00063}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_aac06be09ac0454a8659f7b50427f7a0b}{00063}}\ \ \ \ \ \ \ \ \ \ \ \ \ e\_fmt,\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_aac06be09ac0454a8659f7b50427f7a0b}{\_p\_fmt}},\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a7d17668e5e74e2f3cd76042801afefc5}{\_p\_idx}}\ =\ \{}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (1,\ 1):\ (\textcolor{stringliteral}{"{}<HHIIIIIHHH"{}},\ \textcolor{stringliteral}{"{}<IIIIIIII"{}},\ (0,\ 1,\ 4)),\ \ \textcolor{comment}{\#\ 32-\/bit\ LSB.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (1,\ 2):\ (\textcolor{stringliteral}{"{}>HHIIIIIHHH"{}},\ \textcolor{stringliteral}{"{}>IIIIIIII"{}},\ (0,\ 1,\ 4)),\ \ \textcolor{comment}{\#\ 32-\/bit\ MSB.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (2,\ 1):\ (\textcolor{stringliteral}{"{}<HHIQQQIHHH"{}},\ \textcolor{stringliteral}{"{}<IIQQQQQQ"{}},\ (0,\ 2,\ 5)),\ \ \textcolor{comment}{\#\ 64-\/bit\ LSB.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (2,\ 2):\ (\textcolor{stringliteral}{"{}>HHIQQQIHHH"{}},\ \textcolor{stringliteral}{"{}>IIQQQQQQ"{}},\ (0,\ 2,\ 5)),\ \ \textcolor{comment}{\#\ 64-\/bit\ MSB.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ \ \ \ \ \}[(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a813e21ed61f783dcea9d28aa7f98aee0}{capacity}},\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_ae5f3a1b0ad6e0369cf871162c668a402}{encoding}})]}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_invalid}{ELFInvalid}}(}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}unrecognized\ capacity\ (\{self.capacity\})\ or\ encoding\ (\{self.encoding\})"{}}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \ \ \ \ )\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00073}00073\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ (}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_,}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00077}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a621c335e9f3af082f04ff4f67e44548c}{00077}}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a621c335e9f3af082f04ff4f67e44548c}{machine}},\ \ \textcolor{comment}{\#\ Architecture\ type.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_,}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_,}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00080}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_ab27a4d3e0ddc9ee0e34ec96005a69809}{00080}}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_ab27a4d3e0ddc9ee0e34ec96005a69809}{\_e\_phoff}},\ \ \textcolor{comment}{\#\ Offset\ of\ program\ header.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_,}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00082}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a3bc5a70bdc26b5b61ff7089b7ca58bfd}{00082}}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a3bc5a70bdc26b5b61ff7089b7ca58bfd}{flags}},\ \ \textcolor{comment}{\#\ Processor-\/specific\ flags.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_,}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00084}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a68c6dd242025a1fab31e57f2f35b65a0}{00084}}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a68c6dd242025a1fab31e57f2f35b65a0}{\_e\_phentsize}},\ \ \textcolor{comment}{\#\ Size\ of\ section.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00085}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a16feb1ea11bbd7857067855f8f379e48}{00085}}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a16feb1ea11bbd7857067855f8f379e48}{\_e\_phnum}},\ \ \textcolor{comment}{\#\ Number\ of\ sections.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ )\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a20c67d064965b98b9d0c5b873c7d2ae4}{\_read}}(e\_fmt)}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ struct.error\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_invalid}{ELFInvalid}}(\textcolor{stringliteral}{"{}unable\ to\ parse\ machine\ and\ section\ information"{}})\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00089}00089\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00090}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a20c67d064965b98b9d0c5b873c7d2ae4}{00090}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a20c67d064965b98b9d0c5b873c7d2ae4}{\_read}}(self,\ fmt:\ str)\ -\/>\ tuple[int,\ ...]:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ struct.unpack(fmt,\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_aec336deb6d7c982f52758f308f4437ea}{\_f}}.read(struct.calcsize(fmt)))}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00093}00093\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00094}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_ae0539d91a50b476a486052b2b9903d03}{00094}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_ae0539d91a50b476a486052b2b9903d03}{interpreter}}(self)\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00096}00096\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ path\ recorded\ in\ the\ \`{}\`{}PT\_INTERP\`{}\`{}\ section\ header.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00097}00097\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ index\ \textcolor{keywordflow}{in}\ range(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a16feb1ea11bbd7857067855f8f379e48}{\_e\_phnum}}):}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_aec336deb6d7c982f52758f308f4437ea}{\_f}}.seek(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_ab27a4d3e0ddc9ee0e34ec96005a69809}{\_e\_phoff}}\ +\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a68c6dd242025a1fab31e57f2f35b65a0}{\_e\_phentsize}}\ *\ index)}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ data\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a20c67d064965b98b9d0c5b873c7d2ae4}{\_read}}(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_aac06be09ac0454a8659f7b50427f7a0b}{\_p\_fmt}})}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ struct.error:}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ data[self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a7d17668e5e74e2f3cd76042801afefc5}{\_p\_idx}}[0]]\ !=\ 3:\ \ \textcolor{comment}{\#\ Not\ PT\_INTERP.}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_aec336deb6d7c982f52758f308f4437ea}{\_f}}.seek(data[self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a7d17668e5e74e2f3cd76042801afefc5}{\_p\_idx}}[1]])}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ os.fsdecode(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_aec336deb6d7c982f52758f308f4437ea}{\_f}}.read(data[self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file_a7d17668e5e74e2f3cd76042801afefc5}{\_p\_idx}}[2]])).strip(\textcolor{stringliteral}{"{}\(\backslash\)0"{}})}
+\DoxyCodeLine{\Hypertarget{__elffile_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+
+\end{DoxyCode}

@@ -1,0 +1,101 @@
+\doxysection{shapely.\+py}
+\hypertarget{shapely_8py_source}{}\label{shapely_8py_source}\index{venv/Lib/site-\/packages/psycopg/types/shapely.py@{venv/Lib/site-\/packages/psycopg/types/shapely.py}}
+\doxymbox{\hyperlink{shapely_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1shapely}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00002}00002\ \textcolor{stringliteral}{Adapters\ for\ PostGIS\ geometries}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00005}00005\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00007}00007\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ cache}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00009}00009\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ postgres}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00010}00010\ \textcolor{keyword}{from}\ ..pq\ \textcolor{keyword}{import}\ Format}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00011}00011\ \textcolor{keyword}{from}\ ..abc\ \textcolor{keyword}{import}\ AdaptContext,\ Buffer}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00012}00012\ \textcolor{keyword}{from}\ ..adapt\ \textcolor{keyword}{import}\ Dumper,\ Loader}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00013}00013\ \textcolor{keyword}{from}\ ..\_typeinfo\ \textcolor{keyword}{import}\ TypeInfo}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00015}00015\ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00016}00016\ \ \ \ \ \textcolor{keyword}{import}\ shapely}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00018}00018\ \textcolor{keywordflow}{except}\ ImportError:}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00019}00019\ \ \ \ \ \textcolor{keywordflow}{raise}\ ImportError(}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00020}00020\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}The\ module\ psycopg.types.shapely\ requires\ the\ package\ 'Shapely'"{}}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00021}00021\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ to\ be\ installed"{}}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00022}00022\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00024}00024\ \textcolor{keyword}{from}\ shapely.geometry.base\ \textcolor{keyword}{import}\ BaseGeometry}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00026}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1shapely_a8568f04232c04a8b0e0c1703a5a44ee3}{00026}}\ shapely\_version\ =\ tuple(int(s)\ \textcolor{keywordflow}{for}\ s\ \textcolor{keywordflow}{in}\ shapely.\_\_version\_\_.split(\textcolor{stringliteral}{"{}."{}})\ \textcolor{keywordflow}{if}\ s.isdigit())}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00028}00028\ \textcolor{keywordflow}{if}\ shapely\_version\ >=\ (2,\ 0):}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00029}00029\ \ \ \ \ \textcolor{keyword}{from}\ shapely\ \textcolor{keyword}{import}\ from\_wkb,\ to\_wkb}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00030}00030\ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00031}00031\ \ \ \ \ \textcolor{keyword}{from}\ shapely.wkb\ \textcolor{keyword}{import}\ dumps\ \textcolor{keyword}{as}\ to\_wkb\ \ \textcolor{comment}{\#\ type:\ ignore[no-\/redef]}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00032}00032\ \ \ \ \ \textcolor{keyword}{from}\ shapely.wkb\ \textcolor{keyword}{import}\ loads\ \textcolor{keyword}{as}\ from\_wkb\ \ \textcolor{comment}{\#\ type:\ ignore[no-\/redef]}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00035}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_geometry_binary_loader}{00035}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_geometry_binary_loader}{GeometryBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00036}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_geometry_binary_loader}{00036}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00038}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_geometry_binary_loader_a46ef8897b46abe9ed59a0305c68cbac0}{00038}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_geometry_binary_loader_a46ef8897b46abe9ed59a0305c68cbac0}{load}}(self,\ data:\ Buffer)\ -\/>\ BaseGeometry:}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ from\_wkb(bytes(data))}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00042}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_geometry_loader}{00042}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_geometry_loader}{GeometryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00043}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_geometry_loader_a4434eca83ce610899200c1522bdac119}{00043}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_geometry_loader_a4434eca83ce610899200c1522bdac119}{load}}(self,\ data:\ Buffer)\ -\/>\ BaseGeometry:}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ it's\ a\ hex\ string\ in\ binary}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ from\_wkb(bytes(data))}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00046}00046\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00047}00047\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00048}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_base_geometry_binary_dumper}{00048}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_base_geometry_binary_dumper}{BaseGeometryBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00049}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_base_geometry_binary_dumper}{00049}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00051}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_base_geometry_binary_dumper_a9b92c1065116330190c233d8f35fd8ce}{00051}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_base_geometry_binary_dumper_a9b92c1065116330190c233d8f35fd8ce}{dump}}(self,\ obj:\ BaseGeometry)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ to\_wkb(obj,\ include\_srid=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00055}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_base_geometry_dumper}{00055}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_base_geometry_dumper}{BaseGeometryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00056}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_base_geometry_dumper_afb6d5818e1dade81173d01cf6612710a}{00056}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_base_geometry_dumper_afb6d5818e1dade81173d01cf6612710a}{dump}}(self,\ obj:\ BaseGeometry)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ to\_wkb(obj,\ \textcolor{keyword}{True},\ include\_srid=\textcolor{keyword}{True}).encode()}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00060}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1shapely_a71aa517c80f5bddeb3dd9a0812698351}{00060}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1shapely_a71aa517c80f5bddeb3dd9a0812698351}{register\_shapely}}(info:\ TypeInfo,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00061}00061\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Register\ Shapely\ dumper\ and\ loaders."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00062}00062\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00063}00063\ \ \ \ \ \textcolor{comment}{\#\ A\ friendly\ error\ warning\ instead\ of\ an\ AttributeError\ in\ case\ fetch()}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00064}00064\ \ \ \ \ \textcolor{comment}{\#\ failed\ and\ it\ wasn't\ noticed.}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00065}00065\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ info:}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(\textcolor{stringliteral}{"{}no\ info\ passed.\ Is\ the\ 'postgis'\ extension\ loaded?"{}})}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00068}00068\ \ \ \ \ info.register(context)}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00069}00069\ \ \ \ \ adapters\ =\ context.adapters\ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{else}\ postgres.adapters}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00071}00071\ \ \ \ \ adapters.register\_loader(info.oid,\ GeometryBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00072}00072\ \ \ \ \ adapters.register\_loader(info.oid,\ GeometryLoader)}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00073}00073\ \ \ \ \ \textcolor{comment}{\#\ Default\ binary\ dump}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00074}00074\ \ \ \ \ adapters.register\_dumper(BaseGeometry,\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1shapely_a4cd50245b421fb72682d7cfc72ee788b}{\_make\_dumper}}(info.oid))}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00075}00075\ \ \ \ \ adapters.register\_dumper(BaseGeometry,\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1shapely_a26b5ae5a6de4bb7065ff4c1ac6831694}{\_make\_binary\_dumper}}(info.oid))}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00076}00076\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00078}00078\ \textcolor{comment}{\#\ Cache\ all\ dynamically-\/generated\ types\ to\ avoid\ leaks\ in\ case\ the\ types}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00079}00079\ \textcolor{comment}{\#\ cannot\ be\ GC'd.}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00082}00082\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00083}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1shapely_a4cd50245b421fb72682d7cfc72ee788b}{00083}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1shapely_a4cd50245b421fb72682d7cfc72ee788b}{\_make\_dumper}}(oid\_in:\ int)\ -\/>\ type[BaseGeometryDumper]:}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00084}00084\ \ \ \ \ \textcolor{keyword}{class\ }GeometryDumper(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_base_geometry_dumper}{BaseGeometryDumper}}):}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ oid\ =\ oid\_in}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00087}00087\ \ \ \ \ \textcolor{keywordflow}{return}\ GeometryDumper}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00089}00089\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00090}00090\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00091}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1shapely_a26b5ae5a6de4bb7065ff4c1ac6831694}{00091}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1shapely_a26b5ae5a6de4bb7065ff4c1ac6831694}{\_make\_binary\_dumper}}(oid\_in:\ int)\ -\/>\ type[BaseGeometryBinaryDumper]:}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00092}00092\ \ \ \ \ \textcolor{keyword}{class\ }GeometryBinaryDumper(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1shapely_1_1_base_geometry_binary_dumper}{BaseGeometryBinaryDumper}}):}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ oid\ =\ oid\_in}
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{shapely_8py_source_l00095}00095\ \ \ \ \ \textcolor{keywordflow}{return}\ GeometryBinaryDumper}
+
+\end{DoxyCode}

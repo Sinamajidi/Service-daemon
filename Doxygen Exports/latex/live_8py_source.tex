@@ -1,0 +1,406 @@
+\doxysection{live.\+py}
+\hypertarget{live_8py_source}{}\label{live_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/rich/live.py@{venv/Lib/site-\/packages/pip/\_vendor/rich/live.py}}
+\doxymbox{\hyperlink{live_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1live}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00003}00003\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00004}00004\ \textcolor{keyword}{from}\ threading\ \textcolor{keyword}{import}\ Event,\ RLock,\ Thread}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00005}00005\ \textcolor{keyword}{from}\ types\ \textcolor{keyword}{import}\ TracebackType}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00006}00006\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ IO,\ TYPE\_CHECKING,\ Any,\ Callable,\ List,\ Optional,\ TextIO,\ Type,\ cast}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00008}00008\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ get\_console}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00009}00009\ \textcolor{keyword}{from}\ .console\ \textcolor{keyword}{import}\ Console,\ ConsoleRenderable,\ Group,\ RenderableType,\ RenderHook}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00010}00010\ \textcolor{keyword}{from}\ .control\ \textcolor{keyword}{import}\ Control}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00011}00011\ \textcolor{keyword}{from}\ .file\_proxy\ \textcolor{keyword}{import}\ FileProxy}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00012}00012\ \textcolor{keyword}{from}\ .jupyter\ \textcolor{keyword}{import}\ JupyterMixin}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00013}00013\ \textcolor{keyword}{from}\ .live\_render\ \textcolor{keyword}{import}\ LiveRender,\ VerticalOverflowMethod}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00014}00014\ \textcolor{keyword}{from}\ .screen\ \textcolor{keyword}{import}\ Screen}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00015}00015\ \textcolor{keyword}{from}\ .text\ \textcolor{keyword}{import}\ Text}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00016}00016\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00017}00017\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00018}00018\ \ \ \ \ \textcolor{comment}{\#\ Can\ be\ replaced\ with\ \`{}from\ typing\ import\ Self`\ in\ Python\ 3.11+}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00019}00019\ \ \ \ \ \textcolor{keyword}{from}\ typing\_extensions\ \textcolor{keyword}{import}\ Self\ \ \textcolor{comment}{\#\ pragma:\ no\ cover}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00020}00020\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00022}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread}{00022}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread}{\_RefreshThread}}(Thread):}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00023}00023\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ thread\ that\ calls\ refresh()\ at\ regular\ intervals."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00025}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_a530c6ae113c17fd876cd50ae297c10b7}{00025}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_a530c6ae113c17fd876cd50ae297c10b7}{\_\_init\_\_}}(self,\ live:\ \textcolor{stringliteral}{"{}Live"{}},\ refresh\_per\_second:\ float)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00026}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_aaebf70a091c4e8effed7156f1814eb01}{00026}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_aaebf70a091c4e8effed7156f1814eb01}{live}}\ =\ live}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00027}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_aeb67dc37af3f9825610a4da3229dc995}{00027}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_aeb67dc37af3f9825610a4da3229dc995}{refresh\_per\_second}}\ =\ refresh\_per\_second}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00028}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_a8bca6c6b6d9d8cbf4e2ac33bbdd40103}{00028}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_a8bca6c6b6d9d8cbf4e2ac33bbdd40103}{done}}\ =\ Event()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00029}00029\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_a530c6ae113c17fd876cd50ae297c10b7}{\_\_init\_\_}}(daemon=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00031}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_ad3fb634a0cd48c8051ca33d2b9416c0b}{00031}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_ad3fb634a0cd48c8051ca33d2b9416c0b}{stop}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00032}00032\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_a8bca6c6b6d9d8cbf4e2ac33bbdd40103}{done}}.set()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00034}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_a749bb245c0213ca056fad3de61a7a9f4}{00034}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_a749bb245c0213ca056fad3de61a7a9f4}{run}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_a8bca6c6b6d9d8cbf4e2ac33bbdd40103}{done}}.wait(1\ /\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_aeb67dc37af3f9825610a4da3229dc995}{refresh\_per\_second}}):}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_aaebf70a091c4e8effed7156f1814eb01}{live}}.\_lock:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_a8bca6c6b6d9d8cbf4e2ac33bbdd40103}{done}}.is\_set():}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread_aaebf70a091c4e8effed7156f1814eb01}{live}}.refresh()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00041}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live}{00041}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live}{Live}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1jupyter_1_1_jupyter_mixin}{JupyterMixin}},\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1console_1_1_render_hook}{RenderHook}}):}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00042}00042\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Renders\ an\ auto-\/updating\ live\ display\ of\ any\ given\ renderable.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00043}00043\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00044}00044\ \textcolor{stringliteral}{\ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00045}00045\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ renderable\ (RenderableType,\ optional):\ The\ renderable\ to\ live\ display.\ Defaults\ to\ displaying\ nothing.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00046}00046\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ console\ (Console,\ optional):\ Optional\ Console\ instance.\ Defaults\ to\ an\ internal\ Console\ instance\ writing\ to\ stdout.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00047}00047\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ screen\ (bool,\ optional):\ Enable\ alternate\ screen\ mode.\ Defaults\ to\ False.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00048}00048\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ auto\_refresh\ (bool,\ optional):\ Enable\ auto\ refresh.\ If\ disabled,\ you\ will\ need\ to\ call\ \`{}refresh()\`{}\ or\ \`{}update()\`{}\ with\ refresh\ flag.\ Defaults\ to\ True}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00049}00049\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ refresh\_per\_second\ (float,\ optional):\ Number\ of\ times\ per\ second\ to\ refresh\ the\ live\ display.\ Defaults\ to\ 4.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00050}00050\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ transient\ (bool,\ optional):\ Clear\ the\ renderable\ on\ exit\ (has\ no\ effect\ when\ screen=True).\ Defaults\ to\ False.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00051}00051\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ redirect\_stdout\ (bool,\ optional):\ Enable\ redirection\ of\ stdout,\ so\ \`{}\`{}print\`{}\`{}\ may\ be\ used.\ Defaults\ to\ True.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00052}00052\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ redirect\_stderr\ (bool,\ optional):\ Enable\ redirection\ of\ stderr.\ Defaults\ to\ True.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00053}00053\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ vertical\_overflow\ (VerticalOverflowMethod,\ optional):\ How\ to\ handle\ renderable\ when\ it\ is\ too\ tall\ for\ the\ console.\ Defaults\ to\ "{}ellipsis"{}.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00054}00054\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ get\_renderable\ (Callable[[],\ RenderableType],\ optional):\ Optional\ callable\ to\ get\ renderable.\ Defaults\ to\ None.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00055}00055\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00057}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a8cb2711d02a795afba8fca8cae339823}{00057}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a8cb2711d02a795afba8fca8cae339823}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ renderable:\ Optional[RenderableType]\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ console:\ Optional[Console]\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ screen:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ auto\_refresh:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ refresh\_per\_second:\ float\ =\ 4,}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ transient:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ redirect\_stdout:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ redirect\_stderr:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ vertical\_overflow:\ VerticalOverflowMethod\ =\ \textcolor{stringliteral}{"{}ellipsis"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ get\_renderable:\ Optional[Callable[[],\ RenderableType]]\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00070}00070\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ refresh\_per\_second\ >\ 0,\ \textcolor{stringliteral}{"{}refresh\_per\_second\ must\ be\ >\ 0"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00072}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a74c181ee8034628ee88a1136b81b4a4b}{00072}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a74c181ee8034628ee88a1136b81b4a4b}{\_renderable}}\ =\ renderable}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00073}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{00073}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}\ =\ console\ \textcolor{keywordflow}{if}\ console\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_a631c84f600c4fa86301913bc2f5eb175}{get\_console}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00074}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a9faf9bcc984e6b0dbd8e144d78567292}{00074}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a9faf9bcc984e6b0dbd8e144d78567292}{\_screen}}\ =\ screen}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00075}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aca36c1893dbfb411195802e5561bac92}{00075}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aca36c1893dbfb411195802e5561bac92}{\_alt\_screen}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00076}00076\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00077}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a775f12f420fcc9b8a10de17701664fbf}{00077}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a775f12f420fcc9b8a10de17701664fbf}{\_redirect\_stdout}}\ =\ redirect\_stdout}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00078}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_ae5e420a690e72bcc9b505ad172b991b8}{00078}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_ae5e420a690e72bcc9b505ad172b991b8}{\_redirect\_stderr}}\ =\ redirect\_stderr}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00079}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aad6474864d2d72e0f8b2c32d9ad6b395}{00079}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aad6474864d2d72e0f8b2c32d9ad6b395}{\_restore\_stdout}}:\ Optional[IO[str]]\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00080}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a1095c41dc48181ce9c00c789022217e4}{00080}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a1095c41dc48181ce9c00c789022217e4}{\_restore\_stderr}}:\ Optional[IO[str]]\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00082}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_ae92220b1ffc092426761f4542d36f673}{00082}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_ae92220b1ffc092426761f4542d36f673}{\_lock}}\ =\ RLock()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00083}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a85624525915b1ee3aa5a424d9db99ef3}{00083}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a85624525915b1ee3aa5a424d9db99ef3}{ipy\_widget}}:\ Optional[Any]\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00084}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a05db4a1a4e6397c8044d0de4706feabe}{00084}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a05db4a1a4e6397c8044d0de4706feabe}{auto\_refresh}}\ =\ auto\_refresh}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00085}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_af7f293f64d88a7e6642c8f7f2d9ac3b8}{00085}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_af7f293f64d88a7e6642c8f7f2d9ac3b8}{\_started}}:\ bool\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00086}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aa7366f7f8e4909cf7851b8fc5a0d42b3}{00086}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aa7366f7f8e4909cf7851b8fc5a0d42b3}{transient}}\ =\ \textcolor{keyword}{True}\ \textcolor{keywordflow}{if}\ screen\ \textcolor{keywordflow}{else}\ transient}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00087}00087\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00088}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a4d4e532fc22a8d26a956f40450b7801d}{00088}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a4d4e532fc22a8d26a956f40450b7801d}{\_refresh\_thread}}:\ Optional[\_RefreshThread]\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00089}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a0ed033170c3f2320eee0370bd4907b75}{00089}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a0ed033170c3f2320eee0370bd4907b75}{refresh\_per\_second}}\ =\ refresh\_per\_second}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00090}00090\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00091}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a99abbe3f75ef8ed8d7de4d26a53f7c55}{00091}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a99abbe3f75ef8ed8d7de4d26a53f7c55}{vertical\_overflow}}\ =\ vertical\_overflow}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00092}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a2793744a7fea1abccecdecc6fac61529}{00092}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a2793744a7fea1abccecdecc6fac61529}{\_get\_renderable}}\ =\ get\_renderable}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00093}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a27010108966f76ba73d1843cc566bcc9}{00093}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a27010108966f76ba73d1843cc566bcc9}{\_live\_render}}\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live__render_1_1_live_render}{LiveRender}}(}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a29183931e16bbf8c5a1f1923ba813689}{get\_renderable}}(),\ vertical\_overflow=vertical\_overflow}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00096}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a5881fca0f6ccbdda5b3f80f69a33169a}{00096}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a5881fca0f6ccbdda5b3f80f69a33169a}{\_nested}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00097}00097\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00098}00098\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00099}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aab697c510f54e718411ce0b1566c13ae}{00099}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aab697c510f54e718411ce0b1566c13ae}{is\_started}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Check\ if\ live\ display\ has\ been\ started."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_af7f293f64d88a7e6642c8f7f2d9ac3b8}{\_started}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00103}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a29183931e16bbf8c5a1f1923ba813689}{00103}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a29183931e16bbf8c5a1f1923ba813689}{get\_renderable}}(self)\ -\/>\ RenderableType:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ renderable\ =\ (}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a2793744a7fea1abccecdecc6fac61529}{\_get\_renderable}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a2793744a7fea1abccecdecc6fac61529}{\_get\_renderable}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a74c181ee8034628ee88a1136b81b4a4b}{\_renderable}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ renderable\ \textcolor{keywordflow}{or}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00110}00110\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00111}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7216ec35a1494a83ed749407ef4e0c40}{00111}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7216ec35a1494a83ed749407ef4e0c40}{start}}(self,\ refresh:\ bool\ =\ \textcolor{keyword}{False})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Start\ live\ rendering\ display.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00113}00113\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00114}00114\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00115}00115\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ refresh\ (bool,\ optional):\ Also\ refresh.\ Defaults\ to\ False.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00116}00116\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_ae92220b1ffc092426761f4542d36f673}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_af7f293f64d88a7e6642c8f7f2d9ac3b8}{\_started}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_af7f293f64d88a7e6642c8f7f2d9ac3b8}{\_started}}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.set\_live(self):}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a5881fca0f6ccbdda5b3f80f69a33169a}{\_nested}}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00125}00125\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a9faf9bcc984e6b0dbd8e144d78567292}{\_screen}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aca36c1893dbfb411195802e5561bac92}{\_alt\_screen}}\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.set\_alt\_screen(\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.show\_cursor(\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a2334e4a1ec212587b32673e625f01e98}{\_enable\_redirect\_io}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.push\_render\_hook(self)}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ refresh:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a898af4f99a1ea11e331166c27c0c202b}{refresh}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ Exception:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ refresh\ fails,\ we\ want\ to\ stop\ the\ redirection\ of\ sys.stderr,}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ so\ the\ error\ stacktrace\ is\ properly\ displayed\ in\ the\ terminal.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ (or,\ if\ the\ code\ that\ calls\ Rich\ captures\ the\ exception\ and\ wants\ to\ display\ something,}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ let\ this\ be\ displayed\ in\ the\ terminal).}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a8b9a6fd11fa9b17db3cea3143e41fecc}{stop}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a05db4a1a4e6397c8044d0de4706feabe}{auto\_refresh}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a4d4e532fc22a8d26a956f40450b7801d}{\_refresh\_thread}}\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1___refresh_thread}{\_RefreshThread}}(self,\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a0ed033170c3f2320eee0370bd4907b75}{refresh\_per\_second}})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a4d4e532fc22a8d26a956f40450b7801d}{\_refresh\_thread}}.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7216ec35a1494a83ed749407ef4e0c40}{start}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00145}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a8b9a6fd11fa9b17db3cea3143e41fecc}{00145}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a8b9a6fd11fa9b17db3cea3143e41fecc}{stop}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Stop\ live\ rendering\ display."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_ae92220b1ffc092426761f4542d36f673}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_af7f293f64d88a7e6642c8f7f2d9ac3b8}{\_started}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_af7f293f64d88a7e6642c8f7f2d9ac3b8}{\_started}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.clear\_live()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a5881fca0f6ccbdda5b3f80f69a33169a}{\_nested}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aa7366f7f8e4909cf7851b8fc5a0d42b3}{transient}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00154}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a979a51b77b297d70576cc54be0d649e1}{00154}}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_ae273494f6ebaa4c523f8d83d552a0633}{print}}(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a979a51b77b297d70576cc54be0d649e1}{renderable}})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00156}00156\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a05db4a1a4e6397c8044d0de4706feabe}{auto\_refresh}}\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a4d4e532fc22a8d26a956f40450b7801d}{\_refresh\_thread}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a4d4e532fc22a8d26a956f40450b7801d}{\_refresh\_thread}}.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a8b9a6fd11fa9b17db3cea3143e41fecc}{stop}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a4d4e532fc22a8d26a956f40450b7801d}{\_refresh\_thread}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ allow\ it\ to\ fully\ render\ on\ the\ last\ even\ if\ overflow}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a99abbe3f75ef8ed8d7de4d26a53f7c55}{vertical\_overflow}}\ =\ \textcolor{stringliteral}{"{}visible"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aca36c1893dbfb411195802e5561bac92}{\_alt\_screen}}\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.is\_jupyter:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a898af4f99a1ea11e331166c27c0c202b}{refresh}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_abd1c99bedb1776d5e597794030204916}{\_disable\_redirect\_io}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.pop\_render\_hook()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aca36c1893dbfb411195802e5561bac92}{\_alt\_screen}}\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.is\_terminal:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.line()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.show\_cursor(\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aca36c1893dbfb411195802e5561bac92}{\_alt\_screen}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.set\_alt\_screen(\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aa7366f7f8e4909cf7851b8fc5a0d42b3}{transient}}\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aca36c1893dbfb411195802e5561bac92}{\_alt\_screen}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.control(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a27010108966f76ba73d1843cc566bcc9}{\_live\_render}}.restore\_cursor())}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a85624525915b1ee3aa5a424d9db99ef3}{ipy\_widget}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aa7366f7f8e4909cf7851b8fc5a0d42b3}{transient}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a85624525915b1ee3aa5a424d9db99ef3}{ipy\_widget}}.close()\ \ \textcolor{comment}{\#\ pragma:\ no\ cover}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00178}00178\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00179}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a0f01bd771a3635aa5e814c047f1db52d}{00179}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a0f01bd771a3635aa5e814c047f1db52d}{\_\_enter\_\_}}(self)\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7216ec35a1494a83ed749407ef4e0c40}{start}}(refresh=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a74c181ee8034628ee88a1136b81b4a4b}{\_renderable}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00182}00182\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00183}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_ad2c0c523844059a1131851d7cab4fddb}{00183}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_ad2c0c523844059a1131851d7cab4fddb}{\_\_exit\_\_}}(}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ exc\_type:\ Optional[Type[BaseException]],}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ exc\_val:\ Optional[BaseException],}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ exc\_tb:\ Optional[TracebackType],}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00188}00188\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a8b9a6fd11fa9b17db3cea3143e41fecc}{stop}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00190}00190\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00191}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a2334e4a1ec212587b32673e625f01e98}{00191}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a2334e4a1ec212587b32673e625f01e98}{\_enable\_redirect\_io}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Enable\ redirecting\ of\ stdout\ /\ stderr."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.is\_terminal\ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.is\_jupyter:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a775f12f420fcc9b8a10de17701664fbf}{\_redirect\_stdout}}\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ isinstance(sys.stdout,\ FileProxy):}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aad6474864d2d72e0f8b2c32d9ad6b395}{\_restore\_stdout}}\ =\ sys.stdout}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ sys.stdout\ =\ cast(\textcolor{stringliteral}{"{}TextIO"{}},\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1file__proxy_1_1_file_proxy}{FileProxy}}(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}},\ sys.stdout))}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_ae5e420a690e72bcc9b505ad172b991b8}{\_redirect\_stderr}}\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ isinstance(sys.stderr,\ FileProxy):}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a1095c41dc48181ce9c00c789022217e4}{\_restore\_stderr}}\ =\ sys.stderr}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ sys.stderr\ =\ cast(\textcolor{stringliteral}{"{}TextIO"{}},\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1file__proxy_1_1_file_proxy}{FileProxy}}(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}},\ sys.stderr))}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00200}00200\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00201}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_abd1c99bedb1776d5e597794030204916}{00201}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_abd1c99bedb1776d5e597794030204916}{\_disable\_redirect\_io}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Disable\ redirecting\ of\ stdout\ /\ stderr."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aad6474864d2d72e0f8b2c32d9ad6b395}{\_restore\_stdout}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ sys.stdout\ =\ cast(\textcolor{stringliteral}{"{}TextIO"{}},\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aad6474864d2d72e0f8b2c32d9ad6b395}{\_restore\_stdout}})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aad6474864d2d72e0f8b2c32d9ad6b395}{\_restore\_stdout}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a1095c41dc48181ce9c00c789022217e4}{\_restore\_stderr}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \ \ \ \ sys.stderr\ =\ cast(\textcolor{stringliteral}{"{}TextIO"{}},\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a1095c41dc48181ce9c00c789022217e4}{\_restore\_stderr}})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a1095c41dc48181ce9c00c789022217e4}{\_restore\_stderr}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00209}00209\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00210}00210\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00211}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_adbdec7c7c6ac9070814e96b505a173c1}{00211}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a979a51b77b297d70576cc54be0d649e1}{renderable}}(self)\ -\/>\ RenderableType:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ the\ renderable\ that\ is\ being\ displayed}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00213}00213\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00214}00214\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Returns:}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00215}00215\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ RenderableType:\ Displayed\ renderable.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00216}00216\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ live\_stack\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.\_live\_stack}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ renderable:\ RenderableType}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ live\_stack\ \textcolor{keywordflow}{and}\ self\ \textcolor{keywordflow}{is}\ live\_stack[0]:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ first\ Live\ instance\ will\ render\ everything\ in\ the\ Live\ stack}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ renderable\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1console_1_1_group}{Group}}(*[live.get\_renderable()\ \textcolor{keywordflow}{for}\ live\ \textcolor{keywordflow}{in}\ live\_stack])}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \ \ \ \ renderable\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a29183931e16bbf8c5a1f1923ba813689}{get\_renderable}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1screen_1_1_screen}{Screen}}(renderable)\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aca36c1893dbfb411195802e5561bac92}{\_alt\_screen}}\ \textcolor{keywordflow}{else}\ renderable}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00225}00225\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00226}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_af9726cf9966a0250388c2b0138fb80cc}{00226}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_af9726cf9966a0250388c2b0138fb80cc}{update}}(self,\ renderable:\ RenderableType,\ *,\ refresh:\ bool\ =\ \textcolor{keyword}{False})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Update\ the\ renderable\ that\ is\ being\ displayed}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00228}00228\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00229}00229\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00230}00230\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ renderable\ (RenderableType):\ New\ renderable\ to\ use.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00231}00231\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ refresh\ (bool,\ optional):\ Refresh\ the\ display.\ Defaults\ to\ False.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00232}00232\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(renderable,\ str):}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \ \ \ \ renderable\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.render\_str(renderable)}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_ae92220b1ffc092426761f4542d36f673}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a74c181ee8034628ee88a1136b81b4a4b}{\_renderable}}\ =\ renderable}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ refresh:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a898af4f99a1ea11e331166c27c0c202b}{refresh}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00239}00239\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00240}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a898af4f99a1ea11e331166c27c0c202b}{00240}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a898af4f99a1ea11e331166c27c0c202b}{refresh}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Update\ the\ display\ of\ the\ Live\ Render."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_ae92220b1ffc092426761f4542d36f673}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a27010108966f76ba73d1843cc566bcc9}{\_live\_render}}.set\_renderable(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a979a51b77b297d70576cc54be0d649e1}{renderable}})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a5881fca0f6ccbdda5b3f80f69a33169a}{\_nested}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.\_live\_stack:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.\_live\_stack[0].\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a898af4f99a1ea11e331166c27c0c202b}{refresh}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00248}00248\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.is\_jupyter:\ \ \textcolor{comment}{\#\ pragma:\ no\ cover}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{from}\ IPython.display\ \textcolor{keyword}{import}\ display}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{from}\ ipywidgets\ \textcolor{keyword}{import}\ Output}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ImportError:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{import}\ warnings}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00255}00255\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ warnings.warn(\textcolor{stringliteral}{'install\ "{}ipywidgets"{}\ for\ Jupyter\ support'})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a85624525915b1ee3aa5a424d9db99ef3}{ipy\_widget}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a85624525915b1ee3aa5a424d9db99ef3}{ipy\_widget}}\ =\ Output()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ display(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a85624525915b1ee3aa5a424d9db99ef3}{ipy\_widget}})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00261}00261\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a85624525915b1ee3aa5a424d9db99ef3}{ipy\_widget}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a85624525915b1ee3aa5a424d9db99ef3}{ipy\_widget}}.clear\_output(wait=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_ae273494f6ebaa4c523f8d83d552a0633}{print}}(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a27010108966f76ba73d1843cc566bcc9}{\_live\_render}}.renderable)}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.is\_terminal\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.is\_dumb\_terminal:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_ae273494f6ebaa4c523f8d83d552a0633}{print}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1control_1_1_control}{Control}}())}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ (}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_af7f293f64d88a7e6642c8f7f2d9ac3b8}{\_started}}\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aa7366f7f8e4909cf7851b8fc5a0d42b3}{transient}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ ):\ \ \textcolor{comment}{\#\ if\ it\ is\ finished\ allow\ files\ or\ dumb-\/terminals\ to\ see\ final\ result}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_ae273494f6ebaa4c523f8d83d552a0633}{print}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1control_1_1_control}{Control}}())}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00273}00273\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00274}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a63679b88a4fb9d2db4238584b3a2f485}{00274}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a63679b88a4fb9d2db4238584b3a2f485}{process\_renderables}}(}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ self,\ renderables:\ List[ConsoleRenderable]}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00276}00276\ \ \ \ \ )\ -\/>\ List[ConsoleRenderable]:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Process\ renderables\ to\ restore\ cursor\ and\ display\ progress."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a27010108966f76ba73d1843cc566bcc9}{\_live\_render}}.vertical\_overflow\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a99abbe3f75ef8ed8d7de4d26a53f7c55}{vertical\_overflow}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a7d0411cd64ea03d85865c388a8c8c9dd}{console}}.is\_interactive:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ lock\ needs\ acquiring\ as\ user\ can\ modify\ live\_render\ renderable\ at\ any\ time\ unlike\ in\ Progress.}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_ae92220b1ffc092426761f4542d36f673}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ reset\ =\ (}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Control.home()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aca36c1893dbfb411195802e5561bac92}{\_alt\_screen}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a27010108966f76ba73d1843cc566bcc9}{\_live\_render}}.position\_cursor()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ renderables\ =\ [reset,\ *renderables,\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a27010108966f76ba73d1843cc566bcc9}{\_live\_render}}]}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ (}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_af7f293f64d88a7e6642c8f7f2d9ac3b8}{\_started}}\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_aa7366f7f8e4909cf7851b8fc5a0d42b3}{transient}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ ):\ \ \textcolor{comment}{\#\ if\ it\ is\ finished\ render\ the\ final\ output\ for\ files\ or\ dumb\_terminals}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ \ \ \ \ renderables\ =\ [*renderables,\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live_a27010108966f76ba73d1843cc566bcc9}{\_live\_render}}]}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00292}00292\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ renderables}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00294}00294\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00295}00295\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00296}00296\ \textcolor{keywordflow}{if}\ \_\_name\_\_\ ==\ \textcolor{stringliteral}{"{}\_\_main\_\_"{}}:\ \ \textcolor{comment}{\#\ pragma:\ no\ cover}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00297}00297\ \ \ \ \ \textcolor{keyword}{import}\ random}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00298}00298\ \ \ \ \ \textcolor{keyword}{import}\ time}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00299}00299\ \ \ \ \ \textcolor{keyword}{from}\ itertools\ \textcolor{keyword}{import}\ cycle}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00300}00300\ \ \ \ \ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Dict,\ List,\ Tuple}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00301}00301\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00302}00302\ \ \ \ \ \textcolor{keyword}{from}\ .align\ \textcolor{keyword}{import}\ Align}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00303}00303\ \ \ \ \ \textcolor{keyword}{from}\ .console\ \textcolor{keyword}{import}\ Console}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00304}00304\ \ \ \ \ \textcolor{keyword}{from}\ .live\ \textcolor{keyword}{import}\ Live\ \textcolor{keyword}{as}\ Live}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00305}00305\ \ \ \ \ \textcolor{keyword}{from}\ .panel\ \textcolor{keyword}{import}\ Panel}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00306}00306\ \ \ \ \ \textcolor{keyword}{from}\ .rule\ \textcolor{keyword}{import}\ Rule}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00307}00307\ \ \ \ \ \textcolor{keyword}{from}\ .syntax\ \textcolor{keyword}{import}\ Syntax}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00308}00308\ \ \ \ \ \textcolor{keyword}{from}\ .table\ \textcolor{keyword}{import}\ Table}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00309}00309\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00310}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1live_a6c3f9bc0a66e0c419a9732ee8860d845}{00310}}\ \ \ \ \ console\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1console_1_1_console}{Console}}()}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00311}00311\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00312}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1live_a8666632001cab7207cd2751c96c770ac}{00312}}\ \ \ \ \ syntax\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1syntax_1_1_syntax}{Syntax}}(}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'''def\ loop\_last(values:\ Iterable[T])\ -\/>\ Iterable[Tuple[bool,\ T]]:}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00314}00314\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}Iterate\ and\ generate\ a\ tuple\ with\ a\ flag\ for\ last\ value."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00315}00315\ \textcolor{stringliteral}{\ \ \ \ iter\_values\ =\ iter(values)}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00316}00316\ \textcolor{stringliteral}{\ \ \ \ try:}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00317}00317\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ previous\_value\ =\ next(iter\_values)}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00318}00318\ \textcolor{stringliteral}{\ \ \ \ except\ StopIteration:}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00319}00319\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ return}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00320}00320\ \textcolor{stringliteral}{\ \ \ \ for\ value\ in\ iter\_values:}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00321}00321\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ yield\ False,\ previous\_value}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00322}00322\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ previous\_value\ =\ value}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00323}00323\ \textcolor{stringliteral}{\ \ \ \ yield\ True,\ previous\_value'''},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}python"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00325}00325\ \ \ \ \ \ \ \ \ line\_numbers=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00326}00326\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00327}00327\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00328}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1live_a3c150170ab119cd3430b232b06c62c6e}{00328}}\ \ \ \ \ table\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1table_1_1_table}{Table}}(\textcolor{stringliteral}{"{}foo"{}},\ \textcolor{stringliteral}{"{}bar"{}},\ \textcolor{stringliteral}{"{}baz"{}})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00329}00329\ \ \ \ \ table.add\_row(\textcolor{stringliteral}{"{}1"{}},\ \textcolor{stringliteral}{"{}2"{}},\ \textcolor{stringliteral}{"{}3"{}})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00330}00330\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00331}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1live_ac7d3b3fd0fdeac622da5d38d9e901310}{00331}}\ \ \ \ \ progress\_renderables\ =\ [}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00332}00332\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}You\ can\ make\ the\ terminal\ shorter\ and\ taller\ to\ see\ the\ live\ table\ hide"{}}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Text\ may\ be\ printed\ while\ the\ progress\ bars\ are\ rendering."{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00334}00334\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1panel_1_1_panel}{Panel}}(\textcolor{stringliteral}{"{}In\ fact,\ [i]any[/i]\ renderable\ will\ work"{}}),}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00335}00335\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Such\ as\ [magenta]tables[/]..."{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00336}00336\ \ \ \ \ \ \ \ \ table,}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Pretty\ printed\ structures..."{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ \{\textcolor{stringliteral}{"{}type"{}}:\ \textcolor{stringliteral}{"{}example"{}},\ \textcolor{stringliteral}{"{}text"{}}:\ \textcolor{stringliteral}{"{}Pretty\ printed"{}}\},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Syntax..."{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ syntax,}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00341}00341\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1rule_1_1_rule}{Rule}}(\textcolor{stringliteral}{"{}Give\ it\ a\ try!"{}}),}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00342}00342\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00343}00343\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00344}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1live_a01891a19b0911d56f37360f023569f4f}{00344}}\ \ \ \ \ examples\ =\ cycle(progress\_renderables)}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00345}00345\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00346}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1live_a69e955042c6b3d41c8d3fe841fa43a9e}{00346}}\ \ \ \ \ exchanges\ =\ [}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}SGD"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}MYR"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}EUR"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}USD"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}AUD"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}JPY"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}CNH"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}HKD"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}CAD"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}INR"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}DKK"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00358}00358\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}GBP"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}RUB"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}NZD"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}MXN"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}IDR"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}TWD"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}THB"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}VND"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00366}00366\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00367}00367\ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live}{Live}}(console=console)\ \textcolor{keyword}{as}\ live\_table:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00368}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1live_aab8de10f8faf2d67e5433e9a9c4fe251}{00368}}\ \ \ \ \ \ \ \ \ exchange\_rate\_dict:\ Dict[Tuple[str,\ str],\ float]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00369}00369\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ index\ \textcolor{keywordflow}{in}\ range(100):}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00371}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1live_a2363c4a0a9a84d933b8ce35c9ff7d9f7}{00371}}\ \ \ \ \ \ \ \ \ \ \ \ \ select\_exchange\ =\ exchanges[index\ \%\ len(exchanges)]}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00372}00372\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00373}00373\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ exchange\ \textcolor{keywordflow}{in}\ exchanges:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ exchange\ ==\ select\_exchange:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ time.sleep(0.4)}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ random.randint(0,\ 10)\ <\ 1:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ console.log(next(examples))}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00379}00379\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ exchange\_rate\_dict[(select\_exchange,\ exchange)]\ =\ 200\ /\ (}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (random.random()\ *\ 320)\ +\ 1}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(exchange\_rate\_dict)\ >\ len(exchanges)\ -\/\ 1:}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ exchange\_rate\_dict.pop(list(exchange\_rate\_dict.keys())[0])}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ table\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1table_1_1_table}{Table}}(title=\textcolor{stringliteral}{"{}Exchange\ Rates"{}})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00385}00385\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ table.add\_column(\textcolor{stringliteral}{"{}Source\ Currency"{}})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ table.add\_column(\textcolor{stringliteral}{"{}Destination\ Currency"{}})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ table.add\_column(\textcolor{stringliteral}{"{}Exchange\ Rate"{}})}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00389}00389\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00390}00390\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (source,\ dest),\ exchange\_rate\ \textcolor{keywordflow}{in}\ exchange\_rate\_dict.items():}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ table.add\_row(}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ source,}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dest,}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1text_1_1_text}{Text}}(}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{exchange\_rate:.4f\}"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ style=\textcolor{stringliteral}{"{}red"{}}\ \textcolor{keywordflow}{if}\ exchange\_rate\ <\ 1.0\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}green"{}},}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00399}00399\ }
+\DoxyCodeLine{\Hypertarget{live_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ live\_table.update(Align.center(table))}
+
+\end{DoxyCode}

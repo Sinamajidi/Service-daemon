@@ -1,0 +1,669 @@
+\doxysection{\+\_\+cursor\+\_\+base.\+py}
+\hypertarget{__cursor__base_8py_source}{}\label{__cursor__base_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_cursor\_base.py@{venv/Lib/site-\/packages/psycopg/\_cursor\_base.py}}
+\doxymbox{\hyperlink{__cursor__base_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00002}00002\ \textcolor{stringliteral}{Psycopg\ BaseCursor\ object}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00009}00009\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any,\ Generic,\ NoReturn}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00010}00010\ \textcolor{keyword}{from}\ weakref\ \textcolor{keyword}{import}\ ReferenceType,\ ref}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00011}00011\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ partial}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00012}00012\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterable,\ Sequence}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00014}00014\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ adapt}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00015}00015\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00016}00016\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ pq}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00017}00017\ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ ConnectionType,\ Loader,\ Params,\ PQGen,\ Query}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00018}00018\ \textcolor{keyword}{from}\ .rows\ \textcolor{keyword}{import}\ Row,\ RowMaker}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00019}00019\ \textcolor{keyword}{from}\ .\_column\ \textcolor{keyword}{import}\ Column}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00020}00020\ \textcolor{keyword}{from}\ .\_compat\ \textcolor{keyword}{import}\ Template}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00021}00021\ \textcolor{keyword}{from}\ .pq.misc\ \textcolor{keyword}{import}\ connection\_summary}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00022}00022\ \textcolor{keyword}{from}\ .\_queries\ \textcolor{keyword}{import}\ PostgresClientQuery,\ PostgresQuery}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00023}00023\ \textcolor{keyword}{from}\ .\_preparing\ \textcolor{keyword}{import}\ Prepare}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00024}00024\ \textcolor{keyword}{from}\ .generators\ \textcolor{keyword}{import}\ execute,\ fetch,\ send}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00025}00025\ \textcolor{keyword}{from}\ .\_capabilities\ \textcolor{keyword}{import}\ capabilities}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00027}00027\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00028}00028\ \ \ \ \ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ Transformer}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00029}00029\ \ \ \ \ \textcolor{keyword}{from}\ .pq.abc\ \textcolor{keyword}{import}\ PGconn,\ PGresult}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00031}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_a256c2dd91d052b8c55b670080d3496eb}{00031}}\ TEXT\ =\ pq.Format.TEXT}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00032}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_aedc5b39e42d6810d636f741ad0d6e692}{00032}}\ BINARY\ =\ pq.Format.BINARY}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00034}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_ab870f010d12c50b7dc650862175bd45c}{00034}}\ EMPTY\_QUERY\ =\ pq.ExecStatus.EMPTY\_QUERY}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00035}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_a36fba4b75bc82536246a807e481015fb}{00035}}\ COMMAND\_OK\ =\ pq.ExecStatus.COMMAND\_OK}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00036}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_acd0aa0e278dc94719ec1b80051ea83d8}{00036}}\ TUPLES\_OK\ =\ pq.ExecStatus.TUPLES\_OK}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00037}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_ad370c057a0ba8a1d9eb800b2de887022}{00037}}\ COPY\_OUT\ =\ pq.ExecStatus.COPY\_OUT}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00038}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_af181ec5a23c69870b00c1c838dfe5097}{00038}}\ COPY\_IN\ =\ pq.ExecStatus.COPY\_IN}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00039}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_a7db129ddca79cea31c2070de46f0ca57}{00039}}\ COPY\_BOTH\ =\ pq.ExecStatus.COPY\_BOTH}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00040}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_a3a58d774bd810f694885a050f52a126b}{00040}}\ FATAL\_ERROR\ =\ pq.ExecStatus.FATAL\_ERROR}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00041}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_aa3781bbcbd5e7d1407b6f296e7fbe662}{00041}}\ SINGLE\_TUPLE\ =\ pq.ExecStatus.SINGLE\_TUPLE}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00042}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_a7a4b1c408871bbb62bcf623d45e22822}{00042}}\ TUPLES\_CHUNK\ =\ pq.ExecStatus.TUPLES\_CHUNK}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00043}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_aafc1b9c442251462435f7fd1c7595e4a}{00043}}\ PIPELINE\_ABORTED\ =\ pq.ExecStatus.PIPELINE\_ABORTED}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00045}\doxymbox{\hyperlink{namespacepsycopg_1_1__cursor__base_aa6310a9b6eb5264da9153e78be776542}{00045}}\ ACTIVE\ =\ pq.TransactionStatus.ACTIVE}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00046}00046\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00047}00047\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00048}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor}{00048}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor}{BaseCursor}}(Generic[ConnectionType,\ Row]):}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00049}00049\ \ \ \ \ \_\_slots\_\_\ =\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00050}00050\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \_conn\ format\ \_adapters\ arraysize\ \_closed\ \_results\ pgresult\ \_pos}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00051}00051\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \_iresult\ \_rowcount\ \_query\ \_tx\ \_last\_query\ \_row\_factory\ \_make\_row}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00052}00052\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \_pgconn\ \_execmany\_returning}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00053}00053\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \_\_weakref\_\_}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00054}00054\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}.split()}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00056}00056\ \ \ \ \ \_tx:\ Transformer}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00057}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a538475e81fcc18730a91ae689283e719}{00057}}\ \ \ \ \ \_make\_row:\ RowMaker[Row]}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00058}00058\ \ \ \ \ \_pgconn:\ PGconn}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00059}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa3e1083aa1e989f5bc75bf2025e64c1e}{00059}}\ \ \ \ \ \_query\_cls:\ type[PostgresQuery]\ =\ PostgresQuery}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00061}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aac4f549129a733fdfcd67dbfe68bd7b7}{00061}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aac4f549129a733fdfcd67dbfe68bd7b7}{\_\_init\_\_}}(self,\ connection:\ ConnectionType):}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00062}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{00062}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}\ =\ connection}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00063}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a03299dbd515813ba6fd84214675504f0}{00063}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a03299dbd515813ba6fd84214675504f0}{format}}\ =\ TEXT}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00064}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{00064}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}}\ =\ connection.pgconn}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00065}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a263cf63bee956c1c7145a57448a0f751}{00065}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a263cf63bee956c1c7145a57448a0f751}{\_adapters}}\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map}{adapt.AdaptersMap}}(connection.adapters)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00066}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aac81beeed0645d2c038ce6b917fb90ea}{00066}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aac81beeed0645d2c038ce6b917fb90ea}{arraysize}}\ =\ 1}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00067}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8cd0acf4c202a7c8ee08a76e72f8dc5e}{00067}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8cd0acf4c202a7c8ee08a76e72f8dc5e}{\_closed}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00068}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a609c35d9185963f22a47043460d69cb0}{00068}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a609c35d9185963f22a47043460d69cb0}{\_last\_query}}:\ Query\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_af91803d25cbe343e9d5d4befd3a3534b}{\_reset}}()}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Set\ up\ a\ callback\ to\ allow\ changing\ loaders\ on\ already\ returned\ result.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a263cf63bee956c1c7145a57448a0f751}{\_adapters}}.\_register\_loader\_callback\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ab2488d18fb5ed70f43bc0738a3ff5d0d}{\_loaders\_changed}},\ ref(self)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00075}00075\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00076}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_af91803d25cbe343e9d5d4befd3a3534b}{00076}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_af91803d25cbe343e9d5d4befd3a3534b}{\_reset}}(self,\ reset\_query:\ bool\ =\ \textcolor{keyword}{True})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00077}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5e6ae8bafc9d50b6369b4ffc9757474c}{00077}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5e6ae8bafc9d50b6369b4ffc9757474c}{\_results}}:\ list[PGresult]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00078}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{00078}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}:\ PGresult\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00079}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6293697d15ffa75f27bcbd882337512c}{00079}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6293697d15ffa75f27bcbd882337512c}{\_pos}}\ =\ 0}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00080}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a67cd480c70593d1f2d8e73a1f17a47ec}{00080}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a67cd480c70593d1f2d8e73a1f17a47ec}{\_iresult}}\ =\ 0}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00081}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5d7ec019f8261d7935bf3e13dee44bc2}{00081}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5d7ec019f8261d7935bf3e13dee44bc2}{\_rowcount}}\ =\ -\/1}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00082}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a2f131c88d0deadc2ed9f3e1ad4a3e107}{00082}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a2f131c88d0deadc2ed9f3e1ad4a3e107}{\_query}}:\ PostgresQuery\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ None\ if\ executemany()\ not\ executing,\ True/False\ according\ to\ returning\ state}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00084}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ad3366ea2cfb5fe23a9a95f32564fbbfa}{00084}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ad3366ea2cfb5fe23a9a95f32564fbbfa}{\_execmany\_returning}}:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ reset\_query:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a2f131c88d0deadc2ed9f3e1ad4a3e107}{\_query}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00087}00087\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00088}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a99dd374f0649f2c88f304a33cf9d17aa}{00088}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a99dd374f0649f2c88f304a33cf9d17aa}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ cls\ =\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_module\_\_\}.\{self.\_\_class\_\_.\_\_qualname\_\_\}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ info\ =\ connection\_summary(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8cd0acf4c202a7c8ee08a76e72f8dc5e}{\_closed}}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ status\ =\ \textcolor{stringliteral}{"{}closed"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ status\ =\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_exec_status}{pq.ExecStatus}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}.status).name}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ status\ =\ \textcolor{stringliteral}{"{}no\ result"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}<\{cls\}\ [\{status\}]\ \{info\}\ at\ 0x\{id(self):x\}>"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00098}00098\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00099}00099\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00100}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a0de295bfe592d8d6de6f07e2456314a4}{00100}}\ \ \ \ \ \textcolor{keyword}{def\ }connection(self)\ -\/>\ ConnectionType:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ connection\ this\ cursor\ is\ using."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00104}00104\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00105}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa89ffdc04eaabda65bdd1599c4bce89d}{00105}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_acc2de5016d8f73efa8751639302fdfdc}{adapters}}(self)\ -\/>\ adapt.AdaptersMap:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a263cf63bee956c1c7145a57448a0f751}{\_adapters}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00108}00108\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00109}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ac792c895fcbb8c61f2a5265024d08c6f}{00109}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_abd1ea584c8032f4179eefede230101f3}{closed}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}\`{}True\`{}\ if\ the\ cursor\ is\ closed."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8cd0acf4c202a7c8ee08a76e72f8dc5e}{\_closed}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00112}00112\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00113}00113\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00114}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_abc262e024782f44be1996617dcf6be45}{00114}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_abc262e024782f44be1996617dcf6be45}{description}}(self)\ -\/>\ list[Column]\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00116}00116\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ A\ list\ of\ \`{}Column\`{}\ objects\ describing\ the\ current\ resultset.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00117}00117\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00118}00118\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}!None\`{}\ if\ the\ current\ resultset\ didn't\ return\ tuples.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00119}00119\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ res\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ return\ columns\ if\ we\ have\ nfields,\ but\ also\ if\ we\ don't\ but}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ query\ said\ we\ got\ tuples\ (mostly\ to\ handle\ the\ super\ useful}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ query\ "{}SELECT\ ;"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ res\ \textcolor{keywordflow}{and}\ (}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ res.nfields}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ res.status\ ==\ TUPLES\_OK}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ res.status\ ==\ SINGLE\_TUPLE}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ res.status\ ==\ TUPLES\_CHUNK}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ [\doxymbox{\hyperlink{classpsycopg_1_1__column_1_1_column}{Column}}(self,\ i)\ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(res.nfields)]}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00134}00134\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00135}00135\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00136}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5a42c93972cddc23e57687b072f41395}{00136}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5a42c93972cddc23e57687b072f41395}{rowcount}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00138}00138\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Number\ of\ records\ affected\ by\ the\ operation\ that\ produced}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00139}00139\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ the\ current\ result\ set.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00140}00140\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5d7ec019f8261d7935bf3e13dee44bc2}{\_rowcount}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00142}00142\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00143}00143\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00144}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_affdae990cf181646a0a5441c8277ec6d}{00144}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_affdae990cf181646a0a5441c8277ec6d}{rownumber}}(self)\ -\/>\ int\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Index\ of\ the\ next\ row\ to\ fetch\ in\ the\ current\ result\ set.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00146}00146\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00147}00147\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}!None\`{}\ if\ there\ is\ no\ result\ to\ fetch.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00148}00148\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ tuples\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}.status\ ==\ TUPLES\_OK}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6293697d15ffa75f27bcbd882337512c}{\_pos}}\ \textcolor{keywordflow}{if}\ tuples\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00151}00151\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00152}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5bb5027a78ddb3c1807d3740ccbbac24}{00152}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5bb5027a78ddb3c1807d3740ccbbac24}{setinputsizes}}(self,\ sizes:\ Sequence[Any])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ no-\/op}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00156}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a42b75728f8c18cd58d9668a2ca170bba}{00156}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a42b75728f8c18cd58d9668a2ca170bba}{setoutputsize}}(self,\ size:\ Any,\ column:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ no-\/op}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00159}00159\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00160}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a03a7fb157c52d2b00f72a090b0aad633}{00160}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a03a7fb157c52d2b00f72a090b0aad633}{nextset}}(self)\ -\/>\ bool\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00162}00162\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Move\ to\ the\ result\ set\ of\ the\ next\ query\ executed\ through\ \`{}executemany()\`{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00163}00163\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ or\ to\ the\ next\ result\ set\ if\ \`{}execute()\`{}\ returned\ more\ than\ one.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00164}00164\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00165}00165\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ \`{}!True\`{}\ if\ a\ new\ result\ is\ available,\ which\ will\ be\ the\ one}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00166}00166\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ methods\ \`{}!fetch*()\`{}\ will\ operate\ on.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00167}00167\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a67cd480c70593d1f2d8e73a1f17a47ec}{\_iresult}}\ <\ len(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5e6ae8bafc9d50b6369b4ffc9757474c}{\_results}})\ -\/\ 1:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a98b6f32f3bf234913f0b8677206fa76a}{\_select\_current\_result}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a67cd480c70593d1f2d8e73a1f17a47ec}{\_iresult}}\ +\ 1)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00174}00174\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00175}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ac8ecee5445a2f9391c5d80949cec2023}{00175}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ac8ecee5445a2f9391c5d80949cec2023}{statusmessage}}(self)\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00177}00177\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ status\ tag\ of\ the\ current\ result\ set.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00178}00178\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00179}00179\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}!None\`{}\ if\ the\ cursor\ doesn't\ have\ a\ result\ available.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00180}00180\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ msg\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}.command\_status\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ msg.decode()\ \textcolor{keywordflow}{if}\ msg\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00183}00183\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00184}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6ccf95729209c1917a650be26c61e5bc}{00184}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6ccf95729209c1917a650be26c61e5bc}{\_make\_row\_maker}}(self)\ -\/>\ RowMaker[Row]:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00186}00186\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00187}00187\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00188}00188\ \ \ \ \ \textcolor{comment}{\#\ Generators\ for\ the\ high\ level\ operations\ on\ the\ cursor}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00189}00189\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00190}00190\ \ \ \ \ \textcolor{comment}{\#\ Like\ for\ sync/async\ connections,\ these\ are\ implemented\ as\ generators}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00191}00191\ \ \ \ \ \textcolor{comment}{\#\ so\ that\ different\ concurrency\ strategies\ (threads,asyncio)\ can\ use\ their}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00192}00192\ \ \ \ \ \textcolor{comment}{\#\ own\ way\ of\ waiting\ (or\ better,\ \`{}connection.wait()`).}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00193}00193\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00194}00194\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00195}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_adfdcde04c1ee89f57f0dca6358721e36}{00195}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_adfdcde04c1ee89f57f0dca6358721e36}{\_execute\_gen}}(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ query:\ Query,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ params:\ Params\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ prepare:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ binary:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00202}00202\ \ \ \ \ )\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Generator\ implementing\ \`{}Cursor.execute()\`{}."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa17df25fb0bb3af89de171d3d1120fd8}{\_start\_query}}(query)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ pgq\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a71395c5a14f5868d148888477bad8942}{\_convert\_query}}(query,\ params)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a15c54bf0d93f7727ec642fcb19efe2f6}{\_maybe\_prepare\_gen}}(pgq,\ prepare=prepare,\ binary=binary)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline.\_communicate\_gen()}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00209}00209\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a609c35d9185963f22a47043460d69cb0}{\_last\_query}}\ =\ query}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_prepared.maintain\_gen(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00212}00212\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00213}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_af8d351a15e6beafc7a94eec7b27cf9e6}{00213}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_af8d351a15e6beafc7a94eec7b27cf9e6}{\_executemany\_gen\_pipeline}}(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ self,\ query:\ Query,\ params\_seq:\ Iterable[Params],\ returning:\ bool}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00215}00215\ \ \ \ \ )\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00217}00217\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Generator\ implementing\ \`{}Cursor.executemany()\`{}\ with\ pipelines\ available.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00218}00218\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ pipeline\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ pipeline}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00221}00221\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa17df25fb0bb3af89de171d3d1120fd8}{\_start\_query}}(query)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ returning:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5d7ec019f8261d7935bf3e13dee44bc2}{\_rowcount}}\ =\ 0}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00225}00225\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ad3366ea2cfb5fe23a9a95f32564fbbfa}{\_execmany\_returning}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ad3366ea2cfb5fe23a9a95f32564fbbfa}{\_execmany\_returning}}\ =\ returning}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00228}00228\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ first\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ params\ \textcolor{keywordflow}{in}\ params\_seq:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ first:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pgq\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a71395c5a14f5868d148888477bad8942}{\_convert\_query}}(query,\ params)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a2f131c88d0deadc2ed9f3e1ad4a3e107}{\_query}}\ =\ pgq}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ first\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pgq.dump(params)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00237}00237\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a15c54bf0d93f7727ec642fcb19efe2f6}{\_maybe\_prepare\_gen}}(pgq,\ prepare=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ pipeline.\_communicate\_gen()}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00240}00240\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a609c35d9185963f22a47043460d69cb0}{\_last\_query}}\ =\ query}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00242}00242\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ returning:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ pipeline.\_fetch\_gen(flush=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00245}00245\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_prepared.maintain\_gen(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00247}00247\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00248}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a23416e77e1056f83fa9cfe6b9e90d460}{00248}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a23416e77e1056f83fa9cfe6b9e90d460}{\_executemany\_gen\_no\_pipeline}}(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ self,\ query:\ Query,\ params\_seq:\ Iterable[Params],\ returning:\ bool}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00250}00250\ \ \ \ \ )\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00252}00252\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Generator\ implementing\ \`{}Cursor.executemany()\`{}\ with\ pipelines\ not\ available.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00253}00253\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa17df25fb0bb3af89de171d3d1120fd8}{\_start\_query}}(query)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ returning:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5d7ec019f8261d7935bf3e13dee44bc2}{\_rowcount}}\ =\ 0}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00257}00257\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ad3366ea2cfb5fe23a9a95f32564fbbfa}{\_execmany\_returning}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ad3366ea2cfb5fe23a9a95f32564fbbfa}{\_execmany\_returning}}\ =\ returning}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00260}00260\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ first\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ params\ \textcolor{keywordflow}{in}\ params\_seq:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ first:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pgq\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a71395c5a14f5868d148888477bad8942}{\_convert\_query}}(query,\ params)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a2f131c88d0deadc2ed9f3e1ad4a3e107}{\_query}}\ =\ pgq}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ first\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pgq.dump(params)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00269}00269\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a15c54bf0d93f7727ec642fcb19efe2f6}{\_maybe\_prepare\_gen}}(pgq,\ prepare=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00271}00271\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a609c35d9185963f22a47043460d69cb0}{\_last\_query}}\ =\ query}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_prepared.maintain\_gen(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00274}00274\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00275}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a15c54bf0d93f7727ec642fcb19efe2f6}{00275}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a15c54bf0d93f7727ec642fcb19efe2f6}{\_maybe\_prepare\_gen}}(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ pgq:\ PostgresQuery,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ prepare:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ binary:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00281}00281\ \ \ \ \ )\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ if\ the\ query\ is\ prepared\ or\ needs\ preparing}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ prep,\ name\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6a3c24a89ac6f5474817d55f32729a69}{\_get\_prepared}}(pgq,\ prepare)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ prep\ \textcolor{keywordflow}{is}\ Prepare.NO:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ query\ must\ be\ executed\ without\ preparing}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_afe537e7c5a8474beea994cc8474d16d4}{\_execute\_send}}(pgq,\ binary=binary)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ query\ is\ not\ already\ prepared,\ prepare\ it.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ prep\ \textcolor{keywordflow}{is}\ Prepare.SHOULD:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a2fee7b3c51c7daca05d6a05fd996327a}{\_send\_prepare}}(name,\ pgq)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (result,)\ =\ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ execute(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ result.status\ ==\ FATAL\_ERROR:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.error\_from\_result(result,\ encoding=self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aefa51b5889266fe27b7b682499a0b582}{\_encoding}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Then\ execute\ it.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_adb1355a39e4a8bf2824da8d7cf704762}{\_send\_query\_prepared}}(name,\ pgq,\ binary=binary)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00297}00297\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00298}00298\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Update\ the\ prepare\ state\ of\ the\ query.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ an\ operation\ requires\ to\ flush\ our\ prepared\ statements\ cache,}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ it\ will\ be\ added\ to\ the\ maintenance\ commands\ to\ execute\ later.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ key\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_prepared.maybe\_add\_to\_cache(pgq,\ prep,\ name)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00302}00302\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \ \ \ \ queued\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00305}00305\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ key\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ queued\ =\ (key,\ prep,\ name)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline.result\_queue.append((self,\ queued))}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00309}00309\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ run\ the\ query}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ results\ =\ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ execute(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00312}00312\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ key\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00314}00314\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_prepared.validate(key,\ prep,\ name,\ results)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00315}00315\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00316}00316\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa6cc7bdd358bac8dcfd9753119fe123e}{\_check\_results}}(results)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ab0c182f9e0dda18da45a60586c819993}{\_set\_results}}(results)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00318}00318\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00319}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6a3c24a89ac6f5474817d55f32729a69}{00319}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6a3c24a89ac6f5474817d55f32729a69}{\_get\_prepared}}(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ self,\ pgq:\ PostgresQuery,\ prepare:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00321}00321\ \ \ \ \ )\ -\/>\ tuple[Prepare,\ bytes]:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_prepared.get(pgq,\ prepare)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00323}00323\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00324}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a941460099ace8c3a13add8b840847c76}{00324}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a941460099ace8c3a13add8b840847c76}{\_stream\_send\_gen}}(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00325}00325\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00326}00326\ \ \ \ \ \ \ \ \ query:\ Query,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00327}00327\ \ \ \ \ \ \ \ \ params:\ Params\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ binary:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ size:\ int,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00331}00331\ \ \ \ \ )\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00332}00332\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Generator\ to\ send\ the\ query\ for\ \`{}Cursor.stream()\`{}."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa17df25fb0bb3af89de171d3d1120fd8}{\_start\_query}}(query)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00334}00334\ \ \ \ \ \ \ \ \ pgq\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a71395c5a14f5868d148888477bad8942}{\_convert\_query}}(query,\ params)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00335}00335\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_afe537e7c5a8474beea994cc8474d16d4}{\_execute\_send}}(pgq,\ binary=binary,\ force\_extended=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00336}00336\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ size\ <\ 1:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(\textcolor{stringliteral}{"{}size\ must\ be\ >=\ 1"{}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ size\ ==\ 1:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}}.set\_single\_row\_mode()}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00341}00341\ \ \ \ \ \ \ \ \ \ \ \ \ capabilities.has\_stream\_chunked(check=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}}.set\_chunked\_rows\_mode(size)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a609c35d9185963f22a47043460d69cb0}{\_last\_query}}\ =\ query}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ send(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00345}00345\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00346}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a159d93be30b27ec69e64281e07165543}{00346}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a159d93be30b27ec69e64281e07165543}{\_stream\_fetchone\_gen}}(self,\ first:\ bool)\ -\/>\ PQGen[PGresult\ |\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ res:\ PGresult\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ fetch(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ res\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00350}00350\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ status\ =\ res.status}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ status\ ==\ SINGLE\_TUPLE\ \textcolor{keywordflow}{or}\ status\ ==\ TUPLES\_CHUNK:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}\ =\ res}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac0b7b6f0714e5c1fe7af63b39e64ef}{\_tx}}.set\_pgresult(res,\ set\_loaders=first)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ first:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a538475e81fcc18730a91ae689283e719}{\_make\_row}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6ccf95729209c1917a650be26c61e5bc}{\_make\_row\_maker}}()}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ res}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00358}00358\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ status\ ==\ TUPLES\_OK\ \textcolor{keywordflow}{or}\ status\ ==\ COMMAND\_OK:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ End\ of\ single\ row\ results}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ res:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ res\ =\ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ fetch(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ status\ !=\ TUPLES\_OK:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}the\ operation\ in\ stream()\ didn't\ produce\ a\ result"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00366}00366\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00367}00367\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00368}00368\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Errors,\ unexpected\ values}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a670ab3b6dc1b2e0455559b2dc91cbff0}{\_raise\_for\_result}}(res)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00372}00372\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00373}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa17df25fb0bb3af89de171d3d1120fd8}{00373}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa17df25fb0bb3af89de171d3d1120fd8}{\_start\_query}}(self,\ query:\ Query\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Generator\ to\ start\ the\ processing\ of\ a\ query.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00375}00375\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00376}00376\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ It\ is\ implemented\ as\ generator\ because\ it\ may\ send\ additional\ queries,}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00377}00377\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ such\ as\ \`{}begin\`{}.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00378}00378\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00379}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_abd1ea584c8032f4179eefede230101f3}{00379}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_abd1ea584c8032f4179eefede230101f3}{closed}}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InterfaceError(\textcolor{stringliteral}{"{}the\ cursor\ is\ closed"{}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00381}00381\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_af91803d25cbe343e9d5d4befd3a3534b}{\_reset}}()}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a609c35d9185963f22a47043460d69cb0}{\_last\_query}}\ \textcolor{keywordflow}{or}\ (self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a609c35d9185963f22a47043460d69cb0}{\_last\_query}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ query):}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a609c35d9185963f22a47043460d69cb0}{\_last\_query}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00385}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac0b7b6f0714e5c1fe7af63b39e64ef}{00385}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac0b7b6f0714e5c1fe7af63b39e64ef}{\_tx}}\ =\ adapt.Transformer(self)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa17df25fb0bb3af89de171d3d1120fd8}{\_start\_query}}()}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00387}00387\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00388}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a0eb7bf86b7f1736291788916220645f0}{00388}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a0eb7bf86b7f1736291788916220645f0}{\_start\_copy\_gen}}(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ self,\ statement:\ Query,\ params:\ Params\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00390}00390\ \ \ \ \ )\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Generator\ implementing\ sending\ a\ command\ for\ \`{}Cursor.copy()."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00392}00392\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ connection\ gets\ in\ an\ unrecoverable\ state\ if\ we\ attempt\ COPY\ in}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ pipeline\ mode.\ Forbid\ it\ explicitly.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.NotSupportedError(\textcolor{stringliteral}{"{}COPY\ cannot\ be\ used\ in\ pipeline\ mode"{}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00397}00397\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa17df25fb0bb3af89de171d3d1120fd8}{\_start\_query}}()}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00399}00399\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Merge\ the\ params\ client-\/side}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ params\ \textcolor{keywordflow}{or}\ isinstance(statement,\ Template):}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ \ \ \ \ pgq\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query}{PostgresClientQuery}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac0b7b6f0714e5c1fe7af63b39e64ef}{\_tx}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \ \ \ \ pgq.convert(statement,\ params)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ \ \ \ \ statement\ =\ pgq.query}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00405}00405\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00406}00406\ \ \ \ \ \ \ \ \ query\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a71395c5a14f5868d148888477bad8942}{\_convert\_query}}(statement)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00407}00407\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00408}00408\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_afe537e7c5a8474beea994cc8474d16d4}{\_execute\_send}}(query,\ binary=\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00409}00409\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(results\ :=\ (\textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ execute(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}})))\ !=\ 1:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(\textcolor{stringliteral}{"{}COPY\ cannot\ be\ mixed\ with\ other\ operations"{}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00411}00411\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00412}00412\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a4489d8188d1b565f477c1636329a50c9}{\_check\_copy\_result}}(results[0])}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00413}00413\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ab0c182f9e0dda18da45a60586c819993}{\_set\_results}}(results)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00414}00414\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00415}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_afe537e7c5a8474beea994cc8474d16d4}{00415}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_afe537e7c5a8474beea994cc8474d16d4}{\_execute\_send}}(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00416}00416\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ query:\ PostgresQuery,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ force\_extended:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00420}00420\ \ \ \ \ \ \ \ \ binary:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00421}00421\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00423}00423\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Implement\ part\ of\ execute()\ before\ waiting\ common\ to\ sync\ and\ async.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00424}00424\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00425}00425\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ is\ not\ a\ generator,\ but\ a\ normal\ non-\/blocking\ function.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00426}00426\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00427}00427\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ binary\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00428}00428\ \ \ \ \ \ \ \ \ \ \ \ \ fmt\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a03299dbd515813ba6fd84214675504f0}{format}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00429}00429\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00430}00430\ \ \ \ \ \ \ \ \ \ \ \ \ fmt\ =\ BINARY\ \textcolor{keywordflow}{if}\ binary\ \textcolor{keywordflow}{else}\ TEXT}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00431}00431\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00432}00432\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a2f131c88d0deadc2ed9f3e1ad4a3e107}{\_query}}\ =\ query}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00433}00433\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00434}00434\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00435}00435\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ pipeline\ mode\ always\ use\ PQsendQueryParams\ -\/\ see\ \#314}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00436}00436\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Multiple\ statements\ in\ the\ same\ query\ are\ not\ allowed\ anyway.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00437}00437\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline.command\_queue.append(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ partial(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}}.send\_query\_params,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ query.query,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ query.params,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00442}00442\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ param\_formats=query.formats,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00443}00443\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ param\_types=query.types,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ result\_format=fmt,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00446}00446\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00447}00447\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ force\_extended\ \textcolor{keywordflow}{or}\ query.params\ \textcolor{keywordflow}{or}\ fmt\ ==\ BINARY:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00448}00448\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}}.send\_query\_params(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00449}00449\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ query.query,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00450}00450\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ query.params,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00451}00451\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ param\_formats=query.formats,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ param\_types=query.types,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00453}00453\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ result\_format=fmt,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00454}00454\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00455}00455\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ we\ can,\ let's\ use\ simple\ query\ protocol,}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ as\ it\ can\ execute\ more\ than\ one\ statement\ in\ a\ single\ query.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00458}00458\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}}.send\_query(query.query)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00459}00459\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00460}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a71395c5a14f5868d148888477bad8942}{00460}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a71395c5a14f5868d148888477bad8942}{\_convert\_query}}(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ self,\ query:\ Query,\ params:\ Params\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00462}00462\ \ \ \ \ )\ -\/>\ PostgresQuery:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00463}00463\ \ \ \ \ \ \ \ \ pgq\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa3e1083aa1e989f5bc75bf2025e64c1e}{\_query\_cls}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac0b7b6f0714e5c1fe7af63b39e64ef}{\_tx}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00464}00464\ \ \ \ \ \ \ \ \ pgq.convert(query,\ params)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00465}00465\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ pgq}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00466}00466\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00467}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa6cc7bdd358bac8dcfd9753119fe123e}{00467}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aa6cc7bdd358bac8dcfd9753119fe123e}{\_check\_results}}(self,\ results:\ list[PGresult])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00468}00468\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00469}00469\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Verify\ that\ the\ results\ of\ a\ query\ are\ valid.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00470}00470\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00471}00471\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Verify\ that\ the\ query\ returned\ at\ least\ one\ result\ and\ that\ they\ all}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00472}00472\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ represent\ a\ valid\ result\ from\ the\ database.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00473}00473\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00474}00474\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ results:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00475}00475\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InternalError(\textcolor{stringliteral}{"{}got\ no\ result\ from\ the\ query"{}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00476}00476\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00477}00477\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ res\ \textcolor{keywordflow}{in}\ results:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00478}00478\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00479}00479\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (status\ :=\ res.status)\ !=\ TUPLES\_OK}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00480}00480\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ status\ !=\ COMMAND\_OK}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00481}00481\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ status\ !=\ EMPTY\_QUERY}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00482}00482\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ status\ !=\ COPY\_BOTH}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00483}00483\ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a670ab3b6dc1b2e0455559b2dc91cbff0}{\_raise\_for\_result}}(res)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00485}00485\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00486}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a670ab3b6dc1b2e0455559b2dc91cbff0}{00486}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a670ab3b6dc1b2e0455559b2dc91cbff0}{\_raise\_for\_result}}(self,\ result:\ PGresult)\ -\/>\ NoReturn:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00487}00487\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00488}00488\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Raise\ an\ appropriate\ error\ message\ for\ an\ unexpected\ database\ result}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00489}00489\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00490}00490\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (status\ :=\ result.status)\ ==\ FATAL\_ERROR:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00491}00491\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.error\_from\_result(result,\ encoding=self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aefa51b5889266fe27b7b682499a0b582}{\_encoding}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00492}00492\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ status\ ==\ PIPELINE\_ABORTED:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00493}00493\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.PipelineAborted(\textcolor{stringliteral}{"{}pipeline\ aborted"{}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00494}00494\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ status\ ==\ COPY\_IN\ \textcolor{keywordflow}{or}\ status\ ==\ COPY\_OUT\ \textcolor{keywordflow}{or}\ status\ ==\ COPY\_BOTH:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00495}00495\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00496}00496\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}COPY\ cannot\ be\ used\ with\ this\ method;\ use\ copy()\ instead"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00497}00497\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00498}00498\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00499}00499\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InternalError(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}unexpected\ result\ status\ from\ query:"{}}\ f\textcolor{stringliteral}{"{}\ \{pq.ExecStatus(status).name\}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00501}00501\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00502}00502\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00503}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a98b6f32f3bf234913f0b8677206fa76a}{00503}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a98b6f32f3bf234913f0b8677206fa76a}{\_select\_current\_result}}(self,\ i:\ int,\ format:\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_format}{pq.Format}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00504}00504\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00505}00505\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Select\ one\ of\ the\ results\ in\ the\ cursor\ as\ the\ active\ one.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00506}00506\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a67cd480c70593d1f2d8e73a1f17a47ec}{\_iresult}}\ =\ i}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00508}00508\ \ \ \ \ \ \ \ \ res\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5e6ae8bafc9d50b6369b4ffc9757474c}{\_results}}[i]}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00509}00509\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00510}00510\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Note:\ the\ only\ reason\ to\ override\ format\ is\ to\ correctly\ set}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00511}00511\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ binary\ loaders\ on\ server-\/side\ cursors,\ because\ send\_describe\_portal}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00512}00512\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ only\ returns\ a\ text\ result.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00513}00513\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac0b7b6f0714e5c1fe7af63b39e64ef}{\_tx}}.set\_pgresult(res,\ format=format)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00514}00514\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6293697d15ffa75f27bcbd882337512c}{\_pos}}\ =\ 0}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00516}00516\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00517}00517\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ res.status\ ==\ TUPLES\_OK:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00518}00518\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5d7ec019f8261d7935bf3e13dee44bc2}{\_rowcount}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}.ntuples}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00519}00519\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ COPY\_OUT\ has\ never\ info\ about\ nrows.\ We\ need\ such\ result\ for\ the}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ columns\ in\ order\ to\ return\ a\ \`{}description`,\ but\ not\ overwrite\ the}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ cursor\ rowcount\ (which\ was\ set\ by\ the\ Copy\ object).}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00523}00523\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ res.status\ !=\ COPY\_OUT:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ \ \ \ \ nrows\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}.command\_tuples}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00525}00525\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5d7ec019f8261d7935bf3e13dee44bc2}{\_rowcount}}\ =\ nrows\ \textcolor{keywordflow}{if}\ nrows\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ -\/1}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00526}00526\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a538475e81fcc18730a91ae689283e719}{\_make\_row}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6ccf95729209c1917a650be26c61e5bc}{\_make\_row\_maker}}()}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00528}00528\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00529}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ab0c182f9e0dda18da45a60586c819993}{00529}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ab0c182f9e0dda18da45a60586c819993}{\_set\_results}}(self,\ results:\ list[PGresult])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00530}00530\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ad3366ea2cfb5fe23a9a95f32564fbbfa}{\_execmany\_returning}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00531}00531\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Received\ from\ execute()}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00532}00532\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5e6ae8bafc9d50b6369b4ffc9757474c}{\_results}}[:]\ =\ results}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00533}00533\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a98b6f32f3bf234913f0b8677206fa76a}{\_select\_current\_result}}(0)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Received\ from\ executemany()}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00535}00535\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ad3366ea2cfb5fe23a9a95f32564fbbfa}{\_execmany\_returning}}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00536}00536\ \ \ \ \ \ \ \ \ \ \ \ \ first\_batch\ =\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5e6ae8bafc9d50b6369b4ffc9757474c}{\_results}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00537}00537\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5e6ae8bafc9d50b6369b4ffc9757474c}{\_results}}.extend(results)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00538}00538\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ first\_batch:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00539}00539\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a98b6f32f3bf234913f0b8677206fa76a}{\_select\_current\_result}}(0)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00540}00540\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00541}00541\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ non-\/returning\ case,\ set\ rowcount\ to\ the\ cumulated\ number\ of}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00542}00542\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ rows\ of\ executed\ queries.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00543}00543\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ res\ \textcolor{keywordflow}{in}\ results:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00544}00544\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5d7ec019f8261d7935bf3e13dee44bc2}{\_rowcount}}\ +=\ res.command\_tuples\ \textcolor{keywordflow}{or}\ 0}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00545}00545\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00546}00546\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00547}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ab2488d18fb5ed70f43bc0738a3ff5d0d}{00547}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ab2488d18fb5ed70f43bc0738a3ff5d0d}{\_loaders\_changed}}(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ cls,\ wself:\ ReferenceType[BaseCursor[Any,\ Any]],\ oid:\ int,\ loader:\ type[Loader]}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00549}00549\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00550}00550\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Callback\ called\ when\ self.adapters.set\_loaders\ is\ called.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00551}00551\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00552}00552\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Allow\ to\ change\ the\ loaders\ after\ the\ results\ have\ been\ returned\ already.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00553}00553\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00554}00554\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (self\ :=\ wself()):}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00555}00555\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00556}00556\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00557}00557\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Replace\ the\ transformer\ with\ a\ new\ one,\ restore\ the\ current\ state.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00558}00558\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac0b7b6f0714e5c1fe7af63b39e64ef}{\_tx}}\ =\ adapt.Transformer(self)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00559}00559\ \ \ \ \ \ \ \ \ pos\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6293697d15ffa75f27bcbd882337512c}{\_pos}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00560}00560\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a67cd480c70593d1f2d8e73a1f17a47ec}{\_iresult}}\ <\ len(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a5e6ae8bafc9d50b6369b4ffc9757474c}{\_results}}):}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00561}00561\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a98b6f32f3bf234913f0b8677206fa76a}{\_select\_current\_result}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a67cd480c70593d1f2d8e73a1f17a47ec}{\_iresult}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00562}00562\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6293697d15ffa75f27bcbd882337512c}{\_pos}}\ =\ pos}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00563}00563\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00564}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a2fee7b3c51c7daca05d6a05fd996327a}{00564}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a2fee7b3c51c7daca05d6a05fd996327a}{\_send\_prepare}}(self,\ name:\ bytes,\ query:\ PostgresQuery)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00565}00565\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00566}00566\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline.command\_queue.append(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00567}00567\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ partial(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00568}00568\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}}.send\_prepare,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00569}00569\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ name,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00570}00570\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ query.query,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00571}00571\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ param\_types=query.types,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00572}00572\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00573}00573\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00574}00574\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline.result\_queue.append(\textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00575}00575\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00576}00576\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}}.send\_prepare(name,\ query.query,\ param\_types=query.types)}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00577}00577\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00578}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_adb1355a39e4a8bf2824da8d7cf704762}{00578}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_adb1355a39e4a8bf2824da8d7cf704762}{\_send\_query\_prepared}}(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00579}00579\ \ \ \ \ \ \ \ \ self,\ name:\ bytes,\ pgq:\ PostgresQuery,\ *,\ binary:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00580}00580\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00581}00581\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ binary\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00582}00582\ \ \ \ \ \ \ \ \ \ \ \ \ fmt\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a03299dbd515813ba6fd84214675504f0}{format}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00583}00583\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00584}00584\ \ \ \ \ \ \ \ \ \ \ \ \ fmt\ =\ BINARY\ \textcolor{keywordflow}{if}\ binary\ \textcolor{keywordflow}{else}\ TEXT}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00585}00585\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00586}00586\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00587}00587\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a1ac106489f321a24390af78a1130c779}{\_conn}}.\_pipeline.command\_queue.append(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00588}00588\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ partial(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00589}00589\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}}.send\_query\_prepared,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00590}00590\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ name,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00591}00591\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pgq.params,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00592}00592\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ param\_formats=pgq.formats,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00593}00593\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ result\_format=fmt,}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00594}00594\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00595}00595\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00596}00596\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00597}00597\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}}.send\_query\_prepared(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00598}00598\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ name,\ pgq.params,\ param\_formats=pgq.formats,\ result\_format=fmt}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00599}00599\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00600}00600\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00601}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aea3bc171cb3e4e1cfc9f4edda8309fca}{00601}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aea3bc171cb3e4e1cfc9f4edda8309fca}{\_check\_result\_for\_fetch}}(self)\ -\/>\ PGresult:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00602}00602\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_abd1ea584c8032f4179eefede230101f3}{closed}}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00603}00603\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InterfaceError(\textcolor{stringliteral}{"{}the\ cursor\ is\ closed"{}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00604}00604\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00605}00605\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (res\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8bf431061ead51faf2a42ddc4796a136}{pgresult}}):}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00606}00606\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(\textcolor{stringliteral}{"{}no\ result\ available"{}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00607}00607\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00608}00608\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (status\ :=\ res.status)\ ==\ TUPLES\_OK:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00609}00609\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ res}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00610}00610\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ status\ ==\ FATAL\_ERROR:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00611}00611\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.error\_from\_result(res,\ encoding=self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aefa51b5889266fe27b7b682499a0b582}{\_encoding}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00612}00612\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ status\ ==\ PIPELINE\_ABORTED:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00613}00613\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.PipelineAborted(\textcolor{stringliteral}{"{}pipeline\ aborted"{}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00614}00614\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00615}00615\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ res.command\_status:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00616}00616\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ detail\ =\ f\textcolor{stringliteral}{"{}\ (command\ status:\ \{res.command\_status.decode()\})"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00617}00617\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00618}00618\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00619}00619\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ status\_name\ =\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_exec_status}{pq.ExecStatus}}(status).name}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00620}00620\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00621}00621\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ status\_name\ =\ f\textcolor{stringliteral}{"{}\{status\}\ -\/\ unknown"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00622}00622\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ detail\ =\ f\textcolor{stringliteral}{"{}\ (result\ status:\ \{status\_name\})"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00623}00623\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00624}00624\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}the\ last\ operation\ didn't\ produce\ records\{detail\}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00625}00625\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00626}00626\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00627}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a4489d8188d1b565f477c1636329a50c9}{00627}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a4489d8188d1b565f477c1636329a50c9}{\_check\_copy\_result}}(self,\ result:\ PGresult)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00628}00628\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00629}00629\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Check\ that\ the\ value\ returned\ in\ a\ copy()\ operation\ is\ a\ legit\ COPY.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00630}00630\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00631}00631\ \ \ \ \ \ \ \ \ status\ =\ result.status}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00632}00632\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ status\ ==\ COPY\_IN\ \textcolor{keywordflow}{or}\ status\ ==\ COPY\_OUT:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00633}00633\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00634}00634\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ status\ ==\ FATAL\_ERROR:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00635}00635\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.error\_from\_result(result,\ encoding=self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aefa51b5889266fe27b7b682499a0b582}{\_encoding}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00636}00636\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00637}00637\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00638}00638\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}copy()\ should\ be\ used\ only\ with\ COPY\ ...\ TO\ STDOUT\ or\ COPY\ ..."{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00639}00639\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ FROM\ STDIN\ statements,\ got\ \{pq.ExecStatus(status).name\}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00640}00640\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00641}00641\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00642}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aaa5214cb9b74db8feab6713e2f8b169d}{00642}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aaa5214cb9b74db8feab6713e2f8b169d}{\_scroll}}(self,\ value:\ int,\ mode:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00643}00643\ \ \ \ \ \ \ \ \ res\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aea3bc171cb3e4e1cfc9f4edda8309fca}{\_check\_result\_for\_fetch}}()}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00644}00644\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ mode\ ==\ \textcolor{stringliteral}{"{}relative"{}}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00645}00645\ \ \ \ \ \ \ \ \ \ \ \ \ newpos\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6293697d15ffa75f27bcbd882337512c}{\_pos}}\ +\ value}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00646}00646\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ mode\ ==\ \textcolor{stringliteral}{"{}absolute"{}}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00647}00647\ \ \ \ \ \ \ \ \ \ \ \ \ newpos\ =\ value}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00648}00648\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00649}00649\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(f\textcolor{stringliteral}{"{}bad\ mode:\ \{mode\}.\ It\ should\ be\ 'relative'\ or\ 'absolute'"{}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00650}00650\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ 0\ <=\ newpos\ <\ res.ntuples:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00651}00651\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ IndexError(\textcolor{stringliteral}{"{}position\ out\ of\ bound"{}})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00652}00652\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a6293697d15ffa75f27bcbd882337512c}{\_pos}}\ =\ newpos}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00653}00653\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00654}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_adf7c0108979bddd37c0e1f1347d53057}{00654}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_adf7c0108979bddd37c0e1f1347d53057}{\_close}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00655}00655\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Non-\/blocking\ part\ of\ closing.\ Common\ to\ sync/async."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00656}00656\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Don't\ reset\ the\ query\ because\ it\ may\ be\ useful\ to\ investigate\ after}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00657}00657\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ an\ error.}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00658}00658\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_af91803d25cbe343e9d5d4befd3a3534b}{\_reset}}(reset\_query=\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00659}00659\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_a8cd0acf4c202a7c8ee08a76e72f8dc5e}{\_closed}}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00660}00660\ }
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00661}00661\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00662}\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aefa51b5889266fe27b7b682499a0b582}{00662}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_aefa51b5889266fe27b7b682499a0b582}{\_encoding}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__cursor__base_8py_source_l00663}00663\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__cursor__base_1_1_base_cursor_ae7a6d0d012f118e27923a92f022fffe7}{\_pgconn}}.\_encoding}
+
+\end{DoxyCode}

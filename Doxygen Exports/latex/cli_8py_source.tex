@@ -1,0 +1,224 @@
+\doxysection{cli.\+py}
+\hypertarget{cli_8py_source}{}\label{cli_8py_source}\index{venv/Lib/site-\/packages/dotenv/cli.py@{venv/Lib/site-\/packages/dotenv/cli.py}}
+\doxymbox{\hyperlink{cli_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00001}\doxymbox{\hyperlink{namespacedotenv_1_1cli}{00001}}\ \textcolor{keyword}{import}\ json}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00002}00002\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00003}00003\ \textcolor{keyword}{import}\ shlex}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00004}00004\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00005}00005\ \textcolor{keyword}{from}\ contextlib\ \textcolor{keyword}{import}\ contextmanager}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00006}00006\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ IO,\ Any,\ Dict,\ Iterator,\ List,\ Optional}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00008}00008\ \textcolor{keywordflow}{if}\ sys.platform\ ==\ \textcolor{stringliteral}{"{}win32"{}}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00009}00009\ \ \ \ \ \textcolor{keyword}{from}\ subprocess\ \textcolor{keyword}{import}\ Popen}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00011}00011\ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00012}00012\ \ \ \ \ \textcolor{keyword}{import}\ click}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00013}00013\ \textcolor{keywordflow}{except}\ ImportError:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00014}00014\ \ \ \ \ sys.stderr.write(}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00015}00015\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}It\ seems\ python-\/dotenv\ is\ not\ installed\ with\ cli\ option.\ \(\backslash\)n"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00016}00016\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'Run\ pip\ install\ "{}python-\/dotenv[cli]"{}\ to\ fix\ this.'}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00017}00017\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00018}00018\ \ \ \ \ sys.exit(1)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00020}00020\ \textcolor{keyword}{from}\ .main\ \textcolor{keyword}{import}\ dotenv\_values,\ set\_key,\ unset\_key}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00021}00021\ \textcolor{keyword}{from}\ .version\ \textcolor{keyword}{import}\ \_\_version\_\_}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00024}\doxymbox{\hyperlink{namespacedotenv_1_1cli_a243c4f89e3907ab01a4bd0e7e8db74f9}{00024}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1cli_a243c4f89e3907ab01a4bd0e7e8db74f9}{enumerate\_env}}()\ -\/>\ Optional[str]:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00025}00025\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00026}00026\ \textcolor{stringliteral}{\ \ \ \ Return\ a\ path\ for\ the\ \$\{pwd\}/.env\ file.}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00027}00027\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00028}00028\ \textcolor{stringliteral}{\ \ \ \ If\ pwd\ does\ not\ exist,\ return\ None.}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00029}00029\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00030}00030\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00031}00031\ \ \ \ \ \ \ \ \ cwd\ =\ os.getcwd()}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00032}00032\ \ \ \ \ \textcolor{keywordflow}{except}\ FileNotFoundError:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00033}00033\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00034}00034\ \ \ \ \ path\ =\ os.path.join(cwd,\ \textcolor{stringliteral}{"{}.env"{}})}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00035}00035\ \ \ \ \ \textcolor{keywordflow}{return}\ path}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00038}00038\ \textcolor{preprocessor}{@click.group()}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00039}00039\ \textcolor{preprocessor}{@click.option}(}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00040}00040\ \ \ \ \ \textcolor{stringliteral}{"{}-\/f"{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00041}00041\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/file"{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00042}00042\ \ \ \ \ default=\doxymbox{\hyperlink{namespacedotenv_1_1cli_a243c4f89e3907ab01a4bd0e7e8db74f9}{enumerate\_env}}(),}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00043}00043\ \ \ \ \ type=click.Path(file\_okay=\textcolor{keyword}{True}),}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00044}00044\ \ \ \ \ help=\textcolor{stringliteral}{"{}Location\ of\ the\ .env\ file,\ defaults\ to\ .env\ file\ in\ current\ working\ directory."{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00045}00045\ )}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00046}00046\ \textcolor{preprocessor}{@click.option}(}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00047}00047\ \ \ \ \ \textcolor{stringliteral}{"{}-\/q"{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00048}00048\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/quote"{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00049}00049\ \ \ \ \ default=\textcolor{stringliteral}{"{}always"{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00050}00050\ \ \ \ \ type=click.Choice([\textcolor{stringliteral}{"{}always"{}},\ \textcolor{stringliteral}{"{}never"{}},\ \textcolor{stringliteral}{"{}auto"{}}]),}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00051}00051\ \ \ \ \ help=\textcolor{stringliteral}{"{}Whether\ to\ quote\ or\ not\ the\ variable\ values.\ Default\ mode\ is\ always.\ This\ does\ not\ affect\ parsing."{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00052}00052\ )}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00053}00053\ \textcolor{preprocessor}{@click.option}(}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00054}00054\ \ \ \ \ \textcolor{stringliteral}{"{}-\/e"{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00055}00055\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/export"{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00056}00056\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00057}00057\ \ \ \ \ type=click.BOOL,}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00058}00058\ \ \ \ \ help=\textcolor{stringliteral}{"{}Whether\ to\ write\ the\ dot\ file\ as\ an\ executable\ bash\ script."{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00059}00059\ )}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00060}00060\ \textcolor{preprocessor}{@click.version\_option(version=\_\_version\_\_)}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00061}00061\ \textcolor{preprocessor}{@click.pass\_context}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00062}\doxymbox{\hyperlink{namespacedotenv_1_1cli_a6dca58bf6c23c8806b04065c75354063}{00062}}\ \textcolor{keyword}{def\ }cli(ctx:\ click.Context,\ file:\ Any,\ quote:\ Any,\ export:\ Any)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00063}00063\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}This\ script\ is\ used\ to\ set,\ get\ or\ unset\ values\ from\ a\ .env\ file."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00064}00064\ \ \ \ \ ctx.obj\ =\ \{\textcolor{stringliteral}{"{}QUOTE"{}}:\ quote,\ \textcolor{stringliteral}{"{}EXPORT"{}}:\ export,\ \textcolor{stringliteral}{"{}FILE"{}}:\ file\}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00065}00065\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00066}00066\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00067}00067\ \textcolor{preprocessor}{@contextmanager}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00068}\doxymbox{\hyperlink{namespacedotenv_1_1cli_a0e1e403f32681317a651760a8e37ba0a}{00068}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1cli_a0e1e403f32681317a651760a8e37ba0a}{stream\_file}}(path:\ os.PathLike)\ -\/>\ Iterator[IO[str]]:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00069}00069\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00070}00070\ \textcolor{stringliteral}{\ \ \ \ Open\ a\ file\ and\ yield\ the\ corresponding\ (decoded)\ stream.}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00071}00071\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ Exits\ with\ error\ code\ 2\ if\ the\ file\ cannot\ be\ opened.}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00073}00073\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00075}00075\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ open(path)\ \textcolor{keyword}{as}\ stream:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ stream}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00078}00078\ \ \ \ \ \textcolor{keywordflow}{except}\ OSError\ \textcolor{keyword}{as}\ exc:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ print(f\textcolor{stringliteral}{"{}Error\ opening\ env\ file:\ \{exc\}"{}},\ file=sys.stderr)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ sys.exit(2)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00083}00083\ \textcolor{preprocessor}{@cli.command(name="{}list"{})}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00084}00084\ \textcolor{preprocessor}{@click.pass\_context}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00085}00085\ \textcolor{preprocessor}{@click.option}(}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00086}00086\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/format"{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00087}00087\ \ \ \ \ \textcolor{stringliteral}{"{}output\_format"{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00088}00088\ \ \ \ \ default=\textcolor{stringliteral}{"{}simple"{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00089}00089\ \ \ \ \ type=click.Choice([\textcolor{stringliteral}{"{}simple"{}},\ \textcolor{stringliteral}{"{}json"{}},\ \textcolor{stringliteral}{"{}shell"{}},\ \textcolor{stringliteral}{"{}export"{}}]),}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00090}00090\ \ \ \ \ help=\textcolor{stringliteral}{"{}The\ format\ in\ which\ to\ display\ the\ list.\ Default\ format\ is\ simple,\ "{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00091}00091\ \ \ \ \ \textcolor{stringliteral}{"{}which\ displays\ name=value\ without\ quotes."{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00092}00092\ )}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00093}\doxymbox{\hyperlink{namespacedotenv_1_1cli_a9ac77c3b4a3e56ac9c833bf6619c3a05}{00093}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1cli_a9ac77c3b4a3e56ac9c833bf6619c3a05}{list\_values}}(ctx:\ click.Context,\ output\_format:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00094}00094\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Display\ all\ the\ stored\ key/value."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00095}00095\ \ \ \ \ file\ =\ ctx.obj[\textcolor{stringliteral}{"{}FILE"{}}]}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00097}00097\ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{namespacedotenv_1_1cli_a0e1e403f32681317a651760a8e37ba0a}{stream\_file}}(file)\ \textcolor{keyword}{as}\ stream:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ values\ =\ dotenv\_values(stream=stream)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00099}00099\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00100}00100\ \ \ \ \ \textcolor{keywordflow}{if}\ output\_format\ ==\ \textcolor{stringliteral}{"{}json"{}}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ click.echo(json.dumps(values,\ indent=2,\ sort\_keys=\textcolor{keyword}{True}))}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00102}00102\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ prefix\ =\ \textcolor{stringliteral}{"{}export\ "{}}\ \textcolor{keywordflow}{if}\ output\_format\ ==\ \textcolor{stringliteral}{"{}export"{}}\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ k\ \textcolor{keywordflow}{in}\ sorted(values):}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ v\ =\ values[k]}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ v\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ output\_format\ \textcolor{keywordflow}{in}\ (\textcolor{stringliteral}{"{}export"{}},\ \textcolor{stringliteral}{"{}shell"{}}):}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ v\ =\ shlex.quote(v)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ click.echo(f\textcolor{stringliteral}{"{}\{prefix\}\{k\}=\{v\}"{}})}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00110}00110\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00111}00111\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00112}00112\ \textcolor{preprocessor}{@cli.command(name="{}set"{})}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00113}00113\ \textcolor{preprocessor}{@click.pass\_context}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00114}00114\ \textcolor{preprocessor}{@click.argument("{}key"{},\ required=True)}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00115}00115\ \textcolor{preprocessor}{@click.argument("{}value"{},\ required=True)}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00116}\doxymbox{\hyperlink{namespacedotenv_1_1cli_aacc890f75e7d844ef6631f93916a590f}{00116}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1cli_aacc890f75e7d844ef6631f93916a590f}{set\_value}}(ctx:\ click.Context,\ key:\ Any,\ value:\ Any)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00117}00117\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Store\ the\ given\ key/value."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00118}00118\ \ \ \ \ file\ =\ ctx.obj[\textcolor{stringliteral}{"{}FILE"{}}]}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00119}00119\ \ \ \ \ quote\ =\ ctx.obj[\textcolor{stringliteral}{"{}QUOTE"{}}]}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00120}00120\ \ \ \ \ export\ =\ ctx.obj[\textcolor{stringliteral}{"{}EXPORT"{}}]}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00121}00121\ \ \ \ \ success,\ key,\ value\ =\ set\_key(file,\ key,\ value,\ quote,\ export)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00122}00122\ \ \ \ \ \textcolor{keywordflow}{if}\ success:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ click.echo(f\textcolor{stringliteral}{"{}\{key\}=\{value\}"{}})}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00124}00124\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ sys.exit(1)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00126}00126\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00128}00128\ \textcolor{preprocessor}{@cli.command()}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00129}00129\ \textcolor{preprocessor}{@click.pass\_context}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00130}00130\ \textcolor{preprocessor}{@click.argument("{}key"{},\ required=True)}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00131}\doxymbox{\hyperlink{namespacedotenv_1_1cli_aaa27b896ba6c8cb56b53bc930fb1b429}{00131}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1cli_aaa27b896ba6c8cb56b53bc930fb1b429}{get}}(ctx:\ click.Context,\ key:\ Any)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00132}00132\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Retrieve\ the\ value\ for\ the\ given\ key."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00133}00133\ \ \ \ \ file\ =\ ctx.obj[\textcolor{stringliteral}{"{}FILE"{}}]}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00134}00134\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00135}00135\ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{namespacedotenv_1_1cli_a0e1e403f32681317a651760a8e37ba0a}{stream\_file}}(file)\ \textcolor{keyword}{as}\ stream:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ values\ =\ dotenv\_values(stream=stream)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00137}00137\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00138}00138\ \ \ \ \ stored\_value\ =\ values.get(key)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00139}00139\ \ \ \ \ \textcolor{keywordflow}{if}\ stored\_value:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ click.echo(stored\_value)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00141}00141\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ sys.exit(1)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00143}00143\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00145}00145\ \textcolor{preprocessor}{@cli.command()}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00146}00146\ \textcolor{preprocessor}{@click.pass\_context}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00147}00147\ \textcolor{preprocessor}{@click.argument("{}key"{},\ required=True)}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00148}\doxymbox{\hyperlink{namespacedotenv_1_1cli_a2d0a562dd95bc39cc6960f3130b5580a}{00148}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1cli_a2d0a562dd95bc39cc6960f3130b5580a}{unset}}(ctx:\ click.Context,\ key:\ Any)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00149}00149\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Removes\ the\ given\ key."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00150}00150\ \ \ \ \ file\ =\ ctx.obj[\textcolor{stringliteral}{"{}FILE"{}}]}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00151}00151\ \ \ \ \ quote\ =\ ctx.obj[\textcolor{stringliteral}{"{}QUOTE"{}}]}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00152}00152\ \ \ \ \ success,\ key\ =\ unset\_key(file,\ key,\ quote)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00153}00153\ \ \ \ \ \textcolor{keywordflow}{if}\ success:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ click.echo(f\textcolor{stringliteral}{"{}Successfully\ removed\ \{key\}"{}})}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00155}00155\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ sys.exit(1)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00157}00157\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00158}00158\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00159}00159\ \textcolor{preprocessor}{@cli.command(context\_settings=\{"{}ignore\_unknown\_options"{}:\ True\})}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00160}00160\ \textcolor{preprocessor}{@click.pass\_context}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00161}00161\ \textcolor{preprocessor}{@click.option}(}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00162}00162\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/override/-\/-\/no-\/override"{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00163}00163\ \ \ \ \ default=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00164}00164\ \ \ \ \ help=\textcolor{stringliteral}{"{}Override\ variables\ from\ the\ environment\ file\ with\ those\ from\ the\ .env\ file."{}},}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00165}00165\ )}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00166}00166\ \textcolor{preprocessor}{@click.argument("{}commandline"{},\ nargs=-\/1,\ type=click.UNPROCESSED)}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00167}\doxymbox{\hyperlink{namespacedotenv_1_1cli_ab2ba7d5a7d961cac085cd39629f0101e}{00167}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1cli_ab2ba7d5a7d961cac085cd39629f0101e}{run}}(ctx:\ click.Context,\ override:\ bool,\ commandline:\ List[str])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00168}00168\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Run\ command\ with\ environment\ variables\ present."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00169}00169\ \ \ \ \ file\ =\ ctx.obj[\textcolor{stringliteral}{"{}FILE"{}}]}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00170}00170\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ os.path.isfile(file):}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ click.BadParameter(}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Invalid\ value\ for\ '-\/f'\ \(\backslash\)"{}\{file\}\(\backslash\)"{}\ does\ not\ exist."{}},\ ctx=ctx}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00174}00174\ \ \ \ \ dotenv\_as\_dict\ =\ \{}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ k:\ v}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (k,\ v)\ \textcolor{keywordflow}{in}\ dotenv\_values(file).items()}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ v\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ (override\ \textcolor{keywordflow}{or}\ k\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ os.environ)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00178}00178\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00179}00179\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00180}00180\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ commandline:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ click.echo(\textcolor{stringliteral}{"{}No\ command\ given."{}})}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ sys.exit(1)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00183}00183\ \ \ \ \ \doxymbox{\hyperlink{namespacedotenv_1_1cli_a9c07a4091d0ef6b02dddf1c1eaa13a4c}{run\_command}}(commandline,\ dotenv\_as\_dict)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00184}00184\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00185}00185\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00186}\doxymbox{\hyperlink{namespacedotenv_1_1cli_a9c07a4091d0ef6b02dddf1c1eaa13a4c}{00186}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1cli_a9c07a4091d0ef6b02dddf1c1eaa13a4c}{run\_command}}(command:\ List[str],\ env:\ Dict[str,\ str])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00187}00187\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Replace\ the\ current\ process\ with\ the\ specified\ command.}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00188}00188\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00189}00189\ \textcolor{stringliteral}{\ \ \ \ Replaces\ the\ current\ process\ with\ the\ specified\ command\ and\ the\ variables\ from\ \`{}env\`{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00190}00190\ \textcolor{stringliteral}{\ \ \ \ added\ in\ the\ current\ environment\ variables.}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00191}00191\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00192}00192\ \textcolor{stringliteral}{\ \ \ \ Parameters}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00193}00193\ \textcolor{stringliteral}{\ \ \ \ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00194}00194\ \textcolor{stringliteral}{\ \ \ \ command:\ List[str]}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00195}00195\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ command\ and\ it's\ parameters}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00196}00196\ \textcolor{stringliteral}{\ \ \ \ env:\ Dict}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00197}00197\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ additional\ environment\ variables}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00198}00198\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00199}00199\ \textcolor{stringliteral}{\ \ \ \ Returns}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00200}00200\ \textcolor{stringliteral}{\ \ \ \ -\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00201}00201\ \textcolor{stringliteral}{\ \ \ \ None}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00202}00202\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ function\ does\ not\ return\ any\ value.\ It\ replaces\ the\ current\ process\ with\ the\ new\ one.}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00203}00203\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00204}00204\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00205}00205\ \ \ \ \ \textcolor{comment}{\#\ copy\ the\ current\ environment\ variables\ and\ add\ the\ vales\ from}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00206}00206\ \ \ \ \ \textcolor{comment}{\#\ \`{}env`}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00207}00207\ \ \ \ \ cmd\_env\ =\ os.environ.copy()}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00208}00208\ \ \ \ \ cmd\_env.update(env)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00209}00209\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00210}00210\ \ \ \ \ \textcolor{keywordflow}{if}\ sys.platform\ ==\ \textcolor{stringliteral}{"{}win32"{}}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ execvpe\ on\ Windows\ returns\ control\ immediately}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ rather\ than\ once\ the\ command\ has\ finished.}}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ p\ =\ Popen(command,\ universal\_newlines=\textcolor{keyword}{True},\ bufsize=0,\ shell=\textcolor{keyword}{False},\ env=cmd\_env)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \_,\ \_\ =\ p.communicate()}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00215}00215\ }
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ sys.exit(p.returncode)}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00217}00217\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{cli_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ os.execvpe(command[0],\ args=command,\ env=cmd\_env)}
+
+\end{DoxyCode}

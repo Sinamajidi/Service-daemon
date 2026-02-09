@@ -1,0 +1,314 @@
+\doxysection{transaction.\+py}
+\hypertarget{transaction_8py_source}{}\label{transaction_8py_source}\index{venv/Lib/site-\/packages/psycopg/transaction.py@{venv/Lib/site-\/packages/psycopg/transaction.py}}
+\doxymbox{\hyperlink{transaction_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1transaction}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00002}00002\ \textcolor{stringliteral}{Transaction\ context\ managers\ returned\ by\ Connection.transaction()}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00009}00009\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00010}00010\ \textcolor{keyword}{from}\ enum\ \textcolor{keyword}{import}\ Enum}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00011}00011\ \textcolor{keyword}{from}\ types\ \textcolor{keyword}{import}\ TracebackType}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00012}00012\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any,\ Generic}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00013}00013\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterator}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00015}00015\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00016}00016\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ pq,\ sql}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00017}00017\ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ ConnectionType,\ PQGen}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00018}00018\ \textcolor{keyword}{from}\ .\_compat\ \textcolor{keyword}{import}\ Self}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00019}00019\ \textcolor{keyword}{from}\ .pq.misc\ \textcolor{keyword}{import}\ connection\_summary}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00020}00020\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00021}00021\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00022}00022\ \ \ \ \ \textcolor{keyword}{from}\ .connection\ \textcolor{keyword}{import}\ Connection}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00023}00023\ \ \ \ \ \textcolor{keyword}{from}\ .connection\_async\ \textcolor{keyword}{import}\ AsyncConnection}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00025}\doxymbox{\hyperlink{namespacepsycopg_1_1transaction_a4f23501336877f101c2bd7f492f69230}{00025}}\ IDLE\ =\ pq.TransactionStatus.IDLE}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00027}\doxymbox{\hyperlink{namespacepsycopg_1_1transaction_a693da5518d4decb6755b66a2f6faafed}{00027}}\ OK\ =\ pq.ConnStatus.OK}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00029}\doxymbox{\hyperlink{namespacepsycopg_1_1transaction_a1b18c5f94f027de517ee5317ee272cfb}{00029}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00031}00031\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00032}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_rollback}{00032}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_rollback}{Rollback}}(Exception):}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00033}00033\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00034}00034\ \textcolor{stringliteral}{\ \ \ \ Exit\ the\ current\ \`{}Transaction\`{}\ context\ immediately\ and\ rollback\ any\ changes}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00035}00035\ \textcolor{stringliteral}{\ \ \ \ made\ within\ this\ context.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00036}00036\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00037}00037\ \textcolor{stringliteral}{\ \ \ \ If\ a\ transaction\ context\ is\ specified\ in\ the\ constructor,\ rollback}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00038}00038\ \textcolor{stringliteral}{\ \ \ \ enclosing\ transactions\ contexts\ up\ to\ and\ including\ the\ one\ specified.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00039}00039\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00041}00041\ \ \ \ \ \_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00043}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_rollback_a77ce229d0dbfbfd778dffa70b710103b}{00043}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_rollback_a77ce229d0dbfbfd778dffa70b710103b}{\_\_init\_\_}}(self,\ transaction:\ Transaction\ |\ AsyncTransaction\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00044}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_rollback_abe7eb1d6979f471da24922d06e948228}{00044}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_rollback_abe7eb1d6979f471da24922d06e948228}{transaction}}\ =\ transaction}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00045}00045\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00046}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_rollback_ae2a495e434fd559770b0610545cecb1b}{00046}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_rollback_ae2a495e434fd559770b0610545cecb1b}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_qualname\_\_\}(\{self.transaction!r\})"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00048}00048\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00050}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_out_of_order_transaction_nesting}{00050}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_out_of_order_transaction_nesting}{OutOfOrderTransactionNesting}}(e.ProgrammingError):}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00051}00051\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Out-\/of-\/order\ transaction\ nesting\ detected"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00054}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction}{00054}}\ \textcolor{keyword}{class\ }BaseTransaction(Generic[ConnectionType]):}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00055}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status}{00055}}\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status}{Status}}(str,\ Enum):}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00057}00057\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ current\ status\ of\ a\ transaction.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00058}00058\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00059}00059\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Exposed\ as\ the\ \`{}\string~psycopg.Transaction.status\`{}\ attribute\ of}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00060}00060\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}\string~psycopg.Transaction\`{}\ and\ \`{}\string~psycopg.AsyncTransaction\`{}\ objects.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00061}00061\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00062}00062\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00063}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status_ab2deac054d052d18d0afcffdc43947c9}{00063}}\ \ \ \ \ \ \ \ \ NOT\_STARTED\ =\ \textcolor{stringliteral}{"{}not\_started"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00064}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status_aa5c1455838d5a0c9eb667bcf69bbb951}{00064}}\ \ \ \ \ \ \ \ \ ACTIVE\ =\ \textcolor{stringliteral}{"{}active"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00065}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status_acae93a8775e4269453f3a9ecff1488cf}{00065}}\ \ \ \ \ \ \ \ \ COMMITTED\ =\ \textcolor{stringliteral}{"{}committed"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00066}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status_a317e15fe367621d78fec2c7b280f7141}{00066}}\ \ \ \ \ \ \ \ \ FAILED\ =\ \textcolor{stringliteral}{"{}failed"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00067}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status_a25ba9da4b43152a8b59a4c6f29ca66e0}{00067}}\ \ \ \ \ \ \ \ \ ROLLED\_BACK\_EXPLICITLY\ =\ \textcolor{stringliteral}{"{}rolled\_back\_explicitly"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00068}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status_aaa9b8ac4dd8e085a727de03592d6e697}{00068}}\ \ \ \ \ \ \ \ \ ROLLED\_BACK\_WITH\_ERROR\ =\ \textcolor{stringliteral}{"{}rolled\_back\_with\_error"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00070}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a59e80d0dd89758d094fac443f880733d}{00070}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a59e80d0dd89758d094fac443f880733d}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ connection:\ ConnectionType,}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ savepoint\_name:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ force\_rollback:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00075}00075\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00076}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{00076}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}\ =\ connection}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00077}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a31d35e87da7250fee3fffa8d38e66767}{00077}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a31d35e87da7250fee3fffa8d38e66767}{pgconn}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.pgconn}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00078}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4268bb32291ed6dd93abe2a5ee863dff}{00078}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4268bb32291ed6dd93abe2a5ee863dff}{\_savepoint\_name}}\ =\ savepoint\_name\ \textcolor{keywordflow}{or}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00079}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a434aafb9b9960439ea9fa1b8bb3f8804}{00079}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a434aafb9b9960439ea9fa1b8bb3f8804}{force\_rollback}}\ =\ force\_rollback}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00080}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a9aa63eaa0a8d695c5ebc3bb53094ed51}{00080}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a9aa63eaa0a8d695c5ebc3bb53094ed51}{status}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status}{Status}}.NOT\_STARTED}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00081}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ac69ce6d952626df16fdf3acc71131ef1}{00081}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ac69ce6d952626df16fdf3acc71131ef1}{\_outer\_transaction}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00082}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_adc1f79b6b0b7cd4fd242ef6edf63daee}{00082}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_adc1f79b6b0b7cd4fd242ef6edf63daee}{\_stack\_index}}\ =\ -\/1}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00083}00083\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00084}00084\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00085}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_aafcecc383ac19607f11d24d42862d548}{00085}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_aafcecc383ac19607f11d24d42862d548}{savepoint\_name}}(self)\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00087}00087\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ name\ of\ the\ savepoint;\ \`{}!None\`{}\ if\ handling\ the\ main\ transaction.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00088}00088\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Yes,\ it\ may\ change\ on\ \_\_enter\_\_.\ No,\ I\ don't\ care,\ because\ the}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ un-\/entered\ state\ is\ outside\ the\ public\ interface.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4268bb32291ed6dd93abe2a5ee863dff}{\_savepoint\_name}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00093}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a8fc6cbf81d1f21c3d6a0369149103f46}{00093}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a8fc6cbf81d1f21c3d6a0369149103f46}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ cls\ =\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_module\_\_\}.\{self.\_\_class\_\_.\_\_qualname\_\_\}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ info\ =\ connection\_summary(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a31d35e87da7250fee3fffa8d38e66767}{pgconn}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ sp\ =\ f\textcolor{stringliteral}{"{}\{self.savepoint\_name!r\}\ "{}}\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_aafcecc383ac19607f11d24d42862d548}{savepoint\_name}}\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}<\{cls\}\ \{sp\}(\{self.status.value\})\ \{info\}\ at\ 0x\{id(self):x\}>"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00098}00098\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00099}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4167fec5ce3d880e75a78111a21c3239}{00099}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4167fec5ce3d880e75a78111a21c3239}{\_enter\_gen}}(self)\ -\/>\ PQGen[None]:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a9aa63eaa0a8d695c5ebc3bb53094ed51}{status}}\ !=\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status}{Status}}.NOT\_STARTED:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(\textcolor{stringliteral}{"{}transaction\ blocks\ can\ be\ used\ only\ once"{}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a9aa63eaa0a8d695c5ebc3bb53094ed51}{status}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status}{Status}}.ACTIVE}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a7ff2048074045de628ac6859e23cf404}{\_push\_savepoint}}()}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ command\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_aeab652c18e6bde8249ed4c3356f49c7c}{\_get\_enter\_commands}}():}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_exec\_command(command)}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00108}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a5c1efa681c422546781c2749c72397c7}{00108}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a5c1efa681c422546781c2749c72397c7}{\_exit\_gen}}(}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ exc\_type:\ type[BaseException]\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ exc\_val:\ BaseException\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ exc\_tb:\ TracebackType\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00113}00113\ \ \ \ \ )\ -\/>\ PQGen[bool]:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ exc\_val\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a434aafb9b9960439ea9fa1b8bb3f8804}{force\_rollback}}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a190c444f290b088833c6ba3a6c69df48}{\_commit\_gen}}()}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ try\ to\ rollback,\ but\ if\ there\ are\ problems\ (connection\ in\ a\ bad}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ state)\ just\ warn\ without\ clobbering\ the\ exception\ bubbling\ up.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (\textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a07b8d3f8cddfa6c88a7b6321953734e3}{\_rollback\_gen}}(exc\_val))}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ OutOfOrderTransactionNesting:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Clobber\ an\ exception\ happened\ in\ the\ block\ with\ the\ exception}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ caused\ by\ out-\/of-\/order\ transaction\ detected,\ so\ make\ the}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ behaviour\ consistent\ with\ \_commit\_gen\ and\ to\ make\ sure\ the}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ user\ fixes\ this\ condition,\ which\ is\ unrelated\ from}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ operational\ error\ that\ might\ arise\ in\ the\ block.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ exc2:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}error\ ignored\ in\ rollback\ of\ \%s:\ \%s"{}},\ self,\ exc2)}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00132}00132\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00133}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a190c444f290b088833c6ba3a6c69df48}{00133}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a190c444f290b088833c6ba3a6c69df48}{\_commit\_gen}}(self)\ -\/>\ PQGen[None]:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ ex\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_affe791d371b86c4825f210793f1f2fb4}{\_pop\_savepoint}}(\textcolor{stringliteral}{"{}commit"{}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a9aa63eaa0a8d695c5ebc3bb53094ed51}{status}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status}{Status}}.COMMITTED}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ex:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ex}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00138}00138\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ command\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a9b5a638fb39ec291ebaf3fb64244e3eb}{\_get\_commit\_commands}}():}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_exec\_command(command)}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00142}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a07b8d3f8cddfa6c88a7b6321953734e3}{00142}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a07b8d3f8cddfa6c88a7b6321953734e3}{\_rollback\_gen}}(self,\ exc\_val:\ BaseException\ |\ \textcolor{keywordtype}{None})\ -\/>\ PQGen[bool]:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(exc\_val,\ Rollback):}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(f\textcolor{stringliteral}{"{}\{self.\_conn\}:\ Explicit\ rollback\ from:\ "{}},\ exc\_info=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00145}00145\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ ex\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_affe791d371b86c4825f210793f1f2fb4}{\_pop\_savepoint}}(\textcolor{stringliteral}{"{}rollback"{}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00147}00147\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(exc\_val,\ Rollback)\ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a434aafb9b9960439ea9fa1b8bb3f8804}{force\_rollback}}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a9aa63eaa0a8d695c5ebc3bb53094ed51}{status}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status}{Status}}.ROLLED\_BACK\_EXPLICITLY}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a9aa63eaa0a8d695c5ebc3bb53094ed51}{status}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status}{Status}}.ROLLED\_BACK\_WITH\_ERROR}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00152}00152\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ex:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ex}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ command\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_af8a8f614871168ab5d02e2785c0a65e0}{\_get\_rollback\_commands}}():}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_exec\_command(command)}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00158}00158\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Also\ clear\ the\ prepared\ statements\ cache.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_prepared.clear()}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_prepared.maintain\_gen(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00162}00162\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(exc\_val,\ Rollback):}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ exc\_val.transaction\ \textcolor{keywordflow}{or}\ exc\_val.transaction\ \textcolor{keywordflow}{is}\ self:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}\ \ \textcolor{comment}{\#\ Swallow\ the\ exception}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00168}00168\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00169}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_aeab652c18e6bde8249ed4c3356f49c7c}{00169}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_aeab652c18e6bde8249ed4c3356f49c7c}{\_get\_enter\_commands}}(self)\ -\/>\ Iterator[bytes]:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ac69ce6d952626df16fdf3acc71131ef1}{\_outer\_transaction}}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_get\_tx\_start\_command()}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00172}00172\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4268bb32291ed6dd93abe2a5ee863dff}{\_savepoint\_name}}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ (}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{sql.SQL}}(\textcolor{stringliteral}{"{}SAVEPOINT\ \{\}"{}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ .format(\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier}{sql.Identifier}}(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4268bb32291ed6dd93abe2a5ee863dff}{\_savepoint\_name}}))}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ .as\_bytes(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00179}00179\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00180}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a9b5a638fb39ec291ebaf3fb64244e3eb}{00180}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a9b5a638fb39ec291ebaf3fb64244e3eb}{\_get\_commit\_commands}}(self)\ -\/>\ Iterator[bytes]:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4268bb32291ed6dd93abe2a5ee863dff}{\_savepoint\_name}}\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ac69ce6d952626df16fdf3acc71131ef1}{\_outer\_transaction}}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ (}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{sql.SQL}}(\textcolor{stringliteral}{"{}RELEASE\ \{\}"{}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ .format(\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier}{sql.Identifier}}(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4268bb32291ed6dd93abe2a5ee863dff}{\_savepoint\_name}}))}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ .as\_bytes(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00187}00187\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ac69ce6d952626df16fdf3acc71131ef1}{\_outer\_transaction}}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_num\_transactions}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ b\textcolor{stringliteral}{"{}COMMIT"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00191}00191\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00192}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_af8a8f614871168ab5d02e2785c0a65e0}{00192}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_af8a8f614871168ab5d02e2785c0a65e0}{\_get\_rollback\_commands}}(self)\ -\/>\ Iterator[bytes]:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4268bb32291ed6dd93abe2a5ee863dff}{\_savepoint\_name}}\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ac69ce6d952626df16fdf3acc71131ef1}{\_outer\_transaction}}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ (}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{sql.SQL}}(\textcolor{stringliteral}{"{}ROLLBACK\ TO\ \{n\}"{}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ .format(n=\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier}{sql.Identifier}}(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4268bb32291ed6dd93abe2a5ee863dff}{\_savepoint\_name}}))}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ .as\_bytes(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ (}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{sql.SQL}}(\textcolor{stringliteral}{"{}RELEASE\ \{n\}"{}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ .format(n=\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier}{sql.Identifier}}(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4268bb32291ed6dd93abe2a5ee863dff}{\_savepoint\_name}}))}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ .as\_bytes(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}})}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00204}00204\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ac69ce6d952626df16fdf3acc71131ef1}{\_outer\_transaction}}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_num\_transactions}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ b\textcolor{stringliteral}{"{}ROLLBACK"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00208}00208\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00209}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a7ff2048074045de628ac6859e23cf404}{00209}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a7ff2048074045de628ac6859e23cf404}{\_push\_savepoint}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00211}00211\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Push\ the\ transaction\ on\ the\ connection\ transactions\ stack.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00212}00212\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00213}00213\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Also\ set\ the\ internal\ state\ of\ the\ object\ and\ verify\ consistency.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00214}00214\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ac69ce6d952626df16fdf3acc71131ef1}{\_outer\_transaction}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a31d35e87da7250fee3fffa8d38e66767}{pgconn}}.transaction\_status\ ==\ IDLE}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ac69ce6d952626df16fdf3acc71131ef1}{\_outer\_transaction}}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ outer\ transaction:\ if\ no\ name\ it's\ only\ a\ begin,\ else}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ there\ will\ be\ an\ additional\ savepoint}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_num\_transactions}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ inner\ transaction:\ it\ always\ has\ a\ name}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4268bb32291ed6dd93abe2a5ee863dff}{\_savepoint\_name}}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4268bb32291ed6dd93abe2a5ee863dff}{\_savepoint\_name}}\ =\ f\textcolor{stringliteral}{"{}\_pg3\_\{self.\_conn.\_num\_transactions\ +\ 1\}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00224}00224\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_adc1f79b6b0b7cd4fd242ef6edf63daee}{\_stack\_index}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_num\_transactions}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_num\_transactions\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00227}00227\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00228}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_affe791d371b86c4825f210793f1f2fb4}{00228}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_affe791d371b86c4825f210793f1f2fb4}{\_pop\_savepoint}}(self,\ action:\ str)\ -\/>\ Exception\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00230}00230\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Pop\ the\ transaction\ from\ the\ connection\ transactions\ stack.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00231}00231\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00232}00232\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Also\ verify\ the\ state\ consistency.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00233}00233\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_num\_transactions\ -\/=\ 1}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.\_num\_transactions\ ==\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_adc1f79b6b0b7cd4fd242ef6edf63daee}{\_stack\_index}}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00237}00237\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_out_of_order_transaction_nesting}{OutOfOrderTransactionNesting}}(}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}transaction\ \{action\}\ at\ the\ wrong\ nesting\ level:\ \{self\}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00241}00241\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00242}00242\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00243}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_transaction}{00243}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_transaction}{Transaction}}(\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction}{BaseTransaction}}[\textcolor{stringliteral}{"{}Connection[Any]"{}}]):}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00244}00244\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00245}00245\ \textcolor{stringliteral}{\ \ \ \ Returned\ by\ \`{}Connection.transaction()\`{}\ to\ handle\ a\ transaction\ block.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00246}00246\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00247}00247\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00248}00248\ \ \ \ \ \_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00249}00249\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00250}00250\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00251}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_transaction_a62356c533667514ff6296e565b1ae70d}{00251}}\ \ \ \ \ \textcolor{keyword}{def\ }connection(self)\ -\/>\ Connection[Any]:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ connection\ the\ object\ is\ managing.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00253}00253\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00254}00254\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :type:\ \`{}Connection\`{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00255}00255\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00257}00257\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00258}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_transaction_ad4069c717d434d752198e2157969c290}{00258}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_transaction_ad4069c717d434d752198e2157969c290}{\_\_enter\_\_}}(self)\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.lock:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.wait(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4167fec5ce3d880e75a78111a21c3239}{\_enter\_gen}}())}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00262}00262\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00263}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_transaction_a8aebdc90414120a840dd7d5de81ffdc7}{00263}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_transaction_a8aebdc90414120a840dd7d5de81ffdc7}{\_\_exit\_\_}}(}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ exc\_type:\ type[BaseException]\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ exc\_val:\ BaseException\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ exc\_tb:\ TracebackType\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00268}00268\ \ \ \ \ )\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a31d35e87da7250fee3fffa8d38e66767}{pgconn}}.status\ ==\ OK:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.lock:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.wait(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a5c1efa681c422546781c2749c72397c7}{\_exit\_gen}}(exc\_type,\ exc\_val,\ exc\_tb))}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00273}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_transaction}{00273}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a9aa63eaa0a8d695c5ebc3bb53094ed51}{status}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status}{Status}}.FAILED}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00275}00275\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00276}00276\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00277}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_async_transaction}{00277}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_async_transaction}{AsyncTransaction}}(\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction}{BaseTransaction}}[\textcolor{stringliteral}{"{}AsyncConnection[Any]"{}}]):}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00278}00278\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00279}00279\ \textcolor{stringliteral}{\ \ \ \ Returned\ by\ \`{}AsyncConnection.transaction()\`{}\ to\ handle\ a\ transaction\ block.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00280}00280\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00281}00281\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00282}00282\ \ \ \ \ \_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00283}00283\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00284}00284\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00285}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_async_transaction_a49797ab7d7a9da8cbcbeec7d2f1f59d3}{00285}}\ \ \ \ \ \textcolor{keyword}{def\ }connection(self)\ -\/>\ AsyncConnection[Any]:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ connection\ the\ object\ is\ managing.}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00287}00287\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00288}00288\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :type:\ \`{}AsyncConnection\`{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00289}00289\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00291}00291\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00292}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_async_transaction_a4f2d089802dd3c586c2e0cef912f69e8}{00292}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_async_transaction_a4f2d089802dd3c586c2e0cef912f69e8}{\_\_aenter\_\_}}(self)\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ \textcolor{keyword}{async}\ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.lock:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ \ \ \ \ await\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.wait(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a4167fec5ce3d880e75a78111a21c3239}{\_enter\_gen}}())}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00296}00296\ }
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00297}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_async_transaction_a41e9a77c5e40e18a762b45272cdfe08e}{00297}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_async_transaction_a41e9a77c5e40e18a762b45272cdfe08e}{\_\_aexit\_\_}}(}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00298}00298\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ exc\_type:\ type[BaseException]\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ exc\_val:\ BaseException\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ exc\_tb:\ TracebackType\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00302}00302\ \ \ \ \ )\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a31d35e87da7250fee3fffa8d38e66767}{pgconn}}.status\ ==\ OK:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{async}\ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.lock:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00305}00305\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ await\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_ad112cac1154416d4f80a0101ecab5c7e}{\_conn}}.wait(self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a5c1efa681c422546781c2749c72397c7}{\_exit\_gen}}(exc\_type,\ exc\_val,\ exc\_tb))}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00307}\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_async_transaction}{00307}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_a9aa63eaa0a8d695c5ebc3bb53094ed51}{status}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1transaction_1_1_base_transaction_1_1_status}{Status}}.FAILED}
+\DoxyCodeLine{\Hypertarget{transaction_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+
+\end{DoxyCode}

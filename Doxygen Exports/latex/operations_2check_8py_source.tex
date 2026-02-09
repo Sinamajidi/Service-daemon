@@ -1,0 +1,181 @@
+\doxysection{check.\+py}
+\hypertarget{operations_2check_8py_source}{}\label{operations_2check_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/operations/check.py@{venv/Lib/site-\/packages/pip/\_internal/operations/check.py}}
+\doxymbox{\hyperlink{operations_2check_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}Validation\ of\ dependencies\ of\ packages"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00003}00003\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00005}00005\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00006}00006\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Generator,\ Iterable}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00007}00007\ \textcolor{keyword}{from}\ contextlib\ \textcolor{keyword}{import}\ suppress}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00008}00008\ \textcolor{keyword}{from}\ email.parser\ \textcolor{keyword}{import}\ Parser}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00009}00009\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ reduce}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00010}00010\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00011}00011\ \ \ \ \ Callable,}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00012}00012\ \ \ \ \ NamedTuple,}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00013}00013\ )}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00015}00015\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1requirements}{pip.\_vendor.packaging.requirements}}\ \textcolor{keyword}{import}\ Requirement}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00016}00016\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1tags}{pip.\_vendor.packaging.tags}}\ \textcolor{keyword}{import}\ Tag,\ parse\_tag}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00017}00017\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1utils}{pip.\_vendor.packaging.utils}}\ \textcolor{keyword}{import}\ NormalizedName,\ canonicalize\_name}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00018}00018\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version}{pip.\_vendor.packaging.version}}\ \textcolor{keyword}{import}\ Version}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00020}00020\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1distributions}{pip.\_internal.distributions}}\ \textcolor{keyword}{import}\ make\_distribution\_for\_install\_requirement}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00021}00021\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1metadata}{pip.\_internal.metadata}}\ \textcolor{keyword}{import}\ get\_default\_environment}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00022}00022\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1metadata_1_1base}{pip.\_internal.metadata.base}}\ \textcolor{keyword}{import}\ BaseDistribution}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00023}00023\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__install}{pip.\_internal.req.req\_install}}\ \textcolor{keyword}{import}\ InstallRequirement}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00025}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_ae884318312138e6f7ab45bd1d45180d7}{00025}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00028}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1check_1_1_package_details}{00028}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1check_1_1_package_details}{PackageDetails}}(NamedTuple):}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00029}00029\ \ \ \ \ version:\ Version}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00030}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1check_1_1_package_details_abbc039e3aa91f8d0bb1afae9156d6429}{00030}}\ \ \ \ \ dependencies:\ list[Requirement]}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00031}00031\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00033}00033\ \textcolor{comment}{\#\ Shorthands}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00034}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a772274a200eddcd0a3574e45e825c1e4}{00034}}\ PackageSet\ =\ dict[NormalizedName,\ PackageDetails]}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00035}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_aca51bd22558103df3ace175abcb0e024}{00035}}\ Missing\ =\ tuple[NormalizedName,\ Requirement]}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00036}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a6e1d711030dfddbacc38304bfc8ef87a}{00036}}\ Conflicting\ =\ tuple[NormalizedName,\ Version,\ Requirement]}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00038}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a36e097c8c839760cdb999e39b799944c}{00038}}\ MissingDict\ =\ dict[NormalizedName,\ list[Missing]]}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00039}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a5b777bebebaee1d9c6751c1b639b72f4}{00039}}\ ConflictingDict\ =\ dict[NormalizedName,\ list[Conflicting]]}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00040}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_acd52e1ca33b255f0f9a8b19883a9c7f4}{00040}}\ CheckResult\ =\ tuple[MissingDict,\ ConflictingDict]}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00041}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a83b303238632b9b573cd69697b9a45e3}{00041}}\ ConflictDetails\ =\ tuple[PackageSet,\ CheckResult]}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00044}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_af8834d690080c8d5fa0bfc7cb666233d}{00044}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_af8834d690080c8d5fa0bfc7cb666233d}{create\_package\_set\_from\_installed}}()\ -\/>\ tuple[PackageSet,\ bool]:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00045}00045\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Converts\ a\ list\ of\ distributions\ into\ a\ PackageSet."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00046}00046\ \ \ \ \ package\_set\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00047}00047\ \ \ \ \ problems\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00048}00048\ \ \ \ \ env\ =\ get\_default\_environment()}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00049}00049\ \ \ \ \ \textcolor{keywordflow}{for}\ dist\ \textcolor{keywordflow}{in}\ env.iter\_installed\_distributions(local\_only=\textcolor{keyword}{False},\ skip=()):}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ name\ =\ dist.canonical\_name}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ dependencies\ =\ list(dist.iter\_dependencies())}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \ \ \ \ package\_set[name]\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1check_1_1_package_details}{PackageDetails}}(dist.version,\ dependencies)}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ (OSError,\ ValueError)\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Don't\ crash\ on\ unreadable\ or\ broken\ metadata.}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}Error\ parsing\ dependencies\ of\ \%s:\ \%s"{}},\ name,\ e)}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ \ \ \ \ problems\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00058}00058\ \ \ \ \ \textcolor{keywordflow}{return}\ package\_set,\ problems}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00061}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a0a32781be21c31cb120f8795709c8c3b}{00061}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a0a32781be21c31cb120f8795709c8c3b}{check\_package\_set}}(}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00062}00062\ \ \ \ \ package\_set:\ PackageSet,\ should\_ignore:\ Callable[[str],\ bool]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00063}00063\ )\ -\/>\ CheckResult:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00064}00064\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Check\ if\ a\ package\ set\ is\ consistent}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00065}00065\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00066}00066\ \textcolor{stringliteral}{\ \ \ \ If\ should\_ignore\ is\ passed,\ it\ should\ be\ a\ callable\ that\ takes\ a}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00067}00067\ \textcolor{stringliteral}{\ \ \ \ package\ name\ and\ returns\ a\ boolean.}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00068}00068\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00070}00070\ \ \ \ \ missing\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00071}00071\ \ \ \ \ conflicting\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00072}00072\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00073}00073\ \ \ \ \ \textcolor{keywordflow}{for}\ package\_name,\ package\_detail\ \textcolor{keywordflow}{in}\ package\_set.items():}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Info\ about\ dependencies\ of\ package\_name}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ missing\_deps:\ set[Missing]\ =\ set()}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ conflicting\_deps:\ set[Conflicting]\ =\ set()}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ should\_ignore\ \textcolor{keywordflow}{and}\ should\_ignore(package\_name):}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ package\_detail.dependencies:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ \ \ \ \ name\ =\ canonicalize\_name(req.name)}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00083}00083\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ if\ it's\ missing}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ name\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ package\_set:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ missed\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ req.marker\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ missed\ =\ req.marker.evaluate(\{\textcolor{stringliteral}{"{}extra"{}}:\ \textcolor{stringliteral}{"{}"{}}\})}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ missed:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ missing\_deps.add((name,\ req))}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ if\ there's\ a\ conflict}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ version\ =\ package\_set[name].version}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ req.specifier.contains(version,\ prereleases=\textcolor{keyword}{True}):}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conflicting\_deps.add((name,\ version,\ req))}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00097}00097\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ missing\_deps:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ missing[package\_name]\ =\ sorted(missing\_deps,\ key=str)}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ conflicting\_deps:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ conflicting[package\_name]\ =\ sorted(conflicting\_deps,\ key=str)}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00103}00103\ \ \ \ \ \textcolor{keywordflow}{return}\ missing,\ conflicting}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00106}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a09cdedb2903756c50bbedb4e692b1a45}{00106}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a09cdedb2903756c50bbedb4e692b1a45}{check\_install\_conflicts}}(to\_install:\ list[InstallRequirement])\ -\/>\ ConflictDetails:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00107}00107\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}For\ checking\ if\ the\ dependency\ graph\ would\ be\ consistent\ after\ \(\backslash\)}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00108}00108\ \textcolor{stringliteral}{\ \ \ \ installing\ given\ requirements}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00109}00109\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00110}00110\ \ \ \ \ \textcolor{comment}{\#\ Start\ from\ the\ current\ state}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00111}00111\ \ \ \ \ package\_set,\ \_\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_af8834d690080c8d5fa0bfc7cb666233d}{create\_package\_set\_from\_installed}}()}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00112}00112\ \ \ \ \ \textcolor{comment}{\#\ Install\ packages}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00113}00113\ \ \ \ \ would\_be\_installed\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a4cc9b5bfae5023741efa3f8d6bf9354c}{\_simulate\_installation\_of}}(to\_install,\ package\_set)}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00114}00114\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00115}00115\ \ \ \ \ \textcolor{comment}{\#\ Only\ warn\ about\ directly-\/dependent\ packages;\ create\ a\ whitelist\ of\ them}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00116}00116\ \ \ \ \ whitelist\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_afe2e189d78c5a928d17afb85f1ad2dae}{\_create\_whitelist}}(would\_be\_installed,\ package\_set)}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00117}00117\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00118}00118\ \ \ \ \ \textcolor{keywordflow}{return}\ (}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ package\_set,}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a0a32781be21c31cb120f8795709c8c3b}{check\_package\_set}}(}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \ \ \ \ package\_set,\ should\_ignore=\textcolor{keyword}{lambda}\ name:\ name\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ whitelist}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00123}00123\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00124}00124\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00125}00125\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00126}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a3acecbbd1ec2a2ebdcdcd06db693237a}{00126}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a3acecbbd1ec2a2ebdcdcd06db693237a}{check\_unsupported}}(}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00127}00127\ \ \ \ \ packages:\ Iterable[BaseDistribution],}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00128}00128\ \ \ \ \ supported\_tags:\ Iterable[Tag],}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00129}00129\ )\ -\/>\ Generator[BaseDistribution,\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00130}00130\ \ \ \ \ \textcolor{keywordflow}{for}\ p\ \textcolor{keywordflow}{in}\ packages:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ suppress(FileNotFoundError):}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_file\ =\ p.read\_text(\textcolor{stringliteral}{"{}WHEEL"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_tags:\ frozenset[Tag]\ =\ reduce(}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ frozenset.union,}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ map(parse\_tag,\ Parser().parsestr(wheel\_file).get\_all(\textcolor{stringliteral}{"{}Tag"{}},\ [])),}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ frozenset(),}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ wheel\_tags.isdisjoint(supported\_tags):}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ p}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00140}00140\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00142}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a4cc9b5bfae5023741efa3f8d6bf9354c}{00142}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_a4cc9b5bfae5023741efa3f8d6bf9354c}{\_simulate\_installation\_of}}(}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00143}00143\ \ \ \ \ to\_install:\ list[InstallRequirement],\ package\_set:\ PackageSet}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00144}00144\ )\ -\/>\ set[NormalizedName]:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00145}00145\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Computes\ the\ version\ of\ packages\ after\ installing\ to\_install."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00146}00146\ \ \ \ \ \textcolor{comment}{\#\ Keep\ track\ of\ packages\ that\ were\ installed}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00147}00147\ \ \ \ \ installed\ =\ set()}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00148}00148\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00149}00149\ \ \ \ \ \textcolor{comment}{\#\ Modify\ it\ as\ installing\ requirement\_set\ would\ (assuming\ no\ errors)}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00150}00150\ \ \ \ \ \textcolor{keywordflow}{for}\ inst\_req\ \textcolor{keywordflow}{in}\ to\_install:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ abstract\_dist\ =\ make\_distribution\_for\_install\_requirement(inst\_req)}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ dist\ =\ abstract\_dist.get\_metadata\_distribution()}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ name\ =\ dist.canonical\_name}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ package\_set[name]\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1check_1_1_package_details}{PackageDetails}}(dist.version,\ list(dist.iter\_dependencies()))}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ installed.add(name)}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00157}00157\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00158}00158\ \ \ \ \ \textcolor{keywordflow}{return}\ installed}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00159}00159\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00160}00160\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00161}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_afe2e189d78c5a928d17afb85f1ad2dae}{00161}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1check_afe2e189d78c5a928d17afb85f1ad2dae}{\_create\_whitelist}}(}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00162}00162\ \ \ \ \ would\_be\_installed:\ set[NormalizedName],\ package\_set:\ PackageSet}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00163}00163\ )\ -\/>\ set[NormalizedName]:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00164}00164\ \ \ \ \ packages\_affected\ =\ set(would\_be\_installed)}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00165}00165\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00166}00166\ \ \ \ \ \textcolor{keywordflow}{for}\ package\_name\ \textcolor{keywordflow}{in}\ package\_set:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ package\_name\ \textcolor{keywordflow}{in}\ packages\_affected:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00169}00169\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ package\_set[package\_name].dependencies:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ canonicalize\_name(req.name)\ \textcolor{keywordflow}{in}\ packages\_affected:}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ packages\_affected.add(package\_name)}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00174}00174\ }
+\DoxyCodeLine{\Hypertarget{operations_2check_8py_source_l00175}00175\ \ \ \ \ \textcolor{keywordflow}{return}\ packages\_affected}
+
+\end{DoxyCode}

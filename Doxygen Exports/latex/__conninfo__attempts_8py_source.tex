@@ -1,0 +1,112 @@
+\doxysection{\+\_\+conninfo\+\_\+attempts.\+py}
+\hypertarget{__conninfo__attempts_8py_source}{}\label{__conninfo__attempts_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_conninfo\_attempts.py@{venv/Lib/site-\/packages/psycopg/\_conninfo\_attempts.py}}
+\doxymbox{\hyperlink{__conninfo__attempts_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__conninfo__attempts}{00001}}\ \textcolor{comment}{\#\ WARNING:\ this\ file\ is\ auto-\/generated\ by\ 'async\_to\_sync.py'}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00002}00002\ \textcolor{comment}{\#\ from\ the\ original\ file\ '\_conninfo\_attempts\_async.py'}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00003}00003\ \textcolor{comment}{\#\ DO\ NOT\ CHANGE!\ Change\ the\ original\ file\ instead.}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00004}00004\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00005}00005\ \textcolor{stringliteral}{Separate\ connection\ attempts\ from\ a\ connection\ string.}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00006}00006\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00008}00008\ \textcolor{comment}{\#\ Copyright\ (C)\ 2024\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00012}00012\ \textcolor{keyword}{import}\ socket}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00013}00013\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00014}00014\ \textcolor{keyword}{from}\ random\ \textcolor{keyword}{import}\ shuffle}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00015}00015\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00016}00016\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00017}00017\ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ ConnDict,\ ConnMapping}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00018}00018\ \textcolor{keyword}{from}\ .\_conninfo\_utils\ \textcolor{keyword}{import}\ get\_param,\ get\_param\_def,\ is\_ip\_address,\ split\_attempts}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00020}\doxymbox{\hyperlink{namespacepsycopg_1_1__conninfo__attempts_a7256ce7918daa69a6e45253285e3e59e}{00020}}\ logger\ =\ logging.getLogger(\textcolor{stringliteral}{"{}psycopg"{}})}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00023}\doxymbox{\hyperlink{namespacepsycopg_1_1__conninfo__attempts_adac6afe7f12c1d495306432dd9224d90}{00023}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__conninfo__attempts_adac6afe7f12c1d495306432dd9224d90}{conninfo\_attempts}}(params:\ ConnMapping)\ -\/>\ list[ConnDict]:}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00024}00024\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Split\ a\ set\ of\ connection\ params\ on\ the\ single\ attempts\ to\ perform.}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00025}00025\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00026}00026\ \textcolor{stringliteral}{\ \ \ \ A\ connection\ param\ can\ perform\ more\ than\ one\ attempt\ more\ than\ one\ \`{}\`{}host\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00027}00027\ \textcolor{stringliteral}{\ \ \ \ is\ provided.}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00028}00028\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00029}00029\ \textcolor{stringliteral}{\ \ \ \ Also\ perform\ async\ resolution\ of\ the\ hostname\ into\ hostaddr.\ Because\ a\ host}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00030}00030\ \textcolor{stringliteral}{\ \ \ \ can\ resolve\ to\ more\ than\ one\ address,\ this\ can\ lead\ to\ yield\ more\ attempts}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00031}00031\ \textcolor{stringliteral}{\ \ \ \ too.\ Raise\ \`{}OperationalError\`{}\ if\ no\ host\ could\ be\ resolved.}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00032}00032\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00033}00033\ \textcolor{stringliteral}{\ \ \ \ Because\ the\ libpq\ async\ function\ doesn't\ honour\ the\ timeout,\ we\ need\ to}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00034}00034\ \textcolor{stringliteral}{\ \ \ \ reimplement\ the\ repeated\ attempts.}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00035}00035\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00036}00036\ \ \ \ \ last\_exc\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00037}00037\ \ \ \ \ attempts\ =\ []}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00038}00038\ \ \ \ \ \textcolor{keywordflow}{if}\ prefer\_standby\ :=\ (}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ get\_param(params,\ \textcolor{stringliteral}{"{}target\_session\_attrs"{}})\ ==\ \textcolor{stringliteral}{"{}prefer-\/standby"{}}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00040}00040\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ params\ =\ \{k:\ v\ \textcolor{keywordflow}{for}\ k,\ v\ \textcolor{keywordflow}{in}\ params.items()\ \textcolor{keywordflow}{if}\ k\ !=\ \textcolor{stringliteral}{"{}target\_session\_attrs"{}}\}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00043}00043\ \ \ \ \ \textcolor{keywordflow}{for}\ attempt\ \textcolor{keywordflow}{in}\ split\_attempts(params):}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \ \ \ \ attempts.extend(\doxymbox{\hyperlink{namespacepsycopg_1_1__conninfo__attempts_ae35f1fdaa76b174daae4d6abebf2181f}{\_resolve\_hostnames}}(attempt))}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ OSError\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \ \ \ \ last\_exc\ =\ e.OperationalError(}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}failed\ to\ resolve\ host\ \{attempt.get('host')!r\}:\ \{ex\}"{}}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}\%s"{}},\ last\_exc)}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00052}00052\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ attempts:}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ last\_exc}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ couldn't\ resolve\ anything}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ last\_exc}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00057}00057\ \ \ \ \ \textcolor{keywordflow}{if}\ get\_param(params,\ \textcolor{stringliteral}{"{}load\_balance\_hosts"{}})\ ==\ \textcolor{stringliteral}{"{}random"{}}:}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ shuffle(attempts)}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00060}00060\ \ \ \ \ \textcolor{comment}{\#\ Order\ matters:\ first\ try\ all\ the\ load-\/balanced\ host\ in\ standby\ mode,}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00061}00061\ \ \ \ \ \textcolor{comment}{\#\ then\ allow\ primary}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00062}00062\ \ \ \ \ \textcolor{keywordflow}{if}\ prefer\_standby:}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ attempts\ =\ [}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \ \ \ \ \{**a,\ \textcolor{stringliteral}{"{}target\_session\_attrs"{}}:\ \textcolor{stringliteral}{"{}standby"{}}\}\ \textcolor{keywordflow}{for}\ a\ \textcolor{keywordflow}{in}\ attempts}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ ]\ +\ attempts}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00066}00066\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00067}00067\ \ \ \ \ \textcolor{keywordflow}{return}\ attempts}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00070}\doxymbox{\hyperlink{namespacepsycopg_1_1__conninfo__attempts_ae35f1fdaa76b174daae4d6abebf2181f}{00070}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__conninfo__attempts_ae35f1fdaa76b174daae4d6abebf2181f}{\_resolve\_hostnames}}(params:\ ConnDict)\ -\/>\ list[ConnDict]:}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00071}00071\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ Perform\ async\ DNS\ lookup\ of\ the\ hosts\ and\ return\ a\ list\ of\ connection\ attempts.}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00073}00073\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00074}00074\ \textcolor{stringliteral}{\ \ \ \ If\ a\ \`{}\`{}host\`{}\`{}\ param\ is\ present\ but\ not\ \`{}\`{}hostname\`{}\`{},\ resolve\ the\ host}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00075}00075\ \textcolor{stringliteral}{\ \ \ \ addresses\ asynchronously.}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00076}00076\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00077}00077\ \textcolor{stringliteral}{\ \ \ \ :param\ params:\ The\ input\ parameters,\ for\ instance\ as\ returned\ by}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00078}00078\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}\string~psycopg.conninfo.conninfo\_to\_dict()\`{}.\ The\ function\ expects\ at\ most}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ a\ single\ entry\ for\ host,\ hostaddr\ because\ it\ is\ designed\ to\ further}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00080}00080\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ process\ the\ input\ of\ split\_attempts().}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00081}00081\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00082}00082\ \textcolor{stringliteral}{\ \ \ \ :return:\ A\ list\ of\ attempts\ to\ make\ (to\ include\ the\ case\ of\ a\ hostname}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00083}00083\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ resolving\ to\ more\ than\ one\ IP).}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00084}00084\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00085}00085\ \ \ \ \ host\ =\ get\_param(params,\ \textcolor{stringliteral}{"{}host"{}})}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00086}00086\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ host\ \textcolor{keywordflow}{or}\ host.startswith(\textcolor{stringliteral}{"{}/"{}})\ \textcolor{keywordflow}{or}\ host[1:2]\ ==\ \textcolor{stringliteral}{"{}:"{}}:}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Local\ path,\ or\ no\ host\ to\ resolve}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ [params]}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00089}00089\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00090}00090\ \ \ \ \ \textcolor{keywordflow}{if}\ get\_param(params,\ \textcolor{stringliteral}{"{}hostaddr"{}}):}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Already\ resolved}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ [params]}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00094}00094\ \ \ \ \ \textcolor{keywordflow}{if}\ is\_ip\_address(host):}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ host\ is\ already\ an\ ip\ address\ don't\ try\ to\ resolve\ it}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ [\{**params,\ \textcolor{stringliteral}{"{}hostaddr"{}}:\ host\}]}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00097}00097\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00098}00098\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (port\ :=\ get\_param(params,\ \textcolor{stringliteral}{"{}port"{}})):}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ port\_def\ =\ get\_param\_def(\textcolor{stringliteral}{"{}port"{}})}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ port\ =\ port\_def\ \textcolor{keywordflow}{and}\ port\_def.compiled\ \textcolor{keywordflow}{or}\ \textcolor{stringliteral}{"{}5432"{}}}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00101}00101\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00102}00102\ \ \ \ \ ans\ =\ socket.getaddrinfo(}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ host,\ port,\ proto=socket.IPPROTO\_TCP,\ type=socket.SOCK\_STREAM}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00104}00104\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{__conninfo__attempts_8py_source_l00106}00106\ \ \ \ \ \textcolor{keywordflow}{return}\ [\{**params,\ \textcolor{stringliteral}{"{}hostaddr"{}}:\ item[4][0]\}\ \textcolor{keywordflow}{for}\ item\ \textcolor{keywordflow}{in}\ ans]}
+
+\end{DoxyCode}

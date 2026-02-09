@@ -1,0 +1,247 @@
+\doxysection{\+\_\+dns.\+py}
+\hypertarget{__dns_8py_source}{}\label{__dns_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_dns.py@{venv/Lib/site-\/packages/psycopg/\_dns.py}}
+\doxymbox{\hyperlink{__dns_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__dns}{00001}}\ \textcolor{comment}{\#\ type:\ ignore\ \ \#\ dnspython\ is\ currently\ optional\ and\ mypy\ fails\ if\ missing}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00002}00002\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00003}00003\ \textcolor{stringliteral}{DNS\ query\ support}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00004}00004\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00005}00005\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00006}00006\ \textcolor{comment}{\#\ Copyright\ (C)\ 2021\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00008}00008\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00010}00010\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00011}00011\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00012}00012\ \textcolor{keyword}{import}\ warnings}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00013}00013\ \textcolor{keyword}{from}\ random\ \textcolor{keyword}{import}\ randint}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00014}00014\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any,\ DefaultDict,\ NamedTuple}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00015}00015\ \textcolor{keyword}{from}\ collections\ \textcolor{keyword}{import}\ defaultdict}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00016}00016\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Sequence}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00018}00018\ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00019}00019\ \ \ \ \ \textcolor{keyword}{from}\ dns.resolver\ \textcolor{keyword}{import}\ Cache,\ Resolver}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00020}00020\ \ \ \ \ \textcolor{keyword}{from}\ dns.exception\ \textcolor{keyword}{import}\ DNSException}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00021}00021\ \ \ \ \ \textcolor{keyword}{from}\ dns.asyncresolver\ \textcolor{keyword}{import}\ Resolver\ \textcolor{keyword}{as}\ AsyncResolver}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00022}00022\ \textcolor{keywordflow}{except}\ ImportError:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00023}00023\ \ \ \ \ \textcolor{keywordflow}{raise}\ ImportError(}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00024}00024\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}the\ module\ psycopg.\_dns\ requires\ the\ package\ 'dnspython'\ installed"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00025}00025\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00027}00027\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ conninfo}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00028}00028\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00030}00030\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00031}00031\ \ \ \ \ \textcolor{keyword}{from}\ dns.rdtypes.IN.SRV\ \textcolor{keyword}{import}\ SRV}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00033}\doxymbox{\hyperlink{namespacepsycopg_1_1__dns_a544733ee35fdc1a389b474a5314e9cb8}{00033}}\ resolver\ =\ Resolver()}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00034}\doxymbox{\hyperlink{namespacepsycopg_1_1__dns_a757277b66541eb766e0ec07669f23ee9}{00034}}\ resolver.cache\ =\ Cache()}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00036}\doxymbox{\hyperlink{namespacepsycopg_1_1__dns_a99cc30c2541d4ba0e652b78d34713924}{00036}}\ async\_resolver\ =\ AsyncResolver()}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00037}00037\ async\_resolver.cache\ =\ Cache()}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00040}\doxymbox{\hyperlink{namespacepsycopg_1_1__dns_a55ef5878d64815bfe1281a95929ba4bf}{00040}}\ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__dns_a55ef5878d64815bfe1281a95929ba4bf}{resolve\_hostaddr\_async}}(params:\ dict[str,\ Any])\ -\/>\ dict[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00041}00041\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00042}00042\ \textcolor{stringliteral}{\ \ \ \ Perform\ async\ DNS\ lookup\ of\ the\ hosts\ and\ return\ a\ new\ params\ dict.}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00043}00043\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00044}00044\ \textcolor{stringliteral}{\ \ \ \ ..\ deprecated::\ 3.1}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00045}00045\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ use\ of\ this\ function\ is\ not\ necessary\ anymore,\ because}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00046}00046\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}psycopg.AsyncConnection.connect()\`{}\ performs\ non-\/blocking\ name}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00047}00047\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ resolution\ automatically.}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00048}00048\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00049}00049\ \ \ \ \ warnings.warn(}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}from\ psycopg\ 3.1,\ resolve\_hostaddr\_async()\ is\ not\ needed\ anymore"{}},}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ DeprecationWarning,}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00052}00052\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00053}00053\ \ \ \ \ hosts:\ list[str]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00054}00054\ \ \ \ \ hostaddrs:\ list[str]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00055}00055\ \ \ \ \ ports:\ list[str]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00057}00057\ \ \ \ \ \textcolor{keywordflow}{for}\ attempt\ \textcolor{keywordflow}{in}\ await\ conninfo.conninfo\_attempts\_async(params):}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ attempt.get(\textcolor{stringliteral}{"{}host"{}})\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \ \ \ \ hosts.append(attempt[\textcolor{stringliteral}{"{}host"{}}])}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ attempt.get(\textcolor{stringliteral}{"{}hostaddr"{}})\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \ \ \ \ hostaddrs.append(attempt[\textcolor{stringliteral}{"{}hostaddr"{}}])}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ attempt.get(\textcolor{stringliteral}{"{}port"{}})\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ \ \ \ \ ports.append(str(attempt[\textcolor{stringliteral}{"{}port"{}}]))}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00065}00065\ \ \ \ \ out\ =\ params.copy()}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00066}00066\ \ \ \ \ \textcolor{keywordflow}{if}\ shosts\ :=\ \textcolor{stringliteral}{"{},"{}}.join(hosts):}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ out[\textcolor{stringliteral}{"{}host"{}}]\ =\ shosts}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00068}00068\ \ \ \ \ \textcolor{keywordflow}{if}\ shostaddrs\ :=\ \textcolor{stringliteral}{"{},"{}}.join(hostaddrs):}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ out[\textcolor{stringliteral}{"{}hostaddr"{}}]\ =\ shostaddrs}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00070}00070\ \ \ \ \ sports\ =\ \textcolor{stringliteral}{"{},"{}}.join(ports)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00071}00071\ \ \ \ \ \textcolor{keywordflow}{if}\ ports:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ out[\textcolor{stringliteral}{"{}port"{}}]\ =\ sports}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00073}00073\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00074}00074\ \ \ \ \ \textcolor{keywordflow}{return}\ out}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00075}00075\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00076}00076\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00077}\doxymbox{\hyperlink{namespacepsycopg_1_1__dns_a90ee3373d74577e1d4fc2d2c351772d7}{00077}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__dns_a90ee3373d74577e1d4fc2d2c351772d7}{resolve\_srv}}(params:\ dict[str,\ Any])\ -\/>\ dict[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00078}00078\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Apply\ SRV\ DNS\ lookup\ as\ defined\ in\ :RFC:\`{}2782\`{}."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00079}00079\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver}{Rfc2782Resolver}}().resolve(params)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00082}\doxymbox{\hyperlink{namespacepsycopg_1_1__dns_ac8d542542689f59062561c8efe2a8132}{00082}}\ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__dns_ac8d542542689f59062561c8efe2a8132}{resolve\_srv\_async}}(params:\ dict[str,\ Any])\ -\/>\ dict[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00083}00083\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Async\ equivalent\ of\ \`{}resolve\_srv()\`{}."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00084}00084\ \ \ \ \ \textcolor{keywordflow}{return}\ await\ \doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver}{Rfc2782Resolver}}().resolve\_async(params)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00085}00085\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00087}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_host_port}{00087}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_host_port}{HostPort}}(NamedTuple):}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00088}00088\ \ \ \ \ host:\ str}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00089}00089\ \ \ \ \ port:\ str}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00090}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_host_port_ae57f40dfd4fe5a065bb8fb84cbc7025e}{00090}}\ \ \ \ \ totry:\ bool\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00091}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_host_port_a0fbcba6019658bf8990305affe63e476}{00091}}\ \ \ \ \ target:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00094}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver}{00094}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver}{Rfc2782Resolver}}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00095}00095\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Implement\ SRV\ RR\ Resolution\ as\ per\ RFC\ 2782}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00096}00096\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00097}00097\ \textcolor{stringliteral}{\ \ \ \ The\ class\ is\ organised\ to\ minimise\ code\ duplication\ between\ the\ sync\ and}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00098}00098\ \textcolor{stringliteral}{\ \ \ \ the\ async\ paths.}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00099}00099\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00100}00100\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00101}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a1ea9273e8ff5b0911dfb6acf26e5d99a}{00101}}\ \ \ \ \ re\_srv\_rr\ =\ re.compile(\textcolor{stringliteral}{r"{}\string^(?P<service>\_[\string^\(\backslash\).]+)\(\backslash\).(?P<proto>\_[\string^\(\backslash\).]+)\(\backslash\).(?P<target>.+)"{}})}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00103}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a6eae724ca2dd907e783ffef4ee58b7d3}{00103}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a6eae724ca2dd907e783ffef4ee58b7d3}{resolve}}(self,\ params:\ dict[str,\ Any])\ -\/>\ dict[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Update\ the\ parameters\ host\ and\ port\ after\ SRV\ lookup."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (attempts\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a2c430160f3a1a8807ceb639212c13e03}{\_get\_attempts}}(params)):}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ params}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ hps\ =\ []}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ hp\ \textcolor{keywordflow}{in}\ attempts:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ hp.totry:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ hps.extend(self.\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_afbb1e2bc09a4c85efac4db0a0789d958}{\_resolve\_srv}}(hp))}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ hps.append(hp)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00114}00114\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a59c1c540a0ed5727b85814f46a50c6ec}{\_return\_params}}(params,\ hps)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00116}00116\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00117}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a7719d7317bbd7a76459aef159d3392a4}{00117}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a7719d7317bbd7a76459aef159d3392a4}{resolve\_async}}(self,\ params:\ dict[str,\ Any])\ -\/>\ dict[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Update\ the\ parameters\ host\ and\ port\ after\ SRV\ lookup."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (attempts\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a2c430160f3a1a8807ceb639212c13e03}{\_get\_attempts}}(params)):}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ params}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ hps\ =\ []}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ hp\ \textcolor{keywordflow}{in}\ attempts:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ hp.totry:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ hps.extend(await\ self.\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a195f8508550b4d5d181b0113b8a141e5}{\_resolve\_srv\_async}}(hp))}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ hps.append(hp)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00128}00128\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a59c1c540a0ed5727b85814f46a50c6ec}{\_return\_params}}(params,\ hps)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00130}00130\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00131}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a2c430160f3a1a8807ceb639212c13e03}{00131}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a2c430160f3a1a8807ceb639212c13e03}{\_get\_attempts}}(self,\ params:\ dict[str,\ Any])\ -\/>\ list[HostPort]:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00133}00133\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ list\ of\ host,\ and\ for\ each\ host\ if\ SRV\ lookup\ must\ be\ tried.}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00134}00134\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00135}00135\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ an\ empty\ list\ if\ no\ lookup\ is\ requested.}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00136}00136\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ hostaddr\ is\ defined\ don't\ do\ any\ resolution.}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ params.get(\textcolor{stringliteral}{"{}hostaddr"{}},\ os.environ.get(\textcolor{stringliteral}{"{}PGHOSTADDR"{}},\ \textcolor{stringliteral}{"{}"{}})):}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ []}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00140}00140\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ host\_arg:\ str\ =\ params.get(\textcolor{stringliteral}{"{}host"{}},\ os.environ.get(\textcolor{stringliteral}{"{}PGHOST"{}},\ \textcolor{stringliteral}{"{}"{}}))}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ hosts\_in\ =\ host\_arg.split(\textcolor{stringliteral}{"{},"{}})}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ port\_arg:\ str\ =\ str(params.get(\textcolor{stringliteral}{"{}port"{}},\ os.environ.get(\textcolor{stringliteral}{"{}PGPORT"{}},\ \textcolor{stringliteral}{"{}"{}})))}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(ports\_in\ :=\ port\_arg.split(\textcolor{stringliteral}{"{},"{}}))\ ==\ 1:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ only\ one\ port\ is\ specified,\ it\ applies\ to\ all\ the\ hosts.}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \ \ \ \ ports\_in\ *=\ len(hosts\_in)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(ports\_in)\ !=\ len(hosts\_in):}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ ProgrammingError\ would\ have\ been\ more\ appropriate,\ but\ this\ is}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ what\ the\ raise\ if\ the\ libpq\ fails\ connect\ in\ the\ same\ case.}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.OperationalError(}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}cannot\ match\ \{len(hosts\_in)\}\ hosts\ with\ \{len(ports\_in)\}\ port\ numbers"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00153}00153\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ out\ =\ []}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ srv\_found\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ host,\ port\ \textcolor{keywordflow}{in}\ zip(hosts\_in,\ ports\_in):}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (m\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a1ea9273e8ff5b0911dfb6acf26e5d99a}{re\_srv\_rr}}.match(host))\ \textcolor{keywordflow}{or}\ port.lower()\ ==\ \textcolor{stringliteral}{"{}srv"{}}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ srv\_found\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ target\ =\ m.group(\textcolor{stringliteral}{"{}target"{}})\ \textcolor{keywordflow}{if}\ m\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ hp\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_host_port}{HostPort}}(host=host,\ port=port,\ totry=\textcolor{keyword}{True},\ target=target)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ hp\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_host_port}{HostPort}}(host=host,\ port=port)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ out.append(hp)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00164}00164\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ out\ \textcolor{keywordflow}{if}\ srv\_found\ \textcolor{keywordflow}{else}\ []}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00167}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_afbb1e2bc09a4c85efac4db0a0789d958}{00167}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_afbb1e2bc09a4c85efac4db0a0789d958}{\_resolve\_srv}}(self,\ hp:\ HostPort)\ -\/>\ list[HostPort]:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ ans\ =\ resolver.resolve(hp.host,\ \textcolor{stringliteral}{"{}SRV"{}})}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ DNSException:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ ans\ =\ ()}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a75795755372c04d312722296515a2d7e}{\_get\_solved\_entries}}(hp,\ ans)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00174}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a195f8508550b4d5d181b0113b8a141e5}{00174}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a195f8508550b4d5d181b0113b8a141e5}{\_resolve\_srv\_async}}(self,\ hp:\ HostPort)\ -\/>\ list[HostPort]:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \ \ \ \ ans\ =\ await\ async\_resolver.resolve(hp.host,\ \textcolor{stringliteral}{"{}SRV"{}})}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ DNSException:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \ \ \ \ ans\ =\ ()}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a75795755372c04d312722296515a2d7e}{\_get\_solved\_entries}}(hp,\ ans)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00180}00180\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00181}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a75795755372c04d312722296515a2d7e}{00181}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a75795755372c04d312722296515a2d7e}{\_get\_solved\_entries}}(}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ self,\ hp:\ HostPort,\ entries:\ Sequence[SRV]}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00183}00183\ \ \ \ \ )\ -\/>\ list[HostPort]:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ entries:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ No\ SRV\ entry\ found.\ Delegate\ the\ libpq\ a\ QNAME=target\ lookup}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ hp.target\ \textcolor{keywordflow}{and}\ hp.port.lower()\ !=\ \textcolor{stringliteral}{"{}srv"{}}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ [\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_host_port}{HostPort}}(host=hp.target,\ port=hp.port)]}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ []}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00190}00190\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ there\ is\ precisely\ one\ SRV\ RR,\ and\ its\ Target\ is\ "{}."{}\ (the\ root}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ domain),\ abort.}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(entries)\ ==\ 1\ \textcolor{keywordflow}{and}\ str(entries[0].target)\ ==\ \textcolor{stringliteral}{"{}."{}}:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ []}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00195}00195\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ [}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_host_port}{HostPort}}(host=str(entry.target).rstrip(\textcolor{stringliteral}{"{}."{}}),\ port=str(entry.port))}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ entry\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a7e57bc89872079581f49a957d8580305}{sort\_rfc2782}}(entries)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00200}00200\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00201}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a59c1c540a0ed5727b85814f46a50c6ec}{00201}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a59c1c540a0ed5727b85814f46a50c6ec}{\_return\_params}}(}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ self,\ params:\ dict[str,\ Any],\ hps:\ list[HostPort]}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00203}00203\ \ \ \ \ )\ -\/>\ dict[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ hps:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Nothing\ found,\ we\ ended\ up\ with\ an\ empty\ list}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.OperationalError(\textcolor{stringliteral}{"{}no\ host\ found\ after\ SRV\ RR\ lookup"{}})}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00207}00207\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ out\ =\ params.copy()}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ out[\textcolor{stringliteral}{"{}host"{}}]\ =\ \textcolor{stringliteral}{"{},"{}}.join(hp.host\ \textcolor{keywordflow}{for}\ hp\ \textcolor{keywordflow}{in}\ hps)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ out[\textcolor{stringliteral}{"{}port"{}}]\ =\ \textcolor{stringliteral}{"{},"{}}.join(str(hp.port)\ \textcolor{keywordflow}{for}\ hp\ \textcolor{keywordflow}{in}\ hps)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ out}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00212}00212\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00213}\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a7e57bc89872079581f49a957d8580305}{00213}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__dns_1_1_rfc2782_resolver_a7e57bc89872079581f49a957d8580305}{sort\_rfc2782}}(self,\ ans:\ Sequence[SRV])\ -\/>\ list[SRV]:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00215}00215\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Implement\ the\ priority/weight\ ordering\ defined\ in\ RFC\ 2782.}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00216}00216\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Divide\ the\ entries\ by\ priority:}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ priorities:\ DefaultDict[int,\ list[SRV]]\ =\ defaultdict(list)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ out:\ list[SRV]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ entry\ \textcolor{keywordflow}{in}\ ans:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ priorities[entry.priority].append(entry)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00222}00222\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ pri,\ entries\ \textcolor{keywordflow}{in}\ sorted(priorities.items()):}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(entries)\ ==\ 1:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ out.append(entries[0])}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00227}00227\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ \ \ \ \ entries.sort(key=\textcolor{keyword}{lambda}\ ent:\ ent.weight)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \ \ \ \ total\_weight\ =\ sum(ent.weight\ \textcolor{keywordflow}{for}\ ent\ \textcolor{keywordflow}{in}\ entries)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ entries:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ r\ =\ randint(0,\ total\_weight)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ csum\ =\ 0}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i,\ ent\ \textcolor{keywordflow}{in}\ enumerate(entries):}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ csum\ +=\ ent.weight}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ csum\ >=\ r:}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ out.append(ent)}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ total\_weight\ -\/=\ ent.weight}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ del\ entries[i]}
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00240}00240\ }
+\DoxyCodeLine{\Hypertarget{__dns_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ out}
+
+\end{DoxyCode}

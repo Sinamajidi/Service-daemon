@@ -1,0 +1,1269 @@
+\doxysection{cmdoptions.\+py}
+\hypertarget{cmdoptions_8py_source}{}\label{cmdoptions_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/cli/cmdoptions.py@{venv/Lib/site-\/packages/pip/\_internal/cli/cmdoptions.py}}
+\doxymbox{\hyperlink{cmdoptions_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00002}00002\ \textcolor{stringliteral}{shared\ options\ and\ groups}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00003}00003\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00004}00004\ \textcolor{stringliteral}{The\ principle\ here\ is\ to\ define\ options\ once,\ but\ *not*\ instantiate\ them}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00005}00005\ \textcolor{stringliteral}{globally.\ One\ reason\ being\ that\ options\ with\ action='append'\ can\ carry\ state}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00006}00006\ \textcolor{stringliteral}{between\ parses.\ pip\ parses\ general\ options\ twice\ internally,\ and\ shouldn't}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00007}00007\ \textcolor{stringliteral}{pass\ on\ state.\ To\ be\ consistent,\ all\ options\ will\ follow\ this\ design.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00008}00008\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00010}00010\ \textcolor{comment}{\#\ The\ following\ comment\ should\ be\ removed\ at\ some\ point\ in\ the\ future.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00011}00011\ \textcolor{comment}{\#\ mypy:\ strict-\/optional=False}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00012}00012\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00014}00014\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00015}00015\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00016}00016\ \textcolor{keyword}{import}\ pathlib}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00017}00017\ \textcolor{keyword}{import}\ textwrap}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00018}00018\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ partial}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00019}00019\ \textcolor{keyword}{from}\ optparse\ \textcolor{keyword}{import}\ SUPPRESS\_HELP,\ Option,\ OptionGroup,\ OptionParser,\ Values}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00020}00020\ \textcolor{keyword}{from}\ textwrap\ \textcolor{keyword}{import}\ dedent}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00021}00021\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Any,\ Callable}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00023}00023\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1utils}{pip.\_vendor.packaging.utils}}\ \textcolor{keyword}{import}\ canonicalize\_name}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00025}00025\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1parser}{pip.\_internal.cli.parser}}\ \textcolor{keyword}{import}\ ConfigOptionParser}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00026}00026\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ CommandError}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00027}00027\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1locations}{pip.\_internal.locations}}\ \textcolor{keyword}{import}\ USER\_CACHE\_DIR,\ get\_src\_prefix}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00028}00028\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1format__control}{pip.\_internal.models.format\_control}}\ \textcolor{keyword}{import}\ FormatControl}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00029}00029\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1index}{pip.\_internal.models.index}}\ \textcolor{keyword}{import}\ PyPI}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00030}00030\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1release__control}{pip.\_internal.models.release\_control}}\ \textcolor{keyword}{import}\ ReleaseControl}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00031}00031\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1target__python}{pip.\_internal.models.target\_python}}\ \textcolor{keyword}{import}\ TargetPython}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00032}00032\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1datetime}{pip.\_internal.utils.datetime}}\ \textcolor{keyword}{import}\ parse\_iso\_datetime}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00033}00033\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1hashes}{pip.\_internal.utils.hashes}}\ \textcolor{keyword}{import}\ STRONG\_HASHES}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00034}00034\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1misc}{pip.\_internal.utils.misc}}\ \textcolor{keyword}{import}\ strtobool}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00036}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_acd75014dc6846c454c2a85c5b732a8dd}{00036}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00039}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aa8c3be8d8e9f47213a914d300e405a88}{00039}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aa8c3be8d8e9f47213a914d300e405a88}{raise\_option\_error}}(parser:\ OptionParser,\ option:\ Option,\ msg:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00040}00040\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00041}00041\ \textcolor{stringliteral}{\ \ \ \ Raise\ an\ option\ parsing\ error\ using\ parser.error().}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00042}00042\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00043}00043\ \textcolor{stringliteral}{\ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00044}00044\ \textcolor{stringliteral}{\ \ \ \ \ \ parser:\ an\ OptionParser\ instance.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00045}00045\ \textcolor{stringliteral}{\ \ \ \ \ \ option:\ an\ Option\ instance.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00046}00046\ \textcolor{stringliteral}{\ \ \ \ \ \ msg:\ the\ error\ text.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00047}00047\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00048}00048\ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}\{option\}\ error:\ \{msg\}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00049}00049\ \ \ \ \ msg\ =\ textwrap.fill(\textcolor{stringliteral}{"{}\ "{}}.join(msg.split()))}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00050}00050\ \ \ \ \ parser.error(msg)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00053}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ac9ae49ed357299865cd2f858a2e3cbc4}{00053}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ac9ae49ed357299865cd2f858a2e3cbc4}{make\_option\_group}}(group:\ dict[str,\ Any],\ parser:\ ConfigOptionParser)\ -\/>\ OptionGroup:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00054}00054\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00055}00055\ \textcolor{stringliteral}{\ \ \ \ Return\ an\ OptionGroup\ object}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00056}00056\ \textcolor{stringliteral}{\ \ \ \ group\ \ -\/-\/\ assumed\ to\ be\ dict\ with\ 'name'\ and\ 'options'\ keys}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00057}00057\ \textcolor{stringliteral}{\ \ \ \ parser\ -\/-\/\ an\ optparse\ Parser}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00058}00058\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00059}00059\ \ \ \ \ option\_group\ =\ OptionGroup(parser,\ group[\textcolor{stringliteral}{"{}name"{}}])}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00060}00060\ \ \ \ \ \textcolor{keywordflow}{for}\ option\ \textcolor{keywordflow}{in}\ group[\textcolor{stringliteral}{"{}options"{}}]:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ option\_group.add\_option(option())}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00062}00062\ \ \ \ \ \textcolor{keywordflow}{return}\ option\_group}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00065}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_afabdbee3d78f72d93f42b9b26acd5514}{00065}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_afabdbee3d78f72d93f42b9b26acd5514}{check\_dist\_restriction}}(options:\ Values,\ check\_target:\ bool\ =\ \textcolor{keyword}{False})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00066}00066\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Function\ for\ determining\ if\ custom\ platform\ options\ are\ allowed.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00067}00067\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00068}00068\ \textcolor{stringliteral}{\ \ \ \ :param\ options:\ The\ OptionParser\ options.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00069}00069\ \textcolor{stringliteral}{\ \ \ \ :param\ check\_target:\ Whether\ or\ not\ to\ check\ if\ -\/-\/target\ is\ being\ used.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00070}00070\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00071}00071\ \ \ \ \ dist\_restriction\_set\ =\ any(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ [}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ options.python\_version,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \ \ \ \ options.platforms,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ options.abis,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ options.implementation,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00078}00078\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00080}00080\ \ \ \ \ binary\_only\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1format__control_1_1_format_control}{FormatControl}}(set(),\ \{\textcolor{stringliteral}{"{}:all:"{}}\})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00081}00081\ \ \ \ \ sdist\_dependencies\_allowed\ =\ (}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ options.format\_control\ !=\ binary\_only\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ options.ignore\_dependencies}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00083}00083\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00085}00085\ \ \ \ \ \textcolor{comment}{\#\ Installations\ or\ downloads\ using\ dist\ restrictions\ must\ not\ combine}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00086}00086\ \ \ \ \ \textcolor{comment}{\#\ source\ distributions\ and\ dist-\/specific\ wheels,\ as\ they\ are\ not}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00087}00087\ \ \ \ \ \textcolor{comment}{\#\ guaranteed\ to\ be\ locally\ compatible.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00088}00088\ \ \ \ \ \textcolor{keywordflow}{if}\ dist\_restriction\_set\ \textcolor{keywordflow}{and}\ sdist\_dependencies\_allowed:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}When\ restricting\ platform\ and\ interpreter\ constraints\ using\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/python-\/version,\ -\/-\/platform,\ -\/-\/abi,\ or\ -\/-\/implementation,\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}either\ -\/-\/no-\/deps\ must\ be\ set,\ or\ -\/-\/only-\/binary=:all:\ must\ be\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}set\ and\ -\/-\/no-\/binary\ must\ not\ be\ set\ (or\ must\ be\ set\ to\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}:none:)."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00097}00097\ \ \ \ \ \textcolor{keywordflow}{if}\ check\_target:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ options.dry\_run\ \textcolor{keywordflow}{and}\ dist\_restriction\_set\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ options.target\_dir:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Can\ not\ use\ any\ platform\ or\ abi\ specific\ options\ unless\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}installing\ via\ '-\/-\/target'\ or\ using\ '-\/-\/dry-\/run'"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00105}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a845cd937e44f56a13598559433c4fb53}{00105}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a845cd937e44f56a13598559433c4fb53}{check\_build\_constraints}}(options:\ Values)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00106}00106\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Function\ for\ validating\ build\ constraints\ options.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00107}00107\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00108}00108\ \textcolor{stringliteral}{\ \ \ \ :param\ options:\ The\ OptionParser\ options.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00109}00109\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00110}00110\ \ \ \ \ \textcolor{keywordflow}{if}\ hasattr(options,\ \textcolor{stringliteral}{"{}build\_constraints"{}})\ \textcolor{keywordflow}{and}\ options.build\_constraints:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ options.build\_isolation:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/build-\/constraint\ cannot\ be\ used\ with\ -\/-\/no-\/build-\/isolation."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00115}00115\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Import\ here\ to\ avoid\ circular\ imports}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1session}{pip.\_internal.network.session}}\ \textcolor{keyword}{import}\ PipSession}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file}{pip.\_internal.req.req\_file}}\ \textcolor{keyword}{import}\ get\_file\_content}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Eagerly\ check\ build\ constraints\ file\ contents}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ is\ valid\ so\ that\ we\ don't\ fail\ in\ when\ trying}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ to\ check\ constraints\ in\ isolated\ build\ process}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ PipSession()\ \textcolor{keyword}{as}\ session:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ constraint\_file\ \textcolor{keywordflow}{in}\ options.build\_constraints:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ get\_file\_content(constraint\_file,\ session)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00126}00126\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00128}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a3a984a726ad8b3c4a98911a822c57dfe}{00128}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a3a984a726ad8b3c4a98911a822c57dfe}{\_path\_option\_check}}(option:\ Option,\ opt:\ str,\ value:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00129}00129\ \ \ \ \ \textcolor{keywordflow}{return}\ os.path.expanduser(value)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00130}00130\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00132}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab5d87a67f57727c344f9cbdcc927906d}{00132}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab5d87a67f57727c344f9cbdcc927906d}{\_package\_name\_option\_check}}(option:\ Option,\ opt:\ str,\ value:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00133}00133\ \ \ \ \ \textcolor{keywordflow}{return}\ canonicalize\_name(value)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00134}00134\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00135}00135\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00136}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option}{00136}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option}{PipOption}}(Option):}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00137}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a88d386d03915ea862a99ef4b2717a9dd}{00137}}\ \ \ \ \ TYPES\ =\ Option.TYPES\ +\ (\textcolor{stringliteral}{"{}path"{}},\ \textcolor{stringliteral}{"{}package\_name"{}})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00138}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a3ae228fafa6997e4041524396f657d36}{00138}}\ \ \ \ \ TYPE\_CHECKER\ =\ Option.TYPE\_CHECKER.copy()}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00139}00139\ \ \ \ \ TYPE\_CHECKER[\textcolor{stringliteral}{"{}package\_name"{}}]\ =\ \_package\_name\_option\_check}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00140}00140\ \ \ \ \ TYPE\_CHECKER[\textcolor{stringliteral}{"{}path"{}}]\ =\ \_path\_option\_check}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00142}00142\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00143}00143\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00147}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a97cc5d0d89f3072819cde4800a8a8bd5}{00147}}\ help\_:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00148}00148\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00149}00149\ \ \ \ \ \textcolor{stringliteral}{"{}-\/h"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00150}00150\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/help"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00151}00151\ \ \ \ \ dest=\textcolor{stringliteral}{"{}help"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00152}00152\ \ \ \ \ action=\textcolor{stringliteral}{"{}help"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00153}00153\ \ \ \ \ help=\textcolor{stringliteral}{"{}Show\ help."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00154}00154\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00156}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_afd0c7e42875d0899d48f0fb79f6b84fe}{00156}}\ debug\_mode:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00157}00157\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00158}00158\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/debug"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00159}00159\ \ \ \ \ dest=\textcolor{stringliteral}{"{}debug\_mode"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00160}00160\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00161}00161\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00162}00162\ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Let\ unhandled\ exceptions\ propagate\ outside\ the\ main\ subroutine,\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}instead\ of\ logging\ them\ to\ stderr."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00165}00165\ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00166}00166\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00167}00167\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00168}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a5c2cfe0ba14ff5484d55956b4a85db0c}{00168}}\ isolated\_mode:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00169}00169\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00170}00170\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/isolated"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00171}00171\ \ \ \ \ dest=\textcolor{stringliteral}{"{}isolated\_mode"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00172}00172\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00173}00173\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00174}00174\ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Run\ pip\ in\ an\ isolated\ mode,\ ignoring\ environment\ variables\ and\ user\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}configuration."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00177}00177\ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00178}00178\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00179}00179\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00180}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a873f300f8263fc9ed7e11f4311efad2a}{00180}}\ require\_virtualenv:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00181}00181\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00182}00182\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/require-\/virtualenv"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00183}00183\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/require-\/venv"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00184}00184\ \ \ \ \ dest=\textcolor{stringliteral}{"{}require\_venv"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00185}00185\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00186}00186\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00187}00187\ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Allow\ pip\ to\ only\ run\ in\ a\ virtual\ environment;\ exit\ with\ an\ error\ otherwise."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00189}00189\ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00190}00190\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00191}00191\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00192}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a834a0b940eeb0d83b7609dcbbb02e821}{00192}}\ override\_externally\_managed:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00193}00193\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00194}00194\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/break-\/system-\/packages"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00195}00195\ \ \ \ \ dest=\textcolor{stringliteral}{"{}override\_externally\_managed"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00196}00196\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00197}00197\ \ \ \ \ help=\textcolor{stringliteral}{"{}Allow\ pip\ to\ modify\ an\ EXTERNALLY-\/MANAGED\ Python\ installation"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00198}00198\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00199}00199\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00200}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a6457086f19daf2c4182da696c94f2c2d}{00200}}\ python:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00201}00201\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00202}00202\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/python"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00203}00203\ \ \ \ \ dest=\textcolor{stringliteral}{"{}python"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00204}00204\ \ \ \ \ help=\textcolor{stringliteral}{"{}Run\ pip\ with\ the\ specified\ Python\ interpreter."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00205}00205\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00206}00206\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00207}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a86e930425801ff347992dfc9bee7ef97}{00207}}\ verbose:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00208}00208\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00209}00209\ \ \ \ \ \textcolor{stringliteral}{"{}-\/v"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00210}00210\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/verbose"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00211}00211\ \ \ \ \ dest=\textcolor{stringliteral}{"{}verbose"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00212}00212\ \ \ \ \ action=\textcolor{stringliteral}{"{}count"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00213}00213\ \ \ \ \ default=0,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00214}00214\ \ \ \ \ help=\textcolor{stringliteral}{"{}Give\ more\ output.\ Option\ is\ additive,\ and\ can\ be\ used\ up\ to\ 3\ times."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00215}00215\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00216}00216\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00217}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a5b63d44201282387c27de5b7acaeddef}{00217}}\ no\_color:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00218}00218\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00219}00219\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/no-\/color"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00220}00220\ \ \ \ \ dest=\textcolor{stringliteral}{"{}no\_color"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00221}00221\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00222}00222\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00223}00223\ \ \ \ \ help=\textcolor{stringliteral}{"{}Suppress\ colored\ output."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00224}00224\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00225}00225\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00226}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a1e6f9277b46c5ebfcc36acfbbaea6bfc}{00226}}\ version:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00227}00227\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00228}00228\ \ \ \ \ \textcolor{stringliteral}{"{}-\/V"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00229}00229\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/version"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00230}00230\ \ \ \ \ dest=\textcolor{stringliteral}{"{}version"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00231}00231\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00232}00232\ \ \ \ \ help=\textcolor{stringliteral}{"{}Show\ version\ and\ exit."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00233}00233\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00234}00234\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00235}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a04edefb367c06519e4536e10fc06f807}{00235}}\ quiet:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00236}00236\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00237}00237\ \ \ \ \ \textcolor{stringliteral}{"{}-\/q"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00238}00238\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/quiet"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00239}00239\ \ \ \ \ dest=\textcolor{stringliteral}{"{}quiet"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00240}00240\ \ \ \ \ action=\textcolor{stringliteral}{"{}count"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00241}00241\ \ \ \ \ default=0,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00242}00242\ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Give\ less\ output.\ Option\ is\ additive,\ and\ can\ be\ used\ up\ to\ 3"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ times\ (corresponding\ to\ WARNING,\ ERROR,\ and\ CRITICAL\ logging"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ levels)."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00246}00246\ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00247}00247\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00248}00248\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00249}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a2eb1cb7701225fa0383c22658b04bc2b}{00249}}\ progress\_bar:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00250}00250\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00251}00251\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/progress-\/bar"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00252}00252\ \ \ \ \ dest=\textcolor{stringliteral}{"{}progress\_bar"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00253}00253\ \ \ \ \ type=\textcolor{stringliteral}{"{}choice"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00254}00254\ \ \ \ \ choices=[\textcolor{stringliteral}{"{}auto"{}},\ \textcolor{stringliteral}{"{}on"{}},\ \textcolor{stringliteral}{"{}off"{}},\ \textcolor{stringliteral}{"{}raw"{}}],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00255}00255\ \ \ \ \ default=\textcolor{stringliteral}{"{}auto"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00256}00256\ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Specify\ whether\ the\ progress\ bar\ should\ be\ used.\ In\ 'auto'"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ mode,\ -\/-\/quiet\ will\ suppress\ all\ progress\ bars."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ [auto,\ on,\ off,\ raw]\ (default:\ auto)"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00260}00260\ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00261}00261\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00262}00262\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00263}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option_a7a6c3bf8eb5faf3162a6b9efa39c39ba}{00263}}\ log:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00264}00264\ \ \ \ \ PipOption,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00265}00265\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/log"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00266}00266\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/log-\/file"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00267}00267\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/local-\/log"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00268}00268\ \ \ \ \ dest=\textcolor{stringliteral}{"{}log"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00269}00269\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}path"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00270}00270\ \ \ \ \ type=\textcolor{stringliteral}{"{}path"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00271}00271\ \ \ \ \ help=\textcolor{stringliteral}{"{}Path\ to\ a\ verbose\ appending\ log."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00272}00272\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00273}00273\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00274}00274\ no\_input:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00275}00275\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00276}00276\ \ \ \ \ \textcolor{comment}{\#\ Don't\ ask\ for\ input}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00277}00277\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/no-\/input"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00278}00278\ \ \ \ \ dest=\textcolor{stringliteral}{"{}no\_input"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00279}00279\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00280}00280\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00281}00281\ \ \ \ \ help=\textcolor{stringliteral}{"{}Disable\ prompting\ for\ input."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00282}00282\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00283}00283\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00284}00284\ keyring\_provider:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00285}00285\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00286}00286\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/keyring-\/provider"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00287}00287\ \ \ \ \ dest=\textcolor{stringliteral}{"{}keyring\_provider"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00288}00288\ \ \ \ \ choices=[\textcolor{stringliteral}{"{}auto"{}},\ \textcolor{stringliteral}{"{}disabled"{}},\ \textcolor{stringliteral}{"{}import"{}},\ \textcolor{stringliteral}{"{}subprocess"{}}],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00289}00289\ \ \ \ \ default=\textcolor{stringliteral}{"{}auto"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00290}00290\ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Enable\ the\ credential\ lookup\ via\ the\ keyring\ library\ if\ user\ input\ is\ allowed."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ Specify\ which\ mechanism\ to\ use\ [auto,\ disabled,\ import,\ subprocess]."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ (default:\ \%default)"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00294}00294\ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00295}00295\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00296}00296\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00297}00297\ proxy:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00298}00298\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00299}00299\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/proxy"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00300}00300\ \ \ \ \ dest=\textcolor{stringliteral}{"{}proxy"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00301}00301\ \ \ \ \ type=\textcolor{stringliteral}{"{}str"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00302}00302\ \ \ \ \ default=\textcolor{stringliteral}{"{}"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00303}00303\ \ \ \ \ help=\textcolor{stringliteral}{"{}Specify\ a\ proxy\ in\ the\ form\ scheme://[user:passwd@]proxy.server:port."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00304}00304\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00305}00305\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00306}00306\ retries:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00307}00307\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00308}00308\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/retries"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00309}00309\ \ \ \ \ dest=\textcolor{stringliteral}{"{}retries"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00310}00310\ \ \ \ \ type=\textcolor{stringliteral}{"{}int"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00311}00311\ \ \ \ \ default=5,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00312}00312\ \ \ \ \ help=\textcolor{stringliteral}{"{}Maximum\ attempts\ to\ establish\ a\ new\ HTTP\ connection.\ (default:\ \%default)"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00313}00313\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00314}00314\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00315}00315\ resume\_retries:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00316}00316\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00317}00317\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/resume-\/retries"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00318}00318\ \ \ \ \ dest=\textcolor{stringliteral}{"{}resume\_retries"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00319}00319\ \ \ \ \ type=\textcolor{stringliteral}{"{}int"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00320}00320\ \ \ \ \ default=5,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00321}00321\ \ \ \ \ help=\textcolor{stringliteral}{"{}Maximum\ attempts\ to\ resume\ or\ restart\ an\ incomplete\ download.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00322}00322\ \ \ \ \ \textcolor{stringliteral}{"{}(default:\ \%default)"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00323}00323\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00324}00324\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00325}00325\ timeout:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00326}00326\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00327}00327\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/timeout"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00328}00328\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/default-\/timeout"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00329}00329\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}sec"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00330}00330\ \ \ \ \ dest=\textcolor{stringliteral}{"{}timeout"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00331}00331\ \ \ \ \ type=\textcolor{stringliteral}{"{}float"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00332}00332\ \ \ \ \ default=15,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00333}00333\ \ \ \ \ help=\textcolor{stringliteral}{"{}Set\ the\ socket\ timeout\ (default\ \%default\ seconds)."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00334}00334\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00335}00335\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00336}00336\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00337}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a3a51b882bfee2f976a32efbd3595d3e9}{00337}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a3a51b882bfee2f976a32efbd3595d3e9}{exists\_action}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00338}00338\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Option\ when\ path\ already\ exist}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/exists-\/action"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00341}00341\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}exists\_action"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ type=\textcolor{stringliteral}{"{}choice"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ choices=[\textcolor{stringliteral}{"{}s"{}},\ \textcolor{stringliteral}{"{}i"{}},\ \textcolor{stringliteral}{"{}w"{}},\ \textcolor{stringliteral}{"{}b"{}},\ \textcolor{stringliteral}{"{}a"{}}],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ default=[],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ metavar=\textcolor{stringliteral}{"{}action"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}Default\ action\ when\ a\ path\ already\ exists:\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}(s)witch,\ (i)gnore,\ (w)ipe,\ (b)ackup,\ (a)bort."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00349}00349\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00350}00350\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00351}00351\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00352}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a40d28501e8249564c21c502fe816674e}{00352}}\ cert:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00353}00353\ \ \ \ \ PipOption,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00354}00354\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/cert"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00355}00355\ \ \ \ \ dest=\textcolor{stringliteral}{"{}cert"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00356}00356\ \ \ \ \ type=\textcolor{stringliteral}{"{}path"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00357}00357\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}path"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00358}00358\ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Path\ to\ PEM-\/encoded\ CA\ certificate\ bundle.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}If\ provided,\ overrides\ the\ default.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}See\ 'SSL\ Certificate\ Verification'\ in\ pip\ documentation\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}for\ more\ information."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00363}00363\ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00364}00364\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00365}00365\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00366}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a3157f9f5b41cda6dac2675862df9a20f}{00366}}\ client\_cert:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00367}00367\ \ \ \ \ PipOption,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00368}00368\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/client-\/cert"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00369}00369\ \ \ \ \ dest=\textcolor{stringliteral}{"{}client\_cert"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00370}00370\ \ \ \ \ type=\textcolor{stringliteral}{"{}path"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00371}00371\ \ \ \ \ default=\textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00372}00372\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}path"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00373}00373\ \ \ \ \ help=\textcolor{stringliteral}{"{}Path\ to\ SSL\ client\ certificate,\ a\ single\ file\ containing\ the\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00374}00374\ \ \ \ \ \textcolor{stringliteral}{"{}private\ key\ and\ the\ certificate\ in\ PEM\ format."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00375}00375\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00376}00376\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00377}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a9b8cb78a567d0a7b399c50540806683c}{00377}}\ index\_url:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00378}00378\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00379}00379\ \ \ \ \ \textcolor{stringliteral}{"{}-\/i"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00380}00380\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/index-\/url"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00381}00381\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/pypi-\/url"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00382}00382\ \ \ \ \ dest=\textcolor{stringliteral}{"{}index\_url"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00383}00383\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}URL"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00384}00384\ \ \ \ \ default=PyPI.simple\_url,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00385}00385\ \ \ \ \ help=\textcolor{stringliteral}{"{}Base\ URL\ of\ the\ Python\ Package\ Index\ (default\ \%default).\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00386}00386\ \ \ \ \ \textcolor{stringliteral}{"{}This\ should\ point\ to\ a\ repository\ compliant\ with\ PEP\ 503\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00387}00387\ \ \ \ \ \textcolor{stringliteral}{"{}(the\ simple\ repository\ API)\ or\ a\ local\ directory\ laid\ out\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00388}00388\ \ \ \ \ \textcolor{stringliteral}{"{}in\ the\ same\ format."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00389}00389\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00390}00390\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00391}00391\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00392}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a42b022c61127eb721a60498a80e6d125}{00392}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a42b022c61127eb721a60498a80e6d125}{extra\_index\_url}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00393}00393\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/extra-\/index-\/url"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}extra\_index\_urls"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ metavar=\textcolor{stringliteral}{"{}URL"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ default=[],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00399}00399\ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}Extra\ URLs\ of\ package\ indexes\ to\ use\ in\ addition\ to\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/index-\/url.\ Should\ follow\ the\ same\ rules\ as\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/index-\/url."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00402}00402\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00403}00403\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00404}00404\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00405}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ae79cce829ac3782341ffdada9bba979a}{00405}}\ no\_index:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00406}00406\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00407}00407\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/no-\/index"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00408}00408\ \ \ \ \ dest=\textcolor{stringliteral}{"{}no\_index"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00409}00409\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00410}00410\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00411}00411\ \ \ \ \ help=\textcolor{stringliteral}{"{}Ignore\ package\ index\ (only\ looking\ at\ -\/-\/find-\/links\ URLs\ instead)."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00412}00412\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00413}00413\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00414}00414\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00415}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aa3d9bbafc13f4c10336d7a95bd2efd60}{00415}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aa3d9bbafc13f4c10336d7a95bd2efd60}{find\_links}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00416}00416\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/f"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/find-\/links"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}find\_links"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00420}00420\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00421}00421\ \ \ \ \ \ \ \ \ default=[],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ metavar=\textcolor{stringliteral}{"{}url"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}If\ a\ URL\ or\ path\ to\ an\ html\ file,\ then\ parse\ for\ links\ to\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00424}00424\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}archives\ such\ as\ sdist\ (.tar.gz)\ or\ wheel\ (.whl)\ files.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}If\ a\ local\ path\ or\ file://\ URL\ that's\ a\ directory,\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00426}00426\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}then\ look\ for\ archives\ in\ the\ directory\ listing.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00427}00427\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Links\ to\ VCS\ project\ URLs\ are\ not\ supported."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00428}00428\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00429}00429\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00430}00430\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00431}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a316a9c7bc2d3b9ac0401504869b366cb}{00431}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a316a9c7bc2d3b9ac0401504869b366cb}{\_handle\_uploaded\_prior\_to}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00432}00432\ \ \ \ \ option:\ Option,\ opt:\ str,\ value:\ str,\ parser:\ OptionParser}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00433}00433\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00434}00434\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00435}00435\ \textcolor{stringliteral}{\ \ \ \ This\ is\ an\ optparse.Option\ callback\ for\ the\ -\/-\/uploaded-\/prior-\/to\ option.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00436}00436\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00437}00437\ \textcolor{stringliteral}{\ \ \ \ Parses\ an\ ISO\ 8601\ datetime\ string.\ If\ no\ timezone\ is\ specified\ in\ the\ string,}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00438}00438\ \textcolor{stringliteral}{\ \ \ \ local\ timezone\ is\ used.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00439}00439\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00440}00440\ \textcolor{stringliteral}{\ \ \ \ Note:\ This\ option\ only\ works\ with\ indexes\ that\ provide\ upload-\/time\ metadata}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00441}00441\ \textcolor{stringliteral}{\ \ \ \ as\ specified\ in\ the\ simple\ repository\ API:}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00442}00442\ \textcolor{stringliteral}{\ \ \ \ https://packaging.python.org/en/latest/specifications/simple-\/repository-\/api/}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00443}00443\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00444}00444\ \ \ \ \ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00446}00446\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00447}00447\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00448}00448\ \ \ \ \ \ \ \ \ uploaded\_prior\_to\ =\ parse\_iso\_datetime(value)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00449}00449\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Use\ local\ timezone\ if\ no\ offset\ is\ given\ in\ the\ ISO\ string.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00450}00450\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ uploaded\_prior\_to.tzinfo\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00451}00451\ \ \ \ \ \ \ \ \ \ \ \ \ uploaded\_prior\_to\ =\ uploaded\_prior\_to.astimezone()}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ parser.values.uploaded\_prior\_to\ =\ uploaded\_prior\_to}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00453}00453\ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError\ \textcolor{keyword}{as}\ exc:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00454}00454\ \ \ \ \ \ \ \ \ msg\ =\ (}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00455}00455\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}invalid\ value:\ \{value!r\}:\ \{exc\}.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Expected\ an\ ISO\ 8601\ datetime\ string,\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}e.g\ '2023-\/01-\/01'\ or\ '2023-\/01-\/01T00:00:00Z'"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00458}00458\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aa8c3be8d8e9f47213a914d300e405a88}{raise\_option\_error}}(parser,\ option=option,\ msg=msg)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00460}00460\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00461}00461\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00462}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a48035940a2751d67d3b652c3a7cdfb81}{00462}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a48035940a2751d67d3b652c3a7cdfb81}{uploaded\_prior\_to}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00463}00463\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00464}00464\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/uploaded-\/prior-\/to"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00465}00465\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}uploaded\_prior\_to"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00466}00466\ \ \ \ \ \ \ \ \ metavar=\textcolor{stringliteral}{"{}datetime"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00467}00467\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}callback"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00468}00468\ \ \ \ \ \ \ \ \ callback=\_handle\_uploaded\_prior\_to,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00469}00469\ \ \ \ \ \ \ \ \ type=\textcolor{stringliteral}{"{}str"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00470}00470\ \ \ \ \ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00471}00471\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Only\ consider\ packages\ uploaded\ prior\ to\ the\ given\ date\ time.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00472}00472\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Accepts\ ISO\ 8601\ strings\ (e.g.,\ '2023-\/01-\/01T00:00:00Z').\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00473}00473\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Uses\ local\ timezone\ if\ none\ specified.\ Only\ effective\ when\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00474}00474\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}installing\ from\ indexes\ that\ provide\ upload-\/time\ metadata."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00475}00475\ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00476}00476\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00477}00477\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00478}00478\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00479}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a128a54ca982f779ee39700bf20813170}{00479}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a128a54ca982f779ee39700bf20813170}{trusted\_host}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00480}00480\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00481}00481\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/trusted-\/host"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00482}00482\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}trusted\_hosts"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00483}00483\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ metavar=\textcolor{stringliteral}{"{}HOSTNAME"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00485}00485\ \ \ \ \ \ \ \ \ default=[],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00486}00486\ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}Mark\ this\ host\ or\ host:port\ pair\ as\ trusted,\ even\ though\ it\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00487}00487\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}does\ not\ have\ valid\ or\ any\ HTTPS."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00488}00488\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00489}00489\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00490}00490\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00491}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_abe8b2661b7438dca93282bb485e615bd}{00491}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_abe8b2661b7438dca93282bb485e615bd}{constraints}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00492}00492\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00493}00493\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/c"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00494}00494\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/constraint"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00495}00495\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}constraints"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00496}00496\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00497}00497\ \ \ \ \ \ \ \ \ default=[],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00498}00498\ \ \ \ \ \ \ \ \ metavar=\textcolor{stringliteral}{"{}file"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00499}00499\ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}Constrain\ versions\ using\ the\ given\ constraints\ file.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}This\ option\ can\ be\ used\ multiple\ times."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00501}00501\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00502}00502\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00503}00503\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00504}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af7c828856204774708e192ce478241e5}{00504}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af7c828856204774708e192ce478241e5}{build\_constraints}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00505}00505\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00506}00506\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/build-\/constraint"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}build\_constraints"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00508}00508\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00509}00509\ \ \ \ \ \ \ \ \ type=\textcolor{stringliteral}{"{}str"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00510}00510\ \ \ \ \ \ \ \ \ default=[],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00511}00511\ \ \ \ \ \ \ \ \ metavar=\textcolor{stringliteral}{"{}file"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00512}00512\ \ \ \ \ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00513}00513\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Constrain\ build\ dependencies\ using\ the\ given\ constraints\ file.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00514}00514\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}This\ option\ can\ be\ used\ multiple\ times."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00516}00516\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00517}00517\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00518}00518\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00519}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ae13d34f69882a6c0ea72fc02592730a4}{00519}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ae13d34f69882a6c0ea72fc02592730a4}{requirements}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00520}00520\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/r"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/requirement"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00523}00523\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}requirements"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00525}00525\ \ \ \ \ \ \ \ \ default=[],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00526}00526\ \ \ \ \ \ \ \ \ metavar=\textcolor{stringliteral}{"{}file"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}Install\ from\ the\ given\ requirements\ file.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00528}00528\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}This\ option\ can\ be\ used\ multiple\ times."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00529}00529\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00530}00530\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00531}00531\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00532}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a7c1c999c424e871ac8c9787b75ac3441}{00532}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a7c1c999c424e871ac8c9787b75ac3441}{requirements\_from\_scripts}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00533}00533\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/requirements-\/from-\/script"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00535}00535\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00536}00536\ \ \ \ \ \ \ \ \ default=[],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00537}00537\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}requirements\_from\_scripts"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00538}00538\ \ \ \ \ \ \ \ \ metavar=\textcolor{stringliteral}{"{}file"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00539}00539\ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}Install\ dependencies\ of\ the\ given\ script\ file"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00540}00540\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}as\ defined\ by\ PEP\ 723\ inline\ metadata.\ "{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00541}00541\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00542}00542\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00543}00543\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00544}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a7dcfba06279e515de3aa18948dd66ef4}{00544}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a7dcfba06279e515de3aa18948dd66ef4}{editable}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00545}00545\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00546}00546\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/e"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00547}00547\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/editable"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}editables"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00549}00549\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00550}00550\ \ \ \ \ \ \ \ \ default=[],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00551}00551\ \ \ \ \ \ \ \ \ metavar=\textcolor{stringliteral}{"{}path/url"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00552}00552\ \ \ \ \ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00553}00553\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Install\ a\ project\ in\ editable\ mode\ (i.e.\ setuptools\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00554}00554\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'"{}develop\ mode"{})\ from\ a\ local\ project\ path\ or\ a\ VCS\ url.'}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00555}00555\ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00556}00556\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00557}00557\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00558}00558\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00559}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_acc3a72260fcc622eaf0e534f4e561460}{00559}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_acc3a72260fcc622eaf0e534f4e561460}{\_handle\_src}}(option:\ Option,\ opt\_str:\ str,\ value:\ str,\ parser:\ OptionParser)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00560}00560\ \ \ \ \ value\ =\ os.path.abspath(value)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00561}00561\ \ \ \ \ setattr(parser.values,\ option.dest,\ value)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00562}00562\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00563}00563\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00564}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a917b08b93600d02c7b3cb39f8d277674}{00564}}\ src:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00565}00565\ \ \ \ \ PipOption,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00566}00566\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/src"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00567}00567\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/source"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00568}00568\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/source-\/dir"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00569}00569\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/source-\/directory"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00570}00570\ \ \ \ \ dest=\textcolor{stringliteral}{"{}src\_dir"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00571}00571\ \ \ \ \ type=\textcolor{stringliteral}{"{}path"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00572}00572\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}dir"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00573}00573\ \ \ \ \ default=get\_src\_prefix(),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00574}00574\ \ \ \ \ action=\textcolor{stringliteral}{"{}callback"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00575}00575\ \ \ \ \ callback=\_handle\_src,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00576}00576\ \ \ \ \ help=\textcolor{stringliteral}{"{}Directory\ to\ check\ out\ editable\ projects\ into.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00577}00577\ \ \ \ \ \textcolor{stringliteral}{'The\ default\ in\ a\ virtualenv\ is\ "{}<venv\ path>/src"{}.\ '}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00578}00578\ \ \ \ \ \textcolor{stringliteral}{'The\ default\ for\ global\ installs\ is\ "{}<current\ dir>/src"{}.'},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00579}00579\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00580}00580\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00581}00581\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00582}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab28d17b693c276242ccaefd3600ab4ee}{00582}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab28d17b693c276242ccaefd3600ab4ee}{\_get\_format\_control}}(values:\ Values,\ option:\ Option)\ -\/>\ Any:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00583}00583\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ a\ format\_control\ object."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00584}00584\ \ \ \ \ \textcolor{keywordflow}{return}\ getattr(values,\ option.dest)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00585}00585\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00586}00586\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00587}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a8ac358b785408badeb03a6fe492bdfc7}{00587}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a8ac358b785408badeb03a6fe492bdfc7}{\_handle\_no\_binary}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00588}00588\ \ \ \ \ option:\ Option,\ opt\_str:\ str,\ value:\ str,\ parser:\ OptionParser}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00589}00589\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00590}00590\ \ \ \ \ existing\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab28d17b693c276242ccaefd3600ab4ee}{\_get\_format\_control}}(parser.values,\ option)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00591}00591\ \ \ \ \ FormatControl.handle\_mutual\_excludes(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00592}00592\ \ \ \ \ \ \ \ \ value,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00593}00593\ \ \ \ \ \ \ \ \ existing.no\_binary,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00594}00594\ \ \ \ \ \ \ \ \ existing.only\_binary,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00595}00595\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00596}00596\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00597}00597\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00598}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af598bdee02927a219f15d6ed5b6189dd}{00598}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af598bdee02927a219f15d6ed5b6189dd}{\_handle\_only\_binary}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00599}00599\ \ \ \ \ option:\ Option,\ opt\_str:\ str,\ value:\ str,\ parser:\ OptionParser}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00600}00600\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00601}00601\ \ \ \ \ existing\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab28d17b693c276242ccaefd3600ab4ee}{\_get\_format\_control}}(parser.values,\ option)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00602}00602\ \ \ \ \ FormatControl.handle\_mutual\_excludes(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00603}00603\ \ \ \ \ \ \ \ \ value,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00604}00604\ \ \ \ \ \ \ \ \ existing.only\_binary,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00605}00605\ \ \ \ \ \ \ \ \ existing.no\_binary,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00606}00606\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00607}00607\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00608}00608\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00609}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab9bdca583c633aa53d3fb3015e9bf969}{00609}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab9bdca583c633aa53d3fb3015e9bf969}{no\_binary}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00610}00610\ \ \ \ \ format\_control\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1format__control_1_1_format_control}{FormatControl}}(set(),\ set())}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00611}00611\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00612}00612\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/no-\/binary"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00613}00613\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}format\_control"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00614}00614\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}callback"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00615}00615\ \ \ \ \ \ \ \ \ callback=\_handle\_no\_binary,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00616}00616\ \ \ \ \ \ \ \ \ type=\textcolor{stringliteral}{"{}str"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00617}00617\ \ \ \ \ \ \ \ \ default=format\_control,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00618}00618\ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}Do\ not\ use\ binary\ packages.\ Can\ be\ supplied\ multiple\ times,\ and\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00619}00619\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'each\ time\ adds\ to\ the\ existing\ value.\ Accepts\ either\ "{}:all:"{}\ to\ '}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00620}00620\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'disable\ all\ binary\ packages,\ "{}:none:"{}\ to\ empty\ the\ set\ (notice\ '}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00621}00621\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}the\ colons),\ or\ one\ or\ more\ package\ names\ with\ commas\ between\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00622}00622\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}them\ (no\ colons).\ Note\ that\ some\ packages\ are\ tricky\ to\ compile\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00623}00623\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}and\ may\ fail\ to\ install\ when\ this\ option\ is\ used\ on\ them."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00624}00624\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00625}00625\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00626}00626\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00627}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_abdbf7ee809b6c4b35df5ebe3628459f3}{00627}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_abdbf7ee809b6c4b35df5ebe3628459f3}{only\_binary}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00628}00628\ \ \ \ \ format\_control\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1format__control_1_1_format_control}{FormatControl}}(set(),\ set())}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00629}00629\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00630}00630\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/only-\/binary"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00631}00631\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}format\_control"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00632}00632\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}callback"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00633}00633\ \ \ \ \ \ \ \ \ callback=\_handle\_only\_binary,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00634}00634\ \ \ \ \ \ \ \ \ type=\textcolor{stringliteral}{"{}str"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00635}00635\ \ \ \ \ \ \ \ \ default=format\_control,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00636}00636\ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}Do\ not\ use\ source\ packages.\ Can\ be\ supplied\ multiple\ times,\ and\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00637}00637\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'each\ time\ adds\ to\ the\ existing\ value.\ Accepts\ either\ "{}:all:"{}\ to\ '}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00638}00638\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'disable\ all\ source\ packages,\ "{}:none:"{}\ to\ empty\ the\ set,\ or\ one\ '}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00639}00639\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}or\ more\ package\ names\ with\ commas\ between\ them.\ Packages\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00640}00640\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}without\ binary\ distributions\ will\ fail\ to\ install\ when\ this\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00641}00641\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}option\ is\ used\ on\ them."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00642}00642\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00643}00643\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00644}00644\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00645}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a497e2161b5040d246b91188c1394709f}{00645}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a497e2161b5040d246b91188c1394709f}{\_get\_release\_control}}(values:\ Values,\ option:\ Option)\ -\/>\ Any:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00646}00646\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ a\ release\_control\ object."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00647}00647\ \ \ \ \ \textcolor{keywordflow}{return}\ getattr(values,\ option.dest)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00648}00648\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00649}00649\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00650}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a99a792b1fb922f523fe6b005b9592f0b}{00650}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a99a792b1fb922f523fe6b005b9592f0b}{\_handle\_all\_releases}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00651}00651\ \ \ \ \ option:\ Option,\ opt\_str:\ str,\ value:\ str,\ parser:\ OptionParser}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00652}00652\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00653}00653\ \ \ \ \ existing\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a497e2161b5040d246b91188c1394709f}{\_get\_release\_control}}(parser.values,\ option)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00654}00654\ \ \ \ \ existing.handle\_mutual\_excludes(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00655}00655\ \ \ \ \ \ \ \ \ value,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00656}00656\ \ \ \ \ \ \ \ \ existing.all\_releases,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00657}00657\ \ \ \ \ \ \ \ \ existing.only\_final,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00658}00658\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}all\_releases"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00659}00659\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00660}00660\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00661}00661\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00662}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a0956254bb17e9b5e4eb3170a091d4d1e}{00662}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a0956254bb17e9b5e4eb3170a091d4d1e}{\_handle\_only\_final}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00663}00663\ \ \ \ \ option:\ Option,\ opt\_str:\ str,\ value:\ str,\ parser:\ OptionParser}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00664}00664\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00665}00665\ \ \ \ \ existing\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a497e2161b5040d246b91188c1394709f}{\_get\_release\_control}}(parser.values,\ option)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00666}00666\ \ \ \ \ existing.handle\_mutual\_excludes(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00667}00667\ \ \ \ \ \ \ \ \ value,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00668}00668\ \ \ \ \ \ \ \ \ existing.only\_final,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00669}00669\ \ \ \ \ \ \ \ \ existing.all\_releases,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00670}00670\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}only\_final"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00671}00671\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00672}00672\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00673}00673\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00674}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab41dc0e8fce224b057e46ee5ed2cd2ef}{00674}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab41dc0e8fce224b057e46ee5ed2cd2ef}{all\_releases}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00675}00675\ \ \ \ \ release\_control\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control}{ReleaseControl}}(set(),\ set())}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00676}00676\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00677}00677\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/all-\/releases"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00678}00678\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}release\_control"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00679}00679\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}callback"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00680}00680\ \ \ \ \ \ \ \ \ callback=\_handle\_all\_releases,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00681}00681\ \ \ \ \ \ \ \ \ type=\textcolor{stringliteral}{"{}str"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00682}00682\ \ \ \ \ \ \ \ \ default=release\_control,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00683}00683\ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}Allow\ all\ release\ types\ (including\ pre-\/releases)\ for\ a\ package.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00684}00684\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Can\ be\ supplied\ multiple\ times,\ and\ each\ time\ adds\ to\ the\ existing\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00685}00685\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'value.\ Accepts\ either\ "{}:all:"{}\ to\ allow\ pre-\/releases\ for\ all\ '}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00686}00686\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'packages,\ "{}:none:"{}\ to\ empty\ the\ set\ (notice\ the\ colons),\ or\ one\ or\ '}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00687}00687\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}more\ package\ names\ with\ commas\ between\ them\ (no\ colons).\ Cannot\ be\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00688}00688\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}used\ with\ -\/-\/pre."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00689}00689\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00690}00690\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00691}00691\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00692}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a516a05b51649ec1409beace21b5cd633}{00692}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a516a05b51649ec1409beace21b5cd633}{only\_final}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00693}00693\ \ \ \ \ release\_control\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control}{ReleaseControl}}(set(),\ set())}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00694}00694\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00695}00695\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/only-\/final"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00696}00696\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}release\_control"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00697}00697\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}callback"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00698}00698\ \ \ \ \ \ \ \ \ callback=\_handle\_only\_final,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00699}00699\ \ \ \ \ \ \ \ \ type=\textcolor{stringliteral}{"{}str"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00700}00700\ \ \ \ \ \ \ \ \ default=release\_control,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00701}00701\ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}Only\ allow\ final\ releases\ (no\ pre-\/releases)\ for\ a\ package.\ Can\ be\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00702}00702\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}supplied\ multiple\ times,\ and\ each\ time\ adds\ to\ the\ existing\ value.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00703}00703\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'Accepts\ either\ "{}:all:"{}\ to\ disable\ pre-\/releases\ for\ all\ packages,\ '}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00704}00704\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'"{}:none:"{}\ to\ empty\ the\ set,\ or\ one\ or\ more\ package\ names\ with\ commas\ '}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00705}00705\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}between\ them.\ Cannot\ be\ used\ with\ -\/-\/pre."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00706}00706\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00707}00707\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00708}00708\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00709}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a63c6473b9ca13d53fd4ea5d5379691d4}{00709}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a63c6473b9ca13d53fd4ea5d5379691d4}{check\_release\_control\_exclusive}}(options:\ Values)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00710}00710\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00711}00711\ \textcolor{stringliteral}{\ \ \ \ Raise\ an\ error\ if\ -\/-\/pre\ is\ used\ with\ -\/-\/all-\/releases\ or\ -\/-\/only-\/final,}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00712}00712\ \textcolor{stringliteral}{\ \ \ \ and\ transform\ -\/-\/pre\ into\ -\/-\/all-\/releases\ :all:\ if\ used\ alone.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00713}00713\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00714}00714\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ hasattr(options,\ \textcolor{stringliteral}{"{}pre"{}})\ \textcolor{keywordflow}{or}\ \textcolor{keywordflow}{not}\ options.pre:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00715}00715\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00716}00716\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00717}00717\ \ \ \ \ release\_control\ =\ options.release\_control}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00718}00718\ \ \ \ \ \textcolor{keywordflow}{if}\ release\_control.all\_releases\ \textcolor{keywordflow}{or}\ release\_control.only\_final:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00719}00719\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(\textcolor{stringliteral}{"{}-\/-\/pre\ cannot\ be\ used\ with\ -\/-\/all-\/releases\ or\ -\/-\/only-\/final."{}})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00720}00720\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00721}00721\ \ \ \ \ \textcolor{comment}{\#\ Transform\ -\/-\/pre\ into\ -\/-\/all-\/releases\ :all:}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00722}00722\ \ \ \ \ release\_control.all\_releases.add(\textcolor{stringliteral}{"{}:all:"{}})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00723}00723\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00724}00724\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00725}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af9708cd5b871d4d6818a50a9b75f2734}{00725}}\ platforms:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00726}00726\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00727}00727\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/platform"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00728}00728\ \ \ \ \ dest=\textcolor{stringliteral}{"{}platforms"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00729}00729\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}platform"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00730}00730\ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00731}00731\ \ \ \ \ default=\textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00732}00732\ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00733}00733\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Only\ use\ wheels\ compatible\ with\ <platform>.\ Defaults\ to\ the\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00734}00734\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}platform\ of\ the\ running\ system.\ Use\ this\ option\ multiple\ times\ to\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00735}00735\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}specify\ multiple\ platforms\ supported\ by\ the\ target\ interpreter."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00736}00736\ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00737}00737\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00738}00738\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00739}00739\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00740}00740\ \textcolor{comment}{\#\ This\ was\ made\ a\ separate\ function\ for\ unit-\/testing\ purposes.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00741}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a5aa1ca64cc3333e01c74db1136637863}{00741}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a5aa1ca64cc3333e01c74db1136637863}{\_convert\_python\_version}}(value:\ str)\ -\/>\ tuple[tuple[int,\ ...],\ str\ |\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00742}00742\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00743}00743\ \textcolor{stringliteral}{\ \ \ \ Convert\ a\ version\ string\ like\ "{}3"{},\ "{}37"{},\ or\ "{}3.7.3"{}\ into\ a\ tuple\ of\ ints.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00744}00744\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00745}00745\ \textcolor{stringliteral}{\ \ \ \ :return:\ A\ 2-\/tuple\ (version\_info,\ error\_msg),\ where\ \`{}error\_msg\`{}\ is}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00746}00746\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ non-\/None\ if\ and\ only\ if\ there\ was\ a\ parsing\ error.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00747}00747\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00748}00748\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ value:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00749}00749\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ empty\ string\ is\ the\ same\ as\ not\ providing\ a\ value.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00750}00750\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (\textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00751}00751\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00752}00752\ \ \ \ \ parts\ =\ value.split(\textcolor{stringliteral}{"{}."{}})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00753}00753\ \ \ \ \ \textcolor{keywordflow}{if}\ len(parts)\ >\ 3:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00754}00754\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ((),\ \textcolor{stringliteral}{"{}at\ most\ three\ version\ parts\ are\ allowed"{}})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00755}00755\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00756}00756\ \ \ \ \ \textcolor{keywordflow}{if}\ len(parts)\ ==\ 1:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00757}00757\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Then\ we\ are\ in\ the\ case\ of\ "{}3"{}\ or\ "{}37"{}.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00758}00758\ \ \ \ \ \ \ \ \ value\ =\ parts[0]}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00759}00759\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(value)\ >\ 1:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00760}00760\ \ \ \ \ \ \ \ \ \ \ \ \ parts\ =\ [value[0],\ value[1:]]}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00761}00761\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00762}00762\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00763}00763\ \ \ \ \ \ \ \ \ version\_info\ =\ tuple(int(part)\ \textcolor{keywordflow}{for}\ part\ \textcolor{keywordflow}{in}\ parts)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00764}00764\ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00765}00765\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ((),\ \textcolor{stringliteral}{"{}each\ version\ part\ must\ be\ an\ integer"{}})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00766}00766\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00767}00767\ \ \ \ \ \textcolor{keywordflow}{return}\ (version\_info,\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00768}00768\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00769}00769\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00770}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aadfea899d02b0ab61d1d91fe05e37247}{00770}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aadfea899d02b0ab61d1d91fe05e37247}{\_handle\_python\_version}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00771}00771\ \ \ \ \ option:\ Option,\ opt\_str:\ str,\ value:\ str,\ parser:\ OptionParser}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00772}00772\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00773}00773\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00774}00774\ \textcolor{stringliteral}{\ \ \ \ Handle\ a\ provided\ -\/-\/python-\/version\ value.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00775}00775\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00776}00776\ \ \ \ \ version\_info,\ error\_msg\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a5aa1ca64cc3333e01c74db1136637863}{\_convert\_python\_version}}(value)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00777}00777\ \ \ \ \ \textcolor{keywordflow}{if}\ error\_msg\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00778}00778\ \ \ \ \ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}invalid\ -\/-\/python-\/version\ value:\ \{value!r\}:\ \{error\_msg\}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00779}00779\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aa8c3be8d8e9f47213a914d300e405a88}{raise\_option\_error}}(parser,\ option=option,\ msg=msg)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00780}00780\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00781}00781\ \ \ \ \ parser.values.python\_version\ =\ version\_info}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00782}00782\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00783}00783\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00784}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af9a42d3fcf12db9a9f2d6115ee7f4162}{00784}}\ python\_version:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00785}00785\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00786}00786\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/python-\/version"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00787}00787\ \ \ \ \ dest=\textcolor{stringliteral}{"{}python\_version"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00788}00788\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}python\_version"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00789}00789\ \ \ \ \ action=\textcolor{stringliteral}{"{}callback"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00790}00790\ \ \ \ \ callback=\_handle\_python\_version,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00791}00791\ \ \ \ \ type=\textcolor{stringliteral}{"{}str"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00792}00792\ \ \ \ \ default=\textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00793}00793\ \ \ \ \ help=dedent(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00794}00794\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}\(\backslash\)}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00795}00795\ \textcolor{stringliteral}{\ \ \ \ The\ Python\ interpreter\ version\ to\ use\ for\ wheel\ and\ "{}Requires-\/Python"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00796}00796\ \textcolor{stringliteral}{\ \ \ \ compatibility\ checks.\ Defaults\ to\ a\ version\ derived\ from\ the\ running}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00797}00797\ \textcolor{stringliteral}{\ \ \ \ interpreter.\ The\ version\ can\ be\ specified\ using\ up\ to\ three\ dot-\/separated}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00798}00798\ \textcolor{stringliteral}{\ \ \ \ integers\ (e.g.\ "{}3"{}\ for\ 3.0.0,\ "{}3.7"{}\ for\ 3.7.0,\ or\ "{}3.7.3"{}).\ A\ major-\/minor}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00799}00799\ \textcolor{stringliteral}{\ \ \ \ version\ can\ also\ be\ given\ as\ a\ string\ without\ dots\ (e.g.\ "{}37"{}\ for\ 3.7.0).}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00800}00800\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00801}00801\ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00802}00802\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00803}00803\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00804}00804\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00805}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a243244427b78ecced09603bbefe7cc22}{00805}}\ implementation:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00806}00806\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00807}00807\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/implementation"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00808}00808\ \ \ \ \ dest=\textcolor{stringliteral}{"{}implementation"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00809}00809\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}implementation"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00810}00810\ \ \ \ \ default=\textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00811}00811\ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00812}00812\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Only\ use\ wheels\ compatible\ with\ Python\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00813}00813\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}implementation\ <implementation>,\ e.g.\ 'pp',\ 'jy',\ 'cp',\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00814}00814\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ or\ 'ip'.\ If\ not\ specified,\ then\ the\ current\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00815}00815\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}interpreter\ implementation\ is\ used.\ \ Use\ 'py'\ to\ force\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00816}00816\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}implementation-\/agnostic\ wheels."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00817}00817\ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00818}00818\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00819}00819\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00820}00820\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00821}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a0000a24c166fd0a7b49e30965b655447}{00821}}\ abis:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00822}00822\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00823}00823\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/abi"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00824}00824\ \ \ \ \ dest=\textcolor{stringliteral}{"{}abis"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00825}00825\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}abi"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00826}00826\ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00827}00827\ \ \ \ \ default=\textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00828}00828\ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00829}00829\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Only\ use\ wheels\ compatible\ with\ Python\ abi\ <abi>,\ e.g.\ 'pypy\_41'.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00830}00830\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}If\ not\ specified,\ then\ the\ current\ interpreter\ abi\ tag\ is\ used.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00831}00831\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Use\ this\ option\ multiple\ times\ to\ specify\ multiple\ abis\ supported\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00832}00832\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}by\ the\ target\ interpreter.\ Generally\ you\ will\ need\ to\ specify\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00833}00833\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/implementation,\ -\/-\/platform,\ and\ -\/-\/python-\/version\ when\ using\ this\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00834}00834\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}option."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00835}00835\ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00836}00836\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00837}00837\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00838}00838\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00839}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af83c0740d3b66d2de88e037447b35a4d}{00839}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af83c0740d3b66d2de88e037447b35a4d}{add\_target\_python\_options}}(cmd\_opts:\ OptionGroup)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00840}00840\ \ \ \ \ cmd\_opts.add\_option(\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af9708cd5b871d4d6818a50a9b75f2734}{platforms}}())}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00841}00841\ \ \ \ \ cmd\_opts.add\_option(\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af9a42d3fcf12db9a9f2d6115ee7f4162}{python\_version}}())}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00842}00842\ \ \ \ \ cmd\_opts.add\_option(\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a243244427b78ecced09603bbefe7cc22}{implementation}}())}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00843}00843\ \ \ \ \ cmd\_opts.add\_option(\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a0000a24c166fd0a7b49e30965b655447}{abis}}())}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00844}00844\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00845}00845\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00846}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aa795eaa836cf5970996a82f7f8e1160a}{00846}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aa795eaa836cf5970996a82f7f8e1160a}{make\_target\_python}}(options:\ Values)\ -\/>\ TargetPython:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00847}00847\ \ \ \ \ target\_python\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1target__python_1_1_target_python}{TargetPython}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00848}00848\ \ \ \ \ \ \ \ \ platforms=options.platforms,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00849}00849\ \ \ \ \ \ \ \ \ py\_version\_info=options.python\_version,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00850}00850\ \ \ \ \ \ \ \ \ abis=options.abis,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00851}00851\ \ \ \ \ \ \ \ \ implementation=options.implementation,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00852}00852\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00853}00853\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00854}00854\ \ \ \ \ \textcolor{keywordflow}{return}\ target\_python}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00855}00855\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00856}00856\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00857}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a7f3316fab90f2e4375c7180fd5027e01}{00857}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a7f3316fab90f2e4375c7180fd5027e01}{prefer\_binary}}()\ -\/>\ Option:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00858}00858\ \ \ \ \ \textcolor{keywordflow}{return}\ Option(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00859}00859\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/prefer-\/binary"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00860}00860\ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}prefer\_binary"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00861}00861\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00862}00862\ \ \ \ \ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00863}00863\ \ \ \ \ \ \ \ \ help=(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00864}00864\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Prefer\ binary\ packages\ over\ source\ packages,\ even\ if\ the\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00865}00865\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}source\ packages\ are\ newer."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00866}00866\ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00867}00867\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00868}00868\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00869}00869\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00870}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_acbad7395eab87073596e95776b00a33e}{00870}}\ cache\_dir:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00871}00871\ \ \ \ \ PipOption,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00872}00872\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/cache-\/dir"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00873}00873\ \ \ \ \ dest=\textcolor{stringliteral}{"{}cache\_dir"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00874}00874\ \ \ \ \ default=USER\_CACHE\_DIR,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00875}00875\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}dir"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00876}00876\ \ \ \ \ type=\textcolor{stringliteral}{"{}path"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00877}00877\ \ \ \ \ help=\textcolor{stringliteral}{"{}Store\ the\ cache\ data\ in\ <dir>."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00878}00878\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00879}00879\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00880}00880\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00881}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_abaee51ae284649211c62a2f7aecbf9e0}{00881}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_abaee51ae284649211c62a2f7aecbf9e0}{\_handle\_no\_cache\_dir}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00882}00882\ \ \ \ \ option:\ Option,\ opt:\ str,\ value:\ str,\ parser:\ OptionParser}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00883}00883\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00884}00884\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00885}00885\ \textcolor{stringliteral}{\ \ \ \ Process\ a\ value\ provided\ for\ the\ -\/-\/no-\/cache-\/dir\ option.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00886}00886\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00887}00887\ \textcolor{stringliteral}{\ \ \ \ This\ is\ an\ optparse.Option\ callback\ for\ the\ -\/-\/no-\/cache-\/dir\ option.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00888}00888\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00889}00889\ \ \ \ \ \textcolor{comment}{\#\ The\ value\ argument\ will\ be\ None\ if\ -\/-\/no-\/cache-\/dir\ is\ passed\ via\ the}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00890}00890\ \ \ \ \ \textcolor{comment}{\#\ command-\/line,\ since\ the\ option\ doesn't\ accept\ arguments.\ \ However,}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00891}00891\ \ \ \ \ \textcolor{comment}{\#\ the\ value\ can\ be\ non-\/None\ if\ the\ option\ is\ triggered\ e.g.\ by\ an}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00892}00892\ \ \ \ \ \textcolor{comment}{\#\ environment\ variable,\ like\ PIP\_NO\_CACHE\_DIR=true.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00893}00893\ \ \ \ \ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00894}00894\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Then\ parse\ the\ string\ value\ to\ get\ argument\ error-\/checking.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00895}00895\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00896}00896\ \ \ \ \ \ \ \ \ \ \ \ \ strtobool(value)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00897}00897\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError\ \textcolor{keyword}{as}\ exc:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00898}00898\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aa8c3be8d8e9f47213a914d300e405a88}{raise\_option\_error}}(parser,\ option=option,\ msg=str(exc))}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00899}00899\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00900}00900\ \ \ \ \ \textcolor{comment}{\#\ Originally,\ setting\ PIP\_NO\_CACHE\_DIR\ to\ a\ value\ that\ strtobool()}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00901}00901\ \ \ \ \ \textcolor{comment}{\#\ converted\ to\ 0\ (like\ "{}false"{}\ or\ "{}no"{})\ caused\ cache\_dir\ to\ be\ disabled}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00902}00902\ \ \ \ \ \textcolor{comment}{\#\ rather\ than\ enabled\ (logic\ would\ say\ the\ latter).\ \ Thus,\ we\ disable}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00903}00903\ \ \ \ \ \textcolor{comment}{\#\ the\ cache\ directory\ not\ just\ on\ values\ that\ parse\ to\ True,\ but\ (for}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00904}00904\ \ \ \ \ \textcolor{comment}{\#\ backwards\ compatibility\ reasons)\ also\ on\ values\ that\ parse\ to\ False.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00905}00905\ \ \ \ \ \textcolor{comment}{\#\ In\ other\ words,\ always\ set\ it\ to\ False\ if\ the\ option\ is\ provided\ in}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00906}00906\ \ \ \ \ \textcolor{comment}{\#\ some\ (valid)\ form.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00907}00907\ \ \ \ \ parser.values.cache\_dir\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00908}00908\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00909}00909\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00910}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a9ca904b9a1d30459ca737daaed17b1ef}{00910}}\ no\_cache:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00911}00911\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00912}00912\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/no-\/cache-\/dir"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00913}00913\ \ \ \ \ dest=\textcolor{stringliteral}{"{}cache\_dir"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00914}00914\ \ \ \ \ action=\textcolor{stringliteral}{"{}callback"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00915}00915\ \ \ \ \ callback=\_handle\_no\_cache\_dir,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00916}00916\ \ \ \ \ help=\textcolor{stringliteral}{"{}Disable\ the\ cache."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00917}00917\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00918}00918\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00919}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a4c0b8dd210d6acaeae205b2c4c73828e}{00919}}\ no\_deps:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00920}00920\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00921}00921\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/no-\/deps"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00922}00922\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/no-\/dependencies"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00923}00923\ \ \ \ \ dest=\textcolor{stringliteral}{"{}ignore\_dependencies"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00924}00924\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00925}00925\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00926}00926\ \ \ \ \ help=\textcolor{stringliteral}{"{}Don't\ install\ package\ dependencies."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00927}00927\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00928}00928\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00929}00929\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00930}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab8c647968bc47858c9648ca5b53d4833}{00930}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab8c647968bc47858c9648ca5b53d4833}{\_handle\_dependency\_group}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00931}00931\ \ \ \ \ option:\ Option,\ opt:\ str,\ value:\ str,\ parser:\ OptionParser}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00932}00932\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00933}00933\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00934}00934\ \textcolor{stringliteral}{\ \ \ \ Process\ a\ value\ provided\ for\ the\ -\/-\/group\ option.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00935}00935\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00936}00936\ \textcolor{stringliteral}{\ \ \ \ Splits\ on\ the\ rightmost\ "{}:"{},\ and\ validates\ that\ the\ path\ (if\ present)\ ends}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00937}00937\ \textcolor{stringliteral}{\ \ \ \ in\ \`{}pyproject.toml\`{}.\ Defaults\ the\ path\ to\ \`{}pyproject.toml\`{}\ when\ one\ is\ not\ given.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00938}00938\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00939}00939\ \textcolor{stringliteral}{\ \ \ \ \`{}:\`{}\ cannot\ appear\ in\ dependency\ group\ names,\ so\ this\ is\ a\ safe\ and\ simple\ parse.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00940}00940\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00941}00941\ \textcolor{stringliteral}{\ \ \ \ This\ is\ an\ optparse.Option\ callback\ for\ the\ dependency\_groups\ option.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00942}00942\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00943}00943\ \ \ \ \ path,\ sep,\ groupname\ =\ value.rpartition(\textcolor{stringliteral}{"{}:"{}})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00944}00944\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ sep:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00945}00945\ \ \ \ \ \ \ \ \ path\ =\ \textcolor{stringliteral}{"{}pyproject.toml"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00946}00946\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00947}00947\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ check\ for\ 'pyproject.toml'\ filenames\ using\ pathlib}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00948}00948\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ pathlib.PurePath(path).name\ !=\ \textcolor{stringliteral}{"{}pyproject.toml"{}}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00949}00949\ \ \ \ \ \ \ \ \ \ \ \ \ msg\ =\ \textcolor{stringliteral}{"{}group\ paths\ use\ 'pyproject.toml'\ filenames"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00950}00950\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aa8c3be8d8e9f47213a914d300e405a88}{raise\_option\_error}}(parser,\ option=option,\ msg=msg)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00951}00951\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00952}00952\ \ \ \ \ parser.values.dependency\_groups.append((path,\ groupname))}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00953}00953\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00954}00954\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00955}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a0c1869f03e72d809220538b933c40146}{00955}}\ dependency\_groups:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00956}00956\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00957}00957\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/group"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00958}00958\ \ \ \ \ dest=\textcolor{stringliteral}{"{}dependency\_groups"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00959}00959\ \ \ \ \ default=[],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00960}00960\ \ \ \ \ type=str,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00961}00961\ \ \ \ \ action=\textcolor{stringliteral}{"{}callback"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00962}00962\ \ \ \ \ callback=\_handle\_dependency\_group,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00963}00963\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}[path:]group"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00964}00964\ \ \ \ \ help=\textcolor{stringliteral}{'Install\ a\ named\ dependency-\/group\ from\ a\ "{}pyproject.toml"{}\ file.\ '}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00965}00965\ \ \ \ \ \textcolor{stringliteral}{'If\ a\ path\ is\ given,\ the\ name\ of\ the\ file\ must\ be\ "{}pyproject.toml"{}.\ '}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00966}00966\ \ \ \ \ \textcolor{stringliteral}{'Defaults\ to\ using\ "{}pyproject.toml"{}\ in\ the\ current\ directory.'},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00967}00967\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00968}00968\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00969}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a15498da3098ed39be9e3f0ba515e5f34}{00969}}\ ignore\_requires\_python:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00970}00970\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00971}00971\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/ignore-\/requires-\/python"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00972}00972\ \ \ \ \ dest=\textcolor{stringliteral}{"{}ignore\_requires\_python"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00973}00973\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00974}00974\ \ \ \ \ help=\textcolor{stringliteral}{"{}Ignore\ the\ Requires-\/Python\ information."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00975}00975\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00976}00976\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00977}00977\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00978}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af04584f228627748709ed55201cf4d40}{00978}}\ no\_build\_isolation:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00979}00979\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00980}00980\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/no-\/build-\/isolation"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00981}00981\ \ \ \ \ dest=\textcolor{stringliteral}{"{}build\_isolation"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00982}00982\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_false"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00983}00983\ \ \ \ \ default=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00984}00984\ \ \ \ \ help=\textcolor{stringliteral}{"{}Disable\ isolation\ when\ building\ a\ modern\ source\ distribution.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00985}00985\ \ \ \ \ \textcolor{stringliteral}{"{}Build\ dependencies\ specified\ by\ PEP\ 518\ must\ be\ already\ installed\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00986}00986\ \ \ \ \ \textcolor{stringliteral}{"{}if\ this\ option\ is\ used."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00987}00987\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00988}00988\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00989}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a9a1c0a5499f4def60aa87e9c0194b57c}{00989}}\ check\_build\_deps:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00990}00990\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00991}00991\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/check-\/build-\/dependencies"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00992}00992\ \ \ \ \ dest=\textcolor{stringliteral}{"{}check\_build\_deps"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00993}00993\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00994}00994\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00995}00995\ \ \ \ \ help=\textcolor{stringliteral}{"{}Check\ the\ build\ dependencies."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00996}00996\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00997}00997\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00998}00998\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l00999}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a3c9fa5a0029d091542ff6cf4f08c00ea}{00999}}\ use\_pep517:\ Any\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01000}01000\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01001}01001\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/use-\/pep517"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01002}01002\ \ \ \ \ dest=\textcolor{stringliteral}{"{}use\_pep517"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01003}01003\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01004}01004\ \ \ \ \ default=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01005}01005\ \ \ \ \ help=SUPPRESS\_HELP,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01006}01006\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01007}01007\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01008}01008\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01009}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a8952df5567bf819adf387dc11cef81f0}{01009}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a8952df5567bf819adf387dc11cef81f0}{\_handle\_config\_settings}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01010}01010\ \ \ \ \ option:\ Option,\ opt\_str:\ str,\ value:\ str,\ parser:\ OptionParser}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01011}01011\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01012}01012\ \ \ \ \ key,\ sep,\ val\ =\ value.partition(\textcolor{stringliteral}{"{}="{}})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01013}01013\ \ \ \ \ \textcolor{keywordflow}{if}\ sep\ !=\ \textcolor{stringliteral}{"{}="{}}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01014}01014\ \ \ \ \ \ \ \ \ parser.error(f\textcolor{stringliteral}{"{}Arguments\ to\ \{opt\_str\}\ must\ be\ of\ the\ form\ KEY=VAL"{}})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01015}01015\ \ \ \ \ dest\ =\ getattr(parser.values,\ option.dest)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01016}01016\ \ \ \ \ \textcolor{keywordflow}{if}\ dest\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01017}01017\ \ \ \ \ \ \ \ \ dest\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01018}01018\ \ \ \ \ \ \ \ \ setattr(parser.values,\ option.dest,\ dest)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01019}01019\ \ \ \ \ \textcolor{keywordflow}{if}\ key\ \textcolor{keywordflow}{in}\ dest:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01020}01020\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(dest[key],\ list):}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01021}01021\ \ \ \ \ \ \ \ \ \ \ \ \ dest[key].append(val)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01022}01022\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01023}01023\ \ \ \ \ \ \ \ \ \ \ \ \ dest[key]\ =\ [dest[key],\ val]}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01024}01024\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01025}01025\ \ \ \ \ \ \ \ \ dest[key]\ =\ val}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01026}01026\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01027}01027\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01028}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af82cfb7dcaadcd284f64a57c650f3d4e}{01028}}\ config\_settings:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01029}01029\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01030}01030\ \ \ \ \ \textcolor{stringliteral}{"{}-\/C"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01031}01031\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/config-\/settings"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01032}01032\ \ \ \ \ dest=\textcolor{stringliteral}{"{}config\_settings"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01033}01033\ \ \ \ \ type=str,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01034}01034\ \ \ \ \ action=\textcolor{stringliteral}{"{}callback"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01035}01035\ \ \ \ \ callback=\_handle\_config\_settings,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01036}01036\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}settings"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01037}01037\ \ \ \ \ help=\textcolor{stringliteral}{"{}Configuration\ settings\ to\ be\ passed\ to\ the\ build\ backend.\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01038}01038\ \ \ \ \ \textcolor{stringliteral}{"{}Settings\ take\ the\ form\ KEY=VALUE.\ Use\ multiple\ -\/-\/config-\/settings\ options\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01039}01039\ \ \ \ \ \textcolor{stringliteral}{"{}to\ pass\ multiple\ keys\ to\ the\ backend."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01040}01040\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01041}01041\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01042}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ab0b2c44417522cd2e75871cecb95364c}{01042}}\ no\_clean:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01043}01043\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01044}01044\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/no-\/clean"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01045}01045\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01046}01046\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01047}01047\ \ \ \ \ help=\textcolor{stringliteral}{"{}Don't\ clean\ up\ build\ directories."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01048}01048\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01049}01049\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01050}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aad1293122fefe2eaccc7638d8decd6a8}{01050}}\ pre:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01051}01051\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01052}01052\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/pre"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01053}01053\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01054}01054\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01055}01055\ \ \ \ \ help=\textcolor{stringliteral}{"{}Include\ pre-\/release\ and\ development\ versions.\ By\ default,\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01056}01056\ \ \ \ \ \textcolor{stringliteral}{"{}pip\ only\ finds\ stable\ versions."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01057}01057\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01058}01058\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01059}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aaa529f3eea27e8654d24d806616e2379}{01059}}\ json:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01060}01060\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01061}01061\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/json"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01062}01062\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01063}01063\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01064}01064\ \ \ \ \ help=\textcolor{stringliteral}{"{}Output\ data\ in\ a\ machine-\/readable\ JSON\ format."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01065}01065\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01066}01066\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01067}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aebbbc590a239889539f41acf2b631276}{01067}}\ disable\_pip\_version\_check:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01068}01068\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01069}01069\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/disable-\/pip-\/version-\/check"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01070}01070\ \ \ \ \ dest=\textcolor{stringliteral}{"{}disable\_pip\_version\_check"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01071}01071\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01072}01072\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01073}01073\ \ \ \ \ help=\textcolor{stringliteral}{"{}Don't\ periodically\ check\ PyPI\ to\ determine\ whether\ a\ new\ version\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01074}01074\ \ \ \ \ \textcolor{stringliteral}{"{}of\ pip\ is\ available\ for\ download.\ Implied\ with\ -\/-\/no-\/index."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01075}01075\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01076}01076\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01077}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a690a9186c1ec94827b10812db9475ebb}{01077}}\ root\_user\_action:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01078}01078\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01079}01079\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/root-\/user-\/action"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01080}01080\ \ \ \ \ dest=\textcolor{stringliteral}{"{}root\_user\_action"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01081}01081\ \ \ \ \ default=\textcolor{stringliteral}{"{}warn"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01082}01082\ \ \ \ \ choices=[\textcolor{stringliteral}{"{}warn"{}},\ \textcolor{stringliteral}{"{}ignore"{}}],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01083}01083\ \ \ \ \ help=\textcolor{stringliteral}{"{}Action\ if\ pip\ is\ run\ as\ a\ root\ user\ [warn,\ ignore]\ (default:\ warn)"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01084}01084\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01085}01085\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01086}01086\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01087}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a685534ba8274dcef579608c4641798a1}{01087}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a685534ba8274dcef579608c4641798a1}{\_handle\_merge\_hash}}(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01088}01088\ \ \ \ \ option:\ Option,\ opt\_str:\ str,\ value:\ str,\ parser:\ OptionParser}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01089}01089\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01090}01090\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Given\ a\ value\ spelled\ "{}algo:digest"{},\ append\ the\ digest\ to\ a\ list}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01091}01091\ \textcolor{stringliteral}{\ \ \ \ pointed\ to\ in\ a\ dict\ by\ the\ algo\ name."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01092}01092\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ parser.values.hashes:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01093}01093\ \ \ \ \ \ \ \ \ parser.values.hashes\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01094}01094\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01095}01095\ \ \ \ \ \ \ \ \ algo,\ digest\ =\ value.split(\textcolor{stringliteral}{"{}:"{}},\ 1)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01096}01096\ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01097}01097\ \ \ \ \ \ \ \ \ parser.error(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01098}01098\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Arguments\ to\ \{opt\_str\}\ must\ be\ a\ hash\ name\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01099}01099\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}followed\ by\ a\ value,\ like\ -\/-\/hash=sha256:"{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01100}01100\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}abcde..."{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01101}01101\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01102}01102\ \ \ \ \ \textcolor{keywordflow}{if}\ algo\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ STRONG\_HASHES:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01103}01103\ \ \ \ \ \ \ \ \ parser.error(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01104}01104\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Allowed\ hash\ algorithms\ for\ \{\}\ are\ \{\}."{}}.format(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01105}01105\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ opt\_str,\ \textcolor{stringliteral}{"{},\ "{}}.join(STRONG\_HASHES)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01106}01106\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01107}01107\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01108}01108\ \ \ \ \ parser.values.hashes.setdefault(algo,\ []).append(digest)}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01109}01109\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01110}01110\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01111}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a57577686b2faa3133934df7e8b3d1a45}{01111}}\ hash:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01112}01112\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01113}01113\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/hash"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01114}01114\ \ \ \ \ \textcolor{comment}{\#\ Hash\ values\ eventually\ end\ up\ in\ InstallRequirement.hashes\ due\ to}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01115}01115\ \ \ \ \ \textcolor{comment}{\#\ \_\_dict\_\_\ copying\ in\ process\_line().}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01116}01116\ \ \ \ \ dest=\textcolor{stringliteral}{"{}hashes"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01117}01117\ \ \ \ \ action=\textcolor{stringliteral}{"{}callback"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01118}01118\ \ \ \ \ callback=\_handle\_merge\_hash,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01119}01119\ \ \ \ \ type=\textcolor{stringliteral}{"{}string"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01120}01120\ \ \ \ \ help=\textcolor{stringliteral}{"{}Verify\ that\ the\ package's\ archive\ matches\ this\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01121}01121\ \ \ \ \ \textcolor{stringliteral}{"{}hash\ before\ installing.\ Example:\ -\/-\/hash=sha256:abcdef..."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01122}01122\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01123}01123\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01124}01124\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01125}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a4a2ac0ae8bfb3b794311843231898151}{01125}}\ require\_hashes:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01126}01126\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01127}01127\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/require-\/hashes"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01128}01128\ \ \ \ \ dest=\textcolor{stringliteral}{"{}require\_hashes"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01129}01129\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01130}01130\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01131}01131\ \ \ \ \ help=\textcolor{stringliteral}{"{}Require\ a\ hash\ to\ check\ each\ requirement\ against,\ for\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01132}01132\ \ \ \ \ \textcolor{stringliteral}{"{}repeatable\ installs.\ This\ option\ is\ implied\ when\ any\ package\ in\ a\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01133}01133\ \ \ \ \ \textcolor{stringliteral}{"{}requirements\ file\ has\ a\ -\/-\/hash\ option."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01134}01134\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01135}01135\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01136}01136\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01137}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a3bf80b639eb6637e41f3ac54ef063808}{01137}}\ list\_path:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01138}01138\ \ \ \ \ PipOption,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01139}01139\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/path"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01140}01140\ \ \ \ \ dest=\textcolor{stringliteral}{"{}path"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01141}01141\ \ \ \ \ type=\textcolor{stringliteral}{"{}path"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01142}01142\ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01143}01143\ \ \ \ \ help=\textcolor{stringliteral}{"{}Restrict\ to\ the\ specified\ installation\ path\ for\ listing\ "{}}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01144}01144\ \ \ \ \ \textcolor{stringliteral}{"{}packages\ (can\ be\ used\ multiple\ times)."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01145}01145\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01146}01146\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01147}01147\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01148}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a08d43e1d37036463d4da1f40216108da}{01148}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a08d43e1d37036463d4da1f40216108da}{check\_list\_path\_option}}(options:\ Values)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01149}01149\ \ \ \ \ \textcolor{keywordflow}{if}\ options.path\ \textcolor{keywordflow}{and}\ (options.user\ \textcolor{keywordflow}{or}\ options.local):}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01150}01150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(\textcolor{stringliteral}{"{}Cannot\ combine\ '-\/-\/path'\ with\ '-\/-\/user'\ or\ '-\/-\/local'"{}})}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01151}01151\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01152}01152\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01153}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_af1b00057135adb70d0696e2a79efa4d1}{01153}}\ list\_exclude:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01154}01154\ \ \ \ \ PipOption,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01155}01155\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/exclude"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01156}01156\ \ \ \ \ dest=\textcolor{stringliteral}{"{}excludes"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01157}01157\ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01158}01158\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}package"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01159}01159\ \ \ \ \ type=\textcolor{stringliteral}{"{}package\_name"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01160}01160\ \ \ \ \ help=\textcolor{stringliteral}{"{}Exclude\ specified\ package\ from\ the\ output"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01161}01161\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01162}01162\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01163}01163\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01164}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_aa6ed7d98bcccc0e625c008dcf1677c15}{01164}}\ no\_python\_version\_warning:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01165}01165\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01166}01166\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/no-\/python-\/version-\/warning"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01167}01167\ \ \ \ \ dest=\textcolor{stringliteral}{"{}no\_python\_version\_warning"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01168}01168\ \ \ \ \ action=\textcolor{stringliteral}{"{}store\_true"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01169}01169\ \ \ \ \ default=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01170}01170\ \ \ \ \ help=SUPPRESS\_HELP,\ \ \textcolor{comment}{\#\ No-\/op,\ a\ hold-\/over\ from\ the\ Python\ 2-\/>3\ transition.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01171}01171\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01172}01172\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01173}01173\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01174}01174\ \textcolor{comment}{\#\ Features\ that\ are\ now\ always\ on.\ A\ warning\ is\ printed\ if\ they\ are\ used.}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01175}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a0ff6292feacfe5ccd4c350a6e469ce1c}{01175}}\ ALWAYS\_ENABLED\_FEATURES\ =\ [}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01176}01176\ \ \ \ \ \textcolor{stringliteral}{"{}truststore"{}},\ \ \textcolor{comment}{\#\ always\ on\ since\ 24.2}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01177}01177\ \ \ \ \ \textcolor{stringliteral}{"{}no-\/binary-\/enable-\/wheel-\/cache"{}},\ \ \textcolor{comment}{\#\ always\ on\ since\ 23.1}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01178}01178\ ]}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01179}01179\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01180}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ac0c8ca4ec6949e2ac3ba82ea9ad6ddec}{01180}}\ use\_new\_feature:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01181}01181\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01182}01182\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/use-\/feature"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01183}01183\ \ \ \ \ dest=\textcolor{stringliteral}{"{}features\_enabled"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01184}01184\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}feature"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01185}01185\ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01186}01186\ \ \ \ \ default=[],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01187}01187\ \ \ \ \ choices=[}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01188}01188\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}fast-\/deps"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01189}01189\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}build-\/constraint"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01190}01190\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}inprocess-\/build-\/deps"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01191}01191\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01192}01192\ \ \ \ \ +\ ALWAYS\_ENABLED\_FEATURES,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01193}01193\ \ \ \ \ help=\textcolor{stringliteral}{"{}Enable\ new\ functionality,\ that\ may\ be\ backward\ incompatible."{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01194}01194\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01195}01195\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01196}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a25dc0c99ead26ea9e8fdd0e5a47d4c77}{01196}}\ use\_deprecated\_feature:\ Callable[...,\ Option]\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01197}01197\ \ \ \ \ Option,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01198}01198\ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/use-\/deprecated"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01199}01199\ \ \ \ \ dest=\textcolor{stringliteral}{"{}deprecated\_features\_enabled"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01200}01200\ \ \ \ \ metavar=\textcolor{stringliteral}{"{}feature"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01201}01201\ \ \ \ \ action=\textcolor{stringliteral}{"{}append"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01202}01202\ \ \ \ \ default=[],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01203}01203\ \ \ \ \ choices=[}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01204}01204\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}legacy-\/resolver"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01205}01205\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}legacy-\/certs"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01206}01206\ \ \ \ \ ],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01207}01207\ \ \ \ \ help=(\textcolor{stringliteral}{"{}Enable\ deprecated\ functionality,\ that\ will\ be\ removed\ in\ the\ future."{}}),}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01208}01208\ )}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01209}01209\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01210}01210\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01213}01213\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01214}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_ad61b46f33f7bb43de54c7c34044a3df9}{01214}}\ general\_group:\ dict[str,\ Any]\ =\ \{}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01215}01215\ \ \ \ \ \textcolor{stringliteral}{"{}name"{}}:\ \textcolor{stringliteral}{"{}General\ Options"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01216}01216\ \ \ \ \ \textcolor{stringliteral}{"{}options"{}}:\ [}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01217}01217\ \ \ \ \ \ \ \ \ help\_,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01218}01218\ \ \ \ \ \ \ \ \ debug\_mode,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01219}01219\ \ \ \ \ \ \ \ \ isolated\_mode,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01220}01220\ \ \ \ \ \ \ \ \ require\_virtualenv,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01221}01221\ \ \ \ \ \ \ \ \ python,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01222}01222\ \ \ \ \ \ \ \ \ verbose,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01223}01223\ \ \ \ \ \ \ \ \ version,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01224}01224\ \ \ \ \ \ \ \ \ quiet,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01225}01225\ \ \ \ \ \ \ \ \ log,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01226}01226\ \ \ \ \ \ \ \ \ no\_input,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01227}01227\ \ \ \ \ \ \ \ \ keyring\_provider,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01228}01228\ \ \ \ \ \ \ \ \ proxy,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01229}01229\ \ \ \ \ \ \ \ \ retries,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01230}01230\ \ \ \ \ \ \ \ \ timeout,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01231}01231\ \ \ \ \ \ \ \ \ exists\_action,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01232}01232\ \ \ \ \ \ \ \ \ trusted\_host,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01233}01233\ \ \ \ \ \ \ \ \ cert,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01234}01234\ \ \ \ \ \ \ \ \ client\_cert,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01235}01235\ \ \ \ \ \ \ \ \ cache\_dir,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01236}01236\ \ \ \ \ \ \ \ \ no\_cache,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01237}01237\ \ \ \ \ \ \ \ \ disable\_pip\_version\_check,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01238}01238\ \ \ \ \ \ \ \ \ no\_color,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01239}01239\ \ \ \ \ \ \ \ \ no\_python\_version\_warning,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01240}01240\ \ \ \ \ \ \ \ \ use\_new\_feature,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01241}01241\ \ \ \ \ \ \ \ \ use\_deprecated\_feature,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01242}01242\ \ \ \ \ \ \ \ \ resume\_retries,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01243}01243\ \ \ \ \ ],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01244}01244\ \}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01245}01245\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01246}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a7da9cf85baf105e54891f5ba1f4bc8ba}{01246}}\ index\_group:\ dict[str,\ Any]\ =\ \{}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01247}01247\ \ \ \ \ \textcolor{stringliteral}{"{}name"{}}:\ \textcolor{stringliteral}{"{}Package\ Index\ Options"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01248}01248\ \ \ \ \ \textcolor{stringliteral}{"{}options"{}}:\ [}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01249}01249\ \ \ \ \ \ \ \ \ index\_url,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01250}01250\ \ \ \ \ \ \ \ \ extra\_index\_url,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01251}01251\ \ \ \ \ \ \ \ \ no\_index,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01252}01252\ \ \ \ \ \ \ \ \ find\_links,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01253}01253\ \ \ \ \ \ \ \ \ uploaded\_prior\_to,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01254}01254\ \ \ \ \ ],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01255}01255\ \}}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01256}01256\ }
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01257}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions_a57058bab6e811e510d6927d046a2b3c6}{01257}}\ package\_selection\_group:\ dict[str,\ Any]\ =\ \{}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01258}01258\ \ \ \ \ \textcolor{stringliteral}{"{}name"{}}:\ \textcolor{stringliteral}{"{}Package\ Selection\ Options"{}},}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01259}01259\ \ \ \ \ \textcolor{stringliteral}{"{}options"{}}:\ [}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01260}01260\ \ \ \ \ \ \ \ \ pre,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01261}01261\ \ \ \ \ \ \ \ \ all\_releases,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01262}01262\ \ \ \ \ \ \ \ \ only\_final,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01263}01263\ \ \ \ \ \ \ \ \ no\_binary,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01264}01264\ \ \ \ \ \ \ \ \ only\_binary,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01265}01265\ \ \ \ \ \ \ \ \ prefer\_binary,}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01266}01266\ \ \ \ \ ],}
+\DoxyCodeLine{\Hypertarget{cmdoptions_8py_source_l01267}01267\ \}}
+
+\end{DoxyCode}

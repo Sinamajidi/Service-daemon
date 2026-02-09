@@ -1,0 +1,637 @@
+\doxysection{req\+\_\+file.\+py}
+\hypertarget{req__file_8py_source}{}\label{req__file_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/req/req\_file.py@{venv/Lib/site-\/packages/pip/\_internal/req/req\_file.py}}
+\doxymbox{\hyperlink{req__file_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00002}00002\ \textcolor{stringliteral}{Requirements\ file\ parsing}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00005}00005\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00007}00007\ \textcolor{keyword}{import}\ codecs}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00008}00008\ \textcolor{keyword}{import}\ locale}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00009}00009\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00010}00010\ \textcolor{keyword}{import}\ optparse}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00011}00011\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00012}00012\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00013}00013\ \textcolor{keyword}{import}\ shlex}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00014}00014\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00015}00015\ \textcolor{keyword}{import}\ urllib.parse}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00016}00016\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Generator,\ Iterable}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00017}00017\ \textcolor{keyword}{from}\ dataclasses\ \textcolor{keyword}{import}\ dataclass}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00018}00018\ \textcolor{keyword}{from}\ optparse\ \textcolor{keyword}{import}\ Values}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00019}00019\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00020}00020\ \ \ \ \ TYPE\_CHECKING,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00021}00021\ \ \ \ \ Any,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00022}00022\ \ \ \ \ Callable,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00023}00023\ \ \ \ \ NoReturn,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00024}00024\ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00026}00026\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli}{pip.\_internal.cli}}\ \textcolor{keyword}{import}\ cmdoptions}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00027}00027\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ InstallationError,\ RequirementsFileParseError}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00028}00028\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1release__control}{pip.\_internal.models.release\_control}}\ \textcolor{keyword}{import}\ ReleaseControl}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00029}00029\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1search__scope}{pip.\_internal.models.search\_scope}}\ \textcolor{keyword}{import}\ SearchScope}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00031}00031\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00032}00032\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder}{pip.\_internal.index.package\_finder}}\ \textcolor{keyword}{import}\ PackageFinder}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00033}00033\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1session}{pip.\_internal.network.session}}\ \textcolor{keyword}{import}\ PipSession}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00035}00035\ \_\_all\_\_\ =\ [\textcolor{stringliteral}{"{}parse\_requirements"{}}]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00037}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a6bcd7f95031c74c3a0c6950f59b7ae2b}{00037}}\ ReqFileLines\ =\ Iterable[tuple[int,\ str]]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00039}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_aef579255ac99d908c14a7231cc5bb5a1}{00039}}\ LineParser\ =\ Callable[[str],\ tuple[str,\ Values]]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00041}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a07a6d7a4863b3e41652b385ec7f87d7b}{00041}}\ SCHEME\_RE\ =\ re.compile(\textcolor{stringliteral}{r"{}\string^(http|https|file):"{}},\ re.I)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00042}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_ab54ff2bcd8ab7312fb2912154934eee0}{00042}}\ COMMENT\_RE\ =\ re.compile(\textcolor{stringliteral}{r"{}(\string^|\(\backslash\)s+)\#.*\$"{}})}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00044}00044\ \textcolor{comment}{\#\ Matches\ environment\ variable-\/style\ values\ in\ '\$\{MY\_VARIABLE\_1\}'\ with\ the}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00045}00045\ \textcolor{comment}{\#\ variable\ name\ consisting\ of\ only\ uppercase\ letters,\ digits\ or\ the\ '\_'}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00046}00046\ \textcolor{comment}{\#\ (underscore).\ This\ follows\ the\ POSIX\ standard\ defined\ in\ IEEE\ Std\ 1003.1,}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00047}00047\ \textcolor{comment}{\#\ 2013\ Edition.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00048}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a51f683b92d8d3ccf2663d3b7ac1210c6}{00048}}\ ENV\_VAR\_RE\ =\ re.compile(\textcolor{stringliteral}{r"{}(?P<var>\(\backslash\)\$\(\backslash\)\{(?P<name>[A-\/Z0-\/9\_]+)\(\backslash\)\})"{}})}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00050}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_ab97fd49b4c3dba7e12f2e838f67e4a11}{00050}}\ SUPPORTED\_OPTIONS:\ list[Callable[...,\ optparse.Option]]\ =\ [}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00051}00051\ \ \ \ \ cmdoptions.index\_url,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00052}00052\ \ \ \ \ cmdoptions.extra\_index\_url,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00053}00053\ \ \ \ \ cmdoptions.no\_index,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00054}00054\ \ \ \ \ cmdoptions.constraints,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00055}00055\ \ \ \ \ cmdoptions.requirements,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00056}00056\ \ \ \ \ cmdoptions.editable,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00057}00057\ \ \ \ \ cmdoptions.find\_links,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00058}00058\ \ \ \ \ cmdoptions.no\_binary,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00059}00059\ \ \ \ \ cmdoptions.only\_binary,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00060}00060\ \ \ \ \ cmdoptions.prefer\_binary,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00061}00061\ \ \ \ \ cmdoptions.require\_hashes,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00062}00062\ \ \ \ \ cmdoptions.pre,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00063}00063\ \ \ \ \ cmdoptions.all\_releases,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00064}00064\ \ \ \ \ cmdoptions.only\_final,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00065}00065\ \ \ \ \ cmdoptions.trusted\_host,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00066}00066\ \ \ \ \ cmdoptions.use\_new\_feature,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00067}00067\ ]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00069}00069\ \textcolor{comment}{\#\ options\ to\ be\ passed\ to\ requirements}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00070}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_adf9fe333d32b76b8a202f81da460b1a3}{00070}}\ SUPPORTED\_OPTIONS\_REQ:\ list[Callable[...,\ optparse.Option]]\ =\ [}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00071}00071\ \ \ \ \ cmdoptions.hash,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00072}00072\ \ \ \ \ cmdoptions.config\_settings,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00073}00073\ ]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00075}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a0803819299368608d3a490bd66af0413}{00075}}\ SUPPORTED\_OPTIONS\_EDITABLE\_REQ:\ list[Callable[...,\ optparse.Option]]\ =\ [}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00076}00076\ \ \ \ \ cmdoptions.config\_settings,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00077}00077\ ]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00078}00078\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00080}00080\ \textcolor{comment}{\#\ the\ 'dest'\ string\ values}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00081}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a689e26741255339d8e2d2e0b202a381e}{00081}}\ SUPPORTED\_OPTIONS\_REQ\_DEST\ =\ [str(o().dest)\ \textcolor{keywordflow}{for}\ o\ \textcolor{keywordflow}{in}\ SUPPORTED\_OPTIONS\_REQ]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00082}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a4a6629c53e4c061cd29c38371b661983}{00082}}\ SUPPORTED\_OPTIONS\_EDITABLE\_REQ\_DEST\ =\ [}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00083}00083\ \ \ \ \ str(o().dest)\ \textcolor{keywordflow}{for}\ o\ \textcolor{keywordflow}{in}\ SUPPORTED\_OPTIONS\_EDITABLE\_REQ}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00084}00084\ ]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00085}00085\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00086}00086\ \textcolor{comment}{\#\ order\ of\ BOMS\ is\ important:\ codecs.BOM\_UTF16\_LE\ is\ a\ prefix\ of\ codecs.BOM\_UTF32\_LE}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00087}00087\ \textcolor{comment}{\#\ so\ data.startswith(BOM\_UTF16\_LE)\ would\ be\ true\ for\ UTF32\_LE\ data}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00088}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a020f147999be72e4e4ddf1ff1e15ae08}{00088}}\ BOMS:\ list[tuple[bytes,\ str]]\ =\ [}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00089}00089\ \ \ \ \ (codecs.BOM\_UTF8,\ \textcolor{stringliteral}{"{}utf-\/8"{}}),}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00090}00090\ \ \ \ \ (codecs.BOM\_UTF32,\ \textcolor{stringliteral}{"{}utf-\/32"{}}),}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00091}00091\ \ \ \ \ (codecs.BOM\_UTF32\_BE,\ \textcolor{stringliteral}{"{}utf-\/32-\/be"{}}),}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00092}00092\ \ \ \ \ (codecs.BOM\_UTF32\_LE,\ \textcolor{stringliteral}{"{}utf-\/32-\/le"{}}),}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00093}00093\ \ \ \ \ (codecs.BOM\_UTF16,\ \textcolor{stringliteral}{"{}utf-\/16"{}}),}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00094}00094\ \ \ \ \ (codecs.BOM\_UTF16\_BE,\ \textcolor{stringliteral}{"{}utf-\/16-\/be"{}}),}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00095}00095\ \ \ \ \ (codecs.BOM\_UTF16\_LE,\ \textcolor{stringliteral}{"{}utf-\/16-\/le"{}}),}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00096}00096\ ]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00097}00097\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00098}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_ad1d27ba8f81b50a9dd51860a39dc5554}{00098}}\ PEP263\_ENCODING\_RE\ =\ re.compile(rb\textcolor{stringliteral}{"{}coding[:=]\(\backslash\)s*([-\/\(\backslash\)w.]+)"{}})}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00099}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a936ab7d8085fbd847d0c5cf576a18dce}{00099}}\ DEFAULT\_ENCODING\ =\ \textcolor{stringliteral}{"{}utf-\/8"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00100}00100\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00101}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a8a0ac5c5ae95df009fff19596bba84e5}{00101}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00104}00104\ \textcolor{preprocessor}{@dataclass(frozen=True)}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00105}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_requirement}{00105}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_requirement}{ParsedRequirement}}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00106}00106\ \ \ \ \ \textcolor{comment}{\#\ TODO:\ replace\ this\ with\ slots=True\ when\ dropping\ Python\ 3.9\ support.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00107}00107\ \ \ \ \ \_\_slots\_\_\ =\ (}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}requirement"{}},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}is\_editable"{}},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}comes\_from"{}},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}constraint"{}},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}options"{}},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}line\_source"{}},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00114}00114\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00115}00115\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00116}00116\ \ \ \ \ requirement:\ str}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00117}00117\ \ \ \ \ is\_editable:\ bool}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00118}00118\ \ \ \ \ comes\_from:\ str}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00119}00119\ \ \ \ \ constraint:\ bool}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00120}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_requirement_adb611f4d69a951526e00891a6e4002fc}{00120}}\ \ \ \ \ options:\ dict[str,\ Any]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00121}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_requirement_a4eaf1ee4acebfdff9308e321df6dbcc4}{00121}}\ \ \ \ \ line\_source:\ str\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00122}00122\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00123}00123\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00124}00124\ \textcolor{preprocessor}{@dataclass(frozen=True)}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00125}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_line}{00125}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_line}{ParsedLine}}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00126}00126\ \ \ \ \ \_\_slots\_\_\ =\ (\textcolor{stringliteral}{"{}filename"{}},\ \textcolor{stringliteral}{"{}lineno"{}},\ \textcolor{stringliteral}{"{}args"{}},\ \textcolor{stringliteral}{"{}opts"{}},\ \textcolor{stringliteral}{"{}constraint"{}})}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00128}00128\ \ \ \ \ filename:\ str}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00129}00129\ \ \ \ \ lineno:\ int}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00130}00130\ \ \ \ \ args:\ str}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00131}00131\ \ \ \ \ opts:\ Values}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00132}00132\ \ \ \ \ constraint:\ bool}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00133}00133\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00134}00134\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00135}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_line_a0040b34094e2bcbb781c8a7d1def7969}{00135}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_line_a42f72e31dd03cf5f4d23e688390f0461}{is\_editable}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ bool(self.opts.editables)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00137}00137\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00138}00138\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00139}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_line_abb0458be84ce07617d4e31dadb9dd71f}{00139}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_line_abb0458be84ce07617d4e31dadb9dd71f}{requirement}}(self)\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00140}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_line_adc856a812046f20fad409f7398ba1b6d}{00140}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_line_adc856a812046f20fad409f7398ba1b6d}{args}}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_line_adc856a812046f20fad409f7398ba1b6d}{args}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00142}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_line_a42f72e31dd03cf5f4d23e688390f0461}{00142}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_line_a42f72e31dd03cf5f4d23e688390f0461}{is\_editable}}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ don't\ support\ multiple\ -\/e\ on\ one\ line}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.opts.editables[0]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00147}00147\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00148}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_acb206faa0a86c0cc271f5d88c95449ef}{00148}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_acb206faa0a86c0cc271f5d88c95449ef}{parse\_requirements}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00149}00149\ \ \ \ \ filename:\ str,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00150}00150\ \ \ \ \ session:\ PipSession,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00151}00151\ \ \ \ \ finder:\ PackageFinder\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00152}00152\ \ \ \ \ options:\ optparse.Values\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00153}00153\ \ \ \ \ constraint:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00154}00154\ )\ -\/>\ Generator[ParsedRequirement,\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00155}00155\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Parse\ a\ requirements\ file\ and\ yield\ ParsedRequirement\ instances.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00156}00156\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00157}00157\ \textcolor{stringliteral}{\ \ \ \ :param\ filename:\ \ \ \ Path\ or\ url\ of\ requirements\ file.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00158}00158\ \textcolor{stringliteral}{\ \ \ \ :param\ session:\ \ \ \ \ PipSession\ instance.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00159}00159\ \textcolor{stringliteral}{\ \ \ \ :param\ finder:\ \ \ \ \ \ Instance\ of\ pip.index.PackageFinder.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00160}00160\ \textcolor{stringliteral}{\ \ \ \ :param\ options:\ \ \ \ \ cli\ options.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00161}00161\ \textcolor{stringliteral}{\ \ \ \ :param\ constraint:\ \ If\ true,\ parsing\ a\ constraint\ file\ rather\ than}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00162}00162\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ requirements\ file.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00163}00163\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00164}00164\ \ \ \ \ line\_parser\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a7432146030333f144461a83f670bee46}{get\_line\_parser}}(finder)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00165}00165\ \ \ \ \ parser\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser}{RequirementsFileParser}}(session,\ line\_parser)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00167}00167\ \ \ \ \ \textcolor{keywordflow}{for}\ parsed\_line\ \textcolor{keywordflow}{in}\ parser.parse(filename,\ constraint):}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ parsed\_req\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_aada4b2ace9b7ebb526d126f437d6dc9d}{handle\_line}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ parsed\_line,\ options=options,\ finder=finder,\ session=session}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ parsed\_req\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ parsed\_req}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00174}00174\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00175}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a16a10eabe89f4b32a34a6e12f3c4f61d}{00175}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a16a10eabe89f4b32a34a6e12f3c4f61d}{preprocess}}(content:\ str)\ -\/>\ ReqFileLines:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00176}00176\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Split,\ filter,\ and\ join\ lines,\ and\ return\ a\ line\ iterator}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00177}00177\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00178}00178\ \textcolor{stringliteral}{\ \ \ \ :param\ content:\ the\ content\ of\ the\ requirements\ file}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00179}00179\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00180}00180\ \ \ \ \ lines\_enum:\ ReqFileLines\ =\ enumerate(content.splitlines(),\ start=1)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00181}00181\ \ \ \ \ lines\_enum\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a93269fd95a1a9d8803053e948a293ef4}{join\_lines}}(lines\_enum)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00182}00182\ \ \ \ \ lines\_enum\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a40df00a3ee6fabe682d935acd7533287}{ignore\_comments}}(lines\_enum)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00183}00183\ \ \ \ \ lines\_enum\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_aaa2783c13f9c17b7d9df8fe14ab757ca}{expand\_env\_variables}}(lines\_enum)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00184}00184\ \ \ \ \ \textcolor{keywordflow}{return}\ lines\_enum}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00185}00185\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00186}00186\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00187}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a33784921bf08b859b82736b5a9420f6a}{00187}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a33784921bf08b859b82736b5a9420f6a}{handle\_requirement\_line}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00188}00188\ \ \ \ \ line:\ ParsedLine,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00189}00189\ \ \ \ \ options:\ optparse.Values\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00190}00190\ )\ -\/>\ ParsedRequirement:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00191}00191\ \ \ \ \ \textcolor{comment}{\#\ preserve\ for\ the\ nested\ code\ path}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00192}00192\ \ \ \ \ line\_comes\_from\ =\ \textcolor{stringliteral}{"{}\{\}\ \{\}\ (line\ \{\})"{}}.format(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/c"{}}\ \textcolor{keywordflow}{if}\ line.constraint\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}-\/r"{}},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ line.filename,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ line.lineno,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00196}00196\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00197}00197\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00198}00198\ \ \ \ \ \textcolor{keyword}{assert}\ line.requirement\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00199}00199\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00200}00200\ \ \ \ \ \textcolor{comment}{\#\ get\ the\ options\ that\ apply\ to\ requirements}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00201}00201\ \ \ \ \ \textcolor{keywordflow}{if}\ line.is\_editable:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ supported\_dest\ =\ SUPPORTED\_OPTIONS\_EDITABLE\_REQ\_DEST}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00203}00203\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ supported\_dest\ =\ SUPPORTED\_OPTIONS\_REQ\_DEST}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00205}00205\ \ \ \ \ req\_options\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00206}00206\ \ \ \ \ \textcolor{keywordflow}{for}\ dest\ \textcolor{keywordflow}{in}\ supported\_dest:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ dest\ \textcolor{keywordflow}{in}\ line.opts.\_\_dict\_\_\ \textcolor{keywordflow}{and}\ line.opts.\_\_dict\_\_[dest]:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \ \ \ \ req\_options[dest]\ =\ line.opts.\_\_dict\_\_[dest]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00209}00209\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00210}00210\ \ \ \ \ line\_source\ =\ f\textcolor{stringliteral}{"{}line\ \{line.lineno\}\ of\ \{line.filename\}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00211}00211\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_requirement}{ParsedRequirement}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ requirement=line.requirement,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ is\_editable=line.is\_editable,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ comes\_from=line\_comes\_from,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ constraint=line.constraint,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ options=req\_options,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ line\_source=line\_source,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00218}00218\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00219}00219\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00220}00220\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00221}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_ab7f3b3c44240df733aadf31a41e5bc1a}{00221}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_ab7f3b3c44240df733aadf31a41e5bc1a}{handle\_option\_line}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00222}00222\ \ \ \ \ opts:\ Values,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00223}00223\ \ \ \ \ filename:\ str,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00224}00224\ \ \ \ \ lineno:\ int,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00225}00225\ \ \ \ \ finder:\ PackageFinder\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00226}00226\ \ \ \ \ options:\ optparse.Values\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00227}00227\ \ \ \ \ session:\ PipSession\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00228}00228\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00229}00229\ \ \ \ \ \textcolor{keywordflow}{if}\ opts.hashes:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\%s\ line\ \%s\ has\ -\/-\/hash\ but\ no\ requirement,\ and\ will\ be\ ignored."{}},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \ \ \ \ filename,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \ \ \ \ lineno,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00235}00235\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00236}00236\ \ \ \ \ \textcolor{keywordflow}{if}\ options:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ percolate\ options\ upward}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ opts.require\_hashes:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ options.require\_hashes\ =\ opts.require\_hashes}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ opts.features\_enabled:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \ \ \ \ options.features\_enabled.extend(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\ \textcolor{keywordflow}{for}\ f\ \textcolor{keywordflow}{in}\ opts.features\_enabled\ \textcolor{keywordflow}{if}\ f\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ options.features\_enabled}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00244}00244\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00245}00245\ \ \ \ \ \textcolor{comment}{\#\ set\ finder\ options}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00246}00246\ \ \ \ \ \textcolor{keywordflow}{if}\ finder:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ find\_links\ =\ finder.find\_links}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ index\_urls\ =\ finder.index\_urls}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ no\_index\ =\ finder.search\_scope.no\_index}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ opts.no\_index\ \textcolor{keywordflow}{is}\ \textcolor{keyword}{True}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ no\_index\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ index\_urls\ =\ []}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ opts.index\_url\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ no\_index:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ index\_urls\ =\ [opts.index\_url]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ opts.extra\_index\_urls\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ no\_index:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ index\_urls.extend(opts.extra\_index\_urls)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ opts.find\_links:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ FIXME:\ it\ would\ be\ nice\ to\ keep\ track\ of\ the\ source}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ of\ the\ find\_links:\ support\ a\ find-\/links\ local\ path}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ relative\ to\ a\ requirements\ file.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ value\ =\ opts.find\_links[0]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ req\_dir\ =\ os.path.dirname(os.path.abspath(filename))}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ relative\_to\_reqs\_file\ =\ os.path.join(req\_dir,\ value)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.exists(relative\_to\_reqs\_file):}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ value\ =\ relative\_to\_reqs\_file}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ find\_links.append(value)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00267}00267\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ session:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ need\ to\ update\ the\ auth\ urls\ in\ session}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ session.update\_index\_urls(index\_urls)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00271}00271\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ search\_scope\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1search__scope_1_1_search_scope}{SearchScope}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \ \ \ \ find\_links=find\_links,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \ \ \ \ index\_urls=index\_urls,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \ \ \ \ no\_index=no\_index,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ finder.search\_scope\ =\ search\_scope}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00278}00278\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Transform\ -\/-\/pre\ into\ -\/-\/all-\/releases\ :all:}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ opts.pre:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ opts.release\_control:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ opts.release\_control\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control}{ReleaseControl}}()}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ \ \ \ \ opts.release\_control.all\_releases.add(\textcolor{stringliteral}{"{}:all:"{}})}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00284}00284\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ opts.release\_control:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ finder.release\_control:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ First\ time\ seeing\ release\_control,\ set\ it\ on\ finder}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ finder.set\_release\_control(opts.release\_control)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00289}00289\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ opts.prefer\_binary:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ \ \ \ \ finder.set\_prefer\_binary()}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00292}00292\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ session:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ host\ \textcolor{keywordflow}{in}\ opts.trusted\_hosts\ \textcolor{keywordflow}{or}\ []:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ source\ =\ f\textcolor{stringliteral}{"{}line\ \{lineno\}\ of\ \{filename\}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ session.add\_trusted\_host(host,\ source=source)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00297}00297\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00298}00298\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00299}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_aada4b2ace9b7ebb526d126f437d6dc9d}{00299}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_aada4b2ace9b7ebb526d126f437d6dc9d}{handle\_line}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00300}00300\ \ \ \ \ line:\ ParsedLine,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00301}00301\ \ \ \ \ options:\ optparse.Values\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00302}00302\ \ \ \ \ finder:\ PackageFinder\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00303}00303\ \ \ \ \ session:\ PipSession\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00304}00304\ )\ -\/>\ ParsedRequirement\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00305}00305\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Handle\ a\ single\ parsed\ requirements\ line;\ This\ can\ result\ in}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00306}00306\ \textcolor{stringliteral}{\ \ \ \ creating/yielding\ requirements,\ or\ updating\ the\ finder.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00307}00307\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00308}00308\ \textcolor{stringliteral}{\ \ \ \ :param\ line:\ \ \ \ \ \ \ \ The\ parsed\ line\ to\ be\ processed.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00309}00309\ \textcolor{stringliteral}{\ \ \ \ :param\ options:\ \ \ \ \ CLI\ options.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00310}00310\ \textcolor{stringliteral}{\ \ \ \ :param\ finder:\ \ \ \ \ \ The\ finder\ -\/\ updated\ by\ non-\/requirement\ lines.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00311}00311\ \textcolor{stringliteral}{\ \ \ \ :param\ session:\ \ \ \ \ The\ session\ -\/\ updated\ by\ non-\/requirement\ lines.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00312}00312\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00313}00313\ \textcolor{stringliteral}{\ \ \ \ Returns\ a\ ParsedRequirement\ object\ if\ the\ line\ is\ a\ requirement\ line,}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00314}00314\ \textcolor{stringliteral}{\ \ \ \ otherwise\ returns\ None.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00315}00315\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00316}00316\ \textcolor{stringliteral}{\ \ \ \ For\ lines\ that\ contain\ requirements,\ the\ only\ options\ that\ have\ an\ effect}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00317}00317\ \textcolor{stringliteral}{\ \ \ \ are\ from\ SUPPORTED\_OPTIONS\_REQ,\ and\ they\ are\ scoped\ to\ the}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00318}00318\ \textcolor{stringliteral}{\ \ \ \ requirement.\ Other\ options\ from\ SUPPORTED\_OPTIONS\ may\ be\ present,\ but\ are}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00319}00319\ \textcolor{stringliteral}{\ \ \ \ ignored.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00320}00320\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00321}00321\ \textcolor{stringliteral}{\ \ \ \ For\ lines\ that\ do\ not\ contain\ requirements,\ the\ only\ options\ that\ have\ an}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00322}00322\ \textcolor{stringliteral}{\ \ \ \ effect\ are\ from\ SUPPORTED\_OPTIONS.\ Options\ from\ SUPPORTED\_OPTIONS\_REQ\ may}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00323}00323\ \textcolor{stringliteral}{\ \ \ \ be\ present,\ but\ are\ ignored.\ These\ lines\ may\ contain\ multiple\ options}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00324}00324\ \textcolor{stringliteral}{\ \ \ \ (although\ our\ docs\ imply\ only\ one\ is\ supported),\ and\ all\ our\ parsed\ and}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00325}00325\ \textcolor{stringliteral}{\ \ \ \ affect\ the\ finder.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00326}00326\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00327}00327\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00328}00328\ \ \ \ \ \textcolor{keywordflow}{if}\ line.requirement\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ parsed\_req\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a33784921bf08b859b82736b5a9420f6a}{handle\_requirement\_line}}(line,\ options)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ parsed\_req}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00331}00331\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00332}00332\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_ab7f3b3c44240df733aadf31a41e5bc1a}{handle\_option\_line}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ \ \ \ \ line.opts,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00334}00334\ \ \ \ \ \ \ \ \ \ \ \ \ line.filename,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00335}00335\ \ \ \ \ \ \ \ \ \ \ \ \ line.lineno,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00336}00336\ \ \ \ \ \ \ \ \ \ \ \ \ finder,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ \ \ \ \ options,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ \ \ \ \ session,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00341}00341\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00342}00342\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00343}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser}{00343}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser}{RequirementsFileParser}}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00344}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_af3179664ab99659ef8103ce909ce0729}{00344}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_af3179664ab99659ef8103ce909ce0729}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ session:\ PipSession,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ line\_parser:\ LineParser,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00348}00348\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00349}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_a12e0aa851f1e65ef585372af0d269bdb}{00349}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_a12e0aa851f1e65ef585372af0d269bdb}{\_session}}\ =\ session}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00350}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_a4112b83222f4e2642b3b4fd2d4f2791f}{00350}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_a4112b83222f4e2642b3b4fd2d4f2791f}{\_line\_parser}}\ =\ line\_parser}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00351}00351\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00352}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_a45e102eb2449deab68834c1490c44898}{00352}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_a45e102eb2449deab68834c1490c44898}{parse}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ self,\ filename:\ str,\ constraint:\ bool}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00354}00354\ \ \ \ \ )\ -\/>\ Generator[ParsedLine,\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Parse\ a\ given\ file,\ yielding\ parsed\ lines."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_af301002e13185b13efa3fe5c9fa3e8c8}{\_parse\_and\_recurse}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \ \ \ \ filename,\ constraint,\ [\{os.path.abspath(filename):\ \textcolor{keywordtype}{None}\}]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00358}00358\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00359}00359\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00360}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_af301002e13185b13efa3fe5c9fa3e8c8}{00360}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_af301002e13185b13efa3fe5c9fa3e8c8}{\_parse\_and\_recurse}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ filename:\ str,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ constraint:\ bool,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ parsed\_files\_stack:\ list[dict[str,\ str\ |\ \textcolor{keywordtype}{None}]],}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00365}00365\ \ \ \ \ )\ -\/>\ Generator[ParsedLine,\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00366}00366\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ line\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_a3be46209b7aea493e7026d2354154d16}{\_parse\_file}}(filename,\ constraint):}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00367}00367\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ line.requirement\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ (}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00368}00368\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line.opts.requirements\ \textcolor{keywordflow}{or}\ line.opts.constraints}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ parse\ a\ nested\ requirements\ file}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ line.opts.requirements:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00372}00372\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_path\ =\ line.opts.requirements[0]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00373}00373\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ nested\_constraint\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_path\ =\ line.opts.constraints[0]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ nested\_constraint\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00377}00377\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ original\ file\ is\ over\ http}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00379}00379\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ SCHEME\_RE.search(filename):}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ do\ a\ url\ join\ so\ relative\ paths\ work}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_path\ =\ urllib.parse.urljoin(filename,\ req\_path)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ original\ file\ and\ nested\ file\ are\ paths}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ \textcolor{keywordflow}{not}\ SCHEME\_RE.search(req\_path):}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ do\ a\ join\ so\ relative\ paths\ work}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00385}00385\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ and\ then\ abspath\ so\ that\ we\ can\ identify\ recursive\ references}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_path\ =\ os.path.abspath(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ os.path.join(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ os.path.dirname(filename),}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_path,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00390}00390\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ parsed\_files\ =\ parsed\_files\_stack[0]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ req\_path\ \textcolor{keywordflow}{in}\ parsed\_files:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ initial\_file\ =\ parsed\_files[req\_path]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ tail\ =\ (}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ and\ again\ in\ \{initial\_file\}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ initial\_file\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00399}00399\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_requirements_file_parse_error}{RequirementsFileParseError}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{req\_path\}\ recursively\ references\ itself\ in\ \{filename\}\{tail\}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Keeping\ a\ track\ where\ was\ each\ file\ first\ included\ in}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ new\_parsed\_files\ =\ parsed\_files.copy()}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00405}00405\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ new\_parsed\_files[req\_path]\ =\ filename}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00406}00406\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_af301002e13185b13efa3fe5c9fa3e8c8}{\_parse\_and\_recurse}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_path,\ nested\_constraint,\ [new\_parsed\_files,\ *parsed\_files\_stack]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00408}00408\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00409}00409\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ line}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00411}00411\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00412}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_a3be46209b7aea493e7026d2354154d16}{00412}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_a3be46209b7aea493e7026d2354154d16}{\_parse\_file}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00413}00413\ \ \ \ \ \ \ \ \ self,\ filename:\ str,\ constraint:\ bool}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00414}00414\ \ \ \ \ )\ -\/>\ Generator[ParsedLine,\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00415}00415\ \ \ \ \ \ \ \ \ \_,\ content\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a753c1050ca00192f6e8d52942ce3a35a}{get\_file\_content}}(filename,\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_a12e0aa851f1e65ef585372af0d269bdb}{\_session}})}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00416}00416\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ lines\_enum\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a16a10eabe89f4b32a34a6e12f3c4f61d}{preprocess}}(content)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00418}00418\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ line\_number,\ line\ \textcolor{keywordflow}{in}\ lines\_enum:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00420}00420\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00421}00421\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ args\_str,\ opts\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_requirements_file_parser_a4112b83222f4e2642b3b4fd2d4f2791f}{\_line\_parser}}(line)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ OptionParsingError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ add\ offending\ line}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00424}00424\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}Invalid\ requirement:\ \{line\}\(\backslash\)n\{e.msg\}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_requirements_file_parse_error}{RequirementsFileParseError}}(msg)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00426}00426\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00427}00427\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_parsed_line}{ParsedLine}}(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00428}00428\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ filename,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00429}00429\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\_number,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00430}00430\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ args\_str,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00431}00431\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ opts,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00432}00432\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ constraint,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00433}00433\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00434}00434\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00435}00435\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00436}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a7432146030333f144461a83f670bee46}{00436}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a7432146030333f144461a83f670bee46}{get\_line\_parser}}(finder:\ PackageFinder\ |\ \textcolor{keywordtype}{None})\ -\/>\ LineParser:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00437}00437\ \ \ \ \ \textcolor{keyword}{def\ }parse\_line(line:\ str)\ -\/>\ tuple[str,\ Values]:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Build\ new\ parser\ for\ each\ line\ since\ it\ accumulates\ appendable}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ options.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ parser\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a9bdfec2f7212b3d02233e15697accf0e}{build\_parser}}()}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ defaults\ =\ parser.get\_default\_values()}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00442}00442\ \ \ \ \ \ \ \ \ defaults.index\_url\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00443}00443\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ finder:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ \ \ \ \ defaults.format\_control\ =\ finder.format\_control}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ \ \ \ \ defaults.release\_control\ =\ finder.release\_control}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00446}00446\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00447}00447\ \ \ \ \ \ \ \ \ args\_str,\ options\_str\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a8d8f278ae6434620444608c896009513}{break\_args\_options}}(line)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00448}00448\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00449}00449\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00450}00450\ \ \ \ \ \ \ \ \ \ \ \ \ options\ =\ shlex.split(options\_str)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00451}00451\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_option_parsing_error}{OptionParsingError}}(f\textcolor{stringliteral}{"{}Could\ not\ split\ options:\ \{options\_str\}"{}})\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00453}00453\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00454}00454\ \ \ \ \ \ \ \ \ opts,\ \_\ =\ parser.parse\_args(options,\ defaults)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00455}00455\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ args\_str,\ opts}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00457}00457\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00458}00458\ \ \ \ \ \textcolor{keywordflow}{return}\ parse\_line}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00459}00459\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00460}00460\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00461}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a8d8f278ae6434620444608c896009513}{00461}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a8d8f278ae6434620444608c896009513}{break\_args\_options}}(line:\ str)\ -\/>\ tuple[str,\ str]:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00462}00462\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Break\ up\ the\ line\ into\ an\ args\ and\ options\ string.\ \ We\ only\ want\ to\ shlex}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00463}00463\ \textcolor{stringliteral}{\ \ \ \ (and\ then\ optparse)\ the\ options,\ not\ the\ args.\ \ args\ can\ contain\ markers}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00464}00464\ \textcolor{stringliteral}{\ \ \ \ which\ are\ corrupted\ by\ shlex.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00465}00465\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00466}00466\ \ \ \ \ tokens\ =\ line.split(\textcolor{stringliteral}{"{}\ "{}})}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00467}00467\ \ \ \ \ args\ =\ []}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00468}00468\ \ \ \ \ options\ =\ tokens[:]}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00469}00469\ \ \ \ \ \textcolor{keywordflow}{for}\ token\ \textcolor{keywordflow}{in}\ tokens:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00470}00470\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ token.startswith((\textcolor{stringliteral}{"{}-\/"{}},\ \textcolor{stringliteral}{"{}-\/-\/"{}})):}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00471}00471\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00472}00472\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00473}00473\ \ \ \ \ \ \ \ \ \ \ \ \ args.append(token)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00474}00474\ \ \ \ \ \ \ \ \ \ \ \ \ options.pop(0)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00475}00475\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}\ "{}}.join(args),\ \textcolor{stringliteral}{"{}\ "{}}.join(options)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00476}00476\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00477}00477\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00478}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_option_parsing_error}{00478}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_option_parsing_error}{OptionParsingError}}(Exception):}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00479}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_option_parsing_error_a8a2a2ac3e6fa518a6d3a731a56d8a756}{00479}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_option_parsing_error_a8a2a2ac3e6fa518a6d3a731a56d8a756}{\_\_init\_\_}}(self,\ msg:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00480}\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_option_parsing_error_ac3ece318e60a6f5434428928d2b296fe}{00480}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_option_parsing_error_ac3ece318e60a6f5434428928d2b296fe}{msg}}\ =\ msg}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00481}00481\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00482}00482\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00483}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a9bdfec2f7212b3d02233e15697accf0e}{00483}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a9bdfec2f7212b3d02233e15697accf0e}{build\_parser}}()\ -\/>\ optparse.OptionParser:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00484}00484\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00485}00485\ \textcolor{stringliteral}{\ \ \ \ Return\ a\ parser\ for\ parsing\ requirement\ lines}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00486}00486\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00487}00487\ \ \ \ \ parser\ =\ optparse.OptionParser(add\_help\_option=\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00488}00488\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00489}00489\ \ \ \ \ option\_factories\ =\ SUPPORTED\_OPTIONS\ +\ SUPPORTED\_OPTIONS\_REQ}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00490}00490\ \ \ \ \ \textcolor{keywordflow}{for}\ option\_factory\ \textcolor{keywordflow}{in}\ option\_factories:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00491}00491\ \ \ \ \ \ \ \ \ option\ =\ option\_factory()}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00492}00492\ \ \ \ \ \ \ \ \ parser.add\_option(option)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00493}00493\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00494}00494\ \ \ \ \ \textcolor{comment}{\#\ By\ default\ optparse\ sys.exits\ on\ parsing\ errors.\ We\ want\ to\ wrap}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00495}00495\ \ \ \ \ \textcolor{comment}{\#\ that\ in\ our\ own\ exception.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00496}00496\ \ \ \ \ \textcolor{keyword}{def\ }parser\_exit(self:\ Any,\ msg:\ str)\ -\/>\ NoReturn:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00497}00497\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1req_1_1req__file_1_1_option_parsing_error}{OptionParsingError}}(msg)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00498}00498\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00499}00499\ \ \ \ \ \textcolor{comment}{\#\ NOTE:\ mypy\ disallows\ assigning\ to\ a\ method}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00500}00500\ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ \ \ https://github.com/python/mypy/issues/2427}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00501}00501\ \ \ \ \ parser.exit\ =\ parser\_exit\ \ \textcolor{comment}{\#\ type:\ ignore}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00502}00502\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00503}00503\ \ \ \ \ \textcolor{keywordflow}{return}\ parser}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00504}00504\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00505}00505\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00506}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a93269fd95a1a9d8803053e948a293ef4}{00506}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a93269fd95a1a9d8803053e948a293ef4}{join\_lines}}(lines\_enum:\ ReqFileLines)\ -\/>\ ReqFileLines:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00507}00507\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Joins\ a\ line\ ending\ in\ '\(\backslash\)'\ with\ the\ previous\ line\ (except\ when\ following}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00508}00508\ \textcolor{stringliteral}{\ \ \ \ comments).\ \ The\ joined\ line\ takes\ on\ the\ index\ of\ the\ first\ line.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00509}00509\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00510}00510\ \ \ \ \ primary\_line\_number\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00511}00511\ \ \ \ \ new\_line:\ list[str]\ =\ []}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00512}00512\ \ \ \ \ \textcolor{keywordflow}{for}\ line\_number,\ line\ \textcolor{keywordflow}{in}\ lines\_enum:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00513}00513\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ line.endswith(\textcolor{stringliteral}{"{}\(\backslash\)\(\backslash\)"{}})\ \textcolor{keywordflow}{or}\ COMMENT\_RE.match(line):}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00514}00514\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ COMMENT\_RE.match(line):}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ this\ ensures\ comments\ are\ always\ matched\ later}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00516}00516\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\ =\ \textcolor{stringliteral}{"{}\ "{}}\ +\ line}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00517}00517\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ new\_line:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00518}00518\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ new\_line.append(line)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ primary\_line\_number\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ primary\_line\_number,\ \textcolor{stringliteral}{"{}"{}}.join(new\_line)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ new\_line\ =\ []}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00523}00523\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ line\_number,\ line}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00525}00525\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ new\_line:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00526}00526\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ primary\_line\_number\ =\ line\_number}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ \ \ \ \ new\_line.append(line.strip(\textcolor{stringliteral}{"{}\(\backslash\)\(\backslash\)"{}}))}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00528}00528\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00529}00529\ \ \ \ \ \textcolor{comment}{\#\ last\ line\ contains\ \(\backslash\)}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00530}00530\ \ \ \ \ \textcolor{keywordflow}{if}\ new\_line:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00531}00531\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ primary\_line\_number\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00532}00532\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ primary\_line\_number,\ \textcolor{stringliteral}{"{}"{}}.join(new\_line)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00533}00533\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00534}00534\ \ \ \ \ \textcolor{comment}{\#\ TODO:\ handle\ space\ after\ '\(\backslash\)'.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00535}00535\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00536}00536\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00537}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a40df00a3ee6fabe682d935acd7533287}{00537}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a40df00a3ee6fabe682d935acd7533287}{ignore\_comments}}(lines\_enum:\ ReqFileLines)\ -\/>\ ReqFileLines:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00538}00538\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00539}00539\ \textcolor{stringliteral}{\ \ \ \ Strips\ comments\ and\ filter\ empty\ lines.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00540}00540\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00541}00541\ \ \ \ \ \textcolor{keywordflow}{for}\ line\_number,\ line\ \textcolor{keywordflow}{in}\ lines\_enum:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00542}00542\ \ \ \ \ \ \ \ \ line\ =\ COMMENT\_RE.sub(\textcolor{stringliteral}{"{}"{}},\ line)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00543}00543\ \ \ \ \ \ \ \ \ line\ =\ line.strip()}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00544}00544\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ line:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00545}00545\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ line\_number,\ line}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00546}00546\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00547}00547\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00548}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_aaa2783c13f9c17b7d9df8fe14ab757ca}{00548}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_aaa2783c13f9c17b7d9df8fe14ab757ca}{expand\_env\_variables}}(lines\_enum:\ ReqFileLines)\ -\/>\ ReqFileLines:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00549}00549\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Replace\ all\ environment\ variables\ that\ can\ be\ retrieved\ via\ \`{}os.getenv\`{}.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00550}00550\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00551}00551\ \textcolor{stringliteral}{\ \ \ \ The\ only\ allowed\ format\ for\ environment\ variables\ defined\ in\ the}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00552}00552\ \textcolor{stringliteral}{\ \ \ \ requirement\ file\ is\ \`{}\$\{MY\_VARIABLE\_1\}\`{}\ to\ ensure\ two\ things:}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00553}00553\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00554}00554\ \textcolor{stringliteral}{\ \ \ \ 1.\ Strings\ that\ contain\ a\ \`{}\$\`{}\ aren't\ accidentally\ (partially)\ expanded.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00555}00555\ \textcolor{stringliteral}{\ \ \ \ 2.\ Ensure\ consistency\ across\ platforms\ for\ requirement\ files.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00556}00556\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00557}00557\ \textcolor{stringliteral}{\ \ \ \ These\ points\ are\ the\ result\ of\ a\ discussion\ on\ the\ \`{}github\ pull}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00558}00558\ \textcolor{stringliteral}{\ \ \ \ request\ \#3514\ <https://github.com/pypa/pip/pull/3514>\`{}\_.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00559}00559\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00560}00560\ \textcolor{stringliteral}{\ \ \ \ Valid\ characters\ in\ variable\ names\ follow\ the\ \`{}POSIX\ standard}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00561}00561\ \textcolor{stringliteral}{\ \ \ \ <http://pubs.opengroup.org/onlinepubs/9699919799/>\`{}\_\ and\ are\ limited}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00562}00562\ \textcolor{stringliteral}{\ \ \ \ to\ uppercase\ letter,\ digits\ and\ the\ \`{}\_\`{}\ (underscore).}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00563}00563\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00564}00564\ \ \ \ \ \textcolor{keywordflow}{for}\ line\_number,\ line\ \textcolor{keywordflow}{in}\ lines\_enum:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00565}00565\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ env\_var,\ var\_name\ \textcolor{keywordflow}{in}\ ENV\_VAR\_RE.findall(line):}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00566}00566\ \ \ \ \ \ \ \ \ \ \ \ \ value\ =\ os.getenv(var\_name)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00567}00567\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ value:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00568}00568\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00569}00569\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00570}00570\ \ \ \ \ \ \ \ \ \ \ \ \ line\ =\ line.replace(env\_var,\ value)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00571}00571\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00572}00572\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ line\_number,\ line}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00573}00573\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00574}00574\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00575}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a753c1050ca00192f6e8d52942ce3a35a}{00575}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a753c1050ca00192f6e8d52942ce3a35a}{get\_file\_content}}(url:\ str,\ session:\ PipSession)\ -\/>\ tuple[str,\ str]:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00576}00576\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Gets\ the\ content\ of\ a\ file;\ it\ may\ be\ a\ filename,\ file:\ URL,\ or}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00577}00577\ \textcolor{stringliteral}{\ \ \ \ http:\ URL.\ \ Returns\ (location,\ content).\ \ Content\ is\ unicode.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00578}00578\ \textcolor{stringliteral}{\ \ \ \ Respects\ \#\ -\/*-\/\ coding:\ declarations\ on\ the\ retrieved\ files.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00579}00579\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00580}00580\ \textcolor{stringliteral}{\ \ \ \ :param\ url:\ \ \ \ \ \ \ \ \ File\ path\ or\ url.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00581}00581\ \textcolor{stringliteral}{\ \ \ \ :param\ session:\ \ \ \ \ PipSession\ instance.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00582}00582\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00583}00583\ \ \ \ \ scheme\ =\ urllib.parse.urlsplit(url).scheme}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00584}00584\ \ \ \ \ \textcolor{comment}{\#\ Pip\ has\ special\ support\ for\ file://\ URLs\ (LocalFSAdapter).}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00585}00585\ \ \ \ \ \textcolor{keywordflow}{if}\ scheme\ \textcolor{keywordflow}{in}\ [\textcolor{stringliteral}{"{}http"{}},\ \textcolor{stringliteral}{"{}https"{}},\ \textcolor{stringliteral}{"{}file"{}}]:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00586}00586\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Delay\ importing\ heavy\ network\ modules\ until\ absolutely\ necessary.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00587}00587\ \ \ \ \ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1utils}{pip.\_internal.network.utils}}\ \textcolor{keyword}{import}\ raise\_for\_status}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00588}00588\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00589}00589\ \ \ \ \ \ \ \ \ resp\ =\ session.get(url)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00590}00590\ \ \ \ \ \ \ \ \ raise\_for\_status(resp)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00591}00591\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ resp.url,\ resp.text}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00592}00592\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00593}00593\ \ \ \ \ \textcolor{comment}{\#\ Assume\ this\ is\ a\ bare\ path.}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00594}00594\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00595}00595\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ open(url,\ \textcolor{stringliteral}{"{}rb"{}})\ \textcolor{keyword}{as}\ f:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00596}00596\ \ \ \ \ \ \ \ \ \ \ \ \ raw\_content\ =\ f.read()}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00597}00597\ \ \ \ \ \textcolor{keywordflow}{except}\ OSError\ \textcolor{keyword}{as}\ exc:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00598}00598\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(f\textcolor{stringliteral}{"{}Could\ not\ open\ requirements\ file:\ \{exc\}"{}})}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00599}00599\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00600}00600\ \ \ \ \ content\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a8b304fff3fc684c73c0d6d98803bb355}{\_decode\_req\_file}}(raw\_content,\ url)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00601}00601\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00602}00602\ \ \ \ \ \textcolor{keywordflow}{return}\ url,\ content}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00603}00603\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00604}00604\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00605}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a8b304fff3fc684c73c0d6d98803bb355}{00605}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file_a8b304fff3fc684c73c0d6d98803bb355}{\_decode\_req\_file}}(data:\ bytes,\ url:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00606}00606\ \ \ \ \ \textcolor{keywordflow}{for}\ bom,\ encoding\ \textcolor{keywordflow}{in}\ BOMS:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00607}00607\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ data.startswith(bom):}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00608}00608\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ data[len(bom)\ :].decode(encoding)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00609}00609\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00610}00610\ \ \ \ \ \textcolor{keywordflow}{for}\ line\ \textcolor{keywordflow}{in}\ data.split(b\textcolor{stringliteral}{"{}\(\backslash\)n"{}})[:2]:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00611}00611\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ line[0:1]\ ==\ b\textcolor{stringliteral}{"{}\#"{}}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00612}00612\ \ \ \ \ \ \ \ \ \ \ \ \ result\ =\ PEP263\_ENCODING\_RE.search(line)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00613}00613\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ result\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00614}00614\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ encoding\ =\ result.groups()[0].decode(\textcolor{stringliteral}{"{}ascii"{}})}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00615}00615\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ data.decode(encoding)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00616}00616\ }
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00617}00617\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00618}00618\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ data.decode(DEFAULT\_ENCODING)}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00619}00619\ \ \ \ \ \textcolor{keywordflow}{except}\ UnicodeDecodeError:}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00620}00620\ \ \ \ \ \ \ \ \ locale\_encoding\ =\ locale.getpreferredencoding(\textcolor{keyword}{False})\ \textcolor{keywordflow}{or}\ sys.getdefaultencoding()}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00621}00621\ \ \ \ \ \ \ \ \ logging.warning(}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00622}00622\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}unable\ to\ decode\ data\ from\ \%s\ with\ default\ encoding\ \%s,\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00623}00623\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}falling\ back\ to\ encoding\ from\ locale:\ \%s.\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00624}00624\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}If\ this\ is\ intentional\ you\ should\ specify\ the\ encoding\ with\ a\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00625}00625\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}PEP-\/263\ style\ comment,\ e.g.\ '\#\ -\/*-\/\ coding:\ \%s\ -\/*-\/'"{}},}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00626}00626\ \ \ \ \ \ \ \ \ \ \ \ \ url,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00627}00627\ \ \ \ \ \ \ \ \ \ \ \ \ DEFAULT\_ENCODING,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00628}00628\ \ \ \ \ \ \ \ \ \ \ \ \ locale\_encoding,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00629}00629\ \ \ \ \ \ \ \ \ \ \ \ \ locale\_encoding,}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00630}00630\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__file_8py_source_l00631}00631\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ data.decode(locale\_encoding)}
+
+\end{DoxyCode}

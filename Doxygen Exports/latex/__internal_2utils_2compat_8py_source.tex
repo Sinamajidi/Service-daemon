@@ -1,0 +1,91 @@
+\doxysection{compat.\+py}
+\hypertarget{__internal_2utils_2compat_8py_source}{}\label{__internal_2utils_2compat_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/utils/compat.py@{venv/Lib/site-\/packages/pip/\_internal/utils/compat.py}}
+\doxymbox{\hyperlink{__internal_2utils_2compat_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}Stuff\ that\ differs\ in\ different\ Python\ versions\ and\ platform}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00002}00002\ \textcolor{stringliteral}{distributions."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00003}00003\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00004}00004\ \textcolor{keyword}{import}\ importlib.resources}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00005}00005\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00006}00006\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00007}00007\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00008}00008\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ IO}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00010}00010\ \_\_all\_\_\ =\ [\textcolor{stringliteral}{"{}get\_path\_uid"{}},\ \textcolor{stringliteral}{"{}stdlib\_pkgs"{}},\ \textcolor{stringliteral}{"{}tomllib"{}},\ \textcolor{stringliteral}{"{}WINDOWS"{}}]}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00013}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat_a65e053f583b83de19eee10b715b84aab}{00013}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00015}00015\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00016}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat_a261dadb1f32465df29a04b9227cdc191}{00016}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat_a261dadb1f32465df29a04b9227cdc191}{has\_tls}}()\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00017}00017\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00018}00018\ \ \ \ \ \ \ \ \ \textcolor{keyword}{import}\ \_ssl\ \ \textcolor{comment}{\#\ noqa:\ F401\ \ \#\ ignore\ unused}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00020}00020\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00021}00021\ \ \ \ \ \textcolor{keywordflow}{except}\ ImportError:}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00022}00022\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00024}00024\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1util}{pip.\_vendor.urllib3.util}}\ \textcolor{keyword}{import}\ IS\_PYOPENSSL}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00026}00026\ \ \ \ \ \textcolor{keywordflow}{return}\ IS\_PYOPENSSL}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00029}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat_a567f1f687b4b89c6922a01e5ce4ea8ca}{00029}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat_a567f1f687b4b89c6922a01e5ce4ea8ca}{get\_path\_uid}}(path:\ str)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00030}00030\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00031}00031\ \textcolor{stringliteral}{\ \ \ \ Return\ path's\ uid.}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00032}00032\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00033}00033\ \textcolor{stringliteral}{\ \ \ \ Does\ not\ follow\ symlinks:}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00034}00034\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ https://github.com/pypa/pip/pull/935\#discussion\_r5307003}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00035}00035\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00036}00036\ \textcolor{stringliteral}{\ \ \ \ Placed\ this\ function\ in\ compat\ due\ to\ differences\ on\ AIX\ and}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00037}00037\ \textcolor{stringliteral}{\ \ \ \ Jython,\ that\ should\ eventually\ go\ away.}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00038}00038\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00039}00039\ \textcolor{stringliteral}{\ \ \ \ :raises\ OSError:\ When\ path\ is\ a\ symlink\ or\ can't\ be\ read.}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00040}00040\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00041}00041\ \ \ \ \ \textcolor{keywordflow}{if}\ hasattr(os,\ \textcolor{stringliteral}{"{}O\_NOFOLLOW"{}}):}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ fd\ =\ os.open(path,\ os.O\_RDONLY\ |\ os.O\_NOFOLLOW)}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ file\_uid\ =\ os.fstat(fd).st\_uid}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ os.close(fd)}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00045}00045\ \ \ \ \ \textcolor{keywordflow}{else}:\ \ \textcolor{comment}{\#\ AIX\ and\ Jython}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ WARNING:\ time\ of\ check\ vulnerability,\ but\ best\ we\ can\ do\ w/o\ NOFOLLOW}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ os.path.islink(path):}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ older\ versions\ of\ Jython\ don't\ have\ \`{}os.fstat`}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ file\_uid\ =\ os.stat(path).st\_uid}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ raise\ OSError\ for\ parity\ with\ os.O\_NOFOLLOW\ above}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ OSError(f\textcolor{stringliteral}{"{}\{path\}\ is\ a\ symlink;\ Will\ not\ return\ uid\ for\ symlinks"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00053}00053\ \ \ \ \ \textcolor{keywordflow}{return}\ file\_uid}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00056}00056\ \textcolor{comment}{\#\ The\ importlib.resources.open\_text\ function\ was\ deprecated\ in\ 3.11\ with\ suggested}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00057}00057\ \textcolor{comment}{\#\ replacement\ we\ use\ below.}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00058}00058\ \textcolor{keywordflow}{if}\ sys.version\_info\ <\ (3,\ 11):}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00059}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat_a7f6b94b96a47220a82eadf5800f4c9a2}{00059}}\ \ \ \ \ open\_text\_resource\ =\ importlib.resources.open\_text}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00060}00060\ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00061}00061\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00062}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat_ac78364695f2133dfef986f049bba506e}{00062}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat_a7f6b94b96a47220a82eadf5800f4c9a2}{open\_text\_resource}}(}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ package:\ str,\ resource:\ str,\ encoding:\ str\ =\ \textcolor{stringliteral}{"{}utf-\/8"{}},\ errors:\ str\ =\ \textcolor{stringliteral}{"{}strict"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00064}00064\ \ \ \ \ )\ -\/>\ IO[str]:}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (importlib.resources.files(package)\ /\ resource).open(}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}r"{}},\ encoding=encoding,\ errors=errors}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00070}00070\ \textcolor{keywordflow}{if}\ sys.version\_info\ >=\ (3,\ 11):}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00071}00071\ \ \ \ \ \textcolor{keyword}{import}\ tomllib}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00072}00072\ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00073}00073\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor}{pip.\_vendor}}\ \textcolor{keyword}{import}\ tomli\ \textcolor{keyword}{as}\ tomllib}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00075}00075\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00076}00076\ \textcolor{comment}{\#\ packages\ in\ the\ stdlib\ that\ may\ have\ installation\ metadata,\ but\ should\ not\ be}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00077}00077\ \textcolor{comment}{\#\ considered\ 'installed'.\ \ this\ theoretically\ could\ be\ determined\ based\ on}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00078}00078\ \textcolor{comment}{\#\ dist.location\ (py27:`sysconfig.get\_paths()['stdlib']`,}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00079}00079\ \textcolor{comment}{\#\ py26:sysconfig.get\_config\_vars('LIBDEST')),\ but\ fear\ platform\ variation\ may}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00080}00080\ \textcolor{comment}{\#\ make\ this\ ineffective,\ so\ hard-\/coding}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00081}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat_a91c56c36ec95dd8debf2841f3b317363}{00081}}\ stdlib\_pkgs\ =\ \{\textcolor{stringliteral}{"{}python"{}},\ \textcolor{stringliteral}{"{}wsgiref"{}},\ \textcolor{stringliteral}{"{}argparse"{}}\}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00083}00083\ }
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00084}00084\ \textcolor{comment}{\#\ windows\ detection,\ covers\ cpython\ and\ ironpython}}
+\DoxyCodeLine{\Hypertarget{__internal_2utils_2compat_8py_source_l00085}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat_a9e3348f56c06506309c9a4013e5ae394}{00085}}\ WINDOWS\ =\ sys.platform.startswith(\textcolor{stringliteral}{"{}win"{}})\ \textcolor{keywordflow}{or}\ (sys.platform\ ==\ \textcolor{stringliteral}{"{}cli"{}}\ \textcolor{keywordflow}{and}\ os.name\ ==\ \textcolor{stringliteral}{"{}nt"{}})}
+
+\end{DoxyCode}

@@ -1,0 +1,558 @@
+\doxysection{composite.\+py}
+\hypertarget{composite_8py_source}{}\label{composite_8py_source}\index{venv/Lib/site-\/packages/psycopg/types/composite.py@{venv/Lib/site-\/packages/psycopg/types/composite.py}}
+\doxymbox{\hyperlink{composite_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00002}00002\ \textcolor{stringliteral}{Support\ for\ composite\ types\ adaptation.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00009}00009\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00010}00010\ \textcolor{keyword}{import}\ struct}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00011}00011\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00012}00012\ \textcolor{keyword}{from}\ abc\ \textcolor{keyword}{import}\ ABC,\ abstractmethod}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00013}00013\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any,\ Generic,\ NamedTuple,\ TypeAlias,\ TypeVar,\ cast}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00014}00014\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ cache}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00015}00015\ \textcolor{keyword}{from}\ collections\ \textcolor{keyword}{import}\ namedtuple}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00016}00016\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Callable,\ Sequence}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00018}00018\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ abc,\ postgres,\ pq,\ sql}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00019}00019\ \textcolor{keyword}{from}\ ..\_oids\ \textcolor{keyword}{import}\ TEXT\_OID}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00020}00020\ \textcolor{keyword}{from}\ ..adapt\ \textcolor{keyword}{import}\ Buffer,\ Dumper,\ Loader,\ PyFormat,\ RecursiveDumper,\ RecursiveLoader}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00021}00021\ \textcolor{keyword}{from}\ ..adapt\ \textcolor{keyword}{import}\ Transformer}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00022}00022\ \textcolor{keyword}{from}\ ..\_struct\ \textcolor{keyword}{import}\ pack\_len,\ unpack\_len}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00023}00023\ \textcolor{keyword}{from}\ ..\_typeinfo\ \textcolor{keyword}{import}\ TypeInfo}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00024}00024\ \textcolor{keyword}{from}\ ..\_encodings\ \textcolor{keyword}{import}\ \_as\_python\_identifier}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00026}00026\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00027}00027\ \ \ \ \ \textcolor{keyword}{from}\ ..\_connection\_base\ \textcolor{keyword}{import}\ BaseConnection}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00029}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a3fa08d11c880e799e76e69440b5c7ea9}{00029}}\ logger\ =\ logging.getLogger(\textcolor{stringliteral}{"{}psycopg"{}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00031}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_aa998120c2fbc0274676a9a4ae52fd764}{00031}}\ \_struct\_oidlen\ =\ struct.Struct(\textcolor{stringliteral}{"{}!Ii"{}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00032}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a3f0820ce9c9dd1f2fe7e48e6c329131f}{00032}}\ \_pack\_oidlen\ =\ cast(Callable[[int,\ int],\ bytes],\ \_struct\_oidlen.pack)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00033}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_ab6b8756eaa6c08c5f5b13b78d18c6fc6}{00033}}\ \_unpack\_oidlen\ =\ cast(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00034}00034\ \ \ \ \ Callable[[abc.Buffer,\ int],\ \textcolor{stringliteral}{"{}tuple[int,\ int]"{}}],\ \_struct\_oidlen.unpack\_from}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00035}00035\ )}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00037}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_ae248885dbd071518443952c1853058f5}{00037}}\ T\ =\ TypeVar(\textcolor{stringliteral}{"{}T"{}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00038}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a2cd48a5b3c10bfdc0a9c559c13520ffc}{00038}}\ ObjectMaker:\ TypeAlias\ =\ Callable[[Sequence[Any],\ \textcolor{stringliteral}{"{}CompositeInfo"{}}],\ T]}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00039}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_afa8e431e2aaa872a2b268aabc8535c0e}{00039}}\ SequenceMaker:\ TypeAlias\ =\ Callable[[T,\ \textcolor{stringliteral}{"{}CompositeInfo"{}}],\ Sequence[Any]]}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00042}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info}{00042}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info}{CompositeInfo}}(\doxymbox{\hyperlink{classpsycopg_1_1__typeinfo_1_1_type_info}{TypeInfo}}):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00043}00043\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Manage\ information\ about\ a\ composite\ type."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00045}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_ae98dc15a497f654d79cb28bc86773c65}{00045}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_ae98dc15a497f654d79cb28bc86773c65}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ name:\ str,}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ oid:\ int,}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ array\_oid:\ int,}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ regtype:\ str\ =\ \textcolor{stringliteral}{"{}"{}},}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ field\_names:\ Sequence[str],}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ field\_types:\ Sequence[int],}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00054}00054\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_ae98dc15a497f654d79cb28bc86773c65}{\_\_init\_\_}}(name,\ oid,\ array\_oid,\ regtype=regtype)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00056}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_ab2b2e1802e8112af7f8cdf0ea33c2fbb}{00056}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_ab2b2e1802e8112af7f8cdf0ea33c2fbb}{field\_names}}\ =\ tuple(field\_names)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00057}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_af7ba528c4aabc3ff5a85ab7e11014b88}{00057}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_af7ba528c4aabc3ff5a85ab7e11014b88}{field\_types}}\ =\ tuple(field\_types)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Will\ be\ set\ by\ register()\ if\ the\ \`{}factory`\ is\ a\ type}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00059}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_a9a33727235d9d28fac273cd96cd148ff}{00059}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_a9a33727235d9d28fac273cd96cd148ff}{python\_type}}:\ type\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00061}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_acd9bb1dc98e63467241a2815f4d29c61}{00061}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_acd9bb1dc98e63467241a2815f4d29c61}{\_\_hash\_\_}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00062}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info}{00062}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hash((self.\doxymbox{\hyperlink{classpsycopg_1_1__typeinfo_1_1_type_info_a29987789f550fc8305aed9719706b30c}{name}},\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_ab2b2e1802e8112af7f8cdf0ea33c2fbb}{field\_names}},\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_af7ba528c4aabc3ff5a85ab7e11014b88}{field\_types}}))}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00064}00064\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00065}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_ae23c230ebe82e8fa80feb7956f61ae69}{00065}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_composite_info_ae23c230ebe82e8fa80feb7956f61ae69}{\_get\_info\_query}}(cls,\ conn:\ BaseConnection[Any])\ -\/>\ abc.QueryNoTemplate:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{sql.SQL}}(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}\(\backslash\)}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00068}00068\ \textcolor{stringliteral}{SELECT}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00069}00069\ \textcolor{stringliteral}{\ \ \ \ t.typname\ AS\ name,\ t.oid\ AS\ oid,\ t.typarray\ AS\ array\_oid,}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00070}00070\ \textcolor{stringliteral}{\ \ \ \ t.oid::regtype::text\ AS\ regtype,}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00071}00071\ \textcolor{stringliteral}{\ \ \ \ coalesce(a.fnames,\ '\{\{\}\}')\ AS\ field\_names,}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ coalesce(a.ftypes,\ '\{\{\}\}')\ AS\ field\_types}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00073}00073\ \textcolor{stringliteral}{FROM\ pg\_type\ t}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00074}00074\ \textcolor{stringliteral}{LEFT\ JOIN\ (}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00075}00075\ \textcolor{stringliteral}{\ \ \ \ SELECT}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00076}00076\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ attrelid,}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00077}00077\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ array\_agg(attname)\ AS\ fnames,}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00078}00078\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ array\_agg(atttypid)\ AS\ ftypes}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ FROM\ (}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00080}00080\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ SELECT\ a.attrelid,\ a.attname,\ a.atttypid}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00081}00081\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ FROM\ pg\_attribute\ a}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00082}00082\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ JOIN\ pg\_type\ t\ ON\ t.typrelid\ =\ a.attrelid}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00083}00083\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ WHERE\ t.oid\ =\ \{regtype\}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00084}00084\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ AND\ a.attnum\ >\ 0}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00085}00085\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ AND\ NOT\ a.attisdropped}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00086}00086\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ORDER\ BY\ a.attnum}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00087}00087\ \textcolor{stringliteral}{\ \ \ \ )\ x}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00088}00088\ \textcolor{stringliteral}{\ \ \ \ GROUP\ BY\ attrelid}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00089}00089\ \textcolor{stringliteral}{)\ a\ ON\ a.attrelid\ =\ t.typrelid}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00090}00090\ \textcolor{stringliteral}{WHERE\ t.oid\ =\ \{regtype\}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00091}00091\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ ).format(regtype=cls.\doxymbox{\hyperlink{classpsycopg_1_1__typeinfo_1_1_type_info_a080015df502949309bc6ab9a9b960aa5}{\_to\_regtype}}(conn))}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00095}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_tuple_dumper}{00095}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_tuple_dumper}{TupleDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper}{RecursiveDumper}}):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00096}00096\ \ \ \ \ \textcolor{comment}{\#\ Should\ be\ this,\ but\ it\ doesn't\ work}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00097}00097\ \ \ \ \ \textcolor{comment}{\#\ oid\ =\ \_oids.RECORD\_OID}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00098}00098\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00099}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_tuple_dumper_a583ecadf852c1f08c7eefed97d30b4b6}{00099}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_tuple_dumper_a583ecadf852c1f08c7eefed97d30b4b6}{dump}}(self,\ obj:\ tuple[Any,\ ...])\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00100}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_tuple_dumper}{00100}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_aaf8a13616b4027969606f4eee63829b4}{\_dump\_text\_sequence}}(obj,\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper_a021855189cbb42b31f1d11fb00ea07bb}{\_tx}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00101}00101\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00103}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_dumper}{00103}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_dumper}{\_SequenceDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper}{RecursiveDumper}},\ Generic[T],\ ABC):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00104}00104\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00105}00105\ \textcolor{stringliteral}{\ \ \ \ Base\ class\ for\ text\ dumpers\ taking\ an\ object\ and\ dumping\ it\ as\ a\ composite.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00106}00106\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00107}00107\ \textcolor{stringliteral}{\ \ \ \ Abstract\ class:\ subclasses\ must\ specify\ the\ names\ of\ the\ fields\ making\ the}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00108}00108\ \textcolor{stringliteral}{\ \ \ \ composite\ to\ return\ and\ the\ \`{}make\_sequence()\`{}\ static\ method\ to\ convert\ the}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00109}00109\ \textcolor{stringliteral}{\ \ \ \ object\ to\ dump\ to\ a\ sequence\ of\ values.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00110}00110\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00111}00111\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00112}00112\ \ \ \ \ \textcolor{comment}{\#\ Subclasses\ must\ set\ this\ attribute}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00113}00113\ \ \ \ \ info:\ CompositeInfo}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00114}00114\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00115}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_dumper_a76984bae552d2dda20883cf2d287747d}{00115}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_dumper_a76984bae552d2dda20883cf2d287747d}{dump}}(self,\ obj:\ T)\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ seq\ =\ type(self).\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_dumper_a85f4886a559c36a97ab2ce5588c821bd}{make\_sequence}}(obj,\ self.info)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00117}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_dumper}{00117}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_aaf8a13616b4027969606f4eee63829b4}{\_dump\_text\_sequence}}(seq,\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper_a021855189cbb42b31f1d11fb00ea07bb}{\_tx}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00118}00118\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00119}00119\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00120}00120\ \ \ \ \ \textcolor{preprocessor}{@abstractmethod}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00121}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_dumper_a85f4886a559c36a97ab2ce5588c821bd}{00121}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_dumper_a85f4886a559c36a97ab2ce5588c821bd}{make\_sequence}}(obj:\ T,\ info:\ CompositeInfo)\ -\/>\ Sequence[Any]:\ ...}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00122}00122\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00123}00123\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00124}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper}{00124}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper}{\_SequenceBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}},\ Generic[T],\ ABC):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00125}00125\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00126}00126\ \textcolor{stringliteral}{\ \ \ \ Base\ class\ for\ binary\ dumpers\ taking\ an\ object\ and\ dumping\ it\ as\ a\ composite.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00127}00127\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00128}00128\ \textcolor{stringliteral}{\ \ \ \ Abstract\ class:\ subclasses\ must\ specify\ the\ names\ and\ types\ of\ the\ fields}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00129}00129\ \textcolor{stringliteral}{\ \ \ \ making\ the\ target\ composite\ and\ the\ \`{}make\_sequence()\`{}\ static\ method\ to}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00130}00130\ \textcolor{stringliteral}{\ \ \ \ convert\ the\ object\ to\ dump\ to\ a\ sequence\ of\ values.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00131}00131\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00132}00132\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00133}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper}{00133}}\ \ \ \ \ format\ =\ pq.Format.BINARY}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00134}00134\ \ \ \ \ \textcolor{comment}{\#\ Subclasses\ must\ set\ this\ attribute}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00135}00135\ \ \ \ \ info:\ CompositeInfo}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00136}00136\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00137}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_ae7d78c43253116dac6867862bd198d3c}{00137}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_ae7d78c43253116dac6867862bd198d3c}{\_\_init\_\_}}(self,\ cls:\ type[T],\ context:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_adapt_context}{abc.AdaptContext}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_ae7d78c43253116dac6867862bd198d3c}{\_\_init\_\_}}(cls,\ context)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00139}00139\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Note:\ this\ class\ is\ not\ a\ RecursiveDumper\ because\ it\ would\ use\ the}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ same\ Transformer\ of\ the\ context,\ which\ would\ confuse\ dump\_sequence()}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ in\ case\ the\ composite\ contains\ another\ composite.\ Make\ sure\ to\ use}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ a\ separate\ Transformer\ instance\ instead.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00144}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_a7dd991de65b3175bfe0fdd0cc2682675}{00144}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_a7dd991de65b3175bfe0fdd0cc2682675}{\_tx}}\ =\ Transformer(context)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_a7dd991de65b3175bfe0fdd0cc2682675}{\_tx}}.set\_dumper\_types(self.info.field\_types,\ self.\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_dumper_ac9d983458aaab925283752b945a00784}{format}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ nfields\ =\ len(self.info.field\_types)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00148}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_ad5fe7deefbd30b2322f3391a27c58b13}{00148}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_ad5fe7deefbd30b2322f3391a27c58b13}{\_formats}}\ =\ (PyFormat.from\_pq(self.\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_dumper_ac9d983458aaab925283752b945a00784}{format}}),)\ *\ nfields}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00149}00149\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00150}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_af3a43f4f5c49b6fd0310b1b253cac65a}{00150}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_af3a43f4f5c49b6fd0310b1b253cac65a}{dump}}(self,\ obj:\ T)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ seq\ =\ type(self).\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_a76fda842848c01be2679666ac41ab8ba}{make\_sequence}}(obj,\ self.info)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a912876c3f951dd4057add884e727f20d}{\_dump\_binary\_sequence}}(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \ \ \ \ seq,\ self.info.field\_types,\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_ad5fe7deefbd30b2322f3391a27c58b13}{\_formats}},\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_a7dd991de65b3175bfe0fdd0cc2682675}{\_tx}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00156}00156\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00157}00157\ \ \ \ \ \textcolor{preprocessor}{@abstractmethod}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00158}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_a76fda842848c01be2679666ac41ab8ba}{00158}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___sequence_binary_dumper_a76fda842848c01be2679666ac41ab8ba}{make\_sequence}}(obj:\ T,\ info:\ CompositeInfo)\ -\/>\ Sequence[Any]:\ ...}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00159}00159\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00160}00160\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00161}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_loader}{00161}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_loader}{RecordLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_loader}{RecursiveLoader}}):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00162}00162\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00163}00163\ \textcolor{stringliteral}{\ \ \ \ Load\ a\ \`{}record\`{}\ field\ from\ PostgreSQL.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00164}00164\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00165}00165\ \textcolor{stringliteral}{\ \ \ \ In\ text\ mode\ we\ don't\ have\ type\ information\ of\ the\ composite's\ fields,\ so}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00166}00166\ \textcolor{stringliteral}{\ \ \ \ convert\ every\ item\ as\ text.\ Note\ that\ in\ binary\ loading\ we\ have\ per-\/field}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00167}00167\ \textcolor{stringliteral}{\ \ \ \ oids\ instead.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00168}00168\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00169}00169\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00170}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_loader_ac52e007544c5a20f208282ba9ef24621}{00170}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_loader_ac52e007544c5a20f208282ba9ef24621}{load}}(self,\ data:\ abc.Buffer)\ -\/>\ tuple[Any,\ ...]:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ data\ ==\ b\textcolor{stringliteral}{"{}()"{}}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ()}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ cast\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_loader_a4dcd8c5ee39af9c60dcf6191321992f0}{\_tx}}.get\_loader(TEXT\_OID,\ self.\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_loader_a553af3dff71f160dafaa4265aabd0e40}{format}}).load}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ record\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a0f9ca7964aa3bc2142101d8b9f472c38}{\_parse\_text\_record}}(data[1:-\/1])}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(len(record)):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (f\ :=\ record[i])\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ record[i]\ =\ cast(f)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00179}00179\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tuple(record)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00181}00181\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00182}00182\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00183}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader}{00183}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader}{RecordBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00184}00184\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00185}00185\ \textcolor{stringliteral}{\ \ \ \ Load\ a\ \`{}record\`{}\ field\ from\ PostgreSQL.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00186}00186\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00187}00187\ \textcolor{stringliteral}{\ \ \ \ Unlike\ in\ text\ mode,\ the\ composite\ data\ contains\ oids\ of\ the\ fields,}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00188}00188\ \textcolor{stringliteral}{\ \ \ \ so\ we\ can\ actually\ parse\ the\ records\ in\ its\ original\ types.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00189}00189\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00190}00190\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00191}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader}{00191}}\ \ \ \ \ format\ =\ pq.Format.BINARY}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00193}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_a205980d48785e6938e7e27bb71355082}{00193}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_a205980d48785e6938e7e27bb71355082}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_adapt_context}{abc.AdaptContext}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_a205980d48785e6938e7e27bb71355082}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00195}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_aab5aae588d6d9016b758505ba5e599a2}{00195}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_aab5aae588d6d9016b758505ba5e599a2}{\_ctx}}\ =\ context}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Cache\ a\ transformer\ for\ each\ sequence\ of\ oid\ found.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Usually\ there\ will\ be\ only\ one,\ but\ if\ there\ is\ more\ than\ one}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ row\ in\ the\ same\ query\ (in\ different\ columns,\ or\ even\ in\ different}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ records),\ oids\ might\ differ\ and\ we'd\ need\ separate\ transformers.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00200}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_a69f71cbfb7f148ba5402d5fe45edee83}{00200}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_a69f71cbfb7f148ba5402d5fe45edee83}{\_txs}}:\ dict[tuple[int,\ ...],\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_transformer}{abc.Transformer}}]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00201}00201\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00202}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_af024aae9ffb1aa2be7d5b87f47f754ad}{00202}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_af024aae9ffb1aa2be7d5b87f47f754ad}{load}}(self,\ data:\ abc.Buffer)\ -\/>\ tuple[Any,\ ...]:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ record,\ oids\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_aa21b96f3a61644df08db89c1299a80e3}{\_parse\_binary\_record}}(data)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ record:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ()}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00206}00206\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ tx\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_a67c40184eadd3f45ac4d058c2b9be695}{\_get\_transformer}}(tuple(oids))}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tx.load\_sequence(record)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00209}00209\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00210}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_a67c40184eadd3f45ac4d058c2b9be695}{00210}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_a67c40184eadd3f45ac4d058c2b9be695}{\_get\_transformer}}(self,\ key:\ tuple[int,\ ...])\ -\/>\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_transformer}{abc.Transformer}}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ key\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_a69f71cbfb7f148ba5402d5fe45edee83}{\_txs}}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_a69f71cbfb7f148ba5402d5fe45edee83}{\_txs}}[key]}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00213}00213\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ tx\ =\ Transformer(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_aab5aae588d6d9016b758505ba5e599a2}{\_ctx}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ tx.set\_loader\_types([*key],\ self.\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_loader_a553af3dff71f160dafaa4265aabd0e40}{format}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1_record_binary_loader_a69f71cbfb7f148ba5402d5fe45edee83}{\_txs}}[key]\ =\ tx}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tx}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00218}00218\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00219}00219\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00220}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader}{00220}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader}{\_CompositeLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}},\ Generic[T],\ ABC):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00221}00221\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00222}00222\ \textcolor{stringliteral}{\ \ \ \ Base\ class\ to\ create\ text\ loaders\ of\ specific\ composite\ types.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00223}00223\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00224}00224\ \textcolor{stringliteral}{\ \ \ \ The\ class\ is\ complete\ but\ lack\ information\ about\ the\ fields\ types\ and}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00225}00225\ \textcolor{stringliteral}{\ \ \ \ object\ factory.\ These\ will\ be\ added\ by\ register\_composite(),\ which\ will}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00226}00226\ \textcolor{stringliteral}{\ \ \ \ create\ a\ subclass\ of\ this\ class.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00227}00227\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00228}00228\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00229}00229\ \ \ \ \ \textcolor{comment}{\#\ Subclasses\ must\ set\ this\ attribute}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00230}00230\ \ \ \ \ info:\ CompositeInfo}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00231}00231\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00232}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_a16d26744d7481c95bcdd1f78b6ca7541}{00232}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_a16d26744d7481c95bcdd1f78b6ca7541}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_adapt_context}{abc.AdaptContext}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_a16d26744d7481c95bcdd1f78b6ca7541}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Note:\ we\ cannot\ use\ the\ RecursiveLoader\ base\ class\ here\ because\ we}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ always\ want\ a\ different\ Transformer\ instance,\ otherwise\ the\ types}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ loaded\ will\ conflict\ with\ the\ types\ loaded\ by\ the\ record.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00237}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_a32f64fe850b05b87ce0086cc8216ac3d}{00237}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_a32f64fe850b05b87ce0086cc8216ac3d}{\_tx}}\ =\ Transformer(context)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00238}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader}{00238}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_a32f64fe850b05b87ce0086cc8216ac3d}{\_tx}}.set\_loader\_types(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_afc7775db04aadc511626d7e5a2375917}{info}}.field\_types,\ self.\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_loader_a553af3dff71f160dafaa4265aabd0e40}{format}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00239}00239\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00240}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_a4a3c250d70313225de1adf2bf58d00a8}{00240}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_a4a3c250d70313225de1adf2bf58d00a8}{load}}(self,\ data:\ abc.Buffer)\ -\/>\ T:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ data\ ==\ b\textcolor{stringliteral}{"{}()"{}}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ args\ =\ ()}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \ \ \ \ args\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_a32f64fe850b05b87ce0086cc8216ac3d}{\_tx}}.load\_sequence(tuple(\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a0f9ca7964aa3bc2142101d8b9f472c38}{\_parse\_text\_record}}(data[1:-\/1])))}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00245}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_afc7775db04aadc511626d7e5a2375917}{00245}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ type(self).\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_acd0cb9197396389236cdb163ef2bb6f6}{make\_object}}(args,\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_afc7775db04aadc511626d7e5a2375917}{info}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00246}00246\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00247}00247\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00248}00248\ \ \ \ \ \textcolor{preprocessor}{@abstractmethod}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00249}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_acd0cb9197396389236cdb163ef2bb6f6}{00249}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_loader_acd0cb9197396389236cdb163ef2bb6f6}{make\_object}}(args:\ Sequence[Any],\ info:\ CompositeInfo)\ -\/>\ T:\ ...}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00250}00250\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00251}00251\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00252}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader}{00252}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader}{\_CompositeBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}},\ Generic[T],\ ABC):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00253}00253\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00254}00254\ \textcolor{stringliteral}{\ \ \ \ Base\ class\ to\ create\ text\ loaders\ of\ specific\ composite\ types.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00255}00255\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00256}00256\ \textcolor{stringliteral}{\ \ \ \ The\ class\ is\ complete\ but\ lack\ information\ about\ the\ fields\ types,\ names,}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00257}00257\ \textcolor{stringliteral}{\ \ \ \ and\ object\ factory.\ These\ will\ be\ added\ by\ register\_composite(),\ which\ will}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00258}00258\ \textcolor{stringliteral}{\ \ \ \ create\ a\ subclass\ of\ this\ class.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00259}00259\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00260}00260\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00261}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader}{00261}}\ \ \ \ \ format\ =\ pq.Format.BINARY}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00262}00262\ \ \ \ \ \textcolor{comment}{\#\ Subclasses\ must\ set\ this\ attribute}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00263}00263\ \ \ \ \ info:\ CompositeInfo}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00264}00264\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00265}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a52539480143598961449e6786f0097e2}{00265}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a52539480143598961449e6786f0097e2}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_adapt_context}{abc.AdaptContext}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a52539480143598961449e6786f0097e2}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00267}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a25f973bdb1b06225c397014906680543}{00267}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a25f973bdb1b06225c397014906680543}{\_tx}}\ =\ Transformer(context)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a25f973bdb1b06225c397014906680543}{\_tx}}.set\_loader\_types(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a48a7285af0da622cefa571ee0cd22274}{info}}.field\_types,\ self.\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_loader_a553af3dff71f160dafaa4265aabd0e40}{format}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00269}00269\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00270}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_adf82d42d2e741d5c9a86237c1e281130}{00270}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_adf82d42d2e741d5c9a86237c1e281130}{load}}(self,\ data:\ abc.Buffer)\ -\/>\ T:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ brecord,\ \_\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_aa21b96f3a61644df08db89c1299a80e3}{\_parse\_binary\_record}}(data)\ \ \textcolor{comment}{\#\ assume\ oids\ ==\ self.fields\_types}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ record\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a25f973bdb1b06225c397014906680543}{\_tx}}.load\_sequence(brecord)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00273}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a48a7285af0da622cefa571ee0cd22274}{00273}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ type(self).\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a66a5b6dcf87d968294f263cb36ea396c}{make\_object}}(record,\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a48a7285af0da622cefa571ee0cd22274}{info}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00274}00274\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00275}00275\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00276}00276\ \ \ \ \ \textcolor{preprocessor}{@abstractmethod}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00277}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a66a5b6dcf87d968294f263cb36ea396c}{00277}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1composite_1_1___composite_binary_loader_a66a5b6dcf87d968294f263cb36ea396c}{make\_object}}(args:\ Sequence[Any],\ info:\ CompositeInfo)\ -\/>\ T:\ ...}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00278}00278\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00279}00279\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00280}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a47f680934891bfc8b09d587edfe63d67}{00280}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a47f680934891bfc8b09d587edfe63d67}{register\_composite}}(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00281}00281\ \ \ \ \ info:\ CompositeInfo,}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00282}00282\ \ \ \ \ context:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_adapt_context}{abc.AdaptContext}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00283}00283\ \ \ \ \ factory:\ Callable[...,\ T]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00284}00284\ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00285}00285\ \ \ \ \ make\_object:\ ObjectMaker[T]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00286}00286\ \ \ \ \ make\_sequence:\ SequenceMaker[T]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00287}00287\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00288}00288\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Register\ the\ adapters\ to\ load\ and\ dump\ a\ composite\ type.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00289}00289\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00290}00290\ \textcolor{stringliteral}{\ \ \ \ :param\ info:\ The\ object\ with\ the\ information\ about\ the\ composite\ to\ register.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00291}00291\ \textcolor{stringliteral}{\ \ \ \ :type\ info:\ \`{}CompositeInfo\`{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00292}00292\ \textcolor{stringliteral}{\ \ \ \ :param\ context:\ The\ context\ where\ to\ register\ the\ adapters.\ If\ \`{}!None\`{},}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00293}00293\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ register\ it\ globally.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00294}00294\ \textcolor{stringliteral}{\ \ \ \ :type\ context:\ \`{}\string~psycopg.abc.AdaptContext\`{}\ |\ \`{}!None\`{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00295}00295\ \textcolor{stringliteral}{\ \ \ \ :param\ factory:\ Callable\ to\ create\ a\ Python\ object\ from\ the\ sequence\ of}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00296}00296\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ attributes\ read\ from\ the\ composite.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00297}00297\ \textcolor{stringliteral}{\ \ \ \ :type\ factory:\ \`{}!Callable[...,\ T]\`{}\ |\ \`{}!None\`{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00298}00298\ \textcolor{stringliteral}{\ \ \ \ :param\ make\_object:\ optional\ function\ that\ will\ be\ used\ when\ loading\ a}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00299}00299\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ composite\ type\ from\ the\ database\ if\ the\ Python\ type\ is\ not\ a\ sequence}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00300}00300\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ compatible\ with\ the\ composite\ fields}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00301}00301\ \textcolor{stringliteral}{\ \ \ \ :type\ make\_object:\ \`{}!Callable[[Sequence[Any],\ CompositeInfo],\ T]\`{}\ |\ \`{}!None\`{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00302}00302\ \textcolor{stringliteral}{\ \ \ \ :param\ make\_sequence:\ optional\ function\ that\ will\ be\ used\ when\ dumping\ an}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00303}00303\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ object\ to\ the\ database\ if\ the\ object\ is\ not\ a\ sequence\ compatible}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00304}00304\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ with\ the\ composite\ fields}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00305}00305\ \textcolor{stringliteral}{\ \ \ \ :type\ make\_sequence:\ \`{}!Callable[[T,\ CompositeInfo],\ Sequence[Any]]\`{}\ |\ \`{}!None\`{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00306}00306\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00307}00307\ \textcolor{stringliteral}{\ \ \ \ ..\ note::}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00308}00308\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00309}00309\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Registering\ the\ adapters\ doesn't\ affect\ objects\ already\ created,\ even}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00310}00310\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ if\ they\ are\ children\ of\ the\ registered\ context.\ For\ instance,}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00311}00311\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ registering\ the\ adapter\ globally\ doesn't\ affect\ already\ existing}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00312}00312\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ connections.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00313}00313\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00314}00314\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00315}00315\ \ \ \ \ \textcolor{comment}{\#\ A\ friendly\ error\ warning\ instead\ of\ an\ AttributeError\ in\ case\ fetch()}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00316}00316\ \ \ \ \ \textcolor{comment}{\#\ failed\ and\ it\ wasn't\ noticed.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00317}00317\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ info:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00318}00318\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(\textcolor{stringliteral}{"{}no\ info\ passed.\ Is\ the\ requested\ composite\ available?"{}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00319}00319\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00320}00320\ \ \ \ \ \textcolor{comment}{\#\ Register\ arrays\ and\ type\ info}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00321}00321\ \ \ \ \ info.register(context)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00322}00322\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00323}00323\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ factory:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ factory\ =\ cast(\textcolor{stringliteral}{"{}Callable[...,\ T]"{}},\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a1fc77a7a3357516b14ed5857ed26ad12}{\_nt\_from\_info}}(info))}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00325}00325\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00326}00326\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ make\_object:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00327}00327\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }make\_object(values:\ Sequence[Any],\ info:\ CompositeInfo)\ -\/>\ T:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ factory(*values)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00330}00330\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00331}00331\ \ \ \ \ adapters\ =\ context.adapters\ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{else}\ postgres.adapters}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00332}00332\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00333}00333\ \ \ \ \ \textcolor{comment}{\#\ generate\ and\ register\ a\ customized\ text\ loader}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00334}00334\ \ \ \ \ loader:\ type[Loader]\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_ae4a18bb879d49f8e16a5032c427bf27c}{\_make\_loader}}(info,\ make\_object)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00335}00335\ \ \ \ \ adapters.register\_loader(info.oid,\ loader)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00336}00336\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00337}00337\ \ \ \ \ \textcolor{comment}{\#\ generate\ and\ register\ a\ customized\ binary\ loader}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00338}00338\ \ \ \ \ loader\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a7bfcfa36f8cb02d641b4c0c6d654dfe1}{\_make\_binary\_loader}}(info,\ make\_object)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00339}00339\ \ \ \ \ adapters.register\_loader(info.oid,\ loader)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00340}00340\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00341}00341\ \ \ \ \ \textcolor{comment}{\#\ If\ the\ factory\ is\ a\ type,\ create\ and\ register\ dumpers\ for\ it}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00342}00342\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(factory,\ type):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00343}00343\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Optimistically\ assume\ that\ the\ factory\ type\ is\ a\ sequence.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ it\ is\ not,\ it\ will\ create\ a\ non-\/functioning\ dumper,\ but\ we\ don't}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ risk\ backward\ incompatibility.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ make\_sequence:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00348}00348\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ issubclass(factory,\ Sequence):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}the\ type\ \%r\ is\ not\ a\ sequence:\ dumping\ these\ objects\ to\ the"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ database\ will\ fail.\ Please\ specify\ a\ \`{}make\_sequence`"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ argument\ in\ the\ \`{}register\_composite()`\ call"{}},}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ factory.\_\_name\_\_,}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00356}00356\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }make\_sequence(obj:\ T,\ into:\ CompositeInfo)\ -\/>\ Sequence[Any]:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00358}00358\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{type(obj).\_\_name\_\_!r\}\ objects\ cannot\ be\ dumped\ without"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ specifying\ 'make\_sequence'\ in\ 'register\_composite()'"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00362}00362\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00364}00364\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }make\_sequence(obj:\ T,\ info:\ CompositeInfo)\ -\/>\ Sequence[Any]:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00366}00366\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ obj\ \ \textcolor{comment}{\#\ type:\ ignore[return-\/value]\ \ \#\ it's\ a\ sequence}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00367}00367\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00368}00368\ \ \ \ \ \ \ \ \ type\_name\ =\ factory.\_\_name\_\_}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ dumper:\ type[Dumper]\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a54a48cc03790f74d7ad3038e18c87336}{\_make\_binary\_dumper}}(type\_name,\ info,\ make\_sequence)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ adapters.register\_dumper(factory,\ dumper)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00371}00371\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00372}00372\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Default\ to\ the\ text\ dumper\ because\ it\ is\ more\ flexible}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00373}00373\ \ \ \ \ \ \ \ \ dumper\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a44ed7e88fb2323bde7a9a419d5345937}{\_make\_dumper}}(type\_name,\ info,\ make\_sequence)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ adapters.register\_dumper(factory,\ dumper)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00375}00375\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ info.python\_type\ =\ factory}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00377}00377\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00378}00378\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00379}00379\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ make\_sequence:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}the\ factory\ \{factory.\_\_name\_\_!r\}\ is\ not\ a\ type:\ you\ cannot"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ create\ a\ dumper\ by\ specifying\ \`{}make\_sequence`."{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00384}00384\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00385}00385\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00386}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_ab55720ca5926565f3528bf729332810c}{00386}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_ab55720ca5926565f3528bf729332810c}{register\_default\_adapters}}(context:\ abc.AdaptContext)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00387}00387\ \ \ \ \ adapters\ =\ context.adapters}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00388}00388\ \ \ \ \ adapters.register\_dumper(tuple,\ TupleDumper)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00389}00389\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}record"{}},\ RecordLoader)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00390}00390\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}record"{}},\ RecordBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00391}00391\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00392}00392\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00393}00393\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00394}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a1fc77a7a3357516b14ed5857ed26ad12}{00394}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a1fc77a7a3357516b14ed5857ed26ad12}{\_nt\_from\_info}}(info:\ CompositeInfo)\ -\/>\ type[NamedTuple]:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00395}00395\ \ \ \ \ name\ =\ \_as\_python\_identifier(info.name)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00396}00396\ \ \ \ \ fields\ =\ tuple(\_as\_python\_identifier(n)\ \textcolor{keywordflow}{for}\ n\ \textcolor{keywordflow}{in}\ info.field\_names)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00397}00397\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a4778409e8d1b5ea0f8779065a005a7a8}{\_make\_nt}}(name,\ fields)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00398}00398\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00399}00399\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00400}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_aaf8a13616b4027969606f4eee63829b4}{00400}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_aaf8a13616b4027969606f4eee63829b4}{\_dump\_text\_sequence}}(seq:\ Sequence[Any],\ tx:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_transformer}{abc.Transformer}})\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00401}00401\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ seq:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}()"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00403}00403\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00404}00404\ \ \ \ \ parts:\ list[abc.Buffer]\ =\ [b\textcolor{stringliteral}{"{}("{}}]}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00405}00405\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00406}00406\ \ \ \ \ \textcolor{keywordflow}{for}\ item\ \textcolor{keywordflow}{in}\ seq:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ item\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00408}00408\ \ \ \ \ \ \ \ \ \ \ \ \ parts.append(b\textcolor{stringliteral}{"{},"{}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00409}00409\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00410}00410\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00411}00411\ \ \ \ \ \ \ \ \ dumper\ =\ tx.get\_dumper(item,\ PyFormat.TEXT)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00412}00412\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (ad\ :=\ dumper.dump(item))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00413}00413\ \ \ \ \ \ \ \ \ \ \ \ \ ad\ =\ b\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00414}00414\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ \textcolor{keywordflow}{not}\ ad:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00415}00415\ \ \ \ \ \ \ \ \ \ \ \ \ ad\ =\ b\textcolor{stringliteral}{'"{}"{}'}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00416}00416\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ \_re\_needs\_quotes.search(ad):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ \ \ \ \ ad\ =\ b\textcolor{stringliteral}{'"{}'}\ +\ \_re\_esc.sub(rb\textcolor{stringliteral}{"{}\(\backslash\)1\(\backslash\)1"{}},\ ad)\ +\ b\textcolor{stringliteral}{'"{}'}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00418}00418\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ parts.append(ad)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00420}00420\ \ \ \ \ \ \ \ \ parts.append(b\textcolor{stringliteral}{"{},"{}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00421}00421\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00422}00422\ \ \ \ \ parts[-\/1]\ =\ b\textcolor{stringliteral}{"{})"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00423}00423\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00424}00424\ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}"{}}.join(parts)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00425}00425\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00426}00426\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00427}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a626dc776c8360daaf096aaf9fc056fb0}{00427}}\ \_re\_needs\_quotes\ =\ re.compile(rb\textcolor{stringliteral}{'["{},\(\backslash\)\(\backslash\)\(\backslash\)s()]'})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00428}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a72cac0a82d9f1d36092c1e397502551f}{00428}}\ \_re\_esc\ =\ re.compile(rb\textcolor{stringliteral}{"{}([\(\backslash\)\(\backslash\)\(\backslash\)"{}])"{}})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00429}00429\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00430}00430\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00431}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a912876c3f951dd4057add884e727f20d}{00431}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a912876c3f951dd4057add884e727f20d}{\_dump\_binary\_sequence}}(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00432}00432\ \ \ \ \ seq:\ Sequence[Any],}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00433}00433\ \ \ \ \ types:\ Sequence[int],}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00434}00434\ \ \ \ \ formats:\ Sequence[PyFormat],}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00435}00435\ \ \ \ \ tx:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_transformer}{abc.Transformer}},}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00436}00436\ )\ -\/>\ bytearray:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00437}00437\ \ \ \ \ out\ =\ bytearray(pack\_len(len(seq)))}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00438}00438\ \ \ \ \ adapted\ =\ tx.dump\_sequence(seq,\ formats)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00439}00439\ \ \ \ \ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(len(seq)):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ b\ =\ adapted[i]}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ oid\ =\ types[i]}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00442}00442\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ b\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00443}00443\ \ \ \ \ \ \ \ \ \ \ \ \ out\ +=\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a3f0820ce9c9dd1f2fe7e48e6c329131f}{\_pack\_oidlen}}(oid,\ len(b))}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ \ \ \ \ out\ +=\ b}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00446}00446\ \ \ \ \ \ \ \ \ \ \ \ \ out\ +=\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a3f0820ce9c9dd1f2fe7e48e6c329131f}{\_pack\_oidlen}}(oid,\ -\/1)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00447}00447\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00448}00448\ \ \ \ \ \textcolor{keywordflow}{return}\ out}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00449}00449\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00450}00450\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00451}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a0f9ca7964aa3bc2142101d8b9f472c38}{00451}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a0f9ca7964aa3bc2142101d8b9f472c38}{\_parse\_text\_record}}(data:\ abc.Buffer)\ -\/>\ list[bytes\ |\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00452}00452\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00453}00453\ \textcolor{stringliteral}{\ \ \ \ Split\ a\ non-\/empty\ representation\ of\ a\ composite\ type\ into\ components.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00454}00454\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00455}00455\ \textcolor{stringliteral}{\ \ \ \ Terminators\ shouldn't\ be\ used\ in\ \`{}!data\`{}\ (so\ that\ both\ record\ and\ range}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00456}00456\ \textcolor{stringliteral}{\ \ \ \ representations\ can\ be\ parsed).}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00457}00457\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00458}00458\ \ \ \ \ record:\ list[bytes\ |\ \textcolor{keywordtype}{None}]\ =\ []}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00459}00459\ \ \ \ \ \textcolor{keywordflow}{for}\ m\ \textcolor{keywordflow}{in}\ \_re\_tokenize.finditer(data):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00460}00460\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ m.group(1):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ \ \ \ \ record.append(\textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00462}00462\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ m.group(2)\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00463}00463\ \ \ \ \ \ \ \ \ \ \ \ \ record.append(\_re\_undouble.sub(rb\textcolor{stringliteral}{"{}\(\backslash\)1"{}},\ m.group(2)))}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00464}00464\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00465}00465\ \ \ \ \ \ \ \ \ \ \ \ \ record.append(m.group(3))}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00466}00466\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00467}00467\ \ \ \ \ \textcolor{comment}{\#\ If\ the\ final\ group\ ended\ in\ \`{},`\ there\ is\ a\ final\ NULL\ in\ the\ record}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00468}00468\ \ \ \ \ \textcolor{comment}{\#\ that\ the\ regexp\ couldn't\ parse.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00469}00469\ \ \ \ \ \textcolor{keywordflow}{if}\ m\ \textcolor{keywordflow}{and}\ m.group().endswith(b\textcolor{stringliteral}{"{},"{}}):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00470}00470\ \ \ \ \ \ \ \ \ record.append(\textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00471}00471\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00472}00472\ \ \ \ \ \textcolor{keywordflow}{return}\ record}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00473}00473\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00474}00474\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00475}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a86659a165b47fa6f8cae7b2d79c0574e}{00475}}\ \_re\_tokenize\ =\ re.compile(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00476}00476\ \ \ \ \ rb\textcolor{stringliteral}{"{}"{}"{}(?x)}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00477}00477\ \textcolor{stringliteral}{\ \ \ \ \ \ (,)\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ an\ empty\ token,\ representing\ NULL}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00478}00478\ \textcolor{stringliteral}{\ \ \ \ |\ "{}\ ((?:\ [\string^"{}]\ |\ "{}"{})*)\ "{}\ ,?\ \ \#\ or\ a\ quoted\ string}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00479}00479\ \textcolor{stringliteral}{\ \ \ \ |\ ([\string^"{},)]+)\ ,?\ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ or\ an\ unquoted\ string}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00480}00480\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00481}00481\ )}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00482}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_af7810b98ca90d568fb80656da0d72306}{00482}}\ \_re\_undouble\ =\ re.compile(rb\textcolor{stringliteral}{'(["{}\(\backslash\)\(\backslash\)])\(\backslash\)1'})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00483}00483\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00484}00484\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00485}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_aa21b96f3a61644df08db89c1299a80e3}{00485}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_aa21b96f3a61644df08db89c1299a80e3}{\_parse\_binary\_record}}(data:\ abc.Buffer)\ -\/>\ tuple[list[Buffer\ |\ \textcolor{keywordtype}{None}],\ list[int]]:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00486}00486\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00487}00487\ \textcolor{stringliteral}{\ \ \ \ Parse\ the\ binary\ representation\ of\ a\ composite\ type.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00488}00488\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00489}00489\ \textcolor{stringliteral}{\ \ \ \ Return\ the\ sequence\ of\ fields\ and\ oids\ found\ in\ the\ type.\ The\ fields}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00490}00490\ \textcolor{stringliteral}{\ \ \ \ are\ returned\ as\ buffer:\ they\ will\ need\ a\ Transformer\ to\ be\ converted}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00491}00491\ \textcolor{stringliteral}{\ \ \ \ to\ Python\ types.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00492}00492\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00493}00493\ \ \ \ \ nfields\ =\ unpack\_len(data,\ 0)[0]}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00494}00494\ \ \ \ \ offset\ =\ 4}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00495}00495\ \ \ \ \ oids\ =\ []}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00496}00496\ \ \ \ \ record:\ list[Buffer\ |\ \textcolor{keywordtype}{None}]\ =\ []}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00497}00497\ \ \ \ \ \textcolor{keywordflow}{for}\ \_\ \textcolor{keywordflow}{in}\ range(nfields):}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00498}00498\ \ \ \ \ \ \ \ \ oid,\ length\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_ab6b8756eaa6c08c5f5b13b78d18c6fc6}{\_unpack\_oidlen}}(data,\ offset)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00499}00499\ \ \ \ \ \ \ \ \ offset\ +=\ 8}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ oids.append(oid)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00501}00501\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ length\ >=\ 0:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00502}00502\ \ \ \ \ \ \ \ \ \ \ \ \ record.append(data[offset\ :\ offset\ +\ length])}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00503}00503\ \ \ \ \ \ \ \ \ \ \ \ \ offset\ +=\ length}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00504}00504\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00505}00505\ \ \ \ \ \ \ \ \ \ \ \ \ record.append(\textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00506}00506\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00507}00507\ \ \ \ \ \textcolor{keywordflow}{return}\ record,\ oids}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00508}00508\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00509}00509\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00510}00510\ \textcolor{comment}{\#\ Cache\ all\ dynamically-\/generated\ types\ to\ avoid\ leaks\ in\ case\ the\ types}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00511}00511\ \textcolor{comment}{\#\ cannot\ be\ GC'd.}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00512}00512\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00513}00513\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00514}00514\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00515}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a4778409e8d1b5ea0f8779065a005a7a8}{00515}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a4778409e8d1b5ea0f8779065a005a7a8}{\_make\_nt}}(name:\ str,\ fields:\ tuple[str,\ ...])\ -\/>\ type[NamedTuple]:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00516}00516\ \ \ \ \ \textcolor{keywordflow}{return}\ namedtuple(name,\ fields)\ \ \textcolor{comment}{\#\ type:\ ignore[return-\/value]}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00517}00517\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00518}00518\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00519}00519\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00520}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_ae4a18bb879d49f8e16a5032c427bf27c}{00520}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_ae4a18bb879d49f8e16a5032c427bf27c}{\_make\_loader}}(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00521}00521\ \ \ \ \ info:\ CompositeInfo,\ make\_object:\ ObjectMaker[T]}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00522}00522\ )\ -\/>\ type[\_CompositeLoader[T]]:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00523}00523\ \ \ \ \ doc\ =\ f\textcolor{stringliteral}{"{}Text\ loader\ for\ the\ '\{info.name\}'\ composite."{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00524}00524\ \ \ \ \ d\ =\ \{\textcolor{stringliteral}{"{}\_\_doc\_\_"{}}:\ doc,\ \textcolor{stringliteral}{"{}info"{}}:\ info,\ \textcolor{stringliteral}{"{}make\_object"{}}:\ make\_object\}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00525}00525\ \ \ \ \ \textcolor{keywordflow}{return}\ type(f\textcolor{stringliteral}{"{}\{info.name.title()\}Loader"{}},\ (\_CompositeLoader,),\ d)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00526}00526\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00527}00527\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00528}00528\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00529}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a7bfcfa36f8cb02d641b4c0c6d654dfe1}{00529}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a7bfcfa36f8cb02d641b4c0c6d654dfe1}{\_make\_binary\_loader}}(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00530}00530\ \ \ \ \ info:\ CompositeInfo,\ make\_object:\ ObjectMaker[T]}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00531}00531\ )\ -\/>\ type[\_CompositeBinaryLoader[T]]:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00532}00532\ \ \ \ \ doc\ =\ f\textcolor{stringliteral}{"{}Binary\ loader\ for\ the\ '\{info.name\}'\ composite."{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00533}00533\ \ \ \ \ d\ =\ \{\textcolor{stringliteral}{"{}\_\_doc\_\_"{}}:\ doc,\ \textcolor{stringliteral}{"{}info"{}}:\ info,\ \textcolor{stringliteral}{"{}make\_object"{}}:\ make\_object\}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00534}00534\ \ \ \ \ \textcolor{keywordflow}{return}\ type(f\textcolor{stringliteral}{"{}\{info.name.title()\}BinaryLoader"{}},\ (\_CompositeBinaryLoader,),\ d)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00535}00535\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00536}00536\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00537}00537\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00538}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a44ed7e88fb2323bde7a9a419d5345937}{00538}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a44ed7e88fb2323bde7a9a419d5345937}{\_make\_dumper}}(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00539}00539\ \ \ \ \ name:\ str,\ info:\ CompositeInfo,\ make\_sequence:\ SequenceMaker[T]}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00540}00540\ )\ -\/>\ type[\_SequenceDumper[T]]:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00541}00541\ \ \ \ \ doc\ =\ f\textcolor{stringliteral}{"{}Text\ dumper\ for\ the\ '\{name\}'\ composite."{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00542}00542\ \ \ \ \ d\ =\ \{\textcolor{stringliteral}{"{}\_\_doc\_\_"{}}:\ doc,\ \textcolor{stringliteral}{"{}oid"{}}:\ info.oid,\ \textcolor{stringliteral}{"{}info"{}}:\ info,\ \textcolor{stringliteral}{"{}make\_sequence"{}}:\ make\_sequence\}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00543}00543\ \ \ \ \ \textcolor{keywordflow}{return}\ type(f\textcolor{stringliteral}{"{}\{name\}Dumper"{}},\ (\_SequenceDumper,),\ d)}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00544}00544\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00545}00545\ }
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00546}00546\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00547}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a54a48cc03790f74d7ad3038e18c87336}{00547}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1composite_a54a48cc03790f74d7ad3038e18c87336}{\_make\_binary\_dumper}}(}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00548}00548\ \ \ \ \ name:\ str,\ info:\ CompositeInfo,\ make\_sequence:\ SequenceMaker[T]}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00549}00549\ )\ -\/>\ type[\_SequenceBinaryDumper[T]]:}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00550}00550\ \ \ \ \ doc\ =\ f\textcolor{stringliteral}{"{}Text\ dumper\ for\ the\ '\{name\}'\ composite."{}}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00551}00551\ \ \ \ \ d\ =\ \{\textcolor{stringliteral}{"{}\_\_doc\_\_"{}}:\ doc,\ \textcolor{stringliteral}{"{}oid"{}}:\ info.oid,\ \textcolor{stringliteral}{"{}info"{}}:\ info,\ \textcolor{stringliteral}{"{}make\_sequence"{}}:\ make\_sequence\}}
+\DoxyCodeLine{\Hypertarget{composite_8py_source_l00552}00552\ \ \ \ \ \textcolor{keywordflow}{return}\ type(f\textcolor{stringliteral}{"{}\{name\}BinaryDumper"{}},\ (\_SequenceBinaryDumper,),\ d)}
+
+\end{DoxyCode}

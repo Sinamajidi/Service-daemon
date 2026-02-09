@@ -1,0 +1,597 @@
+\doxysection{candidates.\+py}
+\hypertarget{candidates_8py_source}{}\label{candidates_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/resolution/resolvelib/candidates.py@{venv/Lib/site-\/packages/pip/\_internal/resolution/resolvelib/candidates.py}}
+\doxymbox{\hyperlink{candidates_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00003}00003\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00004}00004\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00005}00005\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterable}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00006}00006\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any,\ Union,\ cast}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00008}00008\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1requirements}{pip.\_vendor.packaging.requirements}}\ \textcolor{keyword}{import}\ InvalidRequirement}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00009}00009\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1utils}{pip.\_vendor.packaging.utils}}\ \textcolor{keyword}{import}\ NormalizedName,\ canonicalize\_name}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version}{pip.\_vendor.packaging.version}}\ \textcolor{keyword}{import}\ Version}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00012}00012\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00013}00013\ \ \ \ \ FailedToPrepareCandidate,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00014}00014\ \ \ \ \ HashError,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00015}00015\ \ \ \ \ InstallationSubprocessError,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00016}00016\ \ \ \ \ InvalidInstalledPackage,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00017}00017\ \ \ \ \ MetadataInconsistent,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00018}00018\ \ \ \ \ MetadataInvalid,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00019}00019\ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00020}00020\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1metadata}{pip.\_internal.metadata}}\ \textcolor{keyword}{import}\ BaseDistribution}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00021}00021\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1link}{pip.\_internal.models.link}}\ \textcolor{keyword}{import}\ Link,\ links\_equivalent}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00022}00022\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1wheel}{pip.\_internal.models.wheel}}\ \textcolor{keyword}{import}\ Wheel}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00023}00023\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1constructors}{pip.\_internal.req.constructors}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00024}00024\ \ \ \ \ install\_req\_from\_editable,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00025}00025\ \ \ \ \ install\_req\_from\_line,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00026}00026\ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00027}00027\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__install}{pip.\_internal.req.req\_install}}\ \textcolor{keyword}{import}\ InstallRequirement}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00028}00028\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1direct__url__helpers}{pip.\_internal.utils.direct\_url\_helpers}}\ \textcolor{keyword}{import}\ direct\_url\_from\_link}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00029}00029\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1misc}{pip.\_internal.utils.misc}}\ \textcolor{keyword}{import}\ normalize\_version\_info}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00031}00031\ \textcolor{keyword}{from}\ .base\ \textcolor{keyword}{import}\ Candidate,\ Requirement,\ format\_name}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00033}00033\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00034}00034\ \ \ \ \ \textcolor{keyword}{from}\ .factory\ \textcolor{keyword}{import}\ Factory}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00036}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_ac5b291a4474200eda2ec2cd46ffb112e}{00036}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00038}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_a8592eae0a6ef6cfbe8ef62bd6763555e}{00038}}\ BaseCandidate\ =\ Union[}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00039}00039\ \ \ \ \ \textcolor{stringliteral}{"{}AlreadyInstalledCandidate"{}},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00040}00040\ \ \ \ \ \textcolor{stringliteral}{"{}EditableCandidate"{}},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00041}00041\ \ \ \ \ \textcolor{stringliteral}{"{}LinkCandidate"{}},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00042}00042\ ]}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00044}00044\ \textcolor{comment}{\#\ Avoid\ conflicting\ with\ the\ PyPI\ package\ "{}Python"{}.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00045}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_a39eab6c4cdd87415872a1017d76772a0}{00045}}\ REQUIRES\_PYTHON\_IDENTIFIER\ =\ cast(NormalizedName,\ \textcolor{stringliteral}{"{}<Python\ from\ Requires-\/Python>"{}})}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00046}00046\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00047}00047\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00048}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_a287d80ee5a504a06dd7a00ac7ce9e1eb}{00048}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_a287d80ee5a504a06dd7a00ac7ce9e1eb}{as\_base\_candidate}}(candidate:\ Candidate)\ -\/>\ BaseCandidate\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00049}00049\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ runtime\ version\ of\ BaseCandidate."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00050}00050\ \ \ \ \ base\_candidate\_classes\ =\ (}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ AlreadyInstalledCandidate,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ EditableCandidate,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ LinkCandidate,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00054}00054\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00055}00055\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(candidate,\ base\_candidate\_classes):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ candidate}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00057}00057\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00060}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_a560c5e86ed810a035d53680a76317c80}{00060}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_a560c5e86ed810a035d53680a76317c80}{make\_install\_req\_from\_link}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00061}00061\ \ \ \ \ link:\ Link,\ template:\ InstallRequirement}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00062}00062\ )\ -\/>\ InstallRequirement:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00063}00063\ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ template.editable,\ \textcolor{stringliteral}{"{}template\ is\ editable"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00064}00064\ \ \ \ \ \textcolor{keywordflow}{if}\ template.req:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ line\ =\ str(template.req)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00066}00066\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ line\ =\ link.url}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00068}00068\ \ \ \ \ ireq\ =\ install\_req\_from\_line(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ line,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ user\_supplied=template.user\_supplied,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ comes\_from=template.comes\_from,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ isolated=template.isolated,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ constraint=template.constraint,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ hash\_options=template.hash\_options,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ config\_settings=template.config\_settings,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00076}00076\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00077}00077\ \ \ \ \ ireq.original\_link\ =\ template.original\_link}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00078}00078\ \ \ \ \ ireq.link\ =\ link}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00079}00079\ \ \ \ \ ireq.extras\ =\ template.extras}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00080}00080\ \ \ \ \ \textcolor{keywordflow}{return}\ ireq}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00083}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_a51aab3d0ab8f83ebc19dcb93ce316be1}{00083}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_a51aab3d0ab8f83ebc19dcb93ce316be1}{make\_install\_req\_from\_editable}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00084}00084\ \ \ \ \ link:\ Link,\ template:\ InstallRequirement}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00085}00085\ )\ -\/>\ InstallRequirement:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00086}00086\ \ \ \ \ \textcolor{keyword}{assert}\ template.editable,\ \textcolor{stringliteral}{"{}template\ not\ editable"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00087}00087\ \ \ \ \ \textcolor{keywordflow}{if}\ template.name:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ req\_string\ =\ f\textcolor{stringliteral}{"{}\{template.name\}\ @\ \{link.url\}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00089}00089\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ req\_string\ =\ link.url}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00091}00091\ \ \ \ \ ireq\ =\ install\_req\_from\_editable(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ req\_string,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ user\_supplied=template.user\_supplied,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ comes\_from=template.comes\_from,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ isolated=template.isolated,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ constraint=template.constraint,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ permit\_editable\_wheels=template.permit\_editable\_wheels,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ hash\_options=template.hash\_options,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ config\_settings=template.config\_settings,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00100}00100\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00101}00101\ \ \ \ \ ireq.extras\ =\ template.extras}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00102}00102\ \ \ \ \ \textcolor{keywordflow}{return}\ ireq}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00105}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_ae3184a1d2631747fe58044097f3dfe58}{00105}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_ae3184a1d2631747fe58044097f3dfe58}{\_make\_install\_req\_from\_dist}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00106}00106\ \ \ \ \ dist:\ BaseDistribution,\ template:\ InstallRequirement}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00107}00107\ )\ -\/>\ InstallRequirement:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00108}00108\ \ \ \ \ \textcolor{keywordflow}{if}\ template.req:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ line\ =\ str(template.req)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00110}00110\ \ \ \ \ \textcolor{keywordflow}{elif}\ template.link:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ line\ =\ f\textcolor{stringliteral}{"{}\{dist.canonical\_name\}\ @\ \{template.link.url\}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00112}00112\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ line\ =\ f\textcolor{stringliteral}{"{}\{dist.canonical\_name\}==\{dist.version\}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00114}00114\ \ \ \ \ ireq\ =\ install\_req\_from\_line(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ line,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ user\_supplied=template.user\_supplied,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ comes\_from=template.comes\_from,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ isolated=template.isolated,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ constraint=template.constraint,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ hash\_options=template.hash\_options,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ config\_settings=template.config\_settings,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00122}00122\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00123}00123\ \ \ \ \ ireq.satisfied\_by\ =\ dist}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00124}00124\ \ \ \ \ \textcolor{keywordflow}{return}\ ireq}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00125}00125\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00126}00126\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00127}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate}{00127}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate}{\_InstallRequirementBackedCandidate}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1base_1_1_candidate}{Candidate}}):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00128}00128\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ candidate\ backed\ by\ an\ \`{}\`{}InstallRequirement\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00129}00129\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00130}00130\ \textcolor{stringliteral}{\ \ \ \ This\ represents\ a\ package\ request\ with\ the\ target\ not\ being\ already}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00131}00131\ \textcolor{stringliteral}{\ \ \ \ in\ the\ environment,\ and\ needs\ to\ be\ fetched\ and\ installed.\ The\ backing}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00132}00132\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}InstallRequirement\`{}\`{}\ is\ responsible\ for\ most\ of\ the\ leg\ work;\ this}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00133}00133\ \textcolor{stringliteral}{\ \ \ \ class\ exposes\ appropriate\ information\ to\ the\ resolver.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00134}00134\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00135}00135\ \textcolor{stringliteral}{\ \ \ \ :param\ link:\ The\ link\ passed\ to\ the\ \`{}\`{}InstallRequirement\`{}\`{}.\ The\ backing}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00136}00136\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}\`{}InstallRequirement\`{}\`{}\ will\ use\ this\ link\ to\ fetch\ the\ distribution.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00137}00137\ \textcolor{stringliteral}{\ \ \ \ :param\ source\_link:\ The\ link\ this\ candidate\ "{}originates"{}\ from.\ This\ is}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00138}00138\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ different\ from\ \`{}\`{}link\`{}\`{}\ when\ the\ link\ is\ found\ in\ the\ wheel\ cache.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00139}00139\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}\`{}link\`{}\`{}\ would\ point\ to\ the\ wheel\ cache,\ while\ this\ points\ to\ the}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00140}00140\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ found\ remote\ link\ (e.g.\ from\ pypi.org).}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00141}00141\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00142}00142\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00143}00143\ \ \ \ \ dist:\ BaseDistribution}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00144}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate}{00144}}\ \ \ \ \ is\_installed\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00145}00145\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00146}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af66189f78131938a7135276a41745ca7}{00146}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af66189f78131938a7135276a41745ca7}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ link:\ Link,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ source\_link:\ Link,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ ireq:\ InstallRequirement,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ factory:\ Factory,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ name:\ NormalizedName\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ version:\ Version\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00154}00154\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00155}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af30052eb5341173c297b3b63d080c844}{00155}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af30052eb5341173c297b3b63d080c844}{\_link}}\ =\ link}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00156}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a3d4acdeb41e368c0eb83ae48871377cd}{00156}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a3d4acdeb41e368c0eb83ae48871377cd}{\_source\_link}}\ =\ source\_link}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00157}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a1bb5801d61dc985880386990088dba1b}{00157}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a1bb5801d61dc985880386990088dba1b}{\_factory}}\ =\ factory}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00158}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{00158}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}}\ =\ ireq}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00159}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a328158533e1a6e9b3c8850001eb21f72}{00159}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a328158533e1a6e9b3c8850001eb21f72}{\_name}}\ =\ name}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00160}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a82942609093f05789a2d4520512dd28b}{00160}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a82942609093f05789a2d4520512dd28b}{\_version}}\ =\ version}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00161}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a904c82b73dded6a79b1e5fd9d884b8ad}{00161}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a904c82b73dded6a79b1e5fd9d884b8ad}{dist}}\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_aca96bb9e1e54855a9b0ce9b2df7b200c}{\_prepare}}()}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00162}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a76b559c9ee0b2b862e55c123d8ba3011}{00162}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a76b559c9ee0b2b862e55c123d8ba3011}{\_hash}}:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00163}00163\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00164}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_ab556c512fdb94cf1a350e135e1161650}{00164}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_ab556c512fdb94cf1a350e135e1161650}{\_\_str\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.name\}\ \{self.version\}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00167}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_adcae1af80f95d42800cbce4678d3e1de}{00167}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_adcae1af80f95d42800cbce4678d3e1de}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_name\_\_\}(\{str(self.\_link)!r\})"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00169}00169\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00170}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a3ca9d885f0126926e489616a097a385a}{00170}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a3ca9d885f0126926e489616a097a385a}{\_\_hash\_\_}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a76b559c9ee0b2b862e55c123d8ba3011}{\_hash}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a76b559c9ee0b2b862e55c123d8ba3011}{\_hash}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a76b559c9ee0b2b862e55c123d8ba3011}{\_hash}}\ =\ hash((self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a5aec9fea467bc1781a63c1e14f16d6e2}{\_\_class\_\_}},\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af30052eb5341173c297b3b63d080c844}{\_link}}))}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a76b559c9ee0b2b862e55c123d8ba3011}{\_hash}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00176}00176\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00177}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a80c5349a179766765f471e0385a155f6}{00177}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a80c5349a179766765f471e0385a155f6}{\_\_eq\_\_}}(self,\ other:\ Any)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(other,\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a5aec9fea467bc1781a63c1e14f16d6e2}{\_\_class\_\_}}):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ links\_equivalent(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af30052eb5341173c297b3b63d080c844}{\_link}},\ other.\_link)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00181}00181\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00182}00182\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00183}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a14b1de44721886eb3e487373463a6534}{00183}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a14b1de44721886eb3e487373463a6534}{source\_link}}(self)\ -\/>\ Link\ |\ None:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a3d4acdeb41e368c0eb83ae48871377cd}{\_source\_link}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00185}00185\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00186}00186\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00187}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_afb29636cf2105645e2e535afe69ee58b}{00187}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_afb29636cf2105645e2e535afe69ee58b}{project\_name}}(self)\ -\/>\ NormalizedName:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ normalised\ name\ of\ the\ project\ the\ candidate\ refers\ to"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a328158533e1a6e9b3c8850001eb21f72}{\_name}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a328158533e1a6e9b3c8850001eb21f72}{\_name}}\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a904c82b73dded6a79b1e5fd9d884b8ad}{dist}}.canonical\_name}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a328158533e1a6e9b3c8850001eb21f72}{\_name}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00193}00193\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00194}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a1538a825241b855a4abf51d6bf616cde}{00194}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a1538a825241b855a4abf51d6bf616cde}{name}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1base_1_1_candidate_aceefc46c594fc32f62a567eafa8ff507}{project\_name}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00196}00196\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00197}00197\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00198}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a688987a47e2a061c0ef7fea1565e9e3a}{00198}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a688987a47e2a061c0ef7fea1565e9e3a}{version}}(self)\ -\/>\ Version:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a82942609093f05789a2d4520512dd28b}{\_version}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a82942609093f05789a2d4520512dd28b}{\_version}}\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a904c82b73dded6a79b1e5fd9d884b8ad}{dist}}.version}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a82942609093f05789a2d4520512dd28b}{\_version}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00202}00202\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00203}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_abc21e22dab2ca183af55242d8a6873d6}{00203}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_abc21e22dab2ca183af55242d8a6873d6}{format\_for\_error}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{self.name\}\ \{self.version\}\ "{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}(from\ \{self.\_link.file\_path\ if\ self.\_link.is\_file\ else\ self.\_link\})"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00208}00208\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00209}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a4f1837c71e5d42b555261ede36bbec58}{00209}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a4f1837c71e5d42b555261ede36bbec58}{\_prepare\_distribution}}(self)\ -\/>\ BaseDistribution:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError(\textcolor{stringliteral}{"{}Override\ in\ subclass"{}})}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00211}00211\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00212}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_ac36821deb42c2087b0da4dc1d23fe680}{00212}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_ac36821deb42c2087b0da4dc1d23fe680}{\_check\_metadata\_consistency}}(self,\ dist:\ BaseDistribution)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Check\ for\ consistency\ of\ project\ name\ and\ version\ of\ dist."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a328158533e1a6e9b3c8850001eb21f72}{\_name}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a328158533e1a6e9b3c8850001eb21f72}{\_name}}\ !=\ dist.canonical\_name:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_metadata_inconsistent}{MetadataInconsistent}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}name"{}},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a328158533e1a6e9b3c8850001eb21f72}{\_name}},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dist.canonical\_name,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a82942609093f05789a2d4520512dd28b}{\_version}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a82942609093f05789a2d4520512dd28b}{\_version}}\ !=\ dist.version:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_metadata_inconsistent}{MetadataInconsistent}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}version"{}},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ str(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a82942609093f05789a2d4520512dd28b}{\_version}}),}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ str(dist.version),}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ check\ dependencies\ are\ valid}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ TODO\ performance:\ this\ means\ we\ iterate\ the\ dependencies\ at\ least\ twice,}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ we\ may\ want\ to\ cache\ parsed\ Requires-\/Dist}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \ \ \ \ list(dist.iter\_dependencies(list(dist.iter\_provided\_extras())))}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ InvalidRequirement\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_metadata_invalid}{MetadataInvalid}}(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}},\ str(e))}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00235}00235\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00236}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_aca96bb9e1e54855a9b0ce9b2df7b200c}{00236}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_aca96bb9e1e54855a9b0ce9b2df7b200c}{\_prepare}}(self)\ -\/>\ BaseDistribution:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \ \ \ \ dist\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a4f1837c71e5d42b555261ede36bbec58}{\_prepare\_distribution}}()}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ HashError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Provide\ HashError\ the\ underlying\ ireq\ that\ caused\ it.\ This}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ provides\ context\ for\ the\ resulting\ error\ message\ to\ show\ the}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ offending\ line\ to\ the\ user.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \ \ \ \ e.req\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ InstallationSubprocessError\ \textcolor{keyword}{as}\ exc:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}}.comes\_from,\ InstallRequirement):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ request\_chain\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}}.comes\_from.from\_path()}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ request\_chain\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}}.comes\_from}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00250}00250\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ request\_chain\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ request\_chain\ =\ \textcolor{stringliteral}{"{}directly\ requested"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00253}00253\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_failed_to_prepare_candidate}{FailedToPrepareCandidate}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ package\_name=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}}.name\ \textcolor{keywordflow}{or}\ str(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af30052eb5341173c297b3b63d080c844}{\_link}}),}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ requirement\_chain=request\_chain,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ failed\_step=exc.command\_description,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00259}00259\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_ac36821deb42c2087b0da4dc1d23fe680}{\_check\_metadata\_consistency}}(dist)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dist}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00262}00262\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00263}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a0cff0e1873710d2a59d2f3b13f6c98f1}{00263}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a0cff0e1873710d2a59d2f3b13f6c98f1}{iter\_dependencies}}(self,\ with\_requires:\ bool)\ -\/>\ Iterable[Requirement\ |\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Emit\ the\ Requires-\/Python\ requirement\ first\ to\ fail\ fast\ on}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ unsupported\ candidates\ and\ avoid\ pointless\ downloads/preparation.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a1bb5801d61dc985880386990088dba1b}{\_factory}}.make\_requires\_python\_requirement(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a904c82b73dded6a79b1e5fd9d884b8ad}{dist}}.requires\_python)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ requires\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a904c82b73dded6a79b1e5fd9d884b8ad}{dist}}.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a0cff0e1873710d2a59d2f3b13f6c98f1}{iter\_dependencies}}()\ \textcolor{keywordflow}{if}\ with\_requires\ \textcolor{keywordflow}{else}\ ()}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ r\ \textcolor{keywordflow}{in}\ requires:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a1bb5801d61dc985880386990088dba1b}{\_factory}}.make\_requirements\_from\_spec(str(r),\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}})}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00270}00270\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00271}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_aac9124865c1dbc5dabd7a0c1facd1db8}{00271}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_aac9124865c1dbc5dabd7a0c1facd1db8}{get\_install\_requirement}}(self)\ -\/>\ InstallRequirement\ |\ None:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00273}00273\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00274}00274\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00275}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_link_candidate}{00275}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_link_candidate}{LinkCandidate}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate}{\_InstallRequirementBackedCandidate}}):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00276}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_link_candidate}{00276}}\ \ \ \ \ is\_editable\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00277}00277\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00278}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_link_candidate_a39b4d54dd7370be398e1f64560219d85}{00278}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_link_candidate_a39b4d54dd7370be398e1f64560219d85}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ link:\ Link,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ template:\ InstallRequirement,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ factory:\ Factory,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ name:\ NormalizedName\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ version:\ Version\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00285}00285\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ source\_link\ =\ link}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ cache\_entry\ =\ factory.get\_wheel\_cache\_entry(source\_link,\ name)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cache\_entry\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Using\ cached\ wheel\ link:\ \%s"{}},\ cache\_entry.link)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ \ \ \ \ link\ =\ cache\_entry.link}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ ireq\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_a560c5e86ed810a035d53680a76317c80}{make\_install\_req\_from\_link}}(link,\ template)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ ireq.link\ ==\ link}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ireq.link.is\_wheel\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ ireq.link.is\_file:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ \ \ \ \ wheel\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1wheel_1_1_wheel}{Wheel}}(ireq.link.filename)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_name\ =\ wheel.name}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ name\ ==\ wheel\_name,\ f\textcolor{stringliteral}{"{}\{name!r\}\ !=\ \{wheel\_name!r\}\ for\ wheel"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00297}00297\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Version\ may\ not\ be\ present\ for\ PEP\ 508\ direct\ URLs}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00298}00298\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ version\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_version\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version}{Version}}(wheel.version)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ (}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ version\ ==\ wheel\_version}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ),\ f\textcolor{stringliteral}{"{}\{version!r\}\ !=\ \{wheel\_version!r\}\ for\ wheel\ \{name\}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00303}00303\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cache\_entry\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00305}00305\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ ireq.link.is\_wheel}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ ireq.link.is\_file}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cache\_entry.persistent\ \textcolor{keywordflow}{and}\ template.link\ \textcolor{keywordflow}{is}\ template.original\_link:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ireq.cached\_wheel\_source\_link\ =\ source\_link}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cache\_entry.origin\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ireq.download\_info\ =\ cache\_entry.origin}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00312}00312\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Legacy\ cache\ entry\ that\ does\ not\ have\ origin.json.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ download\_info\ may\ miss\ the\ archive\_info.hashes\ field.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00314}00314\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ireq.download\_info\ =\ direct\_url\_from\_link(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00315}00315\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ source\_link,\ link\_is\_in\_wheel\_cache=cache\_entry.persistent}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00316}00316\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00317}00317\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00318}00318\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_link_candidate_a39b4d54dd7370be398e1f64560219d85}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00319}00319\ \ \ \ \ \ \ \ \ \ \ \ \ link=link,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ \ \ \ \ source\_link=source\_link,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ \ \ \ \ ireq=ireq,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ \ \ \ \ factory=factory,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00323}00323\ \ \ \ \ \ \ \ \ \ \ \ \ name=name,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ \ \ \ \ version=version,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00325}00325\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00326}00326\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00327}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_link_candidate_a62c33704577df6978bf210abd87f116a}{00327}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_link_candidate_a62c33704577df6978bf210abd87f116a}{\_prepare\_distribution}}(self)\ -\/>\ BaseDistribution:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ preparer\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a1bb5801d61dc985880386990088dba1b}{\_factory}}.preparer}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00329}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_link_candidate}{00329}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ preparer.prepare\_linked\_requirement(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}},\ parallel\_builds=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00330}00330\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00331}00331\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00332}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_editable_candidate}{00332}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_editable_candidate}{EditableCandidate}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate}{\_InstallRequirementBackedCandidate}}):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00333}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_editable_candidate}{00333}}\ \ \ \ \ is\_editable\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00334}00334\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00335}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_editable_candidate_a6c2cfc99af57f51b2d8af78ceecc5194}{00335}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_editable_candidate_a6c2cfc99af57f51b2d8af78ceecc5194}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00336}00336\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ link:\ Link,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ template:\ InstallRequirement,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ factory:\ Factory,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ name:\ NormalizedName\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00341}00341\ \ \ \ \ \ \ \ \ version:\ Version\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00342}00342\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_editable_candidate_a6c2cfc99af57f51b2d8af78ceecc5194}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ \ \ \ \ link=link,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ \ \ \ \ source\_link=link,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ \ \ \ \ ireq=\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_a51aab3d0ab8f83ebc19dcb93ce316be1}{make\_install\_req\_from\_editable}}(link,\ template),}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ \ \ \ \ factory=factory,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ \ \ \ \ name=name,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ \ \ \ \ version=version,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00351}00351\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00352}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_editable_candidate_afbab96a226d31155feda8dba1cb21781}{00352}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_editable_candidate_afbab96a226d31155feda8dba1cb21781}{\_prepare\_distribution}}(self)\ -\/>\ BaseDistribution:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00353}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_editable_candidate}{00353}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_a1bb5801d61dc985880386990088dba1b}{\_factory}}.preparer.prepare\_editable\_requirement(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1___install_requirement_backed_candidate_af4f3db6aece5ccb0fc79f47191b6843a}{\_ireq}})}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00354}00354\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00355}00355\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00356}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate}{00356}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate}{AlreadyInstalledCandidate}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1base_1_1_candidate}{Candidate}}):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00357}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate}{00357}}\ \ \ \ \ is\_installed\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00358}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate}{00358}}\ \ \ \ \ source\_link\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00359}00359\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00360}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a3bf39e529ac355fc84d2378a353e0d22}{00360}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a3bf39e529ac355fc84d2378a353e0d22}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ dist:\ BaseDistribution,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ template:\ InstallRequirement,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ factory:\ Factory,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00365}00365\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00366}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ac902c1edd7b8f28560c245c42fe471e0}{00366}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ac902c1edd7b8f28560c245c42fe471e0}{dist}}\ =\ dist}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00367}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a9e8596f758b2c8ecc8c1755f1f2d502f}{00367}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a9e8596f758b2c8ecc8c1755f1f2d502f}{\_ireq}}\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_ae3184a1d2631747fe58044097f3dfe58}{\_make\_install\_req\_from\_dist}}(dist,\ template)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00368}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a77201ed406cf8b217bb70af9eb73597d}{00368}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a77201ed406cf8b217bb70af9eb73597d}{\_factory}}\ =\ factory}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00369}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ab8b4741122863c07f20d25c069acc322}{00369}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ab8b4741122863c07f20d25c069acc322}{\_version}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00370}00370\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ This\ is\ just\ logging\ some\ messages,\ so\ we\ can\ do\ it\ eagerly.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00372}00372\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ returned\ dist\ would\ be\ exactly\ the\ same\ as\ self.dist\ because\ we}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00373}00373\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ set\ satisfied\_by\ in\ \_make\_install\_req\_from\_dist.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ TODO:\ Supply\ reason\ based\ on\ force\_reinstall\ and\ upgrade\_strategy.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ skip\_reason\ =\ \textcolor{stringliteral}{"{}already\ satisfied"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ factory.preparer.prepare\_installed\_requirement(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a9e8596f758b2c8ecc8c1755f1f2d502f}{\_ireq}},\ skip\_reason)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00377}00377\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00378}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a828e9c9c19c1d0939cc9d5d9a11222f2}{00378}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a828e9c9c19c1d0939cc9d5d9a11222f2}{\_\_str\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00379}00379\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ str(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ac902c1edd7b8f28560c245c42fe471e0}{dist}})}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00380}00380\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00381}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a7a7753a7e8acdf8cd5aa8c4d132f8788}{00381}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a7a7753a7e8acdf8cd5aa8c4d132f8788}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_name\_\_\}(\{self.dist!r\})"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00383}00383\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00384}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a94f481d1e6414f04affd9bdf75b9b092}{00384}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a94f481d1e6414f04affd9bdf75b9b092}{\_\_eq\_\_}}(self,\ other:\ object)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00385}00385\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(other,\ AlreadyInstalledCandidate):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00387}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate}{00387}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate}{name}}\ ==\ other.name\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate}{version}}\ ==\ other.version}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00388}00388\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00389}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a769c6953ff7192b5a83fa4e61c33d3b5}{00389}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a769c6953ff7192b5a83fa4e61c33d3b5}{\_\_hash\_\_}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00390}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate}{00390}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hash((self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate}{name}},\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate}{version}}))}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00391}00391\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00392}00392\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00393}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a7a8c464f07a539f78d39fa5283b6e785}{00393}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a7a8c464f07a539f78d39fa5283b6e785}{project\_name}}(self)\ -\/>\ NormalizedName:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ac902c1edd7b8f28560c245c42fe471e0}{dist}}.canonical\_name}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00395}00395\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00396}00396\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00397}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a0f4ae3f092daa140dc8bda04e8d0f2d0}{00397}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate}{name}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1base_1_1_candidate_aceefc46c594fc32f62a567eafa8ff507}{project\_name}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00399}00399\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00400}00400\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00401}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ad65f8a689de6d585a593b1eb4dc12ad2}{00401}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate}{version}}(self)\ -\/>\ Version:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ab8b4741122863c07f20d25c069acc322}{\_version}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ab8b4741122863c07f20d25c069acc322}{\_version}}\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ac902c1edd7b8f28560c245c42fe471e0}{dist}}.version}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ab8b4741122863c07f20d25c069acc322}{\_version}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00405}00405\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00406}00406\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00407}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a7ddb3bdb65c3cf879137f414fbcd1551}{00407}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a7ddb3bdb65c3cf879137f414fbcd1551}{is\_editable}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00408}00408\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ac902c1edd7b8f28560c245c42fe471e0}{dist}}.editable}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00409}00409\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00410}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a2dbadd19a565189a9b0b7644a21dc0e4}{00410}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a2dbadd19a565189a9b0b7644a21dc0e4}{format\_for\_error}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00411}00411\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.name\}\ \{self.version\}\ (Installed)"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00412}00412\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00413}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a94aae01fc81a118751ca395e0fca1787}{00413}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a94aae01fc81a118751ca395e0fca1787}{iter\_dependencies}}(self,\ with\_requires:\ bool)\ -\/>\ Iterable[Requirement\ |\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00414}00414\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ with\_requires:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00415}00415\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00416}00416\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ r\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ac902c1edd7b8f28560c245c42fe471e0}{dist}}.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a94aae01fc81a118751ca395e0fca1787}{iter\_dependencies}}():}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a77201ed406cf8b217bb70af9eb73597d}{\_factory}}.make\_requirements\_from\_spec(str(r),\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_a9e8596f758b2c8ecc8c1755f1f2d502f}{\_ireq}})}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00420}00420\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ InvalidRequirement\ \textcolor{keyword}{as}\ exc:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00421}00421\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_invalid_installed_package}{InvalidInstalledPackage}}(dist=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_ac902c1edd7b8f28560c245c42fe471e0}{dist}},\ invalid\_exc=exc)\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00422}00422\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00423}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_aea936ef196d00d5e939c9597938397b6}{00423}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_already_installed_candidate_aea936ef196d00d5e939c9597938397b6}{get\_install\_requirement}}(self)\ -\/>\ InstallRequirement\ |\ None:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00424}00424\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00425}00425\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00426}00426\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00427}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate}{00427}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate}{ExtrasCandidate}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1base_1_1_candidate}{Candidate}}):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00428}00428\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ candidate\ that\ has\ 'extras',\ indicating\ additional\ dependencies.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00429}00429\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00430}00430\ \textcolor{stringliteral}{\ \ \ \ Requirements\ can\ be\ for\ a\ project\ with\ dependencies,\ something\ like}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00431}00431\ \textcolor{stringliteral}{\ \ \ \ foo[extra].\ \ The\ extras\ don't\ affect\ the\ project/version\ being\ installed}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00432}00432\ \textcolor{stringliteral}{\ \ \ \ directly,\ but\ indicate\ that\ we\ need\ additional\ dependencies.\ We\ model\ that}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00433}00433\ \textcolor{stringliteral}{\ \ \ \ by\ having\ an\ artificial\ ExtrasCandidate\ that\ wraps\ the\ "{}base"{}\ candidate.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00434}00434\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00435}00435\ \textcolor{stringliteral}{\ \ \ \ The\ ExtrasCandidate\ differs\ from\ the\ base\ in\ the\ following\ ways:}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00436}00436\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00437}00437\ \textcolor{stringliteral}{\ \ \ \ 1.\ It\ has\ a\ unique\ name,\ of\ the\ form\ foo[extra].\ This\ causes\ the\ resolver}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00438}00438\ \textcolor{stringliteral}{\ \ \ \ \ \ \ to\ treat\ it\ as\ a\ separate\ node\ in\ the\ dependency\ graph.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00439}00439\ \textcolor{stringliteral}{\ \ \ \ 2.\ When\ we're\ getting\ the\ candidate's\ dependencies,}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00440}00440\ \textcolor{stringliteral}{\ \ \ \ \ \ \ a)\ We\ specify\ that\ we\ want\ the\ extra\ dependencies\ as\ well.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00441}00441\ \textcolor{stringliteral}{\ \ \ \ \ \ \ b)\ We\ add\ a\ dependency\ on\ the\ base\ candidate.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00442}00442\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ See\ below\ for\ why\ this\ is\ needed.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00443}00443\ \textcolor{stringliteral}{\ \ \ \ 3.\ We\ return\ None\ for\ the\ underlying\ InstallRequirement,\ as\ the\ base}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00444}00444\ \textcolor{stringliteral}{\ \ \ \ \ \ \ candidate\ will\ provide\ it,\ and\ we\ don't\ want\ to\ end\ up\ with\ duplicates.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00445}00445\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00446}00446\ \textcolor{stringliteral}{\ \ \ \ The\ dependency\ on\ the\ base\ candidate\ is\ needed\ so\ that\ the\ resolver\ can't}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00447}00447\ \textcolor{stringliteral}{\ \ \ \ decide\ that\ it\ should\ recommend\ foo[extra1]\ version\ 1.0\ and\ foo[extra2]}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00448}00448\ \textcolor{stringliteral}{\ \ \ \ version\ 2.0.\ Having\ those\ candidates\ depend\ on\ foo=1.0\ and\ foo=2.0}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00449}00449\ \textcolor{stringliteral}{\ \ \ \ respectively\ forces\ the\ resolver\ to\ recognise\ that\ this\ is\ a\ conflict.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00450}00450\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00451}00451\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00452}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a4170b4a3235f30cd17921d63e8bd85bc}{00452}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a4170b4a3235f30cd17921d63e8bd85bc}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00453}00453\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00454}00454\ \ \ \ \ \ \ \ \ base:\ BaseCandidate,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00455}00455\ \ \ \ \ \ \ \ \ extras:\ frozenset[str],}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ comes\_from:\ InstallRequirement\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00458}00458\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00460}00460\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ comes\_from:\ the\ InstallRequirement\ that\ led\ to\ this\ candidate\ if\ it}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00461}00461\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ differs\ from\ the\ base's\ InstallRequirement.\ This\ will\ often\ be\ the}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00462}00462\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ case\ in\ the\ sense\ that\ this\ candidate's\ requirement\ has\ the\ extras}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00463}00463\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ while\ the\ base's\ does\ not.\ Unlike\ the\ InstallRequirement\ backed}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00464}00464\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ candidates,\ this\ requirement\ is\ used\ solely\ for\ reporting\ purposes,}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00465}00465\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ it\ does\ not\ do\ any\ leg\ work.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00466}00466\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00467}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{00467}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}\ =\ base}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00468}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a65769ec830f285b2a706cb5ac2cdd961}{00468}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a65769ec830f285b2a706cb5ac2cdd961}{extras}}\ =\ frozenset(canonicalize\_name(e)\ \textcolor{keywordflow}{for}\ e\ \textcolor{keywordflow}{in}\ extras)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00469}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a1f2b4be8428e902eb0ddeac8ad2a52a2}{00469}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a1f2b4be8428e902eb0ddeac8ad2a52a2}{\_comes\_from}}\ =\ comes\_from\ \textcolor{keywordflow}{if}\ comes\_from\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.\_ireq}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00470}00470\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00471}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_ae886d8baabd3e9486d1ec3ec36fc1c30}{00471}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_ae886d8baabd3e9486d1ec3ec36fc1c30}{\_\_str\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00472}00472\ \ \ \ \ \ \ \ \ name,\ rest\ =\ str(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}).split(\textcolor{stringliteral}{"{}\ "{}},\ 1)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00473}00473\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}\{\}[\{\}]\ \{\}"{}}.format(name,\ \textcolor{stringliteral}{"{},"{}}.join(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a65769ec830f285b2a706cb5ac2cdd961}{extras}}),\ rest)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00474}00474\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00475}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a424e26b0638e99b828186797b55ea760}{00475}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a424e26b0638e99b828186797b55ea760}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00476}00476\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_name\_\_\}(base=\{self.base!r\},\ extras=\{self.extras!r\})"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00477}00477\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00478}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a802827ae68547a78859f1f664337026d}{00478}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a802827ae68547a78859f1f664337026d}{\_\_hash\_\_}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00479}00479\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hash((self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}},\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a65769ec830f285b2a706cb5ac2cdd961}{extras}}))}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00480}00480\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00481}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a949c84c5eb56c70f71c4c71935436dc0}{00481}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a949c84c5eb56c70f71c4c71935436dc0}{\_\_eq\_\_}}(self,\ other:\ Any)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00482}00482\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(other,\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a90ac0330b3ffd63e2a8c4897c2d4f0b4}{\_\_class\_\_}}):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00483}00483\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}\ ==\ other.base\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a65769ec830f285b2a706cb5ac2cdd961}{extras}}\ ==\ other.extras}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00485}00485\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00486}00486\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00487}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_afd5cf51e5e0260ce36e402b61fdba92f}{00487}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_afd5cf51e5e0260ce36e402b61fdba92f}{project\_name}}(self)\ -\/>\ NormalizedName:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00488}00488\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.project\_name}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00489}00489\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00490}00490\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00491}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a6e13b1ab724cd7af8b22cadb37352b31}{00491}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a6e13b1ab724cd7af8b22cadb37352b31}{name}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00492}00492\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ normalised\ name\ of\ the\ project\ the\ candidate\ refers\ to"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00493}00493\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ format\_name(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.project\_name,\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a65769ec830f285b2a706cb5ac2cdd961}{extras}})}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00494}00494\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00495}00495\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00496}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a6445f15c6683bb6bb783ef675373294d}{00496}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate}{version}}(self)\ -\/>\ Version:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00497}00497\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.version}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00498}00498\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00499}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a9079d8f8aa6e6fb0e40bfd80ee8681da}{00499}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a9079d8f8aa6e6fb0e40bfd80ee8681da}{format\_for\_error}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}\{\}\ [\{\}]"{}}.format(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00501}00501\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a9079d8f8aa6e6fb0e40bfd80ee8681da}{format\_for\_error}}(),\ \textcolor{stringliteral}{"{},\ "{}}.join(sorted(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a65769ec830f285b2a706cb5ac2cdd961}{extras}}))}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00502}00502\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00503}00503\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00504}00504\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00505}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a305bd9933d599dfe8c778f45809c1cfa}{00505}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a305bd9933d599dfe8c778f45809c1cfa}{is\_installed}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00506}00506\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.is\_installed}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00507}00507\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00508}00508\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00509}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a5a73dec16dc070c718c23adf2312462c}{00509}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a5a73dec16dc070c718c23adf2312462c}{is\_editable}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00510}00510\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.is\_editable}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00511}00511\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00512}00512\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00513}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_aeca7c2e8c75e40e660a2e1efda8f4c16}{00513}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_aeca7c2e8c75e40e660a2e1efda8f4c16}{source\_link}}(self)\ -\/>\ Link\ |\ None:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00514}00514\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.source\_link}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00515}00515\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00516}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a4d9c77299ef63267e147c96297452703}{00516}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a4d9c77299ef63267e147c96297452703}{iter\_dependencies}}(self,\ with\_requires:\ bool)\ -\/>\ Iterable[Requirement\ |\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00517}00517\ \ \ \ \ \ \ \ \ factory\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.\_factory}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00518}00518\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Add\ a\ dependency\ on\ the\ exact\ base}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ (See\ note\ 2b\ in\ the\ class\ docstring)}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ factory.make\_requirement\_from\_candidate(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}})}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ with\_requires:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00523}00523\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00524}00524\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00525}00525\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ user\ may\ have\ specified\ extras\ that\ the\ candidate\ doesn't}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00526}00526\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ support.\ We\ ignore\ any\ unsupported\ extras\ here.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ valid\_extras\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a65769ec830f285b2a706cb5ac2cdd961}{extras}}.intersection(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.dist.iter\_provided\_extras())}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00528}00528\ \ \ \ \ \ \ \ \ invalid\_extras\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a65769ec830f285b2a706cb5ac2cdd961}{extras}}.difference(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.dist.iter\_provided\_extras())}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00529}00529\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ extra\ \textcolor{keywordflow}{in}\ sorted(invalid\_extras):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00530}00530\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00531}00531\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\%s\ \%s\ does\ not\ provide\ the\ extra\ '\%s'"{}},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00532}00532\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.name,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00533}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate}{00533}}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate}{version}},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ extra,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00535}00535\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00536}00536\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00537}00537\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ r\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a920a920fda7141419c93f61ab8cb2af0}{base}}.dist.iter\_dependencies(valid\_extras):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00538}00538\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ factory.make\_requirements\_from\_spec(}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00539}00539\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ str(r),}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00540}00540\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a1f2b4be8428e902eb0ddeac8ad2a52a2}{\_comes\_from}},}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00541}00541\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ valid\_extras,}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00542}00542\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00543}00543\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00544}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a151b13346807414a2f11704d131af32e}{00544}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_extras_candidate_a151b13346807414a2f11704d131af32e}{get\_install\_requirement}}(self)\ -\/>\ InstallRequirement\ |\ None:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00545}00545\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ don't\ return\ anything\ here,\ because\ we\ always}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00546}00546\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ depend\ on\ the\ base\ candidate,\ and\ we'll\ get\ the}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00547}00547\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ install\ requirement\ from\ that.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00549}00549\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00550}00550\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00551}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate}{00551}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate}{RequiresPythonCandidate}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1base_1_1_candidate}{Candidate}}):}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00552}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate}{00552}}\ \ \ \ \ is\_installed\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00553}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate}{00553}}\ \ \ \ \ source\_link\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00554}00554\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00555}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a1becda1184d5dc1e37a9d409d4d123d1}{00555}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a1becda1184d5dc1e37a9d409d4d123d1}{\_\_init\_\_}}(self,\ py\_version\_info:\ tuple[int,\ ...]\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00556}00556\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ py\_version\_info\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00557}00557\ \ \ \ \ \ \ \ \ \ \ \ \ version\_info\ =\ normalize\_version\_info(py\_version\_info)}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00558}00558\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00559}00559\ \ \ \ \ \ \ \ \ \ \ \ \ version\_info\ =\ sys.version\_info[:3]}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00560}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a435c44ef824f86e4b919d04732d056c6}{00560}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a435c44ef824f86e4b919d04732d056c6}{\_version}}\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version}{Version}}(\textcolor{stringliteral}{"{}."{}}.join(str(c)\ \textcolor{keywordflow}{for}\ c\ \textcolor{keywordflow}{in}\ version\_info))}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00561}00561\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00562}00562\ \ \ \ \ \textcolor{comment}{\#\ We\ don't\ need\ to\ implement\ \_\_eq\_\_()\ and\ \_\_ne\_\_()\ since\ there\ is\ always}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00563}00563\ \ \ \ \ \textcolor{comment}{\#\ only\ one\ RequiresPythonCandidate\ in\ a\ resolution,\ i.e.\ the\ host\ Python.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00564}00564\ \ \ \ \ \textcolor{comment}{\#\ The\ built-\/in\ object.\_\_eq\_\_()\ and\ object.\_\_ne\_\_()\ do\ exactly\ what\ we\ want.}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00565}00565\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00566}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a5a574ca4d057ebb66cb61596e4729aa7}{00566}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a5a574ca4d057ebb66cb61596e4729aa7}{\_\_str\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00567}00567\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}Python\ \{self.\_version\}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00568}00568\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00569}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_aa87a6b8f8892c69faa668cb213d1dd23}{00569}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_aa87a6b8f8892c69faa668cb213d1dd23}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00570}00570\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_name\_\_\}(\{self.\_version!r\})"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00571}00571\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00572}00572\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00573}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a3e210595f49465f9b592a12dcaf29a69}{00573}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a3e210595f49465f9b592a12dcaf29a69}{project\_name}}(self)\ -\/>\ NormalizedName:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00574}00574\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ REQUIRES\_PYTHON\_IDENTIFIER}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00575}00575\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00576}00576\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00577}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_aeff13058676b07d1b67feed53749d838}{00577}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_aeff13058676b07d1b67feed53749d838}{name}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00578}00578\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ REQUIRES\_PYTHON\_IDENTIFIER}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00579}00579\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00580}00580\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00581}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_aee57ab159b8d98ffa56364b9cef519fd}{00581}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_aee57ab159b8d98ffa56364b9cef519fd}{version}}(self)\ -\/>\ Version:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00582}00582\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a435c44ef824f86e4b919d04732d056c6}{\_version}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00583}00583\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00584}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a1aae019afc459138c158c81c3a75c351}{00584}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a1aae019afc459138c158c81c3a75c351}{format\_for\_error}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00585}00585\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}Python\ \{self.version\}"{}}}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00586}00586\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00587}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a5b6a653af0ac9dd2203c3cba2a869e9a}{00587}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a5b6a653af0ac9dd2203c3cba2a869e9a}{iter\_dependencies}}(self,\ with\_requires:\ bool)\ -\/>\ Iterable[Requirement\ |\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00588}00588\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ()}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00589}00589\ }
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00590}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a7ebbe802d9b9f5815bdc52fd64cb9c94}{00590}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1candidates_1_1_requires_python_candidate_a7ebbe802d9b9f5815bdc52fd64cb9c94}{get\_install\_requirement}}(self)\ -\/>\ InstallRequirement\ |\ None:}
+\DoxyCodeLine{\Hypertarget{candidates_8py_source_l00591}00591\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+
+\end{DoxyCode}

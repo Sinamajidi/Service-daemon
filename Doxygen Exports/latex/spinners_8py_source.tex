@@ -1,0 +1,241 @@
+\doxysection{spinners.\+py}
+\hypertarget{spinners_8py_source}{}\label{spinners_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/cli/spinners.py@{venv/Lib/site-\/packages/pip/\_internal/cli/spinners.py}}
+\doxymbox{\hyperlink{spinners_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00003}00003\ \textcolor{keyword}{import}\ contextlib}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00004}00004\ \textcolor{keyword}{import}\ itertools}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00005}00005\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00006}00006\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00007}00007\ \textcolor{keyword}{import}\ time}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00008}00008\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Generator}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00009}00009\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ IO,\ Final}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00011}00011\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1console}{pip.\_vendor.rich.console}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00012}00012\ \ \ \ \ Console,}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00013}00013\ \ \ \ \ ConsoleOptions,}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00014}00014\ \ \ \ \ RenderableType,}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00015}00015\ \ \ \ \ RenderResult,}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00016}00016\ )}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00017}00017\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1live}{pip.\_vendor.rich.live}}\ \textcolor{keyword}{import}\ Live}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00018}00018\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1measure}{pip.\_vendor.rich.measure}}\ \textcolor{keyword}{import}\ Measurement}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00019}00019\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1text}{pip.\_vendor.rich.text}}\ \textcolor{keyword}{import}\ Text}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00020}00020\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00021}00021\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat}{pip.\_internal.utils.compat}}\ \textcolor{keyword}{import}\ WINDOWS}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00022}00022\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1logging}{pip.\_internal.utils.logging}}\ \textcolor{keyword}{import}\ get\_console,\ get\_indentation}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00024}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners_a71c58270383de5c2e8fde038636287d0}{00024}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00026}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners_a4bec9c6415f76c11c4c23195e7b8ccc1}{00026}}\ SPINNER\_CHARS:\ Final\ =\ \textcolor{stringliteral}{r"{}-\/\(\backslash\)|/"{}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00027}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners_a6dc1731cf5575d9f2e656d49b9becce9}{00027}}\ SPINS\_PER\_SECOND:\ Final\ =\ 8}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00030}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_spinner_interface}{00030}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_spinner_interface}{SpinnerInterface}}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00031}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_spinner_interface_ac92c5d2a99dfcba126f0bc8953749147}{00031}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_spinner_interface_ac92c5d2a99dfcba126f0bc8953749147}{spin}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00032}00032\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError()}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00034}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_spinner_interface_aa68c13d395603a63a6d129ff04f8e843}{00034}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_spinner_interface_aa68c13d395603a63a6d129ff04f8e843}{finish}}(self,\ final\_status:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError()}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00038}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner}{00038}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner}{InteractiveSpinner}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_spinner_interface}{SpinnerInterface}}):}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00039}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a0951dbba3310f36c07512be66c741492}{00039}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a0951dbba3310f36c07512be66c741492}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ message:\ str,}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ file:\ IO[str]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ spin\_chars:\ str\ =\ SPINNER\_CHARS,}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Empirically,\ 8\ updates/second\ looks\ nice}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ min\_update\_interval\_seconds:\ float\ =\ 1\ /\ SPINS\_PER\_SECOND,}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00046}00046\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00047}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_ae82d103ab462b7f634f6432bb0789464}{00047}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_ae82d103ab462b7f634f6432bb0789464}{\_message}}\ =\ message}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ file\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ file\ =\ sys.stdout}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00050}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a814fdb2fc6d17e7d5d6bcc8bdc495284}{00050}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a814fdb2fc6d17e7d5d6bcc8bdc495284}{\_file}}\ =\ file}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00051}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_abd03ac72f6a6abb502239aacd9c8abfa}{00051}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_abd03ac72f6a6abb502239aacd9c8abfa}{\_rate\_limiter}}\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter}{RateLimiter}}(min\_update\_interval\_seconds)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00052}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_aa7e1883ef8845632b54d33d886ffbe17}{00052}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_aa7e1883ef8845632b54d33d886ffbe17}{\_finished}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00054}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a20d9932e0741cb4c40ddf24ce06c38a6}{00054}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a20d9932e0741cb4c40ddf24ce06c38a6}{\_spin\_cycle}}\ =\ itertools.cycle(spin\_chars)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a814fdb2fc6d17e7d5d6bcc8bdc495284}{\_file}}.write(\textcolor{stringliteral}{"{}\ "{}}\ *\ get\_indentation()\ +\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_ae82d103ab462b7f634f6432bb0789464}{\_message}}\ +\ \textcolor{stringliteral}{"{}\ ...\ "{}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00057}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a8b2b3a75d13f6f1730f95b6ed08a9964}{00057}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a8b2b3a75d13f6f1730f95b6ed08a9964}{\_width}}\ =\ 0}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00059}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a16e0c2dc420f6f8d17ccdf2f05929774}{00059}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a16e0c2dc420f6f8d17ccdf2f05929774}{\_write}}(self,\ status:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_aa7e1883ef8845632b54d33d886ffbe17}{\_finished}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Erase\ what\ we\ wrote\ before\ by\ backspacing\ to\ the\ beginning,\ writing}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ spaces\ to\ overwrite\ the\ old\ text,\ and\ then\ backspacing\ again}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ backup\ =\ \textcolor{stringliteral}{"{}\(\backslash\)b"{}}\ *\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a8b2b3a75d13f6f1730f95b6ed08a9964}{\_width}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a814fdb2fc6d17e7d5d6bcc8bdc495284}{\_file}}.write(backup\ +\ \textcolor{stringliteral}{"{}\ "{}}\ *\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a8b2b3a75d13f6f1730f95b6ed08a9964}{\_width}}\ +\ backup)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Now\ we\ have\ a\ blank\ slate\ to\ add\ our\ status}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a814fdb2fc6d17e7d5d6bcc8bdc495284}{\_file}}.write(status)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a8b2b3a75d13f6f1730f95b6ed08a9964}{\_width}}\ =\ len(status)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a814fdb2fc6d17e7d5d6bcc8bdc495284}{\_file}}.flush()}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_abd03ac72f6a6abb502239aacd9c8abfa}{\_rate\_limiter}}.reset()}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00071}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a84fabbd16bc8be31bf5e47905eab7498}{00071}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a84fabbd16bc8be31bf5e47905eab7498}{spin}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_aa7e1883ef8845632b54d33d886ffbe17}{\_finished}}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_abd03ac72f6a6abb502239aacd9c8abfa}{\_rate\_limiter}}.ready():}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a16e0c2dc420f6f8d17ccdf2f05929774}{\_write}}(next(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a20d9932e0741cb4c40ddf24ce06c38a6}{\_spin\_cycle}}))}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00078}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_aa8e59d36acbf1a072233ae62dbea45d6}{00078}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_aa8e59d36acbf1a072233ae62dbea45d6}{finish}}(self,\ final\_status:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_aa7e1883ef8845632b54d33d886ffbe17}{\_finished}}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a16e0c2dc420f6f8d17ccdf2f05929774}{\_write}}(final\_status)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a814fdb2fc6d17e7d5d6bcc8bdc495284}{\_file}}.write(\textcolor{stringliteral}{"{}\(\backslash\)n"{}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_a814fdb2fc6d17e7d5d6bcc8bdc495284}{\_file}}.flush()}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner_aa7e1883ef8845632b54d33d886ffbe17}{\_finished}}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00085}00085\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00087}00087\ \textcolor{comment}{\#\ Used\ for\ dumb\ terminals,\ non-\/interactive\ installs\ (no\ tty),\ etc.}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00088}00088\ \textcolor{comment}{\#\ We\ still\ print\ updates\ occasionally\ (once\ every\ 60\ seconds\ by\ default)\ to}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00089}00089\ \textcolor{comment}{\#\ act\ as\ a\ keep-\/alive\ for\ systems\ like\ Travis-\/CI\ that\ take\ lack-\/of-\/output\ as}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00090}00090\ \textcolor{comment}{\#\ an\ indication\ that\ a\ task\ has\ frozen.}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00091}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner}{00091}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner}{NonInteractiveSpinner}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_spinner_interface}{SpinnerInterface}}):}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00092}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a5bc0de1101c237e7f97e22945eb6c176}{00092}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a5bc0de1101c237e7f97e22945eb6c176}{\_\_init\_\_}}(self,\ message:\ str,\ min\_update\_interval\_seconds:\ float\ =\ 60.0)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00093}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_ac67a824f1fa8c3c64f6fffb3e44b065b}{00093}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_ac67a824f1fa8c3c64f6fffb3e44b065b}{\_message}}\ =\ message}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00094}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a5098a373e082a885a93687c81fca8767}{00094}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a5098a373e082a885a93687c81fca8767}{\_finished}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00095}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a2f73ecd19897f1ec555edf3f86df7e93}{00095}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a2f73ecd19897f1ec555edf3f86df7e93}{\_rate\_limiter}}\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter}{RateLimiter}}(min\_update\_interval\_seconds)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a4e58965f2b6cdc5ed156acc4d6737066}{\_update}}(\textcolor{stringliteral}{"{}started"{}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00097}00097\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00098}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a4e58965f2b6cdc5ed156acc4d6737066}{00098}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a4e58965f2b6cdc5ed156acc4d6737066}{\_update}}(self,\ status:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a5098a373e082a885a93687c81fca8767}{\_finished}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a2f73ecd19897f1ec555edf3f86df7e93}{\_rate\_limiter}}.reset()}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}\%s:\ \%s"{}},\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_ac67a824f1fa8c3c64f6fffb3e44b065b}{\_message}},\ status)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00103}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_acab2067d629306c1bf1371062fd616cc}{00103}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_acab2067d629306c1bf1371062fd616cc}{spin}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a5098a373e082a885a93687c81fca8767}{\_finished}}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a2f73ecd19897f1ec555edf3f86df7e93}{\_rate\_limiter}}.ready():}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a4e58965f2b6cdc5ed156acc4d6737066}{\_update}}(\textcolor{stringliteral}{"{}still\ running..."{}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00109}00109\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00110}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_ab9e9471a0386ea2534995b8542690626}{00110}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_ab9e9471a0386ea2534995b8542690626}{finish}}(self,\ final\_status:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a5098a373e082a885a93687c81fca8767}{\_finished}}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a4e58965f2b6cdc5ed156acc4d6737066}{\_update}}(f\textcolor{stringliteral}{"{}finished\ with\ status\ '\{final\_status\}'"{}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner_a5098a373e082a885a93687c81fca8767}{\_finished}}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00115}00115\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00116}00116\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00117}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter}{00117}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter}{RateLimiter}}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00118}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_a831a923ab0409c84c17996988c30193d}{00118}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_a831a923ab0409c84c17996988c30193d}{\_\_init\_\_}}(self,\ min\_update\_interval\_seconds:\ float)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00119}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_a19096ef158990888e34728f914257653}{00119}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_a19096ef158990888e34728f914257653}{\_min\_update\_interval\_seconds}}\ =\ min\_update\_interval\_seconds}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00120}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_aa2be9665324412d6bfd375041db43360}{00120}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_aa2be9665324412d6bfd375041db43360}{\_last\_update}}:\ float\ =\ 0}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00122}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_afe31ae392b4e50a03e9149aa30e3f1ee}{00122}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_afe31ae392b4e50a03e9149aa30e3f1ee}{ready}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ now\ =\ time.time()}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ delta\ =\ now\ -\/\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_aa2be9665324412d6bfd375041db43360}{\_last\_update}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ delta\ >=\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_a19096ef158990888e34728f914257653}{\_min\_update\_interval\_seconds}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00126}00126\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00127}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_a92d7d7f3a0f153e7dabded57c9ff2426}{00127}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_a92d7d7f3a0f153e7dabded57c9ff2426}{reset}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_rate_limiter_aa2be9665324412d6bfd375041db43360}{\_last\_update}}\ =\ time.time()}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00129}00129\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00130}00130\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00131}00131\ \textcolor{preprocessor}{@contextlib.contextmanager}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00132}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners_a156b2ff40cfd2cae993541acd6a0c4ec}{00132}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners_a156b2ff40cfd2cae993541acd6a0c4ec}{open\_spinner}}(message:\ str)\ -\/>\ Generator[SpinnerInterface,\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00133}00133\ \ \ \ \ \textcolor{comment}{\#\ Interactive\ spinner\ goes\ directly\ to\ sys.stdout\ rather\ than\ being\ routed}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00134}00134\ \ \ \ \ \textcolor{comment}{\#\ through\ the\ logging\ system,\ but\ it\ acts\ like\ it\ has\ level\ INFO,}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00135}00135\ \ \ \ \ \textcolor{comment}{\#\ i.e.\ it's\ only\ displayed\ if\ we're\ at\ level\ INFO\ or\ better.}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00136}00136\ \ \ \ \ \textcolor{comment}{\#\ Non-\/interactive\ spinner\ goes\ through\ the\ logging\ system,\ so\ it\ is\ always}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00137}00137\ \ \ \ \ \textcolor{comment}{\#\ in\ sync\ with\ logging\ configuration.}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00138}00138\ \ \ \ \ \textcolor{keywordflow}{if}\ sys.stdout.isatty()\ \textcolor{keywordflow}{and}\ logger.getEffectiveLevel()\ <=\ logging.INFO:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ spinner:\ SpinnerInterface\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_interactive_spinner}{InteractiveSpinner}}(message)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00140}00140\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ spinner\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1_non_interactive_spinner}{NonInteractiveSpinner}}(message)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00142}00142\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners_a6543b30a10e3d49a8ce7980328f7477b}{hidden\_cursor}}(sys.stdout):}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ spinner}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00145}00145\ \ \ \ \ \textcolor{keywordflow}{except}\ KeyboardInterrupt:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ spinner.finish(\textcolor{stringliteral}{"{}canceled"{}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00148}00148\ \ \ \ \ \textcolor{keywordflow}{except}\ Exception:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ spinner.finish(\textcolor{stringliteral}{"{}error"{}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00151}00151\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ spinner.finish(\textcolor{stringliteral}{"{}done"{}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00153}00153\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00155}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner}{00155}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner}{\_PipRichSpinner}}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00156}00156\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00157}00157\ \textcolor{stringliteral}{\ \ \ \ Custom\ rich\ spinner\ that\ matches\ the\ style\ of\ the\ legacy\ spinners.}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00158}00158\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00159}00159\ \textcolor{stringliteral}{\ \ \ \ (*)\ Updates\ will\ be\ handled\ in\ a\ background\ thread\ by\ a\ rich\ live\ panel}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00160}00160\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ which\ will\ call\ render()\ automatically\ at\ the\ appropriate\ time.}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00161}00161\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00162}00162\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00163}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a319f48299675ac82c3b2f24a00ae442f}{00163}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a319f48299675ac82c3b2f24a00ae442f}{\_\_init\_\_}}(self,\ label:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00164}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_ad3318db51b6f4a7a5dd9750cd5a0238f}{00164}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_ad3318db51b6f4a7a5dd9750cd5a0238f}{label}}\ =\ label}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00165}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a0ac128bec42fed6609ae804a5edc2e97}{00165}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a0ac128bec42fed6609ae804a5edc2e97}{\_spin\_cycle}}\ =\ itertools.cycle(SPINNER\_CHARS)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00166}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a50cd42eec43a11db31ef23f3b8b40f5d}{00166}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a50cd42eec43a11db31ef23f3b8b40f5d}{\_spinner\_text}}\ =\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00167}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a925165e2671d70f6dfca3910dc44b8ad}{00167}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a925165e2671d70f6dfca3910dc44b8ad}{\_finished}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00168}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a5a83c49dd6549798eb25318f80237118}{00168}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a5a83c49dd6549798eb25318f80237118}{\_indent}}\ =\ get\_indentation()\ *\ \textcolor{stringliteral}{"{}\ "{}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00169}00169\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00170}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a78452a05799eb203881bb77fc1ddefe6}{00170}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a78452a05799eb203881bb77fc1ddefe6}{\_\_rich\_console\_\_}}(}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ self,\ console:\ Console,\ options:\ ConsoleOptions}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00172}00172\ \ \ \ \ )\ -\/>\ RenderResult:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a594e3bf0ab3fb855017c68a9d8f383bd}{render}}()}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00174}00174\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00175}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_abf2cd619ea13eef7aa318d4ecd20ef75}{00175}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_abf2cd619ea13eef7aa318d4ecd20ef75}{\_\_rich\_measure\_\_}}(}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ self,\ console:\ Console,\ options:\ ConsoleOptions}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00177}00177\ \ \ \ \ )\ -\/>\ Measurement:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ text\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a594e3bf0ab3fb855017c68a9d8f383bd}{render}}()}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ Measurement.get(console,\ options,\ text)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00180}00180\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00181}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a594e3bf0ab3fb855017c68a9d8f383bd}{00181}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a594e3bf0ab3fb855017c68a9d8f383bd}{render}}(self)\ -\/>\ RenderableType:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a925165e2671d70f6dfca3910dc44b8ad}{\_finished}}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a50cd42eec43a11db31ef23f3b8b40f5d}{\_spinner\_text}}\ =\ next(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a0ac128bec42fed6609ae804a5edc2e97}{\_spin\_cycle}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00184}00184\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ Text.assemble(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a5a83c49dd6549798eb25318f80237118}{\_indent}},\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_ad3318db51b6f4a7a5dd9750cd5a0238f}{label}},\ \textcolor{stringliteral}{"{}\ ...\ "{}},\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a50cd42eec43a11db31ef23f3b8b40f5d}{\_spinner\_text}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00186}00186\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00187}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a532a984ea1459ba327bdd9196126acad}{00187}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a532a984ea1459ba327bdd9196126acad}{finish}}(self,\ status:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Stop\ spinning\ and\ set\ a\ final\ status\ message."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a50cd42eec43a11db31ef23f3b8b40f5d}{\_spinner\_text}}\ =\ status}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner_a925165e2671d70f6dfca3910dc44b8ad}{\_finished}}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00191}00191\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00193}00193\ \textcolor{preprocessor}{@contextlib.contextmanager}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00194}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners_a910ad6268dcf5c3bee5c664039c79f1f}{00194}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners_a910ad6268dcf5c3bee5c664039c79f1f}{open\_rich\_spinner}}(label:\ str,\ console:\ Console\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ Generator[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00195}00195\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ logger.isEnabledFor(logging.INFO):}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Don't\ show\ spinner\ if\ -\/-\/quiet\ is\ given.}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00199}00199\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00200}00200\ \ \ \ \ console\ =\ console\ \textcolor{keywordflow}{or}\ get\_console()}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00201}00201\ \ \ \ \ spinner\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1spinners_1_1___pip_rich_spinner}{\_PipRichSpinner}}(label)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00202}00202\ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1live_1_1_live}{Live}}(spinner,\ refresh\_per\_second=SPINS\_PER\_SECOND,\ console=console):}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyboardInterrupt:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ spinner.finish(\textcolor{stringliteral}{"{}canceled"{}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ Exception:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \ \ \ \ spinner.finish(\textcolor{stringliteral}{"{}error"{}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \ \ \ \ spinner.finish(\textcolor{stringliteral}{"{}done"{}})}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00213}00213\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00214}00214\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00215}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners_aaa29641dc9f8e390cce9e30dc2b84db2}{00215}}\ HIDE\_CURSOR\ =\ \textcolor{stringliteral}{"{}\(\backslash\)x1b[?25l"{}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00216}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners_a04a5f1c752511a0d5268bb8bd1489542}{00216}}\ SHOW\_CURSOR\ =\ \textcolor{stringliteral}{"{}\(\backslash\)x1b[?25h"{}}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00217}00217\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00218}00218\ }
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00219}00219\ \textcolor{preprocessor}{@contextlib.contextmanager}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00220}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners_a6543b30a10e3d49a8ce7980328f7477b}{00220}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners_a6543b30a10e3d49a8ce7980328f7477b}{hidden\_cursor}}(file:\ IO[str])\ -\/>\ Generator[\textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00221}00221\ \ \ \ \ \textcolor{comment}{\#\ The\ Windows\ terminal\ does\ not\ support\ the\ hide/show\ cursor\ ANSI\ codes,}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00222}00222\ \ \ \ \ \textcolor{comment}{\#\ even\ via\ colorama.\ So\ don't\ even\ try.}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00223}00223\ \ \ \ \ \textcolor{keywordflow}{if}\ WINDOWS:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00225}00225\ \ \ \ \ \textcolor{comment}{\#\ We\ don't\ want\ to\ clutter\ the\ output\ with\ control\ characters\ if\ we're}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00226}00226\ \ \ \ \ \textcolor{comment}{\#\ writing\ to\ a\ file,\ or\ if\ the\ user\ is\ running\ with\ -\/-\/quiet.}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00227}00227\ \ \ \ \ \textcolor{comment}{\#\ See\ https://github.com/pypa/pip/issues/3418}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00228}00228\ \ \ \ \ \textcolor{keywordflow}{elif}\ \textcolor{keywordflow}{not}\ file.isatty()\ \textcolor{keywordflow}{or}\ logger.getEffectiveLevel()\ >\ logging.INFO:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00230}00230\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ file.write(HIDE\_CURSOR)}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{spinners_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \ \ \ \ file.write(SHOW\_CURSOR)}
+
+\end{DoxyCode}

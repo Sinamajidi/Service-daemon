@@ -1,0 +1,108 @@
+\doxysection{connection.\+py}
+\hypertarget{psycopg_2crdb_2connection_8py_source}{}\label{psycopg_2crdb_2connection_8py_source}\index{venv/Lib/site-\/packages/psycopg/crdb/connection.py@{venv/Lib/site-\/packages/psycopg/crdb/connection.py}}
+\doxymbox{\hyperlink{psycopg_2crdb_2connection_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1crdb_1_1connection}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00002}00002\ \textcolor{stringliteral}{CockroachDB-\/specific\ connections.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2022\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00009}00009\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00010}00010\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00012}00012\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00013}00013\ \textcolor{keyword}{from}\ ..rows\ \textcolor{keyword}{import}\ Row}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00014}00014\ \textcolor{keyword}{from}\ .\_types\ \textcolor{keyword}{import}\ adapters}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00015}00015\ \textcolor{keyword}{from}\ ..connection\ \textcolor{keyword}{import}\ Connection}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00016}00016\ \textcolor{keyword}{from}\ ..\_adapters\_map\ \textcolor{keyword}{import}\ AdaptersMap}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00017}00017\ \textcolor{keyword}{from}\ ..\_connection\_info\ \textcolor{keyword}{import}\ ConnectionInfo}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00018}00018\ \textcolor{keyword}{from}\ ..connection\_async\ \textcolor{keyword}{import}\ AsyncConnection}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00020}00020\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00021}00021\ \ \ \ \ \textcolor{keyword}{from}\ ..pq.abc\ \textcolor{keyword}{import}\ PGconn}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00024}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin}{00024}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin}{\_CrdbConnectionMixin}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00025}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_af7be500ea2e12d420bf3eaa8150b4c96}{00025}}\ \ \ \ \ \_adapters:\ AdaptersMap\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00026}00026\ \ \ \ \ pgconn:\ PGconn}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00028}00028\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00029}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_a8825cbadeb5a761966587bc2e6547c5f}{00029}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_a8825cbadeb5a761966587bc2e6547c5f}{is\_crdb}}(cls,\ conn:\ Connection[Any]\ |\ AsyncConnection[Any]\ |\ PGconn)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00030}00030\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00031}00031\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ \`{}!True\`{}\ if\ the\ server\ connected\ to\ \`{}!conn\`{}\ is\ CockroachDB.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00032}00032\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00033}00033\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(conn,\ (Connection,\ AsyncConnection)):}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ conn.pgconn}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ bool(conn.parameter\_status(b\textcolor{stringliteral}{"{}crdb\_version"{}}))}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00038}00038\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00039}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_ade1eb9baf6d428aac94d739dbd6e95ff}{00039}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1crdb_a2ebb64dd71ed409033282afa0fa72738}{adapters}}(self)\ -\/>\ AdaptersMap:}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_af7be500ea2e12d420bf3eaa8150b4c96}{\_adapters}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ By\ default,\ use\ CockroachDB\ adapters\ map}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_af7be500ea2e12d420bf3eaa8150b4c96}{\_adapters}}\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map}{AdaptersMap}}(adapters)}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_af7be500ea2e12d420bf3eaa8150b4c96}{\_adapters}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00045}00045\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00046}00046\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00047}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_af81e2ca43d11f041a0664b4dfc159c25}{00047}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_af81e2ca43d11f041a0664b4dfc159c25}{info}}(self)\ -\/>\ CrdbConnectionInfo:}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00048}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_a906a1719e1b8aada134a5ba252a0016b}{00048}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_crdb_connection_info}{CrdbConnectionInfo}}(self.\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_a906a1719e1b8aada134a5ba252a0016b}{pgconn}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00050}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_a287eb3c70ce993754117b243b57640ee}{00050}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_a287eb3c70ce993754117b243b57640ee}{\_check\_tpc}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_a8825cbadeb5a761966587bc2e6547c5f}{is\_crdb}}(self.\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin_a906a1719e1b8aada134a5ba252a0016b}{pgconn}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.NotSupportedError(\textcolor{stringliteral}{"{}CockroachDB\ doesn't\ support\ prepared\ statements"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00055}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_crdb_connection}{00055}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_crdb_connection}{CrdbConnection}}(\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin}{\_CrdbConnectionMixin}},\ \doxymbox{\hyperlink{classpsycopg_1_1connection_1_1_connection}{Connection}}[Row]):}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00056}00056\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00057}00057\ \textcolor{stringliteral}{\ \ \ \ Wrapper\ for\ a\ connection\ to\ a\ CockroachDB\ database.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00058}00058\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00060}00060\ \ \ \ \ \_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg.crdb"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00061}00061\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00062}00062\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00063}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_async_crdb_connection}{00063}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_async_crdb_connection}{AsyncCrdbConnection}}(\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1___crdb_connection_mixin}{\_CrdbConnectionMixin}},\ \doxymbox{\hyperlink{classpsycopg_1_1connection__async_1_1_async_connection}{AsyncConnection}}[Row]):}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00064}00064\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00065}00065\ \textcolor{stringliteral}{\ \ \ \ Wrapper\ for\ an\ async\ connection\ to\ a\ CockroachDB\ database.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00066}00066\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00068}00068\ \ \ \ \ \_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg.crdb"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00071}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_crdb_connection_info}{00071}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_crdb_connection_info}{CrdbConnectionInfo}}(\doxymbox{\hyperlink{classpsycopg_1_1__connection__info_1_1_connection_info}{ConnectionInfo}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00072}00072\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00073}00073\ \textcolor{stringliteral}{\ \ \ \ \`{}\string~psycopg.ConnectionInfo\`{}\ subclass\ to\ get\ info\ about\ a\ CockroachDB\ database.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00074}00074\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00075}00075\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00076}00076\ \ \ \ \ \_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg.crdb"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00078}00078\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00079}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_crdb_connection_info_abbadb18e5311d41ffec042386fd517f0}{00079}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_crdb_connection_info_abbadb18e5311d41ffec042386fd517f0}{vendor}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}CockroachDB"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00082}00082\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00083}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_crdb_connection_info_ad4a86c647dab371446ea4857e63a18ac}{00083}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_crdb_connection_info_ad4a86c647dab371446ea4857e63a18ac}{server\_version}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00085}00085\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ CockroachDB\ server\ version\ connected.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00086}00086\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00087}00087\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ a\ number\ in\ the\ PostgreSQL\ format\ (e.g.\ 21.2.10\ -\/>\ 210210).}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00088}00088\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (sver\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__info_1_1_connection_info_a94f2e95cd701346aa34c2b416ed3bbbb}{parameter\_status}}(\textcolor{stringliteral}{"{}crdb\_version"{}})):}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InternalError(\textcolor{stringliteral}{"{}'crdb\_version'\ parameter\ status\ not\ set"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00091}00091\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (ver\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_crdb_connection_info_a61013f0870a2079030072dc2cd0ace5a}{parse\_crdb\_version}}(sver))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InterfaceError(f\textcolor{stringliteral}{"{}couldn't\ parse\ CockroachDB\ version\ from:\ \{sver!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ver}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00097}00097\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00098}\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_crdb_connection_info_a61013f0870a2079030072dc2cd0ace5a}{00098}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1crdb_1_1connection_1_1_crdb_connection_info_a61013f0870a2079030072dc2cd0ace5a}{parse\_crdb\_version}}(self,\ sver:\ str)\ -\/>\ int\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (m\ :=\ re.search(\textcolor{stringliteral}{r"{}\(\backslash\)bv(\(\backslash\)d+)\(\backslash\).(\(\backslash\)d+)\(\backslash\).(\(\backslash\)d+)"{}},\ sver)):}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00101}00101\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2crdb_2connection_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ int(m.group(1))\ *\ 10000\ +\ int(m.group(2))\ *\ 100\ +\ int(m.group(3))}
+
+\end{DoxyCode}

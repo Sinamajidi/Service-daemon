@@ -1,0 +1,754 @@
+\doxysection{datetime.\+py}
+\hypertarget{psycopg_2types_2datetime_8py_source}{}\label{psycopg_2types_2datetime_8py_source}\index{venv/Lib/site-\/packages/psycopg/types/datetime.py@{venv/Lib/site-\/packages/psycopg/types/datetime.py}}
+\doxymbox{\hyperlink{psycopg_2types_2datetime_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00002}00002\ \textcolor{stringliteral}{Adapters\ for\ date/time\ types.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00009}00009\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00010}00010\ \textcolor{keyword}{import}\ struct}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00011}00011\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any,\ cast}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00012}00012\ \textcolor{keyword}{from}\ datetime\ \textcolor{keyword}{import}\ date,\ datetime,\ time,\ timedelta,\ timezone}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00013}00013\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Callable}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00015}00015\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ \_oids}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00016}00016\ \textcolor{keyword}{from}\ ..pq\ \textcolor{keyword}{import}\ Format}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00017}00017\ \textcolor{keyword}{from}\ ..\_tz\ \textcolor{keyword}{import}\ get\_tzinfo}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00018}00018\ \textcolor{keyword}{from}\ ..abc\ \textcolor{keyword}{import}\ AdaptContext,\ DumperKey}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00019}00019\ \textcolor{keyword}{from}\ ..adapt\ \textcolor{keyword}{import}\ Buffer,\ Dumper,\ Loader,\ PyFormat}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00020}00020\ \textcolor{keyword}{from}\ ..errors\ \textcolor{keyword}{import}\ DataError,\ InterfaceError}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00021}00021\ \textcolor{keyword}{from}\ ..\_struct\ \textcolor{keyword}{import}\ pack\_int4,\ pack\_int8,\ unpack\_int4,\ unpack\_int8}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00023}00023\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00024}00024\ \ \ \ \ \textcolor{keyword}{from}\ ..\_connection\_base\ \textcolor{keyword}{import}\ BaseConnection}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00026}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a693d0723ba03d0254641ddd9dec08d14}{00026}}\ \_struct\_timetz\ =\ struct.Struct(\textcolor{stringliteral}{"{}!qi"{}})\ \ \textcolor{comment}{\#\ microseconds,\ sec\ tz\ offset}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00027}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a2c960373dfae460c0480f80bb255d7f5}{00027}}\ \_pack\_timetz\ =\ cast(Callable[[int,\ int],\ bytes],\ \_struct\_timetz.pack)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00028}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a1373a103afb81b2635667d85a468fc61}{00028}}\ \_unpack\_timetz\ =\ cast(Callable[[Buffer],\ \textcolor{stringliteral}{"{}tuple[int,\ int]"{}}],\ \_struct\_timetz.unpack)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00030}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a53c84d7c02afd54fdb68348f4c526cd8}{00030}}\ \_struct\_interval\ =\ struct.Struct(\textcolor{stringliteral}{"{}!qii"{}})\ \ \textcolor{comment}{\#\ microseconds,\ days,\ months}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00031}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_ac69ae4af45acfd1161ae75c91c72ebf2}{00031}}\ \_pack\_interval\ =\ cast(Callable[[int,\ int,\ int],\ bytes],\ \_struct\_interval.pack)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00032}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a25bda6b1c3ede0ac220246991d14b3f3}{00032}}\ \_unpack\_interval\ =\ cast(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00033}00033\ \ \ \ \ Callable[[Buffer],\ \textcolor{stringliteral}{"{}tuple[int,\ int,\ int]"{}}],\ \_struct\_interval.unpack}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00034}00034\ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00036}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_adf391a7807716f2abfa27572512887ea}{00036}}\ utc\ =\ timezone.utc}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00037}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_af2e77d59e4a36b668f15dec73127b38f}{00037}}\ \_pg\_date\_epoch\_days\ =\ date(2000,\ 1,\ 1).toordinal()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00038}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_ae3cd7cff0dd8bd1893be269a96dbb26d}{00038}}\ \_pg\_datetime\_epoch\ =\ \doxymbox{\hyperlink{namespacedatetime}{datetime}}(2000,\ 1,\ 1)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00039}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a89f4781ee65f8795380bac75894edaf6}{00039}}\ \_pg\_datetimetz\_epoch\ =\ \doxymbox{\hyperlink{namespacedatetime}{datetime}}(2000,\ 1,\ 1,\ tzinfo=utc)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00040}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a1b5e0eff6999a5c0510d292301cc1069}{00040}}\ \_py\_date\_min\_days\ =\ date.min.toordinal()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00043}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_dumper}{00043}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_dumper}{DateDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00044}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_dumper}{00044}}\ \ \ \ \ oid\ =\ \_oids.DATE\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00045}00045\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00046}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_dumper_a4083b23fb61aba1d514dd6d117547482}{00046}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_dumper_a4083b23fb61aba1d514dd6d117547482}{dump}}(self,\ obj:\ date)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ NOTE:\ whatever\ the\ PostgreSQL\ DateStyle\ input\ format\ (DMY,\ MDY,\ YMD)}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ YYYY-\/MM-\/DD\ is\ always\ understood\ correctly.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ str(obj).encode()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00052}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_binary_dumper}{00052}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_binary_dumper}{DateBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00053}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_binary_dumper}{00053}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00054}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_binary_dumper}{00054}}\ \ \ \ \ oid\ =\ \_oids.DATE\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00056}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_binary_dumper_ab436487d28f273910be510118054db38}{00056}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_binary_dumper_ab436487d28f273910be510118054db38}{dump}}(self,\ obj:\ date)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ days\ =\ obj.toordinal()\ -\/\ \_pg\_date\_epoch\_days}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ pack\_int4(days)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00061}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper}{00061}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper}{\_BaseTimeDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00062}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper_a2dda7ced6bef5d33e87049e314fb8e87}{00062}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper_a2dda7ced6bef5d33e87049e314fb8e87}{get\_key}}(self,\ obj:\ time,\ format:\ PyFormat)\ -\/>\ DumperKey:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Use\ (cls,)\ to\ report\ the\ need\ to\ upgrade\ to\ a\ dumper\ for\ timetz\ (the}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Frankenstein\ of\ the\ data\ types).}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ obj.tzinfo:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00068}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper}{00068}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}},)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00070}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper_af2351425948eb83862255a41e7a6f90e}{00070}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper_af2351425948eb83862255a41e7a6f90e}{upgrade}}(self,\ obj:\ time,\ format:\ PyFormat)\ -\/>\ Dumper:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00072}00072\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00073}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper_a38d739dfe35493e0a270b52f6761724e}{00073}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper_a38d739dfe35493e0a270b52f6761724e}{\_get\_offset}}(self,\ obj:\ time)\ -\/>\ timedelta:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (offset\ :=\ obj.utcoffset())\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}cannot\ calculate\ the\ offset\ of\ tzinfo\ '\{obj.tzinfo\}'\ without\ a\ date"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ offset}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00081}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_text_dumper}{00081}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_text_dumper}{\_BaseTimeTextDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper}{\_BaseTimeDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00082}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_text_dumper_ab2a2948b2802f9011de3d0f7a8d8d056}{00082}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_text_dumper_ab2a2948b2802f9011de3d0f7a8d8d056}{dump}}(self,\ obj:\ time)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ str(obj).encode()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00085}00085\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00086}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_dumper}{00086}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_dumper}{TimeDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_text_dumper}{\_BaseTimeTextDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00087}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_dumper}{00087}}\ \ \ \ \ oid\ =\ \_oids.TIME\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00089}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_dumper_a7e2e20e3300a56ec42488f3c360e2047}{00089}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_dumper_a7e2e20e3300a56ec42488f3c360e2047}{upgrade}}(self,\ obj:\ time,\ format:\ PyFormat)\ -\/>\ Dumper:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ obj.tzinfo:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00093}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_dumper}{00093}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_dumper}{TimeTzDumper}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00095}00095\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00096}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_dumper}{00096}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_dumper}{TimeTzDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_text_dumper}{\_BaseTimeTextDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00097}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_dumper}{00097}}\ \ \ \ \ oid\ =\ \_oids.TIMETZ\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00098}00098\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00099}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_dumper_a554ad7aad72ea5f497ec4a88b73ef5a3}{00099}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_dumper_a554ad7aad72ea5f497ec4a88b73ef5a3}{dump}}(self,\ obj:\ time)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper_a38d739dfe35493e0a270b52f6761724e}{\_get\_offset}}(obj)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_dumper_a554ad7aad72ea5f497ec4a88b73ef5a3}{dump}}(obj)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00104}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_dumper}{00104}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_dumper}{TimeBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper}{\_BaseTimeDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00105}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_dumper}{00105}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00106}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_dumper}{00106}}\ \ \ \ \ oid\ =\ \_oids.TIME\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00108}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_dumper_a08f6a6a2e0eff1ad96b8b346cbf9eb82}{00108}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_dumper_a08f6a6a2e0eff1ad96b8b346cbf9eb82}{dump}}(self,\ obj:\ time)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ us\ =\ obj.microsecond\ +\ 1\_000\_000\ *\ (}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \ \ \ \ obj.second\ +\ 60\ *\ (obj.minute\ +\ 60\ *\ obj.hour)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ pack\_int8(us)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00113}00113\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00114}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_dumper_a7e6adea7675c84f12314cec49f2e08c1}{00114}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_dumper_a7e6adea7675c84f12314cec49f2e08c1}{upgrade}}(self,\ obj:\ time,\ format:\ PyFormat)\ -\/>\ Dumper:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ obj.tzinfo:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00118}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_dumper}{00118}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_binary_dumper}{TimeTzBinaryDumper}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00120}00120\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00121}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_binary_dumper}{00121}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_binary_dumper}{TimeTzBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper}{\_BaseTimeDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00122}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_binary_dumper}{00122}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00123}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_binary_dumper}{00123}}\ \ \ \ \ oid\ =\ \_oids.TIMETZ\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00124}00124\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00125}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_binary_dumper_a9bf14b522e5032075f70178d4453f171}{00125}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_tz_binary_dumper_a9bf14b522e5032075f70178d4453f171}{dump}}(self,\ obj:\ time)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ us\ =\ obj.microsecond\ +\ 1\_000\_000\ *\ (}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ obj.second\ +\ 60\ *\ (obj.minute\ +\ 60\ *\ obj.hour)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ off\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_time_dumper_a38d739dfe35493e0a270b52f6761724e}{\_get\_offset}}(obj)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a2c960373dfae460c0480f80bb255d7f5}{\_pack\_timetz}}(us,\ -\/int(off.total\_seconds()))}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00132}00132\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00133}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_dumper}{00133}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_dumper}{\_BaseDatetimeDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00134}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_dumper_a44089e94b37b642c595a3f2a0b293590}{00134}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_dumper_a44089e94b37b642c595a3f2a0b293590}{get\_key}}(self,\ obj:\ datetime,\ format:\ PyFormat)\ -\/>\ DumperKey:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Use\ (cls,)\ to\ report\ the\ need\ to\ upgrade\ (downgrade,\ actually)\ to\ a}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ dumper\ for\ naive\ timestamp.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ obj.tzinfo:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00140}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_dumper}{00140}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}},)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00142}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_dumper_a32de4bc51a1e218afc71adcde40bf79f}{00142}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_dumper_a32de4bc51a1e218afc71adcde40bf79f}{upgrade}}(self,\ obj:\ datetime,\ format:\ PyFormat)\ -\/>\ Dumper:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00145}00145\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00146}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_text_dumper}{00146}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_text_dumper}{\_BaseDatetimeTextDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_dumper}{\_BaseDatetimeDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00147}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_text_dumper_afd4759e6e02cb3295fc94a257d03ce8e}{00147}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_text_dumper_afd4759e6e02cb3295fc94a257d03ce8e}{dump}}(self,\ obj:\ datetime)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ NOTE:\ whatever\ the\ PostgreSQL\ DateStyle\ input\ format\ (DMY,\ MDY,\ YMD)}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ YYYY-\/MM-\/DD\ is\ always\ understood\ correctly.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ str(obj).encode()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00151}00151\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00152}00152\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00153}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_dumper}{00153}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_dumper}{DatetimeDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_text_dumper}{\_BaseDatetimeTextDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00154}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_dumper}{00154}}\ \ \ \ \ oid\ =\ \_oids.TIMESTAMPTZ\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00156}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_dumper_a18afb65ec7a065ea568371e9dbd68111}{00156}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_dumper_a18afb65ec7a065ea568371e9dbd68111}{upgrade}}(self,\ obj:\ datetime,\ format:\ PyFormat)\ -\/>\ Dumper:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ obj.tzinfo:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00160}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_dumper}{00160}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_no_tz_dumper}{DatetimeNoTzDumper}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00161}00161\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00162}00162\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00163}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_no_tz_dumper}{00163}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_no_tz_dumper}{DatetimeNoTzDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_text_dumper}{\_BaseDatetimeTextDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00164}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_no_tz_dumper}{00164}}\ \ \ \ \ oid\ =\ \_oids.TIMESTAMP\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00165}00165\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00167}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_binary_dumper}{00167}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_binary_dumper}{DatetimeBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_dumper}{\_BaseDatetimeDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00168}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_binary_dumper}{00168}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00169}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_binary_dumper}{00169}}\ \ \ \ \ oid\ =\ \_oids.TIMESTAMPTZ\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00170}00170\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00171}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_binary_dumper_a476f187fa69d45e8f416e991b25efdf1}{00171}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_binary_dumper_a476f187fa69d45e8f416e991b25efdf1}{dump}}(self,\ obj:\ datetime)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ delta\ =\ obj\ -\/\ \_pg\_datetimetz\_epoch}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ micros\ =\ delta.microseconds\ +\ 1\_000\_000\ *\ (86\_400\ *\ delta.days\ +\ delta.seconds)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ pack\_int8(micros)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00175}00175\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00176}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_binary_dumper_a955837601f6d237fc500e1a14fe8e01b}{00176}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_binary_dumper_a955837601f6d237fc500e1a14fe8e01b}{upgrade}}(self,\ obj:\ datetime,\ format:\ PyFormat)\ -\/>\ Dumper:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ obj.tzinfo:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00180}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_binary_dumper}{00180}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_no_tz_binary_dumper}{DatetimeNoTzBinaryDumper}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00181}00181\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00182}00182\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00183}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_no_tz_binary_dumper}{00183}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_no_tz_binary_dumper}{DatetimeNoTzBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1___base_datetime_dumper}{\_BaseDatetimeDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00184}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_no_tz_binary_dumper}{00184}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00185}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_no_tz_binary_dumper}{00185}}\ \ \ \ \ oid\ =\ \_oids.TIMESTAMP\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00186}00186\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00187}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_no_tz_binary_dumper_aed578c44efc5209064c53f93423d9700}{00187}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_datetime_no_tz_binary_dumper_aed578c44efc5209064c53f93423d9700}{dump}}(self,\ obj:\ datetime)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ delta\ =\ obj\ -\/\ \_pg\_datetime\_epoch}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ micros\ =\ delta.microseconds\ +\ 1\_000\_000\ *\ (86\_400\ *\ delta.days\ +\ delta.seconds)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ pack\_int8(micros)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00191}00191\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00193}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper}{00193}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper}{TimedeltaDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00194}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper}{00194}}\ \ \ \ \ oid\ =\ \_oids.INTERVAL\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00195}00195\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00196}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_aecdec3e5ad1cc68d4d45a4503915e213}{00196}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_aecdec3e5ad1cc68d4d45a4503915e213}{\_\_init\_\_}}(self,\ cls:\ type,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_aecdec3e5ad1cc68d4d45a4503915e213}{\_\_init\_\_}}(cls,\ context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00198}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper}{00198}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a0b3169356f2db61b2abd44e4b9f50a43}{\_get\_intervalstyle}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac19516f509822a8161669804c73ca263}{connection}})\ ==\ b\textcolor{stringliteral}{"{}sql\_standard"{}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00199}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_a2cb6b0b812937e437502a30aceab6fbd}{00199}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_a2cb6b0b812937e437502a30aceab6fbd}{\_dump\_method}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_a4ae8cb58475a9508075a9319581e114c}{\_dump\_sql}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_a2cb6b0b812937e437502a30aceab6fbd}{\_dump\_method}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_a15940c2a129bb33745c8205234cc50d7}{\_dump\_any}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00202}00202\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00203}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_a303ba1207d7d420a76e67a3358823ecd}{00203}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_a303ba1207d7d420a76e67a3358823ecd}{dump}}(self,\ obj:\ timedelta)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_a2cb6b0b812937e437502a30aceab6fbd}{\_dump\_method}}(self,\ obj)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00205}00205\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00206}00206\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00207}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_a15940c2a129bb33745c8205234cc50d7}{00207}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_a15940c2a129bb33745c8205234cc50d7}{\_dump\_any}}(self:\ TimedeltaDumper,\ obj:\ timedelta)\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ comma\ is\ parsed\ ok\ by\ PostgreSQL\ but\ it's\ not\ documented}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ and\ it\ seems\ brittle\ to\ rely\ on\ it.\ CRDB\ doesn't\ consume\ it\ well.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ str(obj).encode().replace(b\textcolor{stringliteral}{"{},"{}},\ b\textcolor{stringliteral}{"{}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00211}00211\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00212}00212\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00213}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_a4ae8cb58475a9508075a9319581e114c}{00213}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_dumper_a4ae8cb58475a9508075a9319581e114c}{\_dump\_sql}}(self:\ TimedeltaDumper,\ obj:\ timedelta)\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ sql\_standard\ format\ needs\ explicit\ signs}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ otherwise\ -\/1\ day\ 1\ sec\ will\ mean\ -\/1\ sec}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}\%+d\ day\ \%+d\ second\ \%+d\ microsecond"{}}\ \%\ (}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \ \ \ \ obj.days,}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \ \ \ \ obj.seconds,}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ obj.microseconds,}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00221}00221\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00222}00222\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00223}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_binary_dumper}{00223}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_binary_dumper}{TimedeltaBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00224}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_binary_dumper}{00224}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00225}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_binary_dumper}{00225}}\ \ \ \ \ oid\ =\ \_oids.INTERVAL\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00226}00226\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00227}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_binary_dumper_ae3953e3b5c8f4f9a97e4056b36d94800}{00227}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timedelta_binary_dumper_ae3953e3b5c8f4f9a97e4056b36d94800}{dump}}(self,\ obj:\ timedelta)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ micros\ =\ 1\_000\_000\ *\ obj.seconds\ +\ obj.microseconds}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_ac69ae4af45acfd1161ae75c91c72ebf2}{\_pack\_interval}}(micros,\ obj.days,\ 0)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00230}00230\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00231}00231\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00232}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader}{00232}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader}{DateLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00233}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_acd25ee1e1bb176138ea278620f4e1282}{00233}}\ \ \ \ \ \_ORDER\_YMD\ =\ 0}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00234}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_a9cb1ab3db9b6cc2d0f9b6799444bef3e}{00234}}\ \ \ \ \ \_ORDER\_DMY\ =\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00235}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_a1409a4399143eb9492984f277787094e}{00235}}\ \ \ \ \ \_ORDER\_MDY\ =\ 2}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00236}00236\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00237}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_ad3fb2af8d94ac8988997d38cadfb7419}{00237}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_ad3fb2af8d94ac8988997d38cadfb7419}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_ad3fb2af8d94ac8988997d38cadfb7419}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (ds\ :=\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_adee2464196bff916edfd80dcc7b4b074}{\_get\_datestyle}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}})).startswith(b\textcolor{stringliteral}{"{}I"{}}):\ \ \textcolor{comment}{\#\ ISO}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00240}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_a4081548bc627a2047ce2fccf3f5c7985}{00240}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_a4081548bc627a2047ce2fccf3f5c7985}{\_order}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_acd25ee1e1bb176138ea278620f4e1282}{\_ORDER\_YMD}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ ds.startswith(b\textcolor{stringliteral}{"{}G"{}}):\ \ \textcolor{comment}{\#\ German}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_a4081548bc627a2047ce2fccf3f5c7985}{\_order}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_a9cb1ab3db9b6cc2d0f9b6799444bef3e}{\_ORDER\_DMY}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ ds.startswith(b\textcolor{stringliteral}{"{}S"{}})\ \textcolor{keywordflow}{or}\ ds.startswith(b\textcolor{stringliteral}{"{}P"{}}):\ \ \textcolor{comment}{\#\ SQL\ or\ Postgres}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_a4081548bc627a2047ce2fccf3f5c7985}{\_order}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_a9cb1ab3db9b6cc2d0f9b6799444bef3e}{\_ORDER\_DMY}}\ \textcolor{keywordflow}{if}\ ds.endswith(b\textcolor{stringliteral}{"{}DMY"{}})\ \textcolor{keywordflow}{else}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_a1409a4399143eb9492984f277787094e}{\_ORDER\_MDY}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_interface_error}{InterfaceError}}(f\textcolor{stringliteral}{"{}unexpected\ DateStyle:\ \{ds.decode('ascii')\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00247}00247\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00248}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_ad3bcf09d5ecbb14274fd07a3ac54ec04}{00248}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_ad3bcf09d5ecbb14274fd07a3ac54ec04}{load}}(self,\ data:\ Buffer)\ -\/>\ date:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_a4081548bc627a2047ce2fccf3f5c7985}{\_order}}\ ==\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_acd25ee1e1bb176138ea278620f4e1282}{\_ORDER\_YMD}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \ \ \ \ ye\ =\ data[:4]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ mo\ =\ data[5:7]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ da\ =\ data[8:]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_a4081548bc627a2047ce2fccf3f5c7985}{\_order}}\ ==\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_loader_a9cb1ab3db9b6cc2d0f9b6799444bef3e}{\_ORDER\_DMY}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ da\ =\ data[:2]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ mo\ =\ data[3:5]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ ye\ =\ data[6:]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ mo\ =\ data[:2]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ da\ =\ data[3:5]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ ye\ =\ data[6:]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00261}00261\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ date(int(ye),\ int(mo),\ int(da))}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ s\ =\ bytes(data).decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ s\ ==\ \textcolor{stringliteral}{"{}infinity"{}}\ \textcolor{keywordflow}{or}\ (s\ \textcolor{keywordflow}{and}\ len(s.split()[0])\ >\ 10):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}date\ too\ large\ (after\ year\ 10K):\ \{s!r\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ s\ ==\ \textcolor{stringliteral}{"{}-\/infinity"{}}\ \textcolor{keywordflow}{or}\ \textcolor{stringliteral}{"{}BC"{}}\ \textcolor{keywordflow}{in}\ s:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}date\ too\ small\ (before\ year\ 1):\ \{s!r\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}can't\ parse\ date\ \{s!r\}:\ \{ex\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00272}00272\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00273}00273\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00274}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_binary_loader}{00274}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_binary_loader}{DateBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00275}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_binary_loader}{00275}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00276}00276\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00277}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_binary_loader_a121aebc04bb8421c9bbb5be7df3ce577}{00277}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_date_binary_loader_a121aebc04bb8421c9bbb5be7df3ce577}{load}}(self,\ data:\ Buffer)\ -\/>\ date:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ days\ =\ unpack\_int4(data)[0]\ +\ \_pg\_date\_epoch\_days}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ date.fromordinal(days)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ (ValueError,\ OverflowError):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ days\ <\ \_py\_date\_min\_days:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(\textcolor{stringliteral}{"{}date\ too\ small\ (before\ year\ 1)"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(\textcolor{stringliteral}{"{}date\ too\ large\ (after\ year\ 10K)"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00286}00286\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00287}00287\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00288}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_loader}{00288}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_loader}{TimeLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00289}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_loader_aed10df4a621179fb8d78a12b96a6ad9b}{00289}}\ \ \ \ \ \_re\_format\ =\ re.compile(rb\textcolor{stringliteral}{"{}\string^(\(\backslash\)d+):(\(\backslash\)d+):(\(\backslash\)d+)(?:\(\backslash\).(\(\backslash\)d+))?"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00290}00290\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00291}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_loader_af931e0801e2c177d6efcc08e0f2ed248}{00291}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_loader_af931e0801e2c177d6efcc08e0f2ed248}{load}}(self,\ data:\ Buffer)\ -\/>\ time:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (m\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_loader_aed10df4a621179fb8d78a12b96a6ad9b}{\_re\_format}}.match(data)):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ \ \ \ \ s\ =\ bytes(data).decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}can't\ parse\ time\ \{s!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00295}00295\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ ho,\ mi,\ se,\ fr\ =\ m.groups()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00297}00297\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00298}00298\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Pad\ the\ fraction\ of\ second\ to\ get\ micros}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ fr:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ \ \ \ \ us\ =\ int(fr)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(fr)\ <\ 6:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ us\ *=\ \_uspad[len(fr)]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \ \ \ \ us\ =\ 0}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00305}00305\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ time(int(ho),\ int(mi),\ int(se),\ us)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ \ \ \ \ s\ =\ bytes(data).decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}can't\ parse\ time\ \{s!r\}:\ \{e\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00311}00311\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00312}00312\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00313}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_loader}{00313}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_loader}{TimeBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00314}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_loader}{00314}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00315}00315\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00316}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_loader_ac1fcb6f13a799fee87f9e26ddec6498a}{00316}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_time_binary_loader_ac1fcb6f13a799fee87f9e26ddec6498a}{load}}(self,\ data:\ Buffer)\ -\/>\ time:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ val\ =\ unpack\_int8(data)[0]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00318}00318\ \ \ \ \ \ \ \ \ val,\ us\ =\ divmod(val,\ 1\_000\_000)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00319}00319\ \ \ \ \ \ \ \ \ val,\ s\ =\ divmod(val,\ 60)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ h,\ m\ =\ divmod(val,\ 60)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ time(h,\ m,\ s,\ us)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00323}00323\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}time\ not\ supported\ by\ Python:\ hour=\{h\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00325}00325\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00326}00326\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00327}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timetz_loader}{00327}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timetz_loader}{TimetzLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00328}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timetz_loader_a635a2f97fc25cce0ea6cbab55a571720}{00328}}\ \ \ \ \ \_re\_format\ =\ re.compile(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ rb\textcolor{stringliteral}{"{}"{}"{}(?ix)}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00330}00330\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \string^}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00331}00331\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (\(\backslash\)d+)\ :\ (\(\backslash\)d+)\ :\ (\(\backslash\)d+)\ (?:\ \(\backslash\).\ (\(\backslash\)d+)\ )?\ \ \ \ \ \ \ \#\ Time\ and\ micros}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00332}00332\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ([-\/+])\ (\(\backslash\)d+)\ (?:\ :\ (\(\backslash\)d+)\ )?\ (?:\ :\ (\(\backslash\)d+)\ )?\ \ \#\ Timezone}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00333}00333\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \$}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00334}00334\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00335}00335\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00336}00336\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00337}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timetz_loader_a2bd1c45f1ee6ea3f9fe5f455b3bce4af}{00337}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timetz_loader_a2bd1c45f1ee6ea3f9fe5f455b3bce4af}{load}}(self,\ data:\ Buffer)\ -\/>\ time:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (m\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timetz_loader_a635a2f97fc25cce0ea6cbab55a571720}{\_re\_format}}.match(data)):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ \ \ \ \ s\ =\ bytes(data).decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}can't\ parse\ timetz\ \{s!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00341}00341\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ ho,\ mi,\ se,\ fr,\ sgn,\ oh,\ om,\ os\ =\ m.groups()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00343}00343\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Pad\ the\ fraction\ of\ second\ to\ get\ the\ micros}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ fr:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ \ \ \ \ us\ =\ int(fr)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(fr)\ <\ 6:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ us\ *=\ \_uspad[len(fr)]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ \ \ \ \ us\ =\ 0}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00351}00351\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Calculate\ timezone}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ off\ =\ 60\ *\ 60\ *\ int(oh)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ om:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ \ \ \ \ off\ +=\ 60\ *\ int(om)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ os:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \ \ \ \ off\ +=\ int(os)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00358}00358\ \ \ \ \ \ \ \ \ tz\ =\ timezone(timedelta(0,\ off\ \textcolor{keywordflow}{if}\ sgn\ ==\ b\textcolor{stringliteral}{"{}+"{}}\ \textcolor{keywordflow}{else}\ -\/off))}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00359}00359\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ time(int(ho),\ int(mi),\ int(se),\ us,\ tz)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ \ \ \ \ s\ =\ bytes(data).decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}can't\ parse\ timetz\ \{s!r\}:\ \{e\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00365}00365\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00366}00366\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00367}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timetz_binary_loader}{00367}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timetz_binary_loader}{TimetzBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00368}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timetz_binary_loader}{00368}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00369}00369\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00370}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timetz_binary_loader_a85c96400e8eb4936f90e3bffff4c6023}{00370}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timetz_binary_loader_a85c96400e8eb4936f90e3bffff4c6023}{load}}(self,\ data:\ Buffer)\ -\/>\ time:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ val,\ off\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a1373a103afb81b2635667d85a468fc61}{\_unpack\_timetz}}(data)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00372}00372\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00373}00373\ \ \ \ \ \ \ \ \ val,\ us\ =\ divmod(val,\ 1\_000\_000)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ val,\ s\ =\ divmod(val,\ 60)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ h,\ m\ =\ divmod(val,\ 60)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00376}00376\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ time(h,\ m,\ s,\ us,\ timezone(timedelta(seconds=-\/off)))}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00379}00379\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}time\ not\ supported\ by\ Python:\ hour=\{h\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00381}00381\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00382}00382\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00383}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader}{00383}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader}{TimestampLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00384}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_adcb230349d6b883b2e4bb432a82c6bbc}{00384}}\ \ \ \ \ \_re\_format\ =\ re.compile(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00385}00385\ \ \ \ \ \ \ \ \ rb\textcolor{stringliteral}{"{}"{}"{}(?ix)}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00386}00386\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \string^}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00387}00387\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (\(\backslash\)d+)\ [\string^a-\/z0-\/9]\ (\(\backslash\)d+)\ [\string^a-\/z0-\/9]\ (\(\backslash\)d+)\ \ \ \#\ Date}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00388}00388\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?:\ T\ |\ [\string^a-\/z0-\/9]\ )\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Separator,\ including\ T}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00389}00389\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (\(\backslash\)d+)\ [\string^a-\/z0-\/9]\ (\(\backslash\)d+)\ [\string^a-\/z0-\/9]\ (\(\backslash\)d+)\ \ \ \#\ Time}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00390}00390\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?:\ \(\backslash\).(\(\backslash\)d+)\ )?\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Micros}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00391}00391\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \$}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00392}00392\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00393}00393\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00394}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_adf2697b62cf5af30661f1d1b2221b791}{00394}}\ \ \ \ \ \_re\_format\_pg\ =\ re.compile(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ rb\textcolor{stringliteral}{"{}"{}"{}(?ix)}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00396}00396\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \string^}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00397}00397\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ [a-\/z]+\ \ \ \ \ \ \ \ \ \ [\string^a-\/z0-\/9]\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ DoW,\ separator}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00398}00398\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (\(\backslash\)d+|[a-\/z]+)\ \ \ \ [\string^a-\/z0-\/9]\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Month\ or\ day}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00399}00399\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (\(\backslash\)d+|[a-\/z]+)\ \ \ \ [\string^a-\/z0-\/9]\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Month\ or\ day}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00400}00400\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (\(\backslash\)d+)\ [\string^a-\/z0-\/9]\ (\(\backslash\)d+)\ [\string^a-\/z0-\/9]\ (\(\backslash\)d+)\ \ \ \#\ Time}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00401}00401\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?:\ \(\backslash\).(\(\backslash\)d+)\ )?\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Micros}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00402}00402\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ [\string^a-\/z0-\/9]\ (\(\backslash\)d+)\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Year}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00403}00403\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \$}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00404}00404\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00405}00405\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00406}00406\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00407}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_ad1ada9b6e8502d5a7632d7093cd69aa4}{00407}}\ \ \ \ \ \_ORDER\_YMD\ =\ 0}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00408}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a02003cbdcb328cfcd1452b64cfce2cca}{00408}}\ \ \ \ \ \_ORDER\_DMY\ =\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00409}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a560d6a209048874cd6ca4ba60d5f8d6c}{00409}}\ \ \ \ \ \_ORDER\_MDY\ =\ 2}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00410}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a6eae822076bdcd3e2bbe13d4be69781b}{00410}}\ \ \ \ \ \_ORDER\_PGDM\ =\ 3}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00411}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a4f2434b55df5800baa41a3c0426e8569}{00411}}\ \ \ \ \ \_ORDER\_PGMD\ =\ 4}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00412}00412\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00413}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_aa3188872df92945f9741e4ef56c6001c}{00413}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_aa3188872df92945f9741e4ef56c6001c}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00414}00414\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_aa3188872df92945f9741e4ef56c6001c}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00415}00415\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (ds\ :=\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_adee2464196bff916edfd80dcc7b4b074}{\_get\_datestyle}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}})).startswith(b\textcolor{stringliteral}{"{}I"{}}):\ \ \textcolor{comment}{\#\ ISO}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00416}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_aa4c5411ddfa025a521031750754a8ad5}{00416}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_aa4c5411ddfa025a521031750754a8ad5}{\_order}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_ad1ada9b6e8502d5a7632d7093cd69aa4}{\_ORDER\_YMD}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ ds.startswith(b\textcolor{stringliteral}{"{}G"{}}):\ \ \textcolor{comment}{\#\ German}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_aa4c5411ddfa025a521031750754a8ad5}{\_order}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a02003cbdcb328cfcd1452b64cfce2cca}{\_ORDER\_DMY}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ ds.startswith(b\textcolor{stringliteral}{"{}S"{}}):\ \ \textcolor{comment}{\#\ SQL}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00420}00420\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_aa4c5411ddfa025a521031750754a8ad5}{\_order}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a02003cbdcb328cfcd1452b64cfce2cca}{\_ORDER\_DMY}}\ \textcolor{keywordflow}{if}\ ds.endswith(b\textcolor{stringliteral}{"{}DMY"{}})\ \textcolor{keywordflow}{else}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a560d6a209048874cd6ca4ba60d5f8d6c}{\_ORDER\_MDY}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00421}00421\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ ds.startswith(b\textcolor{stringliteral}{"{}P"{}}):\ \ \textcolor{comment}{\#\ Postgres}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_aa4c5411ddfa025a521031750754a8ad5}{\_order}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a6eae822076bdcd3e2bbe13d4be69781b}{\_ORDER\_PGDM}}\ \textcolor{keywordflow}{if}\ ds.endswith(b\textcolor{stringliteral}{"{}DMY"{}})\ \textcolor{keywordflow}{else}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a4f2434b55df5800baa41a3c0426e8569}{\_ORDER\_PGMD}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_adcb230349d6b883b2e4bb432a82c6bbc}{\_re\_format}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_adf2697b62cf5af30661f1d1b2221b791}{\_re\_format\_pg}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00424}00424\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_interface_error}{InterfaceError}}(f\textcolor{stringliteral}{"{}unexpected\ DateStyle:\ \{ds.decode('ascii')\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00426}00426\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00427}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a3765f18b7a5b100c21e15af848018dc9}{00427}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a3765f18b7a5b100c21e15af848018dc9}{load}}(self,\ data:\ Buffer)\ -\/>\ datetime:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00428}00428\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (m\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_adcb230349d6b883b2e4bb432a82c6bbc}{\_re\_format}}.match(data)):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00429}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader}{00429}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a9ba5893a3d267fd0f85c5c03693f58b1}{\_get\_timestamp\_load\_error}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}},\ data)\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00430}00430\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00431}00431\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_aa4c5411ddfa025a521031750754a8ad5}{\_order}}\ ==\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_ad1ada9b6e8502d5a7632d7093cd69aa4}{\_ORDER\_YMD}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00432}00432\ \ \ \ \ \ \ \ \ \ \ \ \ ye,\ mo,\ da,\ ho,\ mi,\ se,\ fr\ =\ m.groups()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00433}00433\ \ \ \ \ \ \ \ \ \ \ \ \ imo\ =\ int(mo)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00434}00434\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_aa4c5411ddfa025a521031750754a8ad5}{\_order}}\ ==\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a02003cbdcb328cfcd1452b64cfce2cca}{\_ORDER\_DMY}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00435}00435\ \ \ \ \ \ \ \ \ \ \ \ \ da,\ mo,\ ye,\ ho,\ mi,\ se,\ fr\ =\ m.groups()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00436}00436\ \ \ \ \ \ \ \ \ \ \ \ \ imo\ =\ int(mo)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00437}00437\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_aa4c5411ddfa025a521031750754a8ad5}{\_order}}\ ==\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a560d6a209048874cd6ca4ba60d5f8d6c}{\_ORDER\_MDY}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ \ \ \ \ mo,\ da,\ ye,\ ho,\ mi,\ se,\ fr\ =\ m.groups()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ \ \ \ \ imo\ =\ int(mo)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_aa4c5411ddfa025a521031750754a8ad5}{\_order}}\ ==\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_loader_a6eae822076bdcd3e2bbe13d4be69781b}{\_ORDER\_PGDM}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00442}00442\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ da,\ mo,\ ho,\ mi,\ se,\ fr,\ ye\ =\ m.groups()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00443}00443\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ mo,\ da,\ ho,\ mi,\ se,\ fr,\ ye\ =\ m.groups()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00446}00446\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ imo\ =\ \_month\_abbr[mo]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00447}00447\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00448}00448\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ s\ =\ mo.decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00449}00449\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}can't\ parse\ month:\ \{s!r\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00450}00450\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00451}00451\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Pad\ the\ fraction\ of\ second\ to\ get\ the\ micros}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ fr:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00453}00453\ \ \ \ \ \ \ \ \ \ \ \ \ us\ =\ int(fr)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00454}00454\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(fr)\ <\ 6:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00455}00455\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ us\ *=\ \_uspad[len(fr)]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ \ \ \ \ us\ =\ 0}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00458}00458\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00460}00460\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacedatetime}{datetime}}(int(ye),\ imo,\ int(da),\ int(ho),\ int(mi),\ int(se),\ us)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00462}00462\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a9ba5893a3d267fd0f85c5c03693f58b1}{\_get\_timestamp\_load\_error}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}},\ data,\ ex)\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00463}00463\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00464}00464\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00465}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_binary_loader}{00465}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_binary_loader}{TimestampBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00466}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_binary_loader}{00466}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00467}00467\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00468}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_binary_loader_a4c8763f51c57667b52472fa15cef9f9c}{00468}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamp_binary_loader_a4c8763f51c57667b52472fa15cef9f9c}{load}}(self,\ data:\ Buffer)\ -\/>\ datetime:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00469}00469\ \ \ \ \ \ \ \ \ micros\ =\ unpack\_int8(data)[0]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00470}00470\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00471}00471\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \_pg\_datetime\_epoch\ +\ timedelta(microseconds=micros)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00472}00472\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ OverflowError:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00473}00473\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ micros\ <=\ 0:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00474}00474\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(\textcolor{stringliteral}{"{}timestamp\ too\ small\ (before\ year\ 1)"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00475}00475\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00476}00476\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(\textcolor{stringliteral}{"{}timestamp\ too\ large\ (after\ year\ 10K)"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00477}00477\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00478}00478\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00479}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader}{00479}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader}{TimestamptzLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00480}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a4be828f3d2197af7269ad0af610653e1}{00480}}\ \ \ \ \ \_re\_format\ =\ re.compile(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00481}00481\ \ \ \ \ \ \ \ \ rb\textcolor{stringliteral}{"{}"{}"{}(?ix)}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00482}00482\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \string^}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00483}00483\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (\(\backslash\)d+)\ [\string^a-\/z0-\/9]\ (\(\backslash\)d+)\ [\string^a-\/z0-\/9]\ (\(\backslash\)d+)\ \ \ \ \ \ \ \#\ Date}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00484}00484\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?:\ T\ |\ [\string^a-\/z0-\/9]\ )\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Separator,\ including\ T}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00485}00485\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (\(\backslash\)d+)\ [\string^a-\/z0-\/9]\ (\(\backslash\)d+)\ [\string^a-\/z0-\/9]\ (\(\backslash\)d+)\ \ \ \ \ \ \ \#\ Time}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00486}00486\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?:\ \(\backslash\).(\(\backslash\)d+)\ )?\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Micros}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00487}00487\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ([-\/+])\ (\(\backslash\)d+)\ (?:\ :\ (\(\backslash\)d+)\ )?\ (?:\ :\ (\(\backslash\)d+)\ )?\ \ \#\ Timezone}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00488}00488\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \$}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00489}00489\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00490}00490\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00491}00491\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00492}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_ae93319c4985fe51277daf996436c10d3}{00492}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_ae93319c4985fe51277daf996436c10d3}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00493}00493\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_ae93319c4985fe51277daf996436c10d3}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00494}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a776e4912e03d83dd7c75d401d215b2d9}{00494}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a776e4912e03d83dd7c75d401d215b2d9}{\_timezone}}\ =\ get\_tzinfo(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}}.pgconn\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}}\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00495}00495\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00496}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader}{00496}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_adee2464196bff916edfd80dcc7b4b074}{\_get\_datestyle}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}}).startswith(b\textcolor{stringliteral}{"{}I"{}}):\ \ \textcolor{comment}{\#\ ISO}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00497}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a61fe19c9fff7a3f8b20c1ad691dcddae}{00497}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a61fe19c9fff7a3f8b20c1ad691dcddae}{\_load\_method}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a692ddc95191a78ba05c933fbf8f9d422}{\_load\_iso}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00498}00498\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00499}00499\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a61fe19c9fff7a3f8b20c1ad691dcddae}{\_load\_method}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a1f3c740032f7fc4de2d851c27ade463f}{\_load\_notimpl}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00500}00500\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00501}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_adc814ee54530605bec9878f20127b1e2}{00501}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_adc814ee54530605bec9878f20127b1e2}{load}}(self,\ data:\ Buffer)\ -\/>\ datetime:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00502}00502\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a61fe19c9fff7a3f8b20c1ad691dcddae}{\_load\_method}}(self,\ data)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00503}00503\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00504}00504\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00505}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a692ddc95191a78ba05c933fbf8f9d422}{00505}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a692ddc95191a78ba05c933fbf8f9d422}{\_load\_iso}}(self:\ TimestamptzLoader,\ data:\ Buffer)\ -\/>\ datetime:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00506}00506\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (m\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a4be828f3d2197af7269ad0af610653e1}{\_re\_format}}.match(data)):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a9ba5893a3d267fd0f85c5c03693f58b1}{\_get\_timestamp\_load\_error}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}},\ data)\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00508}00508\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00509}00509\ \ \ \ \ \ \ \ \ ye,\ mo,\ da,\ ho,\ mi,\ se,\ fr,\ sgn,\ oh,\ om,\ os\ =\ m.groups()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00510}00510\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00511}00511\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Pad\ the\ fraction\ of\ second\ to\ get\ the\ micros}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00512}00512\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ fr:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00513}00513\ \ \ \ \ \ \ \ \ \ \ \ \ us\ =\ int(fr)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00514}00514\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(fr)\ <\ 6:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ us\ *=\ \_uspad[len(fr)]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00516}00516\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00517}00517\ \ \ \ \ \ \ \ \ \ \ \ \ us\ =\ 0}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00518}00518\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Calculate\ timezone\ offset}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ soff\ =\ 60\ *\ 60\ *\ int(oh)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ om:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \ \ \ \ soff\ +=\ 60\ *\ int(om)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00523}00523\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ os:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ \ \ \ \ soff\ +=\ int(os)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00525}00525\ \ \ \ \ \ \ \ \ tzoff\ =\ timedelta(0,\ soff\ \textcolor{keywordflow}{if}\ sgn\ ==\ b\textcolor{stringliteral}{"{}+"{}}\ \textcolor{keywordflow}{else}\ -\/soff)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00526}00526\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ return\ value\ is\ a\ datetime\ with\ the\ timezone\ of\ the\ connection}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00528}00528\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ (in\ order\ to\ be\ consistent\ with\ the\ binary\ loader,\ which\ is\ the\ only}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00529}00529\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ thing\ it\ can\ return).\ So\ create\ a\ temporary\ datetime\ object,\ in\ utc,}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00530}00530\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ shift\ it\ by\ the\ offset\ parsed\ from\ the\ timestamp,\ and\ then\ move\ it\ to}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00531}00531\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ connection\ timezone.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00532}00532\ \ \ \ \ \ \ \ \ dt\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00533}00533\ \ \ \ \ \ \ \ \ ex:\ Exception}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00535}00535\ \ \ \ \ \ \ \ \ \ \ \ \ dt\ =\ \doxymbox{\hyperlink{namespacedatetime}{datetime}}(int(ye),\ int(mo),\ int(da),\ int(ho),\ int(mi),\ int(se),\ us,\ utc)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00536}00536\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (dt\ -\/\ tzoff).astimezone(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a776e4912e03d83dd7c75d401d215b2d9}{\_timezone}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00537}00537\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ OverflowError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00538}00538\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ we\ have\ created\ the\ temporary\ 'dt'\ it\ means\ that\ we\ have\ a}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00539}00539\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ datetime\ close\ to\ max,\ the\ shift\ pushed\ it\ past\ max,\ overflowing.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00540}00540\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ this\ case\ return\ the\ datetime\ in\ a\ fixed\ offset\ timezone.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00541}00541\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ dt\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00542}00542\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dt.replace(tzinfo=timezone(tzoff))}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00543}00543\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00544}00544\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ex\ =\ e}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00545}00545\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00546}00546\ \ \ \ \ \ \ \ \ \ \ \ \ ex\ =\ e}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00547}00547\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a9ba5893a3d267fd0f85c5c03693f58b1}{\_get\_timestamp\_load\_error}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}},\ data,\ ex)\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00549}00549\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00550}00550\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00551}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a1f3c740032f7fc4de2d851c27ade463f}{00551}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_loader_a1f3c740032f7fc4de2d851c27ade463f}{\_load\_notimpl}}(self:\ TimestamptzLoader,\ data:\ Buffer)\ -\/>\ datetime:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00552}00552\ \ \ \ \ \ \ \ \ s\ =\ bytes(data).decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00553}00553\ \ \ \ \ \ \ \ \ ds\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_adee2464196bff916edfd80dcc7b4b074}{\_get\_datestyle}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}}).decode(\textcolor{stringliteral}{"{}ascii"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00554}00554\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00555}00555\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}can't\ parse\ timestamptz\ with\ DateStyle\ \{ds!r\}:\ \{s!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00556}00556\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00557}00557\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00558}00558\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00559}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader}{00559}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader}{TimestamptzBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00560}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader}{00560}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00561}00561\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00562}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader_a43f97b77fc0c9790f29c2b2d9281ad8e}{00562}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader_a43f97b77fc0c9790f29c2b2d9281ad8e}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00563}00563\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader_a43f97b77fc0c9790f29c2b2d9281ad8e}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00564}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader_ab83a9cbaed567a8b6381dad63621fdce}{00564}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader_ab83a9cbaed567a8b6381dad63621fdce}{\_timezone}}\ =\ get\_tzinfo(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}}.pgconn\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}}\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00565}00565\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00566}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader_af7d2aed9a02d4c9b233bb643f7c58d69}{00566}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader_af7d2aed9a02d4c9b233bb643f7c58d69}{load}}(self,\ data:\ Buffer)\ -\/>\ datetime:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00567}00567\ \ \ \ \ \ \ \ \ micros\ =\ unpack\_int8(data)[0]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00568}00568\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00569}00569\ \ \ \ \ \ \ \ \ \ \ \ \ ts\ =\ \_pg\_datetimetz\_epoch\ +\ timedelta(microseconds=micros)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00570}00570\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ts.astimezone(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader_ab83a9cbaed567a8b6381dad63621fdce}{\_timezone}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00571}00571\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ OverflowError:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00572}00572\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ we\ were\ asked\ about\ a\ timestamp\ which\ would\ overflow\ in\ UTC,}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00573}00573\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ but\ not\ in\ the\ desired\ timezone\ (e.g.\ datetime.max\ at\ Chicago}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00574}00574\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ timezone)\ we\ can\ still\ save\ the\ day\ by\ shifting\ the\ value\ by\ the}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00575}00575\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ timezone\ offset\ and\ then\ replacing\ the\ timezone.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00576}00576\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader_ab83a9cbaed567a8b6381dad63621fdce}{\_timezone}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00577}00577\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ utcoff\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader_ab83a9cbaed567a8b6381dad63621fdce}{\_timezone}}.utcoffset(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00578}00578\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ datetime.min\ \textcolor{keywordflow}{if}\ micros\ <\ 0\ \textcolor{keywordflow}{else}\ datetime.max}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00579}00579\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00580}00580\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ usoff\ =\ 1\_000\_000\ *\ int(utcoff.total\_seconds())}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00581}00581\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00582}00582\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ts\ =\ \_pg\_datetime\_epoch\ +\ timedelta(microseconds=micros\ +\ usoff)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00583}00583\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ OverflowError:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00584}00584\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}\ \ \textcolor{comment}{\#\ will\ raise\ downstream}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00585}00585\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00586}00586\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ts.replace(tzinfo=self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_timestamptz_binary_loader_ab83a9cbaed567a8b6381dad63621fdce}{\_timezone}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00587}00587\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00588}00588\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ micros\ <=\ 0:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00589}00589\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(\textcolor{stringliteral}{"{}timestamp\ too\ small\ (before\ year\ 1)"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00590}00590\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00591}00591\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(\textcolor{stringliteral}{"{}timestamp\ too\ large\ (after\ year\ 10K)"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00592}00592\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00593}00593\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00594}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader}{00594}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader}{IntervalLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00595}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_ab9139b1225a43d768d02d1da445b2ff4}{00595}}\ \ \ \ \ \_re\_interval\ =\ re.compile(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00596}00596\ \ \ \ \ \ \ \ \ rb\textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00597}00597\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?:\ ([-\/+]?\(\backslash\)d+)\ \(\backslash\)s+\ years?\ \(\backslash\)s*\ )?\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Years}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00598}00598\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?:\ ([-\/+]?\(\backslash\)d+)\ \(\backslash\)s+\ mons?\ \(\backslash\)s*\ )?\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Months}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00599}00599\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?:\ ([-\/+]?\(\backslash\)d+)\ \(\backslash\)s+\ days?\ \(\backslash\)s*\ )?\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Days}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00600}00600\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?:\ ([-\/+])?\ (\(\backslash\)d+)\ :\ (\(\backslash\)d+)\ :\ (\(\backslash\)d+\ (?:\(\backslash\).\(\backslash\)d+)?)\ \ \ \ \#\ Time}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00601}00601\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ )?}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00602}00602\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}},}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00603}00603\ \ \ \ \ \ \ \ \ re.VERBOSE,}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00604}00604\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00605}00605\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00606}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_af04e9f93c0294fb5a160b8b25cf23f2f}{00606}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_af04e9f93c0294fb5a160b8b25cf23f2f}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00607}00607\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_af04e9f93c0294fb5a160b8b25cf23f2f}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00608}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader}{00608}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a0b3169356f2db61b2abd44e4b9f50a43}{\_get\_intervalstyle}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}})\ ==\ b\textcolor{stringliteral}{"{}postgres"{}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00609}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_a3498c66105f4e87ba640bc2ff7bfea63}{00609}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_a3498c66105f4e87ba640bc2ff7bfea63}{\_load\_method}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_a67e0ad05de610d05e7a229e39c93d048}{\_load\_postgres}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00610}00610\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00611}00611\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_a3498c66105f4e87ba640bc2ff7bfea63}{\_load\_method}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_a8f841466ef79d385f2714068366e5cda}{\_load\_notimpl}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00612}00612\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00613}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_ae704ccb17845ef884535b9eb3de5b72f}{00613}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_ae704ccb17845ef884535b9eb3de5b72f}{load}}(self,\ data:\ Buffer)\ -\/>\ timedelta:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00614}00614\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_a3498c66105f4e87ba640bc2ff7bfea63}{\_load\_method}}(self,\ data)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00615}00615\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00616}00616\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00617}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_a67e0ad05de610d05e7a229e39c93d048}{00617}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_a67e0ad05de610d05e7a229e39c93d048}{\_load\_postgres}}(self:\ IntervalLoader,\ data:\ Buffer)\ -\/>\ timedelta:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00618}00618\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (m\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_ab9139b1225a43d768d02d1da445b2ff4}{\_re\_interval}}.match(data)):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00619}00619\ \ \ \ \ \ \ \ \ \ \ \ \ s\ =\ bytes(data).decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00620}00620\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}can't\ parse\ interval\ \{s!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00621}00621\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00622}00622\ \ \ \ \ \ \ \ \ ye,\ mo,\ da,\ sgn,\ ho,\ mi,\ se\ =\ m.groups()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00623}00623\ \ \ \ \ \ \ \ \ days\ =\ 0}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00624}00624\ \ \ \ \ \ \ \ \ seconds\ =\ 0.0}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00625}00625\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00626}00626\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ye:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00627}00627\ \ \ \ \ \ \ \ \ \ \ \ \ days\ +=\ 365\ *\ int(ye)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00628}00628\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ mo:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00629}00629\ \ \ \ \ \ \ \ \ \ \ \ \ days\ +=\ 30\ *\ int(mo)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00630}00630\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ da:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00631}00631\ \ \ \ \ \ \ \ \ \ \ \ \ days\ +=\ int(da)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00632}00632\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00633}00633\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ho:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00634}00634\ \ \ \ \ \ \ \ \ \ \ \ \ seconds\ =\ 3600\ *\ int(ho)\ +\ 60\ *\ int(mi)\ +\ float(se)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00635}00635\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ sgn\ ==\ b\textcolor{stringliteral}{"{}-\/"{}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00636}00636\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ seconds\ =\ -\/seconds}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00637}00637\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00638}00638\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00639}00639\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ timedelta(days=days,\ seconds=seconds)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00640}00640\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ OverflowError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00641}00641\ \ \ \ \ \ \ \ \ \ \ \ \ s\ =\ bytes(data).decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00642}00642\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}can't\ parse\ interval\ \{s!r\}:\ \{e\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00643}00643\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00644}00644\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00645}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_a8f841466ef79d385f2714068366e5cda}{00645}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_loader_a8f841466ef79d385f2714068366e5cda}{\_load\_notimpl}}(self:\ IntervalLoader,\ data:\ Buffer)\ -\/>\ timedelta:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00646}00646\ \ \ \ \ \ \ \ \ s\ =\ bytes(data).decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00647}00647\ \ \ \ \ \ \ \ \ ints\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a0b3169356f2db61b2abd44e4b9f50a43}{\_get\_intervalstyle}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}}).decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00648}00648\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00649}00649\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}can't\ parse\ interval\ with\ IntervalStyle\ \{ints\}:\ \{s!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00650}00650\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00651}00651\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00652}00652\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00653}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_binary_loader}{00653}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_binary_loader}{IntervalBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00654}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_binary_loader}{00654}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00655}00655\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00656}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_binary_loader_a2eddaa12da0907b18a0930f2db69a520}{00656}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1datetime_1_1_interval_binary_loader_a2eddaa12da0907b18a0930f2db69a520}{load}}(self,\ data:\ Buffer)\ -\/>\ timedelta:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00657}00657\ \ \ \ \ \ \ \ \ micros,\ days,\ months\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a25bda6b1c3ede0ac220246991d14b3f3}{\_unpack\_interval}}(data)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00658}00658\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ months\ >\ 0:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00659}00659\ \ \ \ \ \ \ \ \ \ \ \ \ years,\ months\ =\ divmod(months,\ 12)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00660}00660\ \ \ \ \ \ \ \ \ \ \ \ \ days\ =\ days\ +\ 30\ *\ months\ +\ 365\ *\ years}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00661}00661\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ months\ <\ 0:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00662}00662\ \ \ \ \ \ \ \ \ \ \ \ \ years,\ months\ =\ divmod(-\/months,\ 12)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00663}00663\ \ \ \ \ \ \ \ \ \ \ \ \ days\ =\ days\ -\/\ 30\ *\ months\ -\/\ 365\ *\ years}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00664}00664\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00665}00665\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00666}00666\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ timedelta(days=days,\ microseconds=micros)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00667}00667\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ OverflowError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00668}00668\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}can't\ parse\ interval:\ \{e\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00669}00669\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00670}00670\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00671}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_adee2464196bff916edfd80dcc7b4b074}{00671}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_adee2464196bff916edfd80dcc7b4b074}{\_get\_datestyle}}(conn:\ BaseConnection[Any]\ |\ \textcolor{keywordtype}{None})\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00672}00672\ \ \ \ \ \textcolor{keywordflow}{if}\ conn\ \textcolor{keywordflow}{and}\ (ds\ :=\ conn.pgconn.parameter\_status(b\textcolor{stringliteral}{"{}DateStyle"{}})):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00673}00673\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ds}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00674}00674\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00675}00675\ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}ISO,\ DMY"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00676}00676\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00677}00677\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00678}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a0b3169356f2db61b2abd44e4b9f50a43}{00678}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a0b3169356f2db61b2abd44e4b9f50a43}{\_get\_intervalstyle}}(conn:\ BaseConnection[Any]\ |\ \textcolor{keywordtype}{None})\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00679}00679\ \ \ \ \ \textcolor{keywordflow}{if}\ conn\ \textcolor{keywordflow}{and}\ (ints\ :=\ conn.pgconn.parameter\_status(b\textcolor{stringliteral}{"{}IntervalStyle"{}})):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00680}00680\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ints}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00681}00681\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00682}00682\ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}unknown"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00683}00683\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00684}00684\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00685}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a9ba5893a3d267fd0f85c5c03693f58b1}{00685}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a9ba5893a3d267fd0f85c5c03693f58b1}{\_get\_timestamp\_load\_error}}(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00686}00686\ \ \ \ \ conn:\ BaseConnection[Any]\ |\ \textcolor{keywordtype}{None},\ data:\ Buffer,\ ex:\ Exception\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00687}00687\ )\ -\/>\ Exception:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00688}00688\ \ \ \ \ s\ =\ bytes(data).decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00689}00689\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00690}00690\ \ \ \ \ \textcolor{keyword}{def\ }is\_overflow(s:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00691}00691\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ s:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00692}00692\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00693}00693\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00694}00694\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_adee2464196bff916edfd80dcc7b4b074}{\_get\_datestyle}}(conn).startswith(b\textcolor{stringliteral}{"{}P"{}}):\ \ \textcolor{comment}{\#\ Postgres}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00695}00695\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ len(s.split()[0])\ >\ 10\ \ \textcolor{comment}{\#\ date\ is\ first\ token}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00696}00696\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00697}00697\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ len(s.split()[-\/1])\ >\ 4\ \ \textcolor{comment}{\#\ year\ is\ last\ token}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00698}00698\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00699}00699\ \ \ \ \ \textcolor{keywordflow}{if}\ s\ ==\ \textcolor{stringliteral}{"{}-\/infinity"{}}\ \textcolor{keywordflow}{or}\ s.endswith(\textcolor{stringliteral}{"{}BC"{}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00700}00700\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(\textcolor{stringliteral}{"{}timestamp\ too\ small\ (before\ year\ 1):\ \{s!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00701}00701\ \ \ \ \ \textcolor{keywordflow}{elif}\ s\ ==\ \textcolor{stringliteral}{"{}infinity"{}}\ \textcolor{keywordflow}{or}\ is\_overflow(s):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00702}00702\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}timestamp\ too\ large\ (after\ year\ 10K):\ \{s!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00703}00703\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00704}00704\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(f\textcolor{stringliteral}{"{}can't\ parse\ timestamp\ \{s!r\}:\ \{ex\ or\ '(unknown)'\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00705}00705\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00706}00706\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00707}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a8b269f918ba114594afc588d4828aeef}{00707}}\ \_month\_abbr\ =\ \{}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00708}00708\ \ \ \ \ n:\ i}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00709}00709\ \ \ \ \ \textcolor{keywordflow}{for}\ i,\ n\ \textcolor{keywordflow}{in}\ enumerate(b\textcolor{stringliteral}{"{}Jan\ Feb\ Mar\ Apr\ May\ Jun\ Jul\ Aug\ Sep\ Oct\ Nov\ Dec"{}}.split(),\ 1)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00710}00710\ \}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00711}00711\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00712}00712\ \textcolor{comment}{\#\ Pad\ to\ get\ microseconds\ from\ a\ fraction\ of\ seconds}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00713}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_aa3b6e1e870bab67661bd9040bd56a24e}{00713}}\ \_uspad\ =\ [0,\ 100\_000,\ 10\_000,\ 1\_000,\ 100,\ 10,\ 1]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00714}00714\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00715}00715\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00716}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a884f225fc92c53ef190ba1e07ad8edb2}{00716}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1datetime_a884f225fc92c53ef190ba1e07ad8edb2}{register\_default\_adapters}}(context:\ AdaptContext)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00717}00717\ \ \ \ \ adapters\ =\ context.adapters}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00718}00718\ \ \ \ \ adapters.register\_dumper(\textcolor{stringliteral}{"{}datetime.date"{}},\ DateDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00719}00719\ \ \ \ \ adapters.register\_dumper(\textcolor{stringliteral}{"{}datetime.date"{}},\ DateBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00720}00720\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00721}00721\ \ \ \ \ \textcolor{comment}{\#\ first\ register\ dumpers\ for\ 'timetz'\ oid,\ then\ the\ proper\ ones\ on\ time\ type.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00722}00722\ \ \ \ \ adapters.register\_dumper(\textcolor{stringliteral}{"{}datetime.time"{}},\ TimeTzDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00723}00723\ \ \ \ \ adapters.register\_dumper(\textcolor{stringliteral}{"{}datetime.time"{}},\ TimeTzBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00724}00724\ \ \ \ \ adapters.register\_dumper(\textcolor{stringliteral}{"{}datetime.time"{}},\ TimeDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00725}00725\ \ \ \ \ adapters.register\_dumper(\textcolor{stringliteral}{"{}datetime.time"{}},\ TimeBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00726}00726\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00727}00727\ \ \ \ \ \textcolor{comment}{\#\ first\ register\ dumpers\ for\ 'timestamp'\ oid,\ then\ the\ proper\ ones}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00728}00728\ \ \ \ \ \textcolor{comment}{\#\ on\ the\ datetime\ type.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00729}00729\ \ \ \ \ adapters.register\_dumper(\textcolor{stringliteral}{"{}datetime.datetime"{}},\ DatetimeNoTzDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00730}00730\ \ \ \ \ adapters.register\_dumper(\textcolor{stringliteral}{"{}datetime.datetime"{}},\ DatetimeNoTzBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00731}00731\ \ \ \ \ adapters.register\_dumper(\textcolor{stringliteral}{"{}datetime.datetime"{}},\ DatetimeDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00732}00732\ \ \ \ \ adapters.register\_dumper(\textcolor{stringliteral}{"{}datetime.datetime"{}},\ DatetimeBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00733}00733\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00734}00734\ \ \ \ \ adapters.register\_dumper(\textcolor{stringliteral}{"{}datetime.timedelta"{}},\ TimedeltaDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00735}00735\ \ \ \ \ adapters.register\_dumper(\textcolor{stringliteral}{"{}datetime.timedelta"{}},\ TimedeltaBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00736}00736\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00737}00737\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}date"{}},\ DateLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00738}00738\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}date"{}},\ DateBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00739}00739\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}time"{}},\ TimeLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00740}00740\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}time"{}},\ TimeBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00741}00741\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}timetz"{}},\ TimetzLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00742}00742\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}timetz"{}},\ TimetzBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00743}00743\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}timestamp"{}},\ TimestampLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00744}00744\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}timestamp"{}},\ TimestampBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00745}00745\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}timestamptz"{}},\ TimestamptzLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00746}00746\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}timestamptz"{}},\ TimestamptzBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00747}00747\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}interval"{}},\ IntervalLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2datetime_8py_source_l00748}00748\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}interval"{}},\ IntervalBinaryLoader)}
+
+\end{DoxyCode}

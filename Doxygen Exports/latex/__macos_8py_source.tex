@@ -1,0 +1,577 @@
+\doxysection{\+\_\+macos.\+py}
+\hypertarget{__macos_8py_source}{}\label{__macos_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/truststore/\_macos.py@{venv/Lib/site-\/packages/pip/\_vendor/truststore/\_macos.py}}
+\doxymbox{\hyperlink{__macos_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos}{00001}}\ \textcolor{keyword}{import}\ contextlib}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00002}00002\ \textcolor{keyword}{import}\ ctypes}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00003}00003\ \textcolor{keyword}{import}\ platform}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00004}00004\ \textcolor{keyword}{import}\ ssl}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00005}00005\ \textcolor{keyword}{import}\ typing}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00006}00006\ \textcolor{keyword}{from}\ ctypes\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00007}00007\ \ \ \ \ CDLL,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00008}00008\ \ \ \ \ POINTER,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00009}00009\ \ \ \ \ c\_bool,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00010}00010\ \ \ \ \ c\_char\_p,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00011}00011\ \ \ \ \ c\_int32,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00012}00012\ \ \ \ \ c\_long,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00013}00013\ \ \ \ \ c\_uint32,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00014}00014\ \ \ \ \ c\_ulong,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00015}00015\ \ \ \ \ c\_void\_p,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00016}00016\ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00017}00017\ \textcolor{keyword}{from}\ ctypes.util\ \textcolor{keyword}{import}\ find\_library}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00018}00018\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00019}00019\ \textcolor{keyword}{from}\ .\_ssl\_constants\ \textcolor{keyword}{import}\ \_set\_ssl\_context\_verify\_mode}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00020}00020\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00021}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_adc1f603bfbc14bcd8b4f608ae11468e1}{00021}}\ \_mac\_version\ =\ platform.mac\_ver()[0]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00022}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_affdb4027efeba7cbf094df73d10301b4}{00022}}\ \_mac\_version\_info\ =\ tuple(map(int,\ \_mac\_version.split(\textcolor{stringliteral}{"{}."{}})))}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00023}00023\ \textcolor{keywordflow}{if}\ \_mac\_version\_info\ <\ (10,\ 8):}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00024}00024\ \ \ \ \ \textcolor{keywordflow}{raise}\ ImportError(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00025}00025\ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Only\ OS\ X\ 10.8\ and\ newer\ are\ supported,\ not\ \{\_mac\_version\_info[0]\}.\{\_mac\_version\_info[1]\}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00026}00026\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00028}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a7520a6d8d74e61561722f4cea6d0adfb}{00028}}\ \_is\_macos\_version\_10\_14\_or\_later\ =\ \_mac\_version\_info\ >=\ (10,\ 14)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00031}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a9c567794a84580047cb83e8db9e61ec4}{00031}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a9c567794a84580047cb83e8db9e61ec4}{\_load\_cdll}}(name:\ str,\ macos10\_16\_path:\ str)\ -\/>\ CDLL:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00032}00032\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Loads\ a\ CDLL\ by\ name,\ falling\ back\ to\ known\ path\ on\ 10.16+"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00033}00033\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Big\ Sur\ is\ technically\ 11\ but\ we\ use\ 10.16\ due\ to\ the\ Big\ Sur}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ beta\ being\ labeled\ as\ 10.16.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ path:\ str\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \_mac\_version\_info\ >=\ (10,\ 16):}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ \ \ \ \ path\ =\ macos10\_16\_path}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ \ \ \ \ path\ =\ find\_library(name)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ path:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ OSError\ \ \textcolor{comment}{\#\ Caught\ and\ reraised\ as\ 'ImportError'}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ CDLL(path,\ use\_errno=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00044}00044\ \ \ \ \ \textcolor{keywordflow}{except}\ OSError:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ImportError(f\textcolor{stringliteral}{"{}The\ library\ \{name\}\ failed\ to\ load"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00046}00046\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00047}00047\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00048}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a7118e5c055356cbe7af12474f2d1f48d}{00048}}\ Security\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a9c567794a84580047cb83e8db9e61ec4}{\_load\_cdll}}(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00049}00049\ \ \ \ \ \textcolor{stringliteral}{"{}Security"{}},\ \textcolor{stringliteral}{"{}/System/Library/Frameworks/Security.framework/Security"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00050}00050\ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00051}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_aa7bb876b753dff53ffc6c8e242161e38}{00051}}\ CoreFoundation\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a9c567794a84580047cb83e8db9e61ec4}{\_load\_cdll}}(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00052}00052\ \ \ \ \ \textcolor{stringliteral}{"{}CoreFoundation"{}},}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00053}00053\ \ \ \ \ \textcolor{stringliteral}{"{}/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"{}},}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00054}00054\ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00056}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a2d98b1a3a9ba5db5f66845054f7ce89b}{00056}}\ Boolean\ =\ c\_bool}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00057}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_ac8a3660eca0bea8f10f9a767f74ce852}{00057}}\ CFIndex\ =\ c\_long}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00058}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_aa74b35b78c81d56e6d406e671b93af8e}{00058}}\ CFStringEncoding\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00059}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_ae9e676404479b784e73b9da949b65e66}{00059}}\ CFData\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00060}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a419ff3d3c7a2e05badb6cd1a6d0d5683}{00060}}\ CFString\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00061}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a9ae73de6023d2d975e4999c74eb7c6a1}{00061}}\ CFArray\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00062}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a0eab8fa69492645f77277780f4b2792c}{00062}}\ CFMutableArray\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00063}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a73ce7061dc5dfb072e555d875d46bdbc}{00063}}\ CFError\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00064}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a4f73cf6b70970df27309415c68ed8af9}{00064}}\ CFType\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00065}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a76ec15ffeb15c5e1e57c2ef8ad4b15f8}{00065}}\ CFTypeID\ =\ c\_ulong}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00066}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_aac86e4b5b538d1c9f54ee2e3dedb7e02}{00066}}\ CFTypeRef\ =\ POINTER(CFType)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00067}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a64f04674c7c364be0590addd973967b4}{00067}}\ CFAllocatorRef\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00069}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_acc8d04a700e8cb91685172a02f5a6ab9}{00069}}\ OSStatus\ =\ c\_int32}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00071}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a1a56238e461a4e6f05c8f0f5667e430a}{00071}}\ CFErrorRef\ =\ POINTER(CFError)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00072}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a87980e34af5698d8c62e88a683f2ddf0}{00072}}\ CFDataRef\ =\ POINTER(CFData)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00073}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a00b55f20462d400fd1c0cdda9009c2aa}{00073}}\ CFStringRef\ =\ POINTER(CFString)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00074}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a7691c8a9f3764b891805934d279b49ec}{00074}}\ CFArrayRef\ =\ POINTER(CFArray)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00075}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a12d2423d5eb86d27df2744f213c9096f}{00075}}\ CFMutableArrayRef\ =\ POINTER(CFMutableArray)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00076}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a4f6443c8854426062add608838e3c94c}{00076}}\ CFArrayCallBacks\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00077}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_ad90fc94be6489000ff59c02c90726888}{00077}}\ CFOptionFlags\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00078}00078\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00079}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_ac95b141f80e8e45aef4d28a628fd2d1b}{00079}}\ SecCertificateRef\ =\ POINTER(c\_void\_p)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00080}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_aaf9c722c2a0a44217ad7de60111b90ef}{00080}}\ SecPolicyRef\ =\ POINTER(c\_void\_p)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00081}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a8b88096e1a915ef8f6fff675d627724e}{00081}}\ SecTrustRef\ =\ POINTER(c\_void\_p)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00082}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_ac9de27994e3ee7f7f98811f0ead53e82}{00082}}\ SecTrustResultType\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00083}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a12df9816fb55c3b9ce7a1f954f4fc903}{00083}}\ SecTrustOptionFlags\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00085}00085\ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00086}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_ab734b121fcad8e7fc28f2f47f38adf04}{00086}}\ \ \ \ \ Security.SecCertificateCreateWithData.argtypes\ =\ [CFAllocatorRef,\ CFDataRef]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00087}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a4cc3962c15200ab5e53c280285ae1b20}{00087}}\ \ \ \ \ Security.SecCertificateCreateWithData.restype\ =\ SecCertificateRef}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00089}00089\ \ \ \ \ Security.SecCertificateCopyData.argtypes\ =\ [SecCertificateRef]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00090}00090\ \ \ \ \ Security.SecCertificateCopyData.restype\ =\ CFDataRef}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00091}00091\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00092}00092\ \ \ \ \ Security.SecCopyErrorMessageString.argtypes\ =\ [OSStatus,\ c\_void\_p]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00093}00093\ \ \ \ \ Security.SecCopyErrorMessageString.restype\ =\ CFStringRef}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00095}00095\ \ \ \ \ Security.SecTrustSetAnchorCertificates.argtypes\ =\ [SecTrustRef,\ CFArrayRef]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00096}00096\ \ \ \ \ Security.SecTrustSetAnchorCertificates.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00097}00097\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00098}00098\ \ \ \ \ Security.SecTrustSetAnchorCertificatesOnly.argtypes\ =\ [SecTrustRef,\ Boolean]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00099}00099\ \ \ \ \ Security.SecTrustSetAnchorCertificatesOnly.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00100}00100\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00101}00101\ \ \ \ \ Security.SecPolicyCreateRevocation.argtypes\ =\ [CFOptionFlags]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00102}00102\ \ \ \ \ Security.SecPolicyCreateRevocation.restype\ =\ SecPolicyRef}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00104}00104\ \ \ \ \ Security.SecPolicyCreateSSL.argtypes\ =\ [Boolean,\ CFStringRef]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00105}00105\ \ \ \ \ Security.SecPolicyCreateSSL.restype\ =\ SecPolicyRef}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00107}00107\ \ \ \ \ Security.SecTrustCreateWithCertificates.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ CFTypeRef,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ CFTypeRef,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ POINTER(SecTrustRef),}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00111}00111\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00112}00112\ \ \ \ \ Security.SecTrustCreateWithCertificates.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00113}00113\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00114}00114\ \ \ \ \ Security.SecTrustGetTrustResult.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ SecTrustRef,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ POINTER(SecTrustResultType),}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00117}00117\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00118}00118\ \ \ \ \ Security.SecTrustGetTrustResult.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00120}00120\ \ \ \ \ Security.SecTrustEvaluate.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ SecTrustRef,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ POINTER(SecTrustResultType),}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00123}00123\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00124}00124\ \ \ \ \ Security.SecTrustEvaluate.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00125}00125\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00126}00126\ \ \ \ \ Security.SecTrustRef\ =\ SecTrustRef\ \ \textcolor{comment}{\#\ type:\ ignore[attr-\/defined]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00127}00127\ \ \ \ \ Security.SecTrustResultType\ =\ SecTrustResultType\ \ \textcolor{comment}{\#\ type:\ ignore[attr-\/defined]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00128}00128\ \ \ \ \ Security.OSStatus\ =\ OSStatus\ \ \textcolor{comment}{\#\ type:\ ignore[attr-\/defined]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00129}00129\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00130}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a7aa4ebc73b9f8ba586155810f2ab01db}{00130}}\ \ \ \ \ kSecRevocationUseAnyAvailableMethod\ =\ 3}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00131}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a1a6c1cac35d2e343ee021fe55dae99ae}{00131}}\ \ \ \ \ kSecRevocationRequirePositiveResponse\ =\ 8}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00132}00132\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00133}00133\ \ \ \ \ CoreFoundation.CFRelease.argtypes\ =\ [CFTypeRef]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00134}00134\ \ \ \ \ CoreFoundation.CFRelease.restype\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00135}00135\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00136}00136\ \ \ \ \ CoreFoundation.CFGetTypeID.argtypes\ =\ [CFTypeRef]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00137}00137\ \ \ \ \ CoreFoundation.CFGetTypeID.restype\ =\ CFTypeID}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00138}00138\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00139}00139\ \ \ \ \ CoreFoundation.CFStringCreateWithCString.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ CFAllocatorRef,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ c\_char\_p,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ CFStringEncoding,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00143}00143\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00144}00144\ \ \ \ \ CoreFoundation.CFStringCreateWithCString.restype\ =\ CFStringRef}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00145}00145\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00146}00146\ \ \ \ \ CoreFoundation.CFStringGetCStringPtr.argtypes\ =\ [CFStringRef,\ CFStringEncoding]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00147}00147\ \ \ \ \ CoreFoundation.CFStringGetCStringPtr.restype\ =\ c\_char\_p}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00148}00148\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00149}00149\ \ \ \ \ CoreFoundation.CFStringGetCString.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ CFStringRef,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ c\_char\_p,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ CFIndex,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ CFStringEncoding,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00154}00154\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00155}00155\ \ \ \ \ CoreFoundation.CFStringGetCString.restype\ =\ c\_bool}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00156}00156\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00157}00157\ \ \ \ \ CoreFoundation.CFDataCreate.argtypes\ =\ [CFAllocatorRef,\ c\_char\_p,\ CFIndex]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00158}00158\ \ \ \ \ CoreFoundation.CFDataCreate.restype\ =\ CFDataRef}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00159}00159\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00160}00160\ \ \ \ \ CoreFoundation.CFDataGetLength.argtypes\ =\ [CFDataRef]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00161}00161\ \ \ \ \ CoreFoundation.CFDataGetLength.restype\ =\ CFIndex}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00162}00162\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00163}00163\ \ \ \ \ CoreFoundation.CFDataGetBytePtr.argtypes\ =\ [CFDataRef]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00164}00164\ \ \ \ \ CoreFoundation.CFDataGetBytePtr.restype\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00165}00165\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00166}00166\ \ \ \ \ CoreFoundation.CFArrayCreate.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ CFAllocatorRef,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ POINTER(CFTypeRef),}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ CFIndex,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ CFArrayCallBacks,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00171}00171\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00172}00172\ \ \ \ \ CoreFoundation.CFArrayCreate.restype\ =\ CFArrayRef}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00174}00174\ \ \ \ \ CoreFoundation.CFArrayCreateMutable.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ CFAllocatorRef,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ CFIndex,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ CFArrayCallBacks,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00178}00178\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00179}00179\ \ \ \ \ CoreFoundation.CFArrayCreateMutable.restype\ =\ CFMutableArrayRef}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00180}00180\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00181}00181\ \ \ \ \ CoreFoundation.CFArrayAppendValue.argtypes\ =\ [CFMutableArrayRef,\ c\_void\_p]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00182}00182\ \ \ \ \ CoreFoundation.CFArrayAppendValue.restype\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00183}00183\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00184}00184\ \ \ \ \ CoreFoundation.CFArrayGetCount.argtypes\ =\ [CFArrayRef]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00185}00185\ \ \ \ \ CoreFoundation.CFArrayGetCount.restype\ =\ CFIndex}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00186}00186\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00187}00187\ \ \ \ \ CoreFoundation.CFArrayGetValueAtIndex.argtypes\ =\ [CFArrayRef,\ CFIndex]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00188}00188\ \ \ \ \ CoreFoundation.CFArrayGetValueAtIndex.restype\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00189}00189\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00190}00190\ \ \ \ \ CoreFoundation.CFErrorGetCode.argtypes\ =\ [CFErrorRef]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00191}00191\ \ \ \ \ CoreFoundation.CFErrorGetCode.restype\ =\ CFIndex}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00193}00193\ \ \ \ \ CoreFoundation.CFErrorCopyDescription.argtypes\ =\ [CFErrorRef]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00194}00194\ \ \ \ \ CoreFoundation.CFErrorCopyDescription.restype\ =\ CFStringRef}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00195}00195\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00196}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_adeb7f148e7d39322f9fea2013db17453}{00196}}\ \ \ \ \ CoreFoundation.kCFAllocatorDefault\ =\ CFAllocatorRef.in\_dll(\ \ \textcolor{comment}{\#\ type:\ ignore[attr-\/defined]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ CoreFoundation,\ \textcolor{stringliteral}{"{}kCFAllocatorDefault"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00198}00198\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00199}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_aba6a6e27be3265c5e426d38a175127c8}{00199}}\ \ \ \ \ CoreFoundation.kCFTypeArrayCallBacks\ =\ c\_void\_p.in\_dll(\ \ \textcolor{comment}{\#\ type:\ ignore[attr-\/defined]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ CoreFoundation,\ \textcolor{stringliteral}{"{}kCFTypeArrayCallBacks"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00201}00201\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00202}00202\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00203}00203\ \ \ \ \ CoreFoundation.CFTypeRef\ =\ CFTypeRef\ \ \textcolor{comment}{\#\ type:\ ignore[attr-\/defined]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00204}00204\ \ \ \ \ CoreFoundation.CFArrayRef\ =\ CFArrayRef\ \ \textcolor{comment}{\#\ type:\ ignore[attr-\/defined]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00205}00205\ \ \ \ \ CoreFoundation.CFStringRef\ =\ CFStringRef\ \ \textcolor{comment}{\#\ type:\ ignore[attr-\/defined]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00206}00206\ \ \ \ \ CoreFoundation.CFErrorRef\ =\ CFErrorRef\ \ \textcolor{comment}{\#\ type:\ ignore[attr-\/defined]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00207}00207\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00208}00208\ \textcolor{keywordflow}{except}\ AttributeError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00209}00209\ \ \ \ \ \textcolor{keywordflow}{raise}\ ImportError(f\textcolor{stringliteral}{"{}Error\ initializing\ ctypes:\ \{e\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00210}00210\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00211}00211\ \textcolor{comment}{\#\ SecTrustEvaluateWithError\ is\ macOS\ 10.14+}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00212}00212\ \textcolor{keywordflow}{if}\ \_is\_macos\_version\_10\_14\_or\_later:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00213}00213\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ Security.SecTrustEvaluateWithError.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ SecTrustRef,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \ \ \ \ POINTER(CFErrorRef),}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ Security.SecTrustEvaluateWithError.restype\ =\ c\_bool}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00219}00219\ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ImportError(f\textcolor{stringliteral}{"{}Error\ initializing\ ctypes:\ \{e\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00221}00221\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00222}00222\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00223}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_ae005f4f1974783b9831413685ce93402}{00223}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_ae005f4f1974783b9831413685ce93402}{\_handle\_osstatus}}(result:\ OSStatus,\ \_:\ typing.Any,\ args:\ typing.Any)\ -\/>\ typing.Any:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00224}00224\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00225}00225\ \textcolor{stringliteral}{\ \ \ \ Raises\ an\ error\ if\ the\ OSStatus\ value\ is\ non-\/zero.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00226}00226\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00227}00227\ \ \ \ \ \textcolor{keywordflow}{if}\ int(result)\ ==\ 0:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ args}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00229}00229\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00230}00230\ \ \ \ \ \textcolor{comment}{\#\ Returns\ a\ CFString\ which\ we\ need\ to\ transform}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00231}00231\ \ \ \ \ \textcolor{comment}{\#\ into\ a\ UTF-\/8\ Python\ string.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00232}00232\ \ \ \ \ error\_message\_cfstring\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00233}00233\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ error\_message\_cfstring\ =\ Security.SecCopyErrorMessageString(result,\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00235}00235\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ First\ step\ is\ convert\ the\ CFString\ into\ a\ C\ string\ pointer.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ try\ the\ fast\ no-\/copy\ way\ first.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ error\_message\_cfstring\_c\_void\_p\ =\ ctypes.cast(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ error\_message\_cfstring,\ ctypes.POINTER(ctypes.c\_void\_p)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ message\ =\ CoreFoundation.CFStringGetCStringPtr(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ error\_message\_cfstring\_c\_void\_p,\ CFConst.kCFStringEncodingUTF8}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00244}00244\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Quoting\ the\ Apple\ dev\ docs:}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ "{}A\ pointer\ to\ a\ C\ string\ or\ NULL\ if\ the\ internal}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ storage\ of\ theString\ does\ not\ allow\ this\ to\ be}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ returned\ efficiently."{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ So\ we\ need\ to\ get\ our\ hands\ dirty.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ message\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \ \ \ \ buffer\ =\ ctypes.create\_string\_buffer(1024)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ result\ =\ CoreFoundation.CFStringGetCString(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ error\_message\_cfstring\_c\_void\_p,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ buffer,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 1024,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ CFConst.kCFStringEncodingUTF8,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ result:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ OSError(\textcolor{stringliteral}{"{}Error\ copying\ C\ string\ from\ CFStringRef"{}})}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ message\ =\ buffer.value}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00263}00263\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00264}00264\ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ error\_message\_cfstring\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFRelease(error\_message\_cfstring)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00267}00267\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00268}00268\ \ \ \ \ \textcolor{comment}{\#\ If\ no\ message\ can\ be\ found\ for\ this\ status\ we\ come}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00269}00269\ \ \ \ \ \textcolor{comment}{\#\ up\ with\ a\ generic\ one\ that\ forwards\ the\ status\ code.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00270}00270\ \ \ \ \ \textcolor{keywordflow}{if}\ message\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{or}\ message\ ==\ \textcolor{stringliteral}{"{}"{}}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ message\ =\ f\textcolor{stringliteral}{"{}SecureTransport\ operation\ returned\ a\ non-\/zero\ OSStatus:\ \{result\}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00272}00272\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00273}00273\ \ \ \ \ \textcolor{keywordflow}{raise}\ ssl.SSLError(message)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00274}00274\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00275}00275\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00276}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a8c4d23c4e84574e095a4c3c78243cb25}{00276}}\ Security.SecTrustCreateWithCertificates.errcheck\ =\ \_handle\_osstatus\ \ \textcolor{comment}{\#\ type:\ ignore[assignment]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00277}00277\ Security.SecTrustSetAnchorCertificates.errcheck\ =\ \_handle\_osstatus\ \ \textcolor{comment}{\#\ type:\ ignore[assignment]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00278}00278\ Security.SecTrustSetAnchorCertificatesOnly.errcheck\ =\ \_handle\_osstatus\ \ \textcolor{comment}{\#\ type:\ ignore[assignment]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00279}00279\ Security.SecTrustGetTrustResult.errcheck\ =\ \_handle\_osstatus\ \ \textcolor{comment}{\#\ type:\ ignore[assignment]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00280}00280\ Security.SecTrustEvaluate.errcheck\ =\ \_handle\_osstatus\ \ \textcolor{comment}{\#\ type:\ ignore[assignment]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00281}00281\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00282}00282\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00283}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1truststore_1_1__macos_1_1_c_f_const}{00283}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1truststore_1_1__macos_1_1_c_f_const}{CFConst}}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00284}00284\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}CoreFoundation\ constants"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00285}00285\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00286}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1truststore_1_1__macos_1_1_c_f_const_aff2cc5dae478e3d1f5005d86305968fa}{00286}}\ \ \ \ \ kCFStringEncodingUTF8\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_aa74b35b78c81d56e6d406e671b93af8e}{CFStringEncoding}}(0x08000100)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00287}00287\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00288}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1truststore_1_1__macos_1_1_c_f_const_a6031304d1e1a4e339430de65939d1fe1}{00288}}\ \ \ \ \ errSecIncompleteCertRevocationCheck\ =\ -\/67635}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00289}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1truststore_1_1__macos_1_1_c_f_const_a2cc789c133667f55e7076b390bcb8fb5}{00289}}\ \ \ \ \ errSecHostNameMismatch\ =\ -\/67602}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00290}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1truststore_1_1__macos_1_1_c_f_const_a20b825392e10e133ada77881a83862b8}{00290}}\ \ \ \ \ errSecCertificateExpired\ =\ -\/67818}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00291}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1truststore_1_1__macos_1_1_c_f_const_a776bf2cc9f6adf22e2c9e4cbcb13e7a7}{00291}}\ \ \ \ \ errSecNotTrusted\ =\ -\/67843}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00292}00292\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00293}00293\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00294}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a99eb24f33179dd1e797d29506ca69f50}{00294}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a99eb24f33179dd1e797d29506ca69f50}{\_bytes\_to\_cf\_data\_ref}}(value:\ bytes)\ -\/>\ CFDataRef:\ \ \textcolor{comment}{\#\ type:\ ignore[valid-\/type]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00295}00295\ \ \ \ \ \textcolor{keywordflow}{return}\ CoreFoundation.CFDataCreate(\ \ \textcolor{comment}{\#\ type:\ ignore[no-\/any-\/return]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ CoreFoundation.kCFAllocatorDefault,\ value,\ len(value)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00297}00297\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00298}00298\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00299}00299\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00300}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_ab840440cb964de7634990fb7b4e527a1}{00300}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_ab840440cb964de7634990fb7b4e527a1}{\_bytes\_to\_cf\_string}}(value:\ bytes)\ -\/>\ CFString:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00301}00301\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00302}00302\ \textcolor{stringliteral}{\ \ \ \ Given\ a\ Python\ binary\ data,\ create\ a\ CFString.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00303}00303\ \textcolor{stringliteral}{\ \ \ \ The\ string\ must\ be\ CFReleased\ by\ the\ caller.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00304}00304\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00305}00305\ \ \ \ \ c\_str\ =\ ctypes.c\_char\_p(value)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00306}00306\ \ \ \ \ cf\_str\ =\ CoreFoundation.CFStringCreateWithCString(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ CoreFoundation.kCFAllocatorDefault,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ c\_str,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ CFConst.kCFStringEncodingUTF8,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00310}00310\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00311}00311\ \ \ \ \ \textcolor{keywordflow}{return}\ cf\_str\ \ \textcolor{comment}{\#\ type:\ ignore[no-\/any-\/return]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00312}00312\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00313}00313\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00314}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a20736490c065276c7ebf020a9c87f1ad}{00314}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a20736490c065276c7ebf020a9c87f1ad}{\_cf\_string\_ref\_to\_str}}(cf\_string\_ref:\ CFStringRef)\ -\/>\ str\ |\ \textcolor{keywordtype}{None}:\ \ \textcolor{comment}{\#\ type:\ ignore[valid-\/type]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00315}00315\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00316}00316\ \textcolor{stringliteral}{\ \ \ \ Creates\ a\ Unicode\ string\ from\ a\ CFString\ object.\ Used\ entirely\ for\ error}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00317}00317\ \textcolor{stringliteral}{\ \ \ \ reporting.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00318}00318\ \textcolor{stringliteral}{\ \ \ \ Yes,\ it\ annoys\ me\ quite\ a\ lot\ that\ this\ function\ is\ this\ complex.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00319}00319\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00320}00320\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00321}00321\ \ \ \ \ string\ =\ CoreFoundation.CFStringGetCStringPtr(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ cf\_string\_ref,\ CFConst.kCFStringEncodingUTF8}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00323}00323\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00324}00324\ \ \ \ \ \textcolor{keywordflow}{if}\ string\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00325}00325\ \ \ \ \ \ \ \ \ buffer\ =\ ctypes.create\_string\_buffer(1024)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00326}00326\ \ \ \ \ \ \ \ \ result\ =\ CoreFoundation.CFStringGetCString(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00327}00327\ \ \ \ \ \ \ \ \ \ \ \ \ cf\_string\_ref,\ buffer,\ 1024,\ CFConst.kCFStringEncodingUTF8}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ result:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ OSError(\textcolor{stringliteral}{"{}Error\ copying\ C\ string\ from\ CFStringRef"{}})}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00331}00331\ \ \ \ \ \ \ \ \ string\ =\ buffer.value}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00332}00332\ \ \ \ \ \textcolor{keywordflow}{if}\ string\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ string\ =\ string.decode(\textcolor{stringliteral}{"{}utf-\/8"{}})}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00334}00334\ \ \ \ \ \textcolor{keywordflow}{return}\ string\ \ \textcolor{comment}{\#\ type:\ ignore[no-\/any-\/return]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00335}00335\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00336}00336\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00337}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a178f4a7df2fb309bfaf4feee3f187687}{00337}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a178f4a7df2fb309bfaf4feee3f187687}{\_der\_certs\_to\_cf\_cert\_array}}(certs:\ list[bytes])\ -\/>\ CFMutableArrayRef:\ \ \textcolor{comment}{\#\ type:\ ignore[valid-\/type]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00338}00338\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Builds\ a\ CFArray\ of\ SecCertificateRefs\ from\ a\ list\ of\ DER-\/encoded\ certificates.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00339}00339\ \textcolor{stringliteral}{\ \ \ \ Responsibility\ of\ the\ caller\ to\ call\ CoreFoundation.CFRelease\ on\ the\ CFArray.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00340}00340\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00341}00341\ \ \ \ \ cf\_array\ =\ CoreFoundation.CFArrayCreateMutable(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ CoreFoundation.kCFAllocatorDefault,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ 0,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ ctypes.byref(CoreFoundation.kCFTypeArrayCallBacks),}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00345}00345\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00346}00346\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ cf\_array:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ MemoryError(\textcolor{stringliteral}{"{}Unable\ to\ allocate\ memory!"{}})}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00348}00348\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00349}00349\ \ \ \ \ \textcolor{keywordflow}{for}\ cert\_data\ \textcolor{keywordflow}{in}\ certs:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ cf\_data\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ sec\_cert\_ref\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ \ \ \ \ cf\_data\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a99eb24f33179dd1e797d29506ca69f50}{\_bytes\_to\_cf\_data\_ref}}(cert\_data)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ \ \ \ \ sec\_cert\_ref\ =\ Security.SecCertificateCreateWithData(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.kCFAllocatorDefault,\ cf\_data}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFArrayAppendValue(cf\_array,\ sec\_cert\_ref)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00358}00358\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cf\_data:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFRelease(cf\_data)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ sec\_cert\_ref:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFRelease(sec\_cert\_ref)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00363}00363\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00364}00364\ \ \ \ \ \textcolor{keywordflow}{return}\ cf\_array\ \ \textcolor{comment}{\#\ type:\ ignore[no-\/any-\/return]}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00365}00365\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00366}00366\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00367}00367\ \textcolor{preprocessor}{@contextlib.contextmanager}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00368}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a875587db26c025d3e50458dc24937cde}{00368}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a875587db26c025d3e50458dc24937cde}{\_configure\_context}}(ctx:\ ssl.SSLContext)\ -\/>\ typing.Iterator[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00369}00369\ \ \ \ \ check\_hostname\ =\ ctx.check\_hostname}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00370}00370\ \ \ \ \ verify\_mode\ =\ ctx.verify\_mode}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00371}00371\ \ \ \ \ ctx.check\_hostname\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00372}00372\ \ \ \ \ \_set\_ssl\_context\_verify\_mode(ctx,\ ssl.CERT\_NONE)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00373}00373\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00375}00375\ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ ctx.check\_hostname\ =\ check\_hostname}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ \_set\_ssl\_context\_verify\_mode(ctx,\ verify\_mode)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00378}00378\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00379}00379\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00380}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a1b49efa650be3032023289ccf87c7aaf}{00380}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a1b49efa650be3032023289ccf87c7aaf}{\_verify\_peercerts\_impl}}(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00381}00381\ \ \ \ \ ssl\_context:\ ssl.SSLContext,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00382}00382\ \ \ \ \ cert\_chain:\ list[bytes],}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00383}00383\ \ \ \ \ server\_hostname:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00384}00384\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00385}00385\ \ \ \ \ certs\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00386}00386\ \ \ \ \ policies\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00387}00387\ \ \ \ \ trust\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00388}00388\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Only\ set\ a\ hostname\ on\ the\ policy\ if\ we're\ verifying\ the\ hostname}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00390}00390\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ on\ the\ leaf\ certificate.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ server\_hostname\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ ssl\_context.check\_hostname:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ \ \ \ \ cf\_str\_hostname\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cf\_str\_hostname\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_ab840440cb964de7634990fb7b4e527a1}{\_bytes\_to\_cf\_string}}(server\_hostname.encode(\textcolor{stringliteral}{"{}ascii"{}}))}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ssl\_policy\ =\ Security.SecPolicyCreateSSL(\textcolor{keyword}{True},\ cf\_str\_hostname)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cf\_str\_hostname:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFRelease(cf\_str\_hostname)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00399}00399\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ \ \ \ \ ssl\_policy\ =\ Security.SecPolicyCreateSSL(\textcolor{keyword}{True},\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00401}00401\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ policies\ =\ ssl\_policy}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ssl\_context.verify\_flags\ \&\ ssl.VERIFY\_CRL\_CHECK\_CHAIN:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Add\ explicit\ policy\ requiring\ positive\ revocation\ checks}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00405}00405\ \ \ \ \ \ \ \ \ \ \ \ \ policies\ =\ CoreFoundation.CFArrayCreateMutable(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00406}00406\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.kCFAllocatorDefault,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 0,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00408}00408\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctypes.byref(CoreFoundation.kCFTypeArrayCallBacks),}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00409}00409\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFArrayAppendValue(policies,\ ssl\_policy)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00411}00411\ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFRelease(ssl\_policy)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00412}00412\ \ \ \ \ \ \ \ \ \ \ \ \ revocation\_policy\ =\ Security.SecPolicyCreateRevocation(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00413}00413\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ kSecRevocationUseAnyAvailableMethod}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00414}00414\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ |\ kSecRevocationRequirePositiveResponse}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00415}00415\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00416}00416\ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFArrayAppendValue(policies,\ revocation\_policy)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFRelease(revocation\_policy)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ ssl\_context.verify\_flags\ \&\ ssl.VERIFY\_CRL\_CHECK\_LEAF:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError(\textcolor{stringliteral}{"{}VERIFY\_CRL\_CHECK\_LEAF\ not\ implemented\ for\ macOS"{}})}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00420}00420\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00421}00421\ \ \ \ \ \ \ \ \ certs\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ \ \ \ \ certs\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a178f4a7df2fb309bfaf4feee3f187687}{\_der\_certs\_to\_cf\_cert\_array}}(cert\_chain)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00424}00424\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Now\ that\ we\ have\ certificates\ loaded\ and\ a\ SecPolicy}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00426}00426\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ we\ can\ finally\ create\ a\ SecTrust\ object!}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00427}00427\ \ \ \ \ \ \ \ \ \ \ \ \ trust\ =\ Security.SecTrustRef()}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00428}00428\ \ \ \ \ \ \ \ \ \ \ \ \ Security.SecTrustCreateWithCertificates(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00429}00429\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ certs,\ policies,\ ctypes.byref(trust)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00430}00430\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00431}00431\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00432}00432\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00433}00433\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ certs\ are\ now\ being\ held\ by\ SecTrust\ so\ we\ can}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00434}00434\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ release\ our\ handles\ for\ the\ array.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00435}00435\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ certs:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00436}00436\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFRelease(certs)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00437}00437\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ there\ are\ additional\ trust\ anchors\ to\ load\ we\ need\ to\ transform}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ list\ of\ DER-\/encoded\ certificates\ into\ a\ CFArray.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ ctx\_ca\_certs\_der:\ list[bytes]\ |\ \textcolor{keywordtype}{None}\ =\ ssl\_context.get\_ca\_certs(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ \ \ \ \ binary\_form=\textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00442}00442\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00443}00443\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ctx\_ca\_certs\_der:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ \ \ \ \ ctx\_ca\_certs\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00446}00446\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctx\_ca\_certs\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a178f4a7df2fb309bfaf4feee3f187687}{\_der\_certs\_to\_cf\_cert\_array}}(ctx\_ca\_certs\_der)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00447}00447\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Security.SecTrustSetAnchorCertificates(trust,\ ctx\_ca\_certs)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00448}00448\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00449}00449\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ctx\_ca\_certs:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00450}00450\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFRelease(ctx\_ca\_certs)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00451}00451\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ always\ want\ system\ certificates.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00453}00453\ \ \ \ \ \ \ \ \ Security.SecTrustSetAnchorCertificatesOnly(trust,\ \textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00454}00454\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00455}00455\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ macOS\ 10.13\ and\ earlier\ don't\ support\ SecTrustEvaluateWithError()}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ so\ we\ use\ SecTrustEvaluate()\ which\ means\ we\ need\ to\ construct\ error}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ messages\ ourselves.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00458}00458\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \_is\_macos\_version\_10\_14\_or\_later:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_adc833280e58abe60d495b2ef52f24652}{\_verify\_peercerts\_impl\_macos\_10\_14}}(ssl\_context,\ trust)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00460}00460\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a986b8d3a587375fbe01f57913cbdc65e}{\_verify\_peercerts\_impl\_macos\_10\_13}}(ssl\_context,\ trust)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00462}00462\ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00463}00463\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ policies:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00464}00464\ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFRelease(policies)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00465}00465\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ trust:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00466}00466\ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFRelease(trust)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00467}00467\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00468}00468\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00469}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a986b8d3a587375fbe01f57913cbdc65e}{00469}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a986b8d3a587375fbe01f57913cbdc65e}{\_verify\_peercerts\_impl\_macos\_10\_13}}(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00470}00470\ \ \ \ \ ssl\_context:\ ssl.SSLContext,\ sec\_trust\_ref:\ typing.Any}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00471}00471\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00472}00472\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Verify\ using\ 'SecTrustEvaluate'\ API\ for\ macOS\ 10.13\ and\ earlier.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00473}00473\ \textcolor{stringliteral}{\ \ \ \ macOS\ 10.14\ added\ the\ 'SecTrustEvaluateWithError'\ API.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00474}00474\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00475}00475\ \ \ \ \ sec\_trust\_result\_type\ =\ Security.SecTrustResultType()}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00476}00476\ \ \ \ \ Security.SecTrustEvaluate(sec\_trust\_ref,\ ctypes.byref(sec\_trust\_result\_type))}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00477}00477\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00478}00478\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00479}00479\ \ \ \ \ \ \ \ \ sec\_trust\_result\_type\_as\_int\ =\ int(sec\_trust\_result\_type.value)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00480}00480\ \ \ \ \ \textcolor{keywordflow}{except}\ (ValueError,\ TypeError):}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00481}00481\ \ \ \ \ \ \ \ \ sec\_trust\_result\_type\_as\_int\ =\ -\/1}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00482}00482\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00483}00483\ \ \ \ \ \textcolor{comment}{\#\ Apple\ doesn't\ document\ these\ values\ in\ their\ own\ API\ docs.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00484}00484\ \ \ \ \ \textcolor{comment}{\#\ See:\ https://github.com/xybp888/iOS-\/SDKs/blob/master/iPhoneOS13.0.sdk/System/Library/Frameworks/Security.framework/Headers/SecTrust.h\#L84}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00485}00485\ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00486}00486\ \ \ \ \ \ \ \ \ ssl\_context.verify\_mode\ ==\ ssl.CERT\_REQUIRED}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00487}00487\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ sec\_trust\_result\_type\_as\_int\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ (1,\ 4)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00488}00488\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00489}00489\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Note\ that\ we're\ not\ able\ to\ ignore\ only\ hostname\ errors}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00490}00490\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ for\ macOS\ 10.13\ and\ earlier,\ so\ check\_hostname=False\ will}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00491}00491\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ still\ return\ an\ error.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00492}00492\ \ \ \ \ \ \ \ \ sec\_trust\_result\_type\_to\_message\ =\ \{}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00493}00493\ \ \ \ \ \ \ \ \ \ \ \ \ 0:\ \textcolor{stringliteral}{"{}Invalid\ trust\ result\ type"{}},}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00494}00494\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ 1:\ "{}Trust\ evaluation\ succeeded"{},}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00495}00495\ \ \ \ \ \ \ \ \ \ \ \ \ 2:\ \textcolor{stringliteral}{"{}User\ confirmation\ required"{}},}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00496}00496\ \ \ \ \ \ \ \ \ \ \ \ \ 3:\ \textcolor{stringliteral}{"{}User\ specified\ that\ certificate\ is\ not\ trusted"{}},}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00497}00497\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ 4:\ "{}Trust\ result\ is\ unspecified"{},}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00498}00498\ \ \ \ \ \ \ \ \ \ \ \ \ 5:\ \textcolor{stringliteral}{"{}Recoverable\ trust\ failure\ occurred"{}},}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00499}00499\ \ \ \ \ \ \ \ \ \ \ \ \ 6:\ \textcolor{stringliteral}{"{}Fatal\ trust\ failure\ occurred"{}},}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ \ \ \ \ 7:\ \textcolor{stringliteral}{"{}Other\ error\ occurred,\ certificate\ may\ be\ revoked"{}},}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00501}00501\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00502}00502\ \ \ \ \ \ \ \ \ error\_message\ =\ sec\_trust\_result\_type\_to\_message.get(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00503}00503\ \ \ \ \ \ \ \ \ \ \ \ \ sec\_trust\_result\_type\_as\_int,}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00504}00504\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Unknown\ trust\ result:\ \{sec\_trust\_result\_type\_as\_int\}"{}},}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00505}00505\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00506}00506\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ err\ =\ ssl.SSLCertVerificationError(error\_message)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00508}00508\ \ \ \ \ \ \ \ \ err.verify\_message\ =\ error\_message}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00509}00509\ \ \ \ \ \ \ \ \ err.verify\_code\ =\ sec\_trust\_result\_type\_as\_int}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00510}00510\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ err}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00511}00511\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00512}00512\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00513}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_adc833280e58abe60d495b2ef52f24652}{00513}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_adc833280e58abe60d495b2ef52f24652}{\_verify\_peercerts\_impl\_macos\_10\_14}}(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00514}00514\ \ \ \ \ ssl\_context:\ ssl.SSLContext,\ sec\_trust\_ref:\ typing.Any}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00515}00515\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00516}00516\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Verify\ using\ 'SecTrustEvaluateWithError'\ API\ for\ macOS\ 10.14+."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00517}00517\ \ \ \ \ cf\_error\ =\ CoreFoundation.CFErrorRef()}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00518}00518\ \ \ \ \ sec\_trust\_eval\_result\ =\ Security.SecTrustEvaluateWithError(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ sec\_trust\_ref,\ ctypes.byref(cf\_error)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00520}00520\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00521}00521\ \ \ \ \ \textcolor{comment}{\#\ sec\_trust\_eval\_result\ is\ a\ bool\ (0\ or\ 1)}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00522}00522\ \ \ \ \ \textcolor{comment}{\#\ where\ 1\ means\ that\ the\ certs\ are\ trusted.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00523}00523\ \ \ \ \ \textcolor{keywordflow}{if}\ sec\_trust\_eval\_result\ ==\ 1:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ is\_trusted\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00525}00525\ \ \ \ \ \textcolor{keywordflow}{elif}\ sec\_trust\_eval\_result\ ==\ 0:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00526}00526\ \ \ \ \ \ \ \ \ is\_trusted\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00527}00527\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00528}00528\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ssl.SSLError(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00529}00529\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Unknown\ result\ from\ Security.SecTrustEvaluateWithError:\ \{sec\_trust\_eval\_result!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00530}00530\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00531}00531\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00532}00532\ \ \ \ \ cf\_error\_code\ =\ 0}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00533}00533\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ is\_trusted:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ cf\_error\_code\ =\ CoreFoundation.CFErrorGetCode(cf\_error)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00535}00535\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00536}00536\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ error\ is\ a\ known\ failure\ that\ we're}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00537}00537\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ explicitly\ okay\ with\ from\ SSLContext\ configuration}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00538}00538\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ we\ can\ set\ is\_trusted\ accordingly.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00539}00539\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ssl\_context.verify\_mode\ !=\ ssl.CERT\_REQUIRED\ \textcolor{keywordflow}{and}\ (}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00540}00540\ \ \ \ \ \ \ \ \ \ \ \ \ cf\_error\_code\ ==\ CFConst.errSecNotTrusted}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00541}00541\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ cf\_error\_code\ ==\ CFConst.errSecCertificateExpired}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00542}00542\ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00543}00543\ \ \ \ \ \ \ \ \ \ \ \ \ is\_trusted\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00544}00544\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00545}00545\ \ \ \ \ \textcolor{comment}{\#\ If\ we're\ still\ not\ trusted\ then\ we\ start\ to}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00546}00546\ \ \ \ \ \textcolor{comment}{\#\ construct\ and\ raise\ the\ SSLCertVerificationError.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00547}00547\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ is\_trusted:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ cf\_error\_string\_ref\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00549}00549\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00550}00550\ \ \ \ \ \ \ \ \ \ \ \ \ cf\_error\_string\_ref\ =\ CoreFoundation.CFErrorCopyDescription(cf\_error)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00551}00551\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00552}00552\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Can\ this\ ever\ return\ 'None'\ if\ there's\ a\ CFError?}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00553}00553\ \ \ \ \ \ \ \ \ \ \ \ \ cf\_error\_message\ =\ (}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00554}00554\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1truststore_1_1__macos_a20736490c065276c7ebf020a9c87f1ad}{\_cf\_string\_ref\_to\_str}}(cf\_error\_string\_ref)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00555}00555\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ \textcolor{stringliteral}{"{}Certificate\ verification\ failed"{}}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00556}00556\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00557}00557\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00558}00558\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ TODO:\ Not\ sure\ if\ we\ need\ the\ SecTrustResultType\ for\ anything?}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00559}00559\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ only\ care\ whether\ or\ not\ it's\ a\ success\ or\ failure\ for\ now.}}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00560}00560\ \ \ \ \ \ \ \ \ \ \ \ \ sec\_trust\_result\_type\ =\ Security.SecTrustResultType()}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00561}00561\ \ \ \ \ \ \ \ \ \ \ \ \ Security.SecTrustGetTrustResult(}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00562}00562\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ sec\_trust\_ref,\ ctypes.byref(sec\_trust\_result\_type)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00563}00563\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00564}00564\ }
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00565}00565\ \ \ \ \ \ \ \ \ \ \ \ \ err\ =\ ssl.SSLCertVerificationError(cf\_error\_message)}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00566}00566\ \ \ \ \ \ \ \ \ \ \ \ \ err.verify\_message\ =\ cf\_error\_message}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00567}00567\ \ \ \ \ \ \ \ \ \ \ \ \ err.verify\_code\ =\ cf\_error\_code}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00568}00568\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ err}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00569}00569\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00570}00570\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cf\_error\_string\_ref:}
+\DoxyCodeLine{\Hypertarget{__macos_8py_source_l00571}00571\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ CoreFoundation.CFRelease(cf\_error\_string\_ref)}
+
+\end{DoxyCode}

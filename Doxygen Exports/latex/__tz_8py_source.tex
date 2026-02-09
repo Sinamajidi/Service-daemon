@@ -1,0 +1,51 @@
+\doxysection{\+\_\+tz.\+py}
+\hypertarget{__tz_8py_source}{}\label{__tz_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_tz.py@{venv/Lib/site-\/packages/psycopg/\_tz.py}}
+\doxymbox{\hyperlink{__tz_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__tz}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00002}00002\ \textcolor{stringliteral}{Timezone\ utility\ functions.}}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00009}00009\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00010}00010\ \textcolor{keyword}{from}\ datetime\ \textcolor{keyword}{import}\ timezone,\ tzinfo}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00011}00011\ \textcolor{keyword}{from}\ zoneinfo\ \textcolor{keyword}{import}\ ZoneInfo}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00013}00013\ \textcolor{keyword}{from}\ .pq.abc\ \textcolor{keyword}{import}\ PGconn}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00015}\doxymbox{\hyperlink{namespacepsycopg_1_1__tz_add10fc2771fd97191e9ac655966166b8}{00015}}\ logger\ =\ logging.getLogger(\textcolor{stringliteral}{"{}psycopg"{}})}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00016}00016\ }
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00017}\doxymbox{\hyperlink{namespacepsycopg_1_1__tz_a65e3c6a4653dc5b0acacf4f9c30ac7fa}{00017}}\ \_timezones:\ dict[bytes\ |\ \textcolor{keywordtype}{None},\ tzinfo]\ =\ \{}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00018}00018\ \ \ \ \ \textcolor{keywordtype}{None}:\ timezone.utc,}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00019}00019\ \ \ \ \ b\textcolor{stringliteral}{"{}UTC"{}}:\ timezone.utc,}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00020}00020\ \}}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00023}\doxymbox{\hyperlink{namespacepsycopg_1_1__tz_a1f69fbf7721b97650cc209444f6e4c49}{00023}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__tz_a1f69fbf7721b97650cc209444f6e4c49}{get\_tzinfo}}(pgconn:\ PGconn\ |\ \textcolor{keywordtype}{None})\ -\/>\ tzinfo:}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00024}00024\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ the\ Python\ timezone\ info\ of\ the\ connection's\ timezone."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00025}00025\ \ \ \ \ tzname\ =\ pgconn.parameter\_status(b\textcolor{stringliteral}{"{}TimeZone"{}})\ \textcolor{keywordflow}{if}\ pgconn\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00026}00026\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00027}00027\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \_timezones[tzname]}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00028}00028\ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00029}00029\ \ \ \ \ \ \ \ \ sname\ =\ tzname.decode()\ \textcolor{keywordflow}{if}\ tzname\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}UTC"{}}}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00030}00030\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00031}00031\ \ \ \ \ \ \ \ \ \ \ \ \ zi:\ tzinfo\ =\ ZoneInfo(sname)}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00032}00032\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ (KeyError,\ OSError):}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00033}00033\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}unknown\ PostgreSQL\ timezone:\ \%r;\ will\ use\ UTC"{}},\ sname)}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ \ \ \ \ zi\ =\ timezone.utc}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}error\ handling\ PostgreSQL\ timezone:\ \%r;\ will\ use\ UTC\ (\%s\ -\/\ \%s)"{}},}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ sname,}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ type(ex).\_\_name\_\_,}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ex,}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \ \ \ \ zi\ =\ timezone.utc}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \_timezones[tzname]\ =\ zi}
+\DoxyCodeLine{\Hypertarget{__tz_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ zi}
+
+\end{DoxyCode}

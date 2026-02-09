@@ -1,0 +1,67 @@
+\doxysection{xmlrpc.\+py}
+\hypertarget{xmlrpc_8py_source}{}\label{xmlrpc_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/network/xmlrpc.py@{venv/Lib/site-\/packages/pip/\_internal/network/xmlrpc.py}}
+\doxymbox{\hyperlink{xmlrpc_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1xmlrpc}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}xmlrpclib.Transport\ implementation"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00003}00003\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00004}00004\ \textcolor{keyword}{import}\ urllib.parse}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00005}00005\ \textcolor{keyword}{import}\ \doxymbox{\hyperlink{namespacexmlrpc_1_1client}{xmlrpc.client}}}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00006}00006\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00008}00008\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ NetworkConnectionError}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00009}00009\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1session}{pip.\_internal.network.session}}\ \textcolor{keyword}{import}\ PipSession}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1utils}{pip.\_internal.network.utils}}\ \textcolor{keyword}{import}\ raise\_for\_status}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00012}00012\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00013}00013\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacexmlrpc_1_1client}{xmlrpc.client}}\ \textcolor{keyword}{import}\ \_HostType,\ \_Marshallable}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00015}00015\ \ \ \ \ \textcolor{keyword}{from}\ \_typeshed\ \textcolor{keyword}{import}\ SizedBuffer}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00016}00016\ }
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00017}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1xmlrpc_a0a96466a3f2a9b2dc4fd0b4928f97558}{00017}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00018}00018\ }
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00020}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport}{00020}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport}{PipXmlrpcTransport}}(xmlrpc.client.Transport):}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00021}00021\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Provide\ a\ \`{}xmlrpclib.Transport\`{}\ implementation\ via\ a\ \`{}PipSession\`{}}}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00022}00022\ \textcolor{stringliteral}{\ \ \ \ object.}}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00023}00023\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00025}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_a4d778fab6351216995094430298e51f1}{00025}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_a4d778fab6351216995094430298e51f1}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00026}00026\ \ \ \ \ \ \ \ \ self,\ index\_url:\ str,\ session:\ PipSession,\ use\_datetime:\ bool\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00027}00027\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00028}00028\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_a4d778fab6351216995094430298e51f1}{\_\_init\_\_}}(use\_datetime)}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00029}00029\ \ \ \ \ \ \ \ \ index\_parts\ =\ urllib.parse.urlparse(index\_url)}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00030}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_aeb634ebecf6228c3dfe34e5ae93958b4}{00030}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_aeb634ebecf6228c3dfe34e5ae93958b4}{\_scheme}}\ =\ index\_parts.scheme}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00031}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_ac529b6664830e89b4b9c90f094792b3d}{00031}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_ac529b6664830e89b4b9c90f094792b3d}{\_session}}\ =\ session}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00033}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_ae9ae79cb5ad43c75d835abe190693125}{00033}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_ae9ae79cb5ad43c75d835abe190693125}{request}}(}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ host:\ \textcolor{stringliteral}{"{}\_HostType"{}},}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ handler:\ str,}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ request\_body:\ \textcolor{stringliteral}{"{}SizedBuffer"{}},}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ verbose:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00039}00039\ \ \ \ \ )\ -\/>\ tuple[\textcolor{stringliteral}{"{}\_Marshallable"{}},\ ...]:}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ isinstance(host,\ str)}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ parts\ =\ (self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_aeb634ebecf6228c3dfe34e5ae93958b4}{\_scheme}},\ host,\ handler,\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ url\ =\ urllib.parse.urlunparse(parts)}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \ \ \ \ headers\ =\ \{\textcolor{stringliteral}{"{}Content-\/Type"{}}:\ \textcolor{stringliteral}{"{}text/xml"{}}\}}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \ \ \ \ response\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_ac529b6664830e89b4b9c90f094792b3d}{\_session}}.post(}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ url,}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ data=request\_body,}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ headers=headers,}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ stream=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \ \ \ \ raise\_for\_status(response)}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00052}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_a76bd2c4fb3f21218c3fedc165f5fe726}{00052}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1xmlrpc_1_1_pip_xmlrpc_transport_a76bd2c4fb3f21218c3fedc165f5fe726}{verbose}}\ =\ verbose}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.parse\_response(response.raw)}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ NetworkConnectionError\ \textcolor{keyword}{as}\ exc:}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ exc.response}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \ \ \ \ logger.critical(}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}HTTP\ error\ \%s\ while\ getting\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ exc.response.status\_code,}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ url,}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{xmlrpc_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+
+\end{DoxyCode}

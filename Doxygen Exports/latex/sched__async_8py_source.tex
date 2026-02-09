@@ -1,0 +1,105 @@
+\doxysection{sched\+\_\+async.\+py}
+\hypertarget{sched__async_8py_source}{}\label{sched__async_8py_source}\index{venv/Lib/site-\/packages/psycopg\_pool/sched\_async.py@{venv/Lib/site-\/packages/psycopg\_pool/sched\_async.py}}
+\doxymbox{\hyperlink{sched__async_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg__pool_1_1sched__async}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00002}00002\ \textcolor{stringliteral}{A\ minimal\ scheduler\ to\ schedule\ tasks\ to\ run\ in\ the\ future\ (async\ version).}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00003}00003\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00004}00004\ \textcolor{stringliteral}{Inspired\ to\ the\ standard\ library\ \`{}sched.scheduler\`{},\ but\ designed\ for}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00005}00005\ \textcolor{stringliteral}{multi-\/thread\ usage\ from\ the\ ground\ up,\ not\ as\ an\ afterthought.\ Tasks\ can\ be}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00006}00006\ \textcolor{stringliteral}{scheduled\ in\ front\ of\ the\ one\ currently\ running\ and\ \`{}Scheduler.run()\`{}\ can\ be}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00007}00007\ \textcolor{stringliteral}{left\ running\ without\ any\ tasks\ scheduled.}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00008}00008\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00009}00009\ \textcolor{stringliteral}{Tasks\ are\ called\ "{}Task"{},\ not\ "{}Event"{},\ here,\ because\ we\ actually\ make\ use\ of}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00010}00010\ \textcolor{stringliteral}{\`{}[threading/asyncio].Event\`{}\ and\ the\ two\ would\ be\ confusing.}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00011}00011\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00013}00013\ \textcolor{comment}{\#\ Copyright\ (C)\ 2021\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00015}00015\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00016}00016\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00017}00017\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00018}00018\ \textcolor{keyword}{from}\ time\ \textcolor{keyword}{import}\ monotonic}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00019}00019\ \textcolor{keyword}{from}\ heapq\ \textcolor{keyword}{import}\ heappop,\ heappush}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00020}00020\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Any}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00021}00021\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Callable}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00023}00023\ \textcolor{keyword}{from}\ .\_task\ \textcolor{keyword}{import}\ Task}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00024}00024\ \textcolor{keyword}{from}\ .\_acompat\ \textcolor{keyword}{import}\ AEvent,\ ALock}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00026}\doxymbox{\hyperlink{namespacepsycopg__pool_1_1sched__async_a59b43f52f559bbe1caedc7281aec32bb}{00026}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00028}00028\ \textcolor{keywordflow}{if}\ \textcolor{keyword}{True}:\ \ \textcolor{comment}{\#\ ASYNC}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00029}00029\ \ \ \ \ \textcolor{keyword}{from}\ asyncio\ \textcolor{keyword}{import}\ CancelledError}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00031}00031\ \ \ \ \ \textcolor{comment}{\#\ The\ exceptions\ that\ we\ need\ to\ capture\ in\ order\ to\ keep\ the\ pool}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00032}00032\ \ \ \ \ \textcolor{comment}{\#\ consistent\ and\ avoid\ losing\ connections\ on\ errors\ in\ callers\ code.}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00033}\doxymbox{\hyperlink{namespacepsycopg__pool_1_1sched__async_a8cb0915736d78bb296e756ef0c90cbc9}{00033}}\ \ \ \ \ CLIENT\_EXCEPTIONS\ =\ (Exception,\ CancelledError)}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00034}00034\ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00035}00035\ \ \ \ \ CLIENT\_EXCEPTIONS\ =\ Exception}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00038}\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler}{00038}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler}{AsyncScheduler}}:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00039}\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_afcdf63a9aed89092ef0a86c978206787}{00039}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_afcdf63a9aed89092ef0a86c978206787}{\_\_init\_\_}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00040}\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a468bb6655e96da7ed1c311e1ec6de20b}{00040}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a468bb6655e96da7ed1c311e1ec6de20b}{\_queue}}:\ list[Task]\ =\ []}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00041}\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_aafe673d608b0661e3a8a3ff1e5f3fe96}{00041}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_aafe673d608b0661e3a8a3ff1e5f3fe96}{\_lock}}\ =\ ALock()}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00042}\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a8e34a58cf8dd199723d1cbacc3be261c}{00042}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a8e34a58cf8dd199723d1cbacc3be261c}{\_event}}\ =\ \doxymbox{\hyperlink{classpsycopg__pool_1_1__acompat_1_1_a_event}{AEvent}}()}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00044}\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_aac3efe0a54896b2342097e0aa2025aa3}{00044}}\ \ \ \ \ EMPTY\_QUEUE\_TIMEOUT\ =\ 600.0}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00045}00045\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00046}\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a6df8b30782bfd84258820407b0705314}{00046}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a6df8b30782bfd84258820407b0705314}{enter}}(self,\ delay:\ float,\ action:\ Callable[[],\ Any]\ |\ \textcolor{keywordtype}{None})\ -\/>\ Task:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Enter\ a\ new\ task\ in\ the\ queue\ delayed\ in\ the\ future.}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00048}00048\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00049}00049\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Schedule\ a\ \`{}!None\`{}\ to\ stop\ the\ execution.}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00050}00050\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ time\ =\ monotonic()\ +\ delay}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ await\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a332d168e61970018526871a631ba0fb3}{enterabs}}(time,\ action)}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00054}\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a332d168e61970018526871a631ba0fb3}{00054}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a332d168e61970018526871a631ba0fb3}{enterabs}}(self,\ time:\ float,\ action:\ Callable[[],\ Any]\ |\ \textcolor{keywordtype}{None})\ -\/>\ Task:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Enter\ a\ new\ task\ in\ the\ queue\ at\ an\ absolute\ time.}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00056}00056\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00057}00057\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Schedule\ a\ \`{}!None\`{}\ to\ stop\ the\ execution.}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00058}00058\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ task\ =\ \doxymbox{\hyperlink{classpsycopg__pool_1_1__task_1_1_task}{Task}}(time,\ action)}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \textcolor{keyword}{async}\ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_aafe673d608b0661e3a8a3ff1e5f3fe96}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \ \ \ \ heappush(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a468bb6655e96da7ed1c311e1ec6de20b}{\_queue}},\ task)}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \ \ \ \ first\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a468bb6655e96da7ed1c311e1ec6de20b}{\_queue}}[0]\ \textcolor{keywordflow}{is}\ task}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ first:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a8e34a58cf8dd199723d1cbacc3be261c}{\_event}}.set()}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00066}00066\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ task}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00069}\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a40bbe73d40356856046cc159d5341547}{00069}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a40bbe73d40356856046cc159d5341547}{run}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Execute\ the\ events\ scheduled."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ q\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a468bb6655e96da7ed1c311e1ec6de20b}{\_queue}}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ \textcolor{keyword}{True}:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{async}\ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_aafe673d608b0661e3a8a3ff1e5f3fe96}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ now\ =\ monotonic()}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ task\ :=\ (q[0]\ \textcolor{keywordflow}{if}\ q\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ task.time\ <=\ now:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ heappop(q)}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ delay\ =\ task.time\ -\/\ now}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ task\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ delay\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_aac3efe0a54896b2342097e0aa2025aa3}{EMPTY\_QUEUE\_TIMEOUT}}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a8e34a58cf8dd199723d1cbacc3be261c}{\_event}}.clear()}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ task:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ task.action:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ await\ task.action()}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ CLIENT\_EXCEPTIONS\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}scheduled\ task\ run\ \%s\ failed:\ \%s:\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ task.action,}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ e.\_\_class\_\_.\_\_name\_\_,}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ e,}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Block\ for\ the\ expected\ timeout\ or\ until\ a\ new\ task\ scheduled}}
+\DoxyCodeLine{\Hypertarget{sched__async_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ await\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1sched__async_1_1_async_scheduler_a8e34a58cf8dd199723d1cbacc3be261c}{\_event}}.wait\_timeout(delay)}
+
+\end{DoxyCode}

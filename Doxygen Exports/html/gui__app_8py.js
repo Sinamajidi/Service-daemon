@@ -1,0 +1,26 @@
+var gui__app_8py =
+[
+    [ "gui_app.AppSettings", "classgui__app_1_1_app_settings.html", "classgui__app_1_1_app_settings" ],
+    [ "gui_app.NotificationCenter", "classgui__app_1_1_notification_center.html", "classgui__app_1_1_notification_center" ],
+    [ "gui_app.CorporateStyle", "classgui__app_1_1_corporate_style.html", "classgui__app_1_1_corporate_style" ],
+    [ "gui_app.PostgresServiceManager", "classgui__app_1_1_postgres_service_manager.html", "classgui__app_1_1_postgres_service_manager" ],
+    [ "gui_app.BaseTab", "classgui__app_1_1_base_tab.html", "classgui__app_1_1_base_tab" ],
+    [ "gui_app.SettingsTab", "classgui__app_1_1_settings_tab.html", "classgui__app_1_1_settings_tab" ],
+    [ "gui_app.DatabaseTab", "classgui__app_1_1_database_tab.html", "classgui__app_1_1_database_tab" ],
+    [ "gui_app.RecordEditorDialog", "classgui__app_1_1_record_editor_dialog.html", "classgui__app_1_1_record_editor_dialog" ],
+    [ "gui_app.AddRecordDialog", "classgui__app_1_1_add_record_dialog.html", "classgui__app_1_1_add_record_dialog" ],
+    [ "gui_app.JsonStore", "classgui__app_1_1_json_store.html", "classgui__app_1_1_json_store" ],
+    [ "gui_app.JsonRecordDialog", "classgui__app_1_1_json_record_dialog.html", "classgui__app_1_1_json_record_dialog" ],
+    [ "gui_app.TasksTab", "classgui__app_1_1_tasks_tab.html", "classgui__app_1_1_tasks_tab" ],
+    [ "gui_app.TaskTemplatesTab", "classgui__app_1_1_task_templates_tab.html", "classgui__app_1_1_task_templates_tab" ],
+    [ "gui_app.SQLQueryTab", "classgui__app_1_1_s_q_l_query_tab.html", "classgui__app_1_1_s_q_l_query_tab" ],
+    [ "gui_app.ServiceDaemonApp", "classgui__app_1_1_service_daemon_app.html", "classgui__app_1_1_service_daemon_app" ],
+    [ "gui_app.is_valid_uuid", "namespacegui__app.html#aa6b54fd73d1478879874a710d8248429", null ],
+    [ "gui_app.load_table_ids", "namespacegui__app.html#aa33d88ca52fecfeb5ba933a25db3ca37", null ],
+    [ "gui_app.load_task_ids", "namespacegui__app.html#ab9d9d9a42ebd2993d7698e20e7ffbe46", null ],
+    [ "gui_app.app", "namespacegui__app.html#a8cf2812ed1fcc7156628fa0ebe494e1b", null ],
+    [ "gui_app.PROJECT_ROOT", "namespacegui__app.html#adaddd7f034c25182cfb1a679cc6fc4b0", null ],
+    [ "gui_app.SQL_EXECUTION_DIR", "namespacegui__app.html#a63a843957306deb39b8e4c7f0caee984", null ],
+    [ "gui_app.TASK_INSTANCE_FIELDS", "namespacegui__app.html#a9cdfd789043004e30553ea5a100db05b", null ],
+    [ "gui_app.TASK_TEMPLATE_FIELDS", "namespacegui__app.html#adec12fe90ca863ee079e2a4ef463b512", null ]
+];

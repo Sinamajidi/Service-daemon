@@ -1,0 +1,751 @@
+\doxysection{wheel.\+py}
+\hypertarget{operations_2install_2wheel_8py_source}{}\label{operations_2install_2wheel_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/operations/install/wheel.py@{venv/Lib/site-\/packages/pip/\_internal/operations/install/wheel.py}}
+\doxymbox{\hyperlink{operations_2install_2wheel_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}Support\ for\ installing\ and\ building\ the\ "{}wheel"{}\ binary\ package\ format."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00003}00003\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00005}00005\ \textcolor{keyword}{import}\ collections}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00006}00006\ \textcolor{keyword}{import}\ compileall}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00007}00007\ \textcolor{keyword}{import}\ contextlib}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00008}00008\ \textcolor{keyword}{import}\ csv}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00009}00009\ \textcolor{keyword}{import}\ importlib}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00010}00010\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00011}00011\ \textcolor{keyword}{import}\ os.path}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00012}00012\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00013}00013\ \textcolor{keyword}{import}\ shutil}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00014}00014\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00015}00015\ \textcolor{keyword}{import}\ textwrap}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00016}00016\ \textcolor{keyword}{import}\ warnings}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00017}00017\ \textcolor{keyword}{from}\ base64\ \textcolor{keyword}{import}\ urlsafe\_b64encode}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00018}00018\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Generator,\ Iterable,\ Iterator,\ Sequence}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00019}00019\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespaceemail_1_1message}{email.message}}\ \textcolor{keyword}{import}\ Message}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00020}00020\ \textcolor{keyword}{from}\ itertools\ \textcolor{keyword}{import}\ chain,\ filterfalse,\ starmap}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00021}00021\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00022}00022\ \ \ \ \ IO,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00023}00023\ \ \ \ \ Any,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00024}00024\ \ \ \ \ BinaryIO,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00025}00025\ \ \ \ \ Callable,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00026}00026\ \ \ \ \ NewType,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00027}00027\ \ \ \ \ Protocol,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00028}00028\ \ \ \ \ Union,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00029}00029\ \ \ \ \ cast,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00030}00030\ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00031}00031\ \textcolor{keyword}{from}\ zipfile\ \textcolor{keyword}{import}\ ZipFile,\ ZipInfo}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00033}00033\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1distlib_1_1scripts}{pip.\_vendor.distlib.scripts}}\ \textcolor{keyword}{import}\ ScriptMaker}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00034}00034\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1distlib_1_1util}{pip.\_vendor.distlib.util}}\ \textcolor{keyword}{import}\ get\_export\_entry}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00035}00035\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1utils}{pip.\_vendor.packaging.utils}}\ \textcolor{keyword}{import}\ canonicalize\_name}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00037}00037\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ InstallationError}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00038}00038\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1locations}{pip.\_internal.locations}}\ \textcolor{keyword}{import}\ get\_major\_minor\_version}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00039}00039\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1metadata}{pip.\_internal.metadata}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00040}00040\ \ \ \ \ BaseDistribution,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00041}00041\ \ \ \ \ FilesystemWheel,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00042}00042\ \ \ \ \ get\_wheel\_distribution,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00043}00043\ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00044}00044\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1direct__url}{pip.\_internal.models.direct\_url}}\ \textcolor{keyword}{import}\ DIRECT\_URL\_METADATA\_NAME,\ DirectUrl}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00045}00045\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1scheme}{pip.\_internal.models.scheme}}\ \textcolor{keyword}{import}\ SCHEME\_KEYS,\ Scheme}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00046}00046\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem}{pip.\_internal.utils.filesystem}}\ \textcolor{keyword}{import}\ adjacent\_tmp\_file,\ replace}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00047}00047\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1misc}{pip.\_internal.utils.misc}}\ \textcolor{keyword}{import}\ StreamWrapper,\ ensure\_dir,\ hash\_file,\ partition}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00048}00048\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1unpacking}{pip.\_internal.utils.unpacking}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00049}00049\ \ \ \ \ current\_umask,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00050}00050\ \ \ \ \ is\_within\_directory,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00051}00051\ \ \ \ \ set\_extracted\_file\_to\_default\_mode\_plus\_executable,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00052}00052\ \ \ \ \ zip\_item\_is\_executable,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00053}00053\ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00054}00054\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel}{pip.\_internal.utils.wheel}}\ \textcolor{keyword}{import}\ parse\_wheel}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00057}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_file}{00057}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_file}{File}}(Protocol):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00058}00058\ \ \ \ \ src\_record\_path:\ RecordPath}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00059}00059\ \ \ \ \ dest\_path:\ str}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00060}00060\ \ \ \ \ changed:\ bool}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00061}00061\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00062}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_file_a5a36655f4e896f20776955caafc90f15}{00062}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_file_a5a36655f4e896f20776955caafc90f15}{save}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00065}00065\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00066}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a7ea6a5636c15a59204a7f90ab0a5bd3f}{00066}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00068}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_aa83c7ecb8dd69b844ed57ed1fa3a7209}{00068}}\ RecordPath\ =\ NewType(\textcolor{stringliteral}{"{}RecordPath"{}},\ str)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00069}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_abc61841c3e2aeebdb596030b6f827a62}{00069}}\ InstalledCSVRow\ =\ tuple[RecordPath,\ str,\ Union[int,\ str]]}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00071}00071\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00072}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a4ff6cb7a5582f0f1236e8065a01d001b}{00072}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a4ff6cb7a5582f0f1236e8065a01d001b}{rehash}}(path:\ str,\ blocksize:\ int\ =\ 1\ <<\ 20)\ -\/>\ tuple[str,\ str]:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00073}00073\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ (encoded\_digest,\ length)\ for\ path\ using\ hashlib.sha256()"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00074}00074\ \ \ \ \ h,\ length\ =\ hash\_file(path,\ blocksize)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00075}00075\ \ \ \ \ digest\ =\ \textcolor{stringliteral}{"{}sha256="{}}\ +\ urlsafe\_b64encode(h.digest()).decode(\textcolor{stringliteral}{"{}latin1"{}}).rstrip(\textcolor{stringliteral}{"{}="{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00076}00076\ \ \ \ \ \textcolor{keywordflow}{return}\ (digest,\ str(length))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00078}00078\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00079}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_ad31c91ae5ffa6ccef725b40278a925f7}{00079}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_ad31c91ae5ffa6ccef725b40278a925f7}{csv\_io\_kwargs}}(mode:\ str)\ -\/>\ dict[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00080}00080\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ keyword\ arguments\ to\ properly\ open\ a\ CSV\ file}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00081}00081\ \textcolor{stringliteral}{\ \ \ \ in\ the\ given\ mode.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00082}00082\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00083}00083\ \ \ \ \ \textcolor{keywordflow}{return}\ \{\textcolor{stringliteral}{"{}mode"{}}:\ mode,\ \textcolor{stringliteral}{"{}newline"{}}:\ \textcolor{stringliteral}{"{}"{}},\ \textcolor{stringliteral}{"{}encoding"{}}:\ \textcolor{stringliteral}{"{}utf-\/8"{}}\}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00085}00085\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00086}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a162267d52f24ff2f69a2dc9d7ba23d93}{00086}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a162267d52f24ff2f69a2dc9d7ba23d93}{fix\_script}}(path:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00087}00087\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Replace\ \#!python\ with\ \#!/path/to/python}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00088}00088\ \textcolor{stringliteral}{\ \ \ \ Return\ True\ if\ file\ was\ changed.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00089}00089\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00090}00090\ \ \ \ \ \textcolor{comment}{\#\ XXX\ RECORD\ hashes\ will\ need\ to\ be\ updated}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00091}00091\ \ \ \ \ \textcolor{keyword}{assert}\ os.path.isfile(path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00093}00093\ \ \ \ \ \textcolor{keyword}{with}\ open(path,\ \textcolor{stringliteral}{"{}rb"{}})\ \textcolor{keyword}{as}\ script:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ firstline\ =\ script.readline()}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ firstline.startswith(b\textcolor{stringliteral}{"{}\#!python"{}}):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ exename\ =\ sys.executable.encode(sys.getfilesystemencoding())}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ firstline\ =\ b\textcolor{stringliteral}{"{}\#!"{}}\ +\ exename\ +\ os.linesep.encode(\textcolor{stringliteral}{"{}ascii"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ rest\ =\ script.read()}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00100}00100\ \ \ \ \ \textcolor{keyword}{with}\ open(path,\ \textcolor{stringliteral}{"{}wb"{}})\ \textcolor{keyword}{as}\ script:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ script.write(firstline)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ script.write(rest)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00103}00103\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00106}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a29b7362189c5c93f98180d204ac834dc}{00106}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a29b7362189c5c93f98180d204ac834dc}{wheel\_root\_is\_purelib}}(metadata:\ Message)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00107}00107\ \ \ \ \ \textcolor{keywordflow}{return}\ metadata.get(\textcolor{stringliteral}{"{}Root-\/Is-\/Purelib"{}},\ \textcolor{stringliteral}{"{}"{}}).lower()\ ==\ \textcolor{stringliteral}{"{}true"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00109}00109\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00110}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_aa3894817a1a6ed3016b5f565bfc0e2ef}{00110}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_aa3894817a1a6ed3016b5f565bfc0e2ef}{get\_entrypoints}}(dist:\ BaseDistribution)\ -\/>\ tuple[dict[str,\ str],\ dict[str,\ str]]:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00111}00111\ \ \ \ \ console\_scripts\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00112}00112\ \ \ \ \ gui\_scripts\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00113}00113\ \ \ \ \ \textcolor{keywordflow}{for}\ entry\_point\ \textcolor{keywordflow}{in}\ dist.iter\_entry\_points():}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ entry\_point.group\ ==\ \textcolor{stringliteral}{"{}console\_scripts"{}}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \ \ \ \ console\_scripts[entry\_point.name]\ =\ entry\_point.value}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ entry\_point.group\ ==\ \textcolor{stringliteral}{"{}gui\_scripts"{}}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \ \ \ \ gui\_scripts[entry\_point.name]\ =\ entry\_point.value}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00118}00118\ \ \ \ \ \textcolor{keywordflow}{return}\ console\_scripts,\ gui\_scripts}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00120}00120\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00121}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a98870855b6bc250cf2e277d74d8ad102}{00121}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a98870855b6bc250cf2e277d74d8ad102}{message\_about\_scripts\_not\_on\_PATH}}(scripts:\ Sequence[str])\ -\/>\ str\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00122}00122\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Determine\ if\ any\ scripts\ are\ not\ on\ PATH\ and\ format\ a\ warning.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00123}00123\ \textcolor{stringliteral}{\ \ \ \ Returns\ a\ warning\ message\ if\ one\ or\ more\ scripts\ are\ not\ on\ PATH,}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00124}00124\ \textcolor{stringliteral}{\ \ \ \ otherwise\ None.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00125}00125\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00126}00126\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ scripts:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00128}00128\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00129}00129\ \ \ \ \ \textcolor{comment}{\#\ Group\ scripts\ by\ the\ path\ they\ were\ installed\ in}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00130}00130\ \ \ \ \ grouped\_by\_dir:\ dict[str,\ set[str]]\ =\ collections.defaultdict(set)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00131}00131\ \ \ \ \ \textcolor{keywordflow}{for}\ destfile\ \textcolor{keywordflow}{in}\ scripts:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ parent\_dir\ =\ os.path.dirname(destfile)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ script\_name\ =\ os.path.basename(destfile)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ grouped\_by\_dir[parent\_dir].add(script\_name)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00135}00135\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00136}00136\ \ \ \ \ \textcolor{comment}{\#\ We\ don't\ want\ to\ warn\ for\ directories\ that\ are\ on\ PATH.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00137}00137\ \ \ \ \ not\_warn\_dirs\ =\ [}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ os.path.normcase(os.path.normpath(i)).rstrip(os.sep)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ os.environ.get(\textcolor{stringliteral}{"{}PATH"{}},\ \textcolor{stringliteral}{"{}"{}}).split(os.pathsep)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00140}00140\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00141}00141\ \ \ \ \ \textcolor{comment}{\#\ If\ an\ executable\ sits\ with\ sys.executable,\ we\ don't\ warn\ for\ it.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00142}00142\ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ This\ covers\ the\ case\ of\ venv\ invocations\ without\ activating\ the\ venv.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00143}00143\ \ \ \ \ not\_warn\_dirs.append(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ os.path.normcase(os.path.normpath(os.path.dirname(sys.executable)))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00145}00145\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00146}00146\ \ \ \ \ warn\_for:\ dict[str,\ set[str]]\ =\ \{}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ parent\_dir:\ scripts}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ parent\_dir,\ scripts\ \textcolor{keywordflow}{in}\ grouped\_by\_dir.items()}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.normcase(os.path.normpath(parent\_dir))\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ not\_warn\_dirs}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00150}00150\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00151}00151\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ warn\_for:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00153}00153\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00154}00154\ \ \ \ \ \textcolor{comment}{\#\ Format\ a\ message}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00155}00155\ \ \ \ \ msg\_lines\ =\ []}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00156}00156\ \ \ \ \ \textcolor{keywordflow}{for}\ parent\_dir,\ dir\_scripts\ \textcolor{keywordflow}{in}\ warn\_for.items():}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ sorted\_scripts:\ list[str]\ =\ sorted(dir\_scripts)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(sorted\_scripts)\ ==\ 1:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ start\_text\ =\ f\textcolor{stringliteral}{"{}script\ \{sorted\_scripts[0]\}\ is"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \ \ \ \ start\_text\ =\ \textcolor{stringliteral}{"{}scripts\ \{\}\ are"{}}.format(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{},\ "{}}.join(sorted\_scripts[:-\/1])\ +\ \textcolor{stringliteral}{"{}\ and\ "{}}\ +\ sorted\_scripts[-\/1]}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00164}00164\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ msg\_lines.append(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}The\ \{start\_text\}\ installed\ in\ '\{parent\_dir\}'\ which\ is\ not\ on\ PATH."{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00168}00168\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00169}00169\ \ \ \ \ last\_line\_fmt\ =\ (}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Consider\ adding\ \{\}\ to\ PATH\ or,\ if\ you\ prefer\ "{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}to\ suppress\ this\ warning,\ use\ -\/-\/no-\/warn-\/script-\/location."{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00172}00172\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00173}00173\ \ \ \ \ \textcolor{keywordflow}{if}\ len(msg\_lines)\ ==\ 1:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ msg\_lines.append(last\_line\_fmt.format(\textcolor{stringliteral}{"{}this\ directory"{}}))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00175}00175\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ msg\_lines.append(last\_line\_fmt.format(\textcolor{stringliteral}{"{}these\ directories"{}}))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00177}00177\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00178}00178\ \ \ \ \ \textcolor{comment}{\#\ Add\ a\ note\ if\ any\ directory\ starts\ with\ \string~}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00179}00179\ \ \ \ \ warn\_for\_tilde\ =\ any(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ i[0]\ ==\ \textcolor{stringliteral}{"{}\string~"{}}\ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ os.environ.get(\textcolor{stringliteral}{"{}PATH"{}},\ \textcolor{stringliteral}{"{}"{}}).split(os.pathsep)\ \textcolor{keywordflow}{if}\ i}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00181}00181\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00182}00182\ \ \ \ \ \textcolor{keywordflow}{if}\ warn\_for\_tilde:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ tilde\_warning\_msg\ =\ (}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}NOTE:\ The\ current\ PATH\ contains\ path(s)\ starting\ with\ \`{}\string~`,\ "{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}which\ may\ not\ be\ expanded\ by\ all\ applications."{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ msg\_lines.append(tilde\_warning\_msg)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00188}00188\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00189}00189\ \ \ \ \ \textcolor{comment}{\#\ Returns\ the\ formatted\ multiline\ message}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00190}00190\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}\(\backslash\)n"{}}.join(msg\_lines)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00191}00191\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00193}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a90136d4691d21104579cd4d2e5f7d46b}{00193}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a90136d4691d21104579cd4d2e5f7d46b}{\_normalized\_outrows}}(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00194}00194\ \ \ \ \ outrows:\ Iterable[InstalledCSVRow],}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00195}00195\ )\ -\/>\ list[tuple[str,\ str,\ str]]:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00196}00196\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Normalize\ the\ given\ rows\ of\ a\ RECORD\ file.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00197}00197\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00198}00198\ \textcolor{stringliteral}{\ \ \ \ Items\ in\ each\ row\ are\ converted\ into\ str.\ Rows\ are\ then\ sorted\ to\ make}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00199}00199\ \textcolor{stringliteral}{\ \ \ \ the\ value\ more\ predictable\ for\ tests.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00200}00200\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00201}00201\ \textcolor{stringliteral}{\ \ \ \ Each\ row\ is\ a\ 3-\/tuple\ (path,\ hash,\ size)\ and\ corresponds\ to\ a\ record\ of}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00202}00202\ \textcolor{stringliteral}{\ \ \ \ a\ RECORD\ file\ (see\ PEP\ 376\ and\ PEP\ 427\ for\ details).\ \ For\ the\ rows}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00203}00203\ \textcolor{stringliteral}{\ \ \ \ passed\ to\ this\ function,\ the\ size\ can\ be\ an\ integer\ as\ an\ int\ or\ string,}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00204}00204\ \textcolor{stringliteral}{\ \ \ \ or\ the\ empty\ string.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00205}00205\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00206}00206\ \ \ \ \ \textcolor{comment}{\#\ Normally,\ there\ should\ only\ be\ one\ row\ per\ path,\ in\ which\ case\ the}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00207}00207\ \ \ \ \ \textcolor{comment}{\#\ second\ and\ third\ elements\ don't\ come\ into\ play\ when\ sorting.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00208}00208\ \ \ \ \ \textcolor{comment}{\#\ However,\ in\ cases\ in\ the\ wild\ where\ a\ path\ might\ happen\ to\ occur\ twice,}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00209}00209\ \ \ \ \ \textcolor{comment}{\#\ we\ don't\ want\ the\ sort\ operation\ to\ trigger\ an\ error\ (but\ still\ want}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00210}00210\ \ \ \ \ \textcolor{comment}{\#\ determinism).\ \ Since\ the\ third\ element\ can\ be\ an\ int\ or\ string,\ we}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00211}00211\ \ \ \ \ \textcolor{comment}{\#\ coerce\ each\ element\ to\ a\ string\ to\ avoid\ a\ TypeError\ in\ this\ case.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00212}00212\ \ \ \ \ \textcolor{comment}{\#\ For\ additional\ background,\ see-\/-\/}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00213}00213\ \ \ \ \ \textcolor{comment}{\#\ https://github.com/pypa/pip/issues/5868}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00214}00214\ \ \ \ \ \textcolor{keywordflow}{return}\ sorted(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ (record\_path,\ hash\_,\ str(size))\ \textcolor{keywordflow}{for}\ record\_path,\ hash\_,\ size\ \textcolor{keywordflow}{in}\ outrows}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00216}00216\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00217}00217\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00218}00218\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00219}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_ad8889703316f088749dca4346d4d8798}{00219}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_ad8889703316f088749dca4346d4d8798}{\_record\_to\_fs\_path}}(record\_path:\ RecordPath,\ lib\_dir:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00220}00220\ \ \ \ \ \textcolor{keywordflow}{return}\ os.path.join(lib\_dir,\ record\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00221}00221\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00222}00222\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00223}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a596e6d7128eebf1c7516faafa3058d31}{00223}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a596e6d7128eebf1c7516faafa3058d31}{\_fs\_to\_record\_path}}(path:\ str,\ lib\_dir:\ str)\ -\/>\ RecordPath:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00224}00224\ \ \ \ \ \textcolor{comment}{\#\ On\ Windows,\ do\ not\ handle\ relative\ paths\ if\ they\ belong\ to\ different}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00225}00225\ \ \ \ \ \textcolor{comment}{\#\ logical\ disks}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00226}00226\ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.splitdrive(path)[0].lower()\ ==\ os.path.splitdrive(lib\_dir)[0].lower():}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ path\ =\ os.path.relpath(path,\ lib\_dir)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00228}00228\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00229}00229\ \ \ \ \ path\ =\ path.replace(os.path.sep,\ \textcolor{stringliteral}{"{}/"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00230}00230\ \ \ \ \ \textcolor{keywordflow}{return}\ cast(\textcolor{stringliteral}{"{}RecordPath"{}},\ path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00231}00231\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00232}00232\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00233}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a7701c3e3174ec40cb00812235e07e8ab}{00233}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a7701c3e3174ec40cb00812235e07e8ab}{get\_csv\_rows\_for\_installed}}(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00234}00234\ \ \ \ \ old\_csv\_rows:\ list[list[str]],}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00235}00235\ \ \ \ \ installed:\ dict[RecordPath,\ RecordPath],}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00236}00236\ \ \ \ \ changed:\ set[RecordPath],}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00237}00237\ \ \ \ \ generated:\ list[str],}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00238}00238\ \ \ \ \ lib\_dir:\ str,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00239}00239\ )\ -\/>\ list[InstalledCSVRow]:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00240}00240\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00241}00241\ \textcolor{stringliteral}{\ \ \ \ :param\ installed:\ A\ map\ from\ archive\ RECORD\ path\ to\ installation\ RECORD}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00242}00242\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ path.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00243}00243\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00244}00244\ \ \ \ \ installed\_rows:\ list[InstalledCSVRow]\ =\ []}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00245}00245\ \ \ \ \ \textcolor{keywordflow}{for}\ row\ \textcolor{keywordflow}{in}\ old\_csv\_rows:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(row)\ >\ 3:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}RECORD\ line\ has\ more\ than\ three\ elements:\ \%s"{}},\ row)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ old\_record\_path\ =\ cast(\textcolor{stringliteral}{"{}RecordPath"{}},\ row[0])}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ new\_record\_path\ =\ installed.pop(old\_record\_path,\ old\_record\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ new\_record\_path\ \textcolor{keywordflow}{in}\ changed:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ digest,\ length\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a4ff6cb7a5582f0f1236e8065a01d001b}{rehash}}(\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_ad8889703316f088749dca4346d4d8798}{\_record\_to\_fs\_path}}(new\_record\_path,\ lib\_dir))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \ \ \ \ digest\ =\ row[1]\ \textcolor{keywordflow}{if}\ len(row)\ >\ 1\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ length\ =\ row[2]\ \textcolor{keywordflow}{if}\ len(row)\ >\ 2\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ installed\_rows.append((new\_record\_path,\ digest,\ length))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00256}00256\ \ \ \ \ \textcolor{keywordflow}{for}\ f\ \textcolor{keywordflow}{in}\ generated:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ path\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a596e6d7128eebf1c7516faafa3058d31}{\_fs\_to\_record\_path}}(f,\ lib\_dir)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ digest,\ length\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a4ff6cb7a5582f0f1236e8065a01d001b}{rehash}}(f)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ installed\_rows.append((path,\ digest,\ length))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00260}00260\ \ \ \ \ \textcolor{keywordflow}{return}\ installed\_rows\ +\ [}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ (installed\_record\_path,\ \textcolor{stringliteral}{"{}"{}},\ \textcolor{stringliteral}{"{}"{}})\ \textcolor{keywordflow}{for}\ installed\_record\_path\ \textcolor{keywordflow}{in}\ installed.values()}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00262}00262\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00263}00263\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00264}00264\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00265}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_adb2785c630c5b634a8108058d77b5ce4}{00265}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_adb2785c630c5b634a8108058d77b5ce4}{get\_console\_script\_specs}}(console:\ dict[str,\ str])\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00266}00266\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00267}00267\ \textcolor{stringliteral}{\ \ \ \ Given\ the\ mapping\ from\ entrypoint\ name\ to\ callable,\ return\ the\ relevant}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00268}00268\ \textcolor{stringliteral}{\ \ \ \ console\ script\ specs.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00269}00269\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00270}00270\ \ \ \ \ \textcolor{comment}{\#\ Don't\ mutate\ caller's\ version}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00271}00271\ \ \ \ \ console\ =\ console.copy()}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00272}00272\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00273}00273\ \ \ \ \ scripts\_to\_generate\ =\ []}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00274}00274\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00275}00275\ \ \ \ \ \textcolor{comment}{\#\ Special\ case\ pip\ and\ setuptools\ to\ generate\ versioned\ wrappers}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00276}00276\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00277}00277\ \ \ \ \ \textcolor{comment}{\#\ The\ issue\ is\ that\ some\ projects\ (specifically,\ pip\ and\ setuptools)\ use}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00278}00278\ \ \ \ \ \textcolor{comment}{\#\ code\ in\ setup.py\ to\ create\ "{}versioned"{}\ entry\ points\ -\/\ pip2.7\ on\ Python}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00279}00279\ \ \ \ \ \textcolor{comment}{\#\ 2.7,\ pip3.3\ on\ Python\ 3.3,\ etc.\ But\ these\ entry\ points\ are\ baked\ into}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00280}00280\ \ \ \ \ \textcolor{comment}{\#\ the\ wheel\ metadata\ at\ build\ time,\ and\ so\ if\ the\ wheel\ is\ installed\ with}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00281}00281\ \ \ \ \ \textcolor{comment}{\#\ a\ *different*\ version\ of\ Python\ the\ entry\ points\ will\ be\ wrong.\ The}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00282}00282\ \ \ \ \ \textcolor{comment}{\#\ correct\ fix\ for\ this\ is\ to\ enhance\ the\ metadata\ to\ be\ able\ to\ describe}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00283}00283\ \ \ \ \ \textcolor{comment}{\#\ such\ versioned\ entry\ points.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00284}00284\ \ \ \ \ \textcolor{comment}{\#\ Currently,\ projects\ using\ versioned\ entry\ points\ will\ either\ have}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00285}00285\ \ \ \ \ \textcolor{comment}{\#\ incorrect\ versioned\ entry\ points,\ or\ they\ will\ not\ be\ able\ to\ distribute}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00286}00286\ \ \ \ \ \textcolor{comment}{\#\ "{}universal"{}\ wheels\ (i.e.,\ they\ will\ need\ a\ wheel\ per\ Python\ version).}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00287}00287\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00288}00288\ \ \ \ \ \textcolor{comment}{\#\ Because\ setuptools\ and\ pip\ are\ bundled\ with\ \_ensurepip\ and\ virtualenv,}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00289}00289\ \ \ \ \ \textcolor{comment}{\#\ we\ need\ to\ use\ universal\ wheels.\ As\ a\ workaround,\ we}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00290}00290\ \ \ \ \ \textcolor{comment}{\#\ override\ the\ versioned\ entry\ points\ in\ the\ wheel\ and\ generate\ the}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00291}00291\ \ \ \ \ \textcolor{comment}{\#\ correct\ ones.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00292}00292\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00293}00293\ \ \ \ \ \textcolor{comment}{\#\ To\ add\ the\ level\ of\ hack\ in\ this\ section\ of\ code,\ in\ order\ to\ support}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00294}00294\ \ \ \ \ \textcolor{comment}{\#\ ensurepip\ this\ code\ will\ look\ for\ an\ \`{}\`{}ENSUREPIP\_OPTIONS``\ environment}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00295}00295\ \ \ \ \ \textcolor{comment}{\#\ variable\ which\ will\ control\ which\ version\ scripts\ get\ installed.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00296}00296\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00297}00297\ \ \ \ \ \textcolor{comment}{\#\ ENSUREPIP\_OPTIONS=altinstall}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00298}00298\ \ \ \ \ \textcolor{comment}{\#\ \ \ -\/\ Only\ pipX.Y\ and\ easy\_install-\/X.Y\ will\ be\ generated\ and\ installed}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00299}00299\ \ \ \ \ \textcolor{comment}{\#\ ENSUREPIP\_OPTIONS=install}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00300}00300\ \ \ \ \ \textcolor{comment}{\#\ \ \ -\/\ pipX.Y,\ pipX,\ easy\_install-\/X.Y\ will\ be\ generated\ and\ installed.\ Note}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00301}00301\ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ that\ this\ option\ is\ technically\ if\ ENSUREPIP\_OPTIONS\ is\ set\ and\ is}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00302}00302\ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ not\ altinstall}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00303}00303\ \ \ \ \ \textcolor{comment}{\#\ DEFAULT}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00304}00304\ \ \ \ \ \textcolor{comment}{\#\ \ \ -\/\ The\ default\ behavior\ is\ to\ install\ pip,\ pipX,\ pipX.Y,\ easy\_install}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00305}00305\ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ and\ easy\_install-\/X.Y.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00306}00306\ \ \ \ \ pip\_script\ =\ console.pop(\textcolor{stringliteral}{"{}pip"{}},\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00307}00307\ \ \ \ \ \textcolor{keywordflow}{if}\ pip\_script:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}ENSUREPIP\_OPTIONS"{}}\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ os.environ:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ \ \ \ \ scripts\_to\_generate.append(\textcolor{stringliteral}{"{}pip\ =\ "{}}\ +\ pip\_script)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00310}00310\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ os.environ.get(\textcolor{stringliteral}{"{}ENSUREPIP\_OPTIONS"{}},\ \textcolor{stringliteral}{"{}"{}})\ !=\ \textcolor{stringliteral}{"{}altinstall"{}}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00312}00312\ \ \ \ \ \ \ \ \ \ \ \ \ scripts\_to\_generate.append(f\textcolor{stringliteral}{"{}pip\{sys.version\_info[0]\}\ =\ \{pip\_script\}"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00313}00313\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00314}00314\ \ \ \ \ \ \ \ \ scripts\_to\_generate.append(f\textcolor{stringliteral}{"{}pip\{get\_major\_minor\_version()\}\ =\ \{pip\_script\}"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00315}00315\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Delete\ any\ other\ versioned\ pip\ entry\ points}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00316}00316\ \ \ \ \ \ \ \ \ pip\_ep\ =\ [k\ \textcolor{keywordflow}{for}\ k\ \textcolor{keywordflow}{in}\ console\ \textcolor{keywordflow}{if}\ re.match(\textcolor{stringliteral}{r"{}pip(\(\backslash\)d+(\(\backslash\).\(\backslash\)d+)?)?\$"{}},\ k)]}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ k\ \textcolor{keywordflow}{in}\ pip\_ep:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00318}00318\ \ \ \ \ \ \ \ \ \ \ \ \ del\ console[k]}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00319}00319\ \ \ \ \ easy\_install\_script\ =\ console.pop(\textcolor{stringliteral}{"{}easy\_install"{}},\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00320}00320\ \ \ \ \ \textcolor{keywordflow}{if}\ easy\_install\_script:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}ENSUREPIP\_OPTIONS"{}}\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ os.environ:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ \ \ \ \ scripts\_to\_generate.append(\textcolor{stringliteral}{"{}easy\_install\ =\ "{}}\ +\ easy\_install\_script)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00323}00323\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ scripts\_to\_generate.append(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00325}00325\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}easy\_install-\/\{get\_major\_minor\_version()\}\ =\ \{easy\_install\_script\}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00326}00326\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00327}00327\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Delete\ any\ other\ versioned\ easy\_install\ entry\ points}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ easy\_install\_ep\ =\ [}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \ \ \ \ k\ \textcolor{keywordflow}{for}\ k\ \textcolor{keywordflow}{in}\ console\ \textcolor{keywordflow}{if}\ re.match(\textcolor{stringliteral}{r"{}easy\_install(-\/\(\backslash\)d+\(\backslash\).\(\backslash\)d+)?\$"{}},\ k)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00331}00331\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ k\ \textcolor{keywordflow}{in}\ easy\_install\_ep:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00332}00332\ \ \ \ \ \ \ \ \ \ \ \ \ del\ console[k]}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00333}00333\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00334}00334\ \ \ \ \ \textcolor{comment}{\#\ Generate\ the\ console\ entry\ points\ specified\ in\ the\ wheel}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00335}00335\ \ \ \ \ scripts\_to\_generate.extend(starmap(\textcolor{stringliteral}{"{}\{\}\ =\ \{\}"{}}.format,\ console.items()))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00336}00336\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00337}00337\ \ \ \ \ \textcolor{keywordflow}{return}\ scripts\_to\_generate}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00338}00338\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00339}00339\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00340}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file}{00340}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file}{ZipBackedFile}}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00341}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_a14bb5e2ea78d516115bc25571a92b8dd}{00341}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_a14bb5e2ea78d516115bc25571a92b8dd}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ self,\ src\_record\_path:\ RecordPath,\ dest\_path:\ str,\ zip\_file:\ ZipFile}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00343}00343\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00344}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_a3382c18bf9c6d28b6a24cf4b1f9a0f22}{00344}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_a3382c18bf9c6d28b6a24cf4b1f9a0f22}{src\_record\_path}}\ =\ src\_record\_path}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00345}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_af2bfd6bfb513296c118247ce8ae265ef}{00345}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_af2bfd6bfb513296c118247ce8ae265ef}{dest\_path}}\ =\ dest\_path}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00346}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_a971a12043e4ae671ac78c9a20b733907}{00346}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_a971a12043e4ae671ac78c9a20b733907}{\_zip\_file}}\ =\ zip\_file}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00347}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_a5c9a6e67b275ff595b6147438de2576c}{00347}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_a5c9a6e67b275ff595b6147438de2576c}{changed}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00348}00348\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00349}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_afd8d31823656831c6026847fdbdf0d1e}{00349}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_afd8d31823656831c6026847fdbdf0d1e}{\_getinfo}}(self)\ -\/>\ ZipInfo:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_a971a12043e4ae671ac78c9a20b733907}{\_zip\_file}}.getinfo(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_a3382c18bf9c6d28b6a24cf4b1f9a0f22}{src\_record\_path}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00351}00351\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00352}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_afe91d1abf09d192195c826967517e2d2}{00352}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_afe91d1abf09d192195c826967517e2d2}{save}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ When\ we\ open\ the\ output\ file\ below,\ any\ existing\ file\ is\ truncated}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ before\ we\ start\ writing\ the\ new\ contents.\ This\ is\ fine\ in\ most}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ cases,\ but\ can\ cause\ a\ segfault\ if\ pip\ has\ loaded\ a\ shared}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ object\ (e.g.\ from\ pyopenssl\ through\ its\ vendored\ urllib3)}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Since\ the\ shared\ object\ is\ mmap'd\ an\ attempt\ to\ call\ a}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00358}00358\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ symbol\ in\ it\ will\ then\ cause\ a\ segfault.\ Unlinking\ the\ file}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ allows\ writing\ of\ new\ contents\ while\ allowing\ the\ process\ to}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ continue\ to\ use\ the\ old\ copy.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.exists(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_af2bfd6bfb513296c118247ce8ae265ef}{dest\_path}}):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ \ \ \ \ os.unlink(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_af2bfd6bfb513296c118247ce8ae265ef}{dest\_path}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00363}00363\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ zipinfo\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_afd8d31823656831c6026847fdbdf0d1e}{\_getinfo}}()}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00365}00365\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00366}00366\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ optimization:\ the\ file\ is\ created\ by\ open(),}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00367}00367\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ skip\ the\ decompression\ when\ there\ is\ 0\ bytes\ to\ decompress.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00368}00368\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ open(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_af2bfd6bfb513296c118247ce8ae265ef}{dest\_path}},\ \textcolor{stringliteral}{"{}wb"{}})\ \textcolor{keyword}{as}\ dest:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ zipinfo.file\_size\ >\ 0:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_a971a12043e4ae671ac78c9a20b733907}{\_zip\_file}}.open(zipinfo)\ \textcolor{keyword}{as}\ f:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ blocksize\ =\ min(zipinfo.file\_size,\ 1024\ *\ 1024)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00372}00372\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ shutil.copyfileobj(f,\ dest,\ blocksize)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00373}00373\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ zip\_item\_is\_executable(zipinfo):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ \ \ \ \ set\_extracted\_file\_to\_default\_mode\_plus\_executable(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file_af2bfd6bfb513296c118247ce8ae265ef}{dest\_path}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00376}00376\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00377}00377\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00378}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file}{00378}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file}{ScriptFile}}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00379}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_ada6c502c0f1d3d1d3cba76a93aff95cf}{00379}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_ada6c502c0f1d3d1d3cba76a93aff95cf}{\_\_init\_\_}}(self,\ file:\ File)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00380}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_ad5153beed074599d0d89d29207395b63}{00380}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_ad5153beed074599d0d89d29207395b63}{\_file}}\ =\ file}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00381}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_a26a1a3e059c3be2bd7162e7ad74315e0}{00381}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_a26a1a3e059c3be2bd7162e7ad74315e0}{src\_record\_path}}\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_ad5153beed074599d0d89d29207395b63}{\_file}}.src\_record\_path}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00382}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_a24b2105618b2b599c12dd48f0a981c00}{00382}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_a24b2105618b2b599c12dd48f0a981c00}{dest\_path}}\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_ad5153beed074599d0d89d29207395b63}{\_file}}.dest\_path}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00383}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_abdd847a60eb83e68a902186d989542ef}{00383}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_abdd847a60eb83e68a902186d989542ef}{changed}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00384}00384\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00385}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_ada71e906f4fe258d5234b047d077f7ad}{00385}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_ada71e906f4fe258d5234b047d077f7ad}{save}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_ad5153beed074599d0d89d29207395b63}{\_file}}.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_ada71e906f4fe258d5234b047d077f7ad}{save}}()}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_abdd847a60eb83e68a902186d989542ef}{changed}}\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a162267d52f24ff2f69a2dc9d7ba23d93}{fix\_script}}(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_script_file_a24b2105618b2b599c12dd48f0a981c00}{dest\_path}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00388}00388\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00389}00389\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00390}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_missing_callable_suffix}{00390}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_missing_callable_suffix}{MissingCallableSuffix}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00391}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_missing_callable_suffix_ad6ac19680dab6222d5c454dd003ebd68}{00391}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_missing_callable_suffix_ad6ac19680dab6222d5c454dd003ebd68}{\_\_init\_\_}}(self,\ entry\_point:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_missing_callable_suffix_ad6ac19680dab6222d5c454dd003ebd68}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Invalid\ script\ entry\ point:\ \{entry\_point\}\ -\/\ A\ callable\ "{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}suffix\ is\ required.\ See\ https://packaging.python.org/"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}specifications/entry-\/points/\#use-\/for-\/scripts\ for\ more\ "{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}information."{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00398}00398\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00399}00399\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00400}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_ab5eb8df0f2cba4d318c1c23e2ba49d21}{00400}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_ab5eb8df0f2cba4d318c1c23e2ba49d21}{\_raise\_for\_invalid\_entrypoint}}(specification:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00401}00401\ \ \ \ \ entry\ =\ get\_export\_entry(specification)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00402}00402\ \ \ \ \ \textcolor{keywordflow}{if}\ entry\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ entry.suffix\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_missing_callable_suffix}{MissingCallableSuffix}}(str(entry))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00404}00404\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00405}00405\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00406}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_pip_script_maker}{00406}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_pip_script_maker}{PipScriptMaker}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1distlib_1_1scripts_1_1_script_maker}{ScriptMaker}}):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00407}00407\ \ \ \ \ \textcolor{comment}{\#\ Override\ distlib's\ default\ script\ template\ with\ one\ that}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00408}00408\ \ \ \ \ \textcolor{comment}{\#\ doesn't\ import\ \`{}re`\ module,\ allowing\ scripts\ to\ load\ faster.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00409}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_pip_script_maker}{00409}}\ \ \ \ \ script\_template\ =\ textwrap.dedent(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}\(\backslash\)}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00411}00411\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ import\ sys}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00412}00412\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ from\ \%(module)s\ import\ \%(import\_name)s}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00413}00413\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ if\ \_\_name\_\_\ ==\ '\_\_main\_\_':}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00414}00414\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ sys.argv[0]\ =\ sys.argv[0].removesuffix('.exe')}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00415}00415\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ sys.exit(\%(func)s())}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00416}00416\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00417}00417\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00418}00418\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00419}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_pip_script_maker_aeba09caf5017fd54e1762832a7f9e9a1}{00419}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_pip_script_maker_aeba09caf5017fd54e1762832a7f9e9a1}{make}}(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00420}00420\ \ \ \ \ \ \ \ \ self,\ specification:\ str,\ options:\ dict[str,\ Any]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00421}00421\ \ \ \ \ )\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_ab5eb8df0f2cba4d318c1c23e2ba49d21}{\_raise\_for\_invalid\_entrypoint}}(specification)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ super().\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_pip_script_maker_aeba09caf5017fd54e1762832a7f9e9a1}{make}}(specification,\ options)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00424}00424\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00425}00425\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00426}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a74c031c1287226f00cabc16a7f79d1a0}{00426}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a74c031c1287226f00cabc16a7f79d1a0}{\_install\_wheel}}(\ \ \textcolor{comment}{\#\ noqa:\ C901,\ PLR0915\ function\ is\ too\ long}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00427}00427\ \ \ \ \ name:\ str,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00428}00428\ \ \ \ \ wheel\_zip:\ ZipFile,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00429}00429\ \ \ \ \ wheel\_path:\ str,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00430}00430\ \ \ \ \ scheme:\ Scheme,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00431}00431\ \ \ \ \ pycompile:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00432}00432\ \ \ \ \ warn\_script\_location:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00433}00433\ \ \ \ \ direct\_url:\ DirectUrl\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00434}00434\ \ \ \ \ requested:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00435}00435\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00436}00436\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Install\ a\ wheel.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00437}00437\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00438}00438\ \textcolor{stringliteral}{\ \ \ \ :param\ name:\ Name\ of\ the\ project\ to\ install}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00439}00439\ \textcolor{stringliteral}{\ \ \ \ :param\ wheel\_zip:\ open\ ZipFile\ for\ wheel\ being\ installed}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00440}00440\ \textcolor{stringliteral}{\ \ \ \ :param\ scheme:\ Distutils\ scheme\ dictating\ the\ install\ directories}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00441}00441\ \textcolor{stringliteral}{\ \ \ \ :param\ req\_description:\ String\ used\ in\ place\ of\ the\ requirement,\ for}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00442}00442\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ logging}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00443}00443\ \textcolor{stringliteral}{\ \ \ \ :param\ pycompile:\ Whether\ to\ byte-\/compile\ installed\ Python\ files}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00444}00444\ \textcolor{stringliteral}{\ \ \ \ :param\ warn\_script\_location:\ Whether\ to\ check\ that\ scripts\ are\ installed}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00445}00445\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ into\ a\ directory\ on\ PATH}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00446}00446\ \textcolor{stringliteral}{\ \ \ \ :raises\ UnsupportedWheel:}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00447}00447\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ when\ the\ directory\ holds\ an\ unpacked\ wheel\ with\ incompatible}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00448}00448\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ Wheel-\/Version}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00449}00449\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ when\ the\ .dist-\/info\ dir\ does\ not\ match\ the\ wheel}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00450}00450\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00451}00451\ \ \ \ \ info\_dir,\ metadata\ =\ parse\_wheel(wheel\_zip,\ name)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00452}00452\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00453}00453\ \ \ \ \ \textcolor{keywordflow}{if}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a29b7362189c5c93f98180d204ac834dc}{wheel\_root\_is\_purelib}}(metadata):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00454}00454\ \ \ \ \ \ \ \ \ lib\_dir\ =\ scheme.purelib}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00455}00455\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ lib\_dir\ =\ scheme.platlib}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00457}00457\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00458}00458\ \ \ \ \ \textcolor{comment}{\#\ Record\ details\ of\ the\ files\ moved}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00459}00459\ \ \ \ \ \textcolor{comment}{\#\ \ \ installed\ =\ files\ copied\ from\ the\ wheel\ to\ the\ destination}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00460}00460\ \ \ \ \ \textcolor{comment}{\#\ \ \ changed\ =\ files\ changed\ while\ installing\ (scripts\ \#!\ line\ typically)}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00461}00461\ \ \ \ \ \textcolor{comment}{\#\ \ \ generated\ =\ files\ newly\ generated\ during\ the\ install\ (script\ wrappers)}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00462}00462\ \ \ \ \ installed:\ dict[RecordPath,\ RecordPath]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00463}00463\ \ \ \ \ changed:\ set[RecordPath]\ =\ set()}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00464}00464\ \ \ \ \ generated:\ list[str]\ =\ []}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00465}00465\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00466}00466\ \ \ \ \ \textcolor{keyword}{def\ }record\_installed(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00467}00467\ \ \ \ \ \ \ \ \ srcfile:\ RecordPath,\ destfile:\ str,\ modified:\ bool\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00468}00468\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00469}00469\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Map\ archive\ RECORD\ paths\ to\ installation\ RECORD\ paths."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00470}00470\ \ \ \ \ \ \ \ \ newpath\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a596e6d7128eebf1c7516faafa3058d31}{\_fs\_to\_record\_path}}(destfile,\ lib\_dir)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00471}00471\ \ \ \ \ \ \ \ \ installed[srcfile]\ =\ newpath}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00472}00472\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ modified:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00473}00473\ \ \ \ \ \ \ \ \ \ \ \ \ changed.add(newpath)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00474}00474\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00475}00475\ \ \ \ \ \textcolor{keyword}{def\ }is\_dir\_path(path:\ RecordPath)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00476}00476\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ path.endswith(\textcolor{stringliteral}{"{}/"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00477}00477\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00478}00478\ \ \ \ \ \textcolor{keyword}{def\ }assert\_no\_path\_traversal(dest\_dir\_path:\ str,\ target\_path:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00479}00479\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ is\_within\_directory(dest\_dir\_path,\ target\_path):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00480}00480\ \ \ \ \ \ \ \ \ \ \ \ \ message\ =\ (}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00481}00481\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}The\ wheel\ \{!r\}\ has\ a\ file\ \{!r\}\ trying\ to\ install"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00482}00482\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ outside\ the\ target\ directory\ \{!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00483}00483\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00485}00485\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ message.format(wheel\_path,\ target\_path,\ dest\_dir\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00486}00486\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00487}00487\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00488}00488\ \ \ \ \ \textcolor{keyword}{def\ }root\_scheme\_file\_maker(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00489}00489\ \ \ \ \ \ \ \ \ zip\_file:\ ZipFile,\ dest:\ str}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00490}00490\ \ \ \ \ )\ -\/>\ Callable[[RecordPath],\ File]:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00491}00491\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }make\_root\_scheme\_file(record\_path:\ RecordPath)\ -\/>\ File:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00492}00492\ \ \ \ \ \ \ \ \ \ \ \ \ normed\_path\ =\ os.path.normpath(record\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00493}00493\ \ \ \ \ \ \ \ \ \ \ \ \ dest\_path\ =\ os.path.join(dest,\ normed\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00494}00494\ \ \ \ \ \ \ \ \ \ \ \ \ assert\_no\_path\_traversal(dest,\ dest\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00495}00495\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file}{ZipBackedFile}}(record\_path,\ dest\_path,\ zip\_file)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00496}00496\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00497}00497\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ make\_root\_scheme\_file}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00498}00498\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00499}00499\ \ \ \ \ \textcolor{keyword}{def\ }data\_scheme\_file\_maker(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ zip\_file:\ ZipFile,\ scheme:\ Scheme}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00501}00501\ \ \ \ \ )\ -\/>\ Callable[[RecordPath],\ File]:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00502}00502\ \ \ \ \ \ \ \ \ scheme\_paths\ =\ \{key:\ getattr(scheme,\ key)\ \textcolor{keywordflow}{for}\ key\ \textcolor{keywordflow}{in}\ SCHEME\_KEYS\}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00503}00503\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00504}00504\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }make\_data\_scheme\_file(record\_path:\ RecordPath)\ -\/>\ File:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00505}00505\ \ \ \ \ \ \ \ \ \ \ \ \ normed\_path\ =\ os.path.normpath(record\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00506}00506\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_,\ scheme\_key,\ dest\_subpath\ =\ normed\_path.split(os.path.sep,\ 2)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00508}00508\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00509}00509\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ message\ =\ (}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00510}00510\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Unexpected\ file\ in\ \{wheel\_path\}:\ \{record\_path!r\}.\ .data\ directory"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00511}00511\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ contents\ should\ be\ named\ like:\ '<scheme\ key>/<path>'."{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00512}00512\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00513}00513\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(message)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00514}00514\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00516}00516\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ scheme\_path\ =\ scheme\_paths[scheme\_key]}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00517}00517\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00518}00518\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ valid\_scheme\_keys\ =\ \textcolor{stringliteral}{"{},\ "{}}.join(sorted(scheme\_paths))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ message\ =\ (}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Unknown\ scheme\ key\ used\ in\ \{wheel\_path\}:\ \{scheme\_key\}\ "{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}(for\ file\ \{record\_path!r\}).\ .data\ directory\ contents\ "{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}should\ be\ in\ subdirectories\ named\ with\ a\ valid\ scheme\ "{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00523}00523\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}key\ (\{valid\_scheme\_keys\})"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00525}00525\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(message)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00526}00526\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ \ \ \ \ dest\_path\ =\ os.path.join(scheme\_path,\ dest\_subpath)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00528}00528\ \ \ \ \ \ \ \ \ \ \ \ \ assert\_no\_path\_traversal(scheme\_path,\ dest\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00529}00529\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_zip_backed_file}{ZipBackedFile}}(record\_path,\ dest\_path,\ zip\_file)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00530}00530\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00531}00531\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ make\_data\_scheme\_file}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00532}00532\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00533}00533\ \ \ \ \ \textcolor{keyword}{def\ }is\_data\_scheme\_path(path:\ RecordPath)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ path.split(\textcolor{stringliteral}{"{}/"{}},\ 1)[0].endswith(\textcolor{stringliteral}{"{}.data"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00535}00535\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00536}00536\ \ \ \ \ paths\ =\ cast(list[RecordPath],\ wheel\_zip.namelist())}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00537}00537\ \ \ \ \ file\_paths\ =\ filterfalse(is\_dir\_path,\ paths)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00538}00538\ \ \ \ \ root\_scheme\_paths,\ data\_scheme\_paths\ =\ partition(is\_data\_scheme\_path,\ file\_paths)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00539}00539\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00540}00540\ \ \ \ \ make\_root\_scheme\_file\ =\ root\_scheme\_file\_maker(wheel\_zip,\ lib\_dir)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00541}00541\ \ \ \ \ files:\ Iterator[File]\ =\ map(make\_root\_scheme\_file,\ root\_scheme\_paths)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00542}00542\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00543}00543\ \ \ \ \ \textcolor{keyword}{def\ }is\_script\_scheme\_path(path:\ RecordPath)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00544}00544\ \ \ \ \ \ \ \ \ parts\ =\ path.split(\textcolor{stringliteral}{"{}/"{}},\ 2)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00545}00545\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ len(parts)\ >\ 2\ \textcolor{keywordflow}{and}\ parts[0].endswith(\textcolor{stringliteral}{"{}.data"{}})\ \textcolor{keywordflow}{and}\ parts[1]\ ==\ \textcolor{stringliteral}{"{}scripts"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00546}00546\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00547}00547\ \ \ \ \ other\_scheme\_paths,\ script\_scheme\_paths\ =\ partition(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ is\_script\_scheme\_path,\ data\_scheme\_paths}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00549}00549\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00550}00550\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00551}00551\ \ \ \ \ make\_data\_scheme\_file\ =\ data\_scheme\_file\_maker(wheel\_zip,\ scheme)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00552}00552\ \ \ \ \ other\_scheme\_files\ =\ map(make\_data\_scheme\_file,\ other\_scheme\_paths)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00553}00553\ \ \ \ \ files\ =\ chain(files,\ other\_scheme\_files)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00554}00554\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00555}00555\ \ \ \ \ \textcolor{comment}{\#\ Get\ the\ defined\ entry\ points}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00556}00556\ \ \ \ \ distribution\ =\ get\_wheel\_distribution(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00557}00557\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpip_1_1__internal_1_1metadata_1_1base_1_1_filesystem_wheel}{FilesystemWheel}}(wheel\_path),}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00558}00558\ \ \ \ \ \ \ \ \ canonicalize\_name(name),}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00559}00559\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00560}00560\ \ \ \ \ console,\ gui\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_aa3894817a1a6ed3016b5f565bfc0e2ef}{get\_entrypoints}}(distribution)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00561}00561\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00562}00562\ \ \ \ \ \textcolor{keyword}{def\ }is\_entrypoint\_wrapper(file:\ File)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00563}00563\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ EP,\ EP.exe\ and\ EP-\/script.py\ are\ scripts\ generated\ for}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00564}00564\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ entry\ point\ EP\ by\ setuptools}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00565}00565\ \ \ \ \ \ \ \ \ path\ =\ file.dest\_path}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00566}00566\ \ \ \ \ \ \ \ \ name\ =\ os.path.basename(path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00567}00567\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ name.lower().endswith(\textcolor{stringliteral}{"{}.exe"{}}):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00568}00568\ \ \ \ \ \ \ \ \ \ \ \ \ matchname\ =\ name[:-\/4]}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00569}00569\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ name.lower().endswith(\textcolor{stringliteral}{"{}-\/script.py"{}}):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00570}00570\ \ \ \ \ \ \ \ \ \ \ \ \ matchname\ =\ name[:-\/10]}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00571}00571\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ name.lower().endswith(\textcolor{stringliteral}{"{}.pya"{}}):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00572}00572\ \ \ \ \ \ \ \ \ \ \ \ \ matchname\ =\ name[:-\/4]}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00573}00573\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00574}00574\ \ \ \ \ \ \ \ \ \ \ \ \ matchname\ =\ name}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00575}00575\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Ignore\ setuptools-\/generated\ scripts}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00576}00576\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ matchname\ \textcolor{keywordflow}{in}\ console\ \textcolor{keywordflow}{or}\ matchname\ \textcolor{keywordflow}{in}\ gui}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00577}00577\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00578}00578\ \ \ \ \ script\_scheme\_files:\ Iterator[File]\ =\ map(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00579}00579\ \ \ \ \ \ \ \ \ make\_data\_scheme\_file,\ script\_scheme\_paths}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00580}00580\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00581}00581\ \ \ \ \ script\_scheme\_files\ =\ filterfalse(is\_entrypoint\_wrapper,\ script\_scheme\_files)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00582}00582\ \ \ \ \ script\_scheme\_files\ =\ map(ScriptFile,\ script\_scheme\_files)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00583}00583\ \ \ \ \ files\ =\ chain(files,\ script\_scheme\_files)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00584}00584\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00585}00585\ \ \ \ \ existing\_parents\ =\ set()}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00586}00586\ \ \ \ \ \textcolor{keywordflow}{for}\ file\ \textcolor{keywordflow}{in}\ files:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00587}00587\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ directory\ creation\ is\ lazy\ and\ after\ file\ filtering}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00588}00588\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ to\ ensure\ we\ don't\ install\ empty\ dirs;\ empty\ dirs\ can't\ be}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00589}00589\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ uninstalled.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00590}00590\ \ \ \ \ \ \ \ \ parent\_dir\ =\ os.path.dirname(file.dest\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00591}00591\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ parent\_dir\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ existing\_parents:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00592}00592\ \ \ \ \ \ \ \ \ \ \ \ \ ensure\_dir(parent\_dir)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00593}00593\ \ \ \ \ \ \ \ \ \ \ \ \ existing\_parents.add(parent\_dir)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00594}00594\ \ \ \ \ \ \ \ \ file.save()}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00595}00595\ \ \ \ \ \ \ \ \ record\_installed(file.src\_record\_path,\ file.dest\_path,\ file.changed)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00596}00596\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00597}00597\ \ \ \ \ \textcolor{keyword}{def\ }pyc\_source\_file\_paths()\ -\/>\ Generator[str,\ None,\ None]:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00598}00598\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ de-\/duplicate\ installation\ paths,\ since\ there\ can\ be\ overlap\ (e.g.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00599}00599\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ file\ in\ .data\ maps\ to\ same\ location\ as\ file\ in\ wheel\ root).}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00600}00600\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Sorting\ installation\ paths\ makes\ it\ easier\ to\ reproduce\ and\ debug}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00601}00601\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ issues\ related\ to\ permissions\ on\ existing\ files.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00602}00602\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ installed\_path\ \textcolor{keywordflow}{in}\ sorted(set(installed.values())):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00603}00603\ \ \ \ \ \ \ \ \ \ \ \ \ full\_installed\_path\ =\ os.path.join(lib\_dir,\ installed\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00604}00604\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ os.path.isfile(full\_installed\_path):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00605}00605\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00606}00606\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ full\_installed\_path.endswith(\textcolor{stringliteral}{"{}.py"{}}):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00607}00607\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00608}00608\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ full\_installed\_path}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00609}00609\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00610}00610\ \ \ \ \ \textcolor{keyword}{def\ }pyc\_output\_path(path:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00611}00611\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ the\ path\ the\ pyc\ file\ would\ have\ been\ written\ to."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00612}00612\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ importlib.util.cache\_from\_source(path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00613}00613\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00614}00614\ \ \ \ \ \textcolor{comment}{\#\ Compile\ all\ of\ the\ pyc\ files\ for\ the\ installed\ files}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00615}00615\ \ \ \ \ \textcolor{keywordflow}{if}\ pycompile:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00616}00616\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ contextlib.redirect\_stdout(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00617}00617\ \ \ \ \ \ \ \ \ \ \ \ \ StreamWrapper.from\_stream(sys.stdout)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00618}00618\ \ \ \ \ \ \ \ \ )\ \textcolor{keyword}{as}\ stdout:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00619}00619\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ warnings.catch\_warnings():}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00620}00620\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ warnings.filterwarnings(\textcolor{stringliteral}{"{}ignore"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00621}00621\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ path\ \textcolor{keywordflow}{in}\ pyc\_source\_file\_paths():}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00622}00622\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ success\ =\ compileall.compile\_file(path,\ force=\textcolor{keyword}{True},\ quiet=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00623}00623\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ success:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00624}00624\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pyc\_path\ =\ pyc\_output\_path(path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00625}00625\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ os.path.exists(pyc\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00626}00626\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pyc\_record\_path\ =\ cast(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00627}00627\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}RecordPath"{}},\ pyc\_path.replace(os.path.sep,\ \textcolor{stringliteral}{"{}/"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00628}00628\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00629}00629\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ record\_installed(pyc\_record\_path,\ pyc\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00630}00630\ \ \ \ \ \ \ \ \ logger.debug(stdout.getvalue())}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00631}00631\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00632}00632\ \ \ \ \ maker\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1install_1_1wheel_1_1_pip_script_maker}{PipScriptMaker}}(\textcolor{keywordtype}{None},\ scheme.scripts)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00633}00633\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00634}00634\ \ \ \ \ \textcolor{comment}{\#\ Ensure\ old\ scripts\ are\ overwritten.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00635}00635\ \ \ \ \ \textcolor{comment}{\#\ See\ https://github.com/pypa/pip/issues/1800}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00636}00636\ \ \ \ \ maker.clobber\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00637}00637\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00638}00638\ \ \ \ \ \textcolor{comment}{\#\ Ensure\ we\ don't\ generate\ any\ variants\ for\ scripts\ because\ this\ is\ almost}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00639}00639\ \ \ \ \ \textcolor{comment}{\#\ never\ what\ somebody\ wants.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00640}00640\ \ \ \ \ \textcolor{comment}{\#\ See\ https://bitbucket.org/pypa/distlib/issue/35/}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00641}00641\ \ \ \ \ maker.variants\ =\ \{\textcolor{stringliteral}{"{}"{}}\}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00642}00642\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00643}00643\ \ \ \ \ \textcolor{comment}{\#\ This\ is\ required\ because\ otherwise\ distlib\ creates\ scripts\ that\ are\ not}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00644}00644\ \ \ \ \ \textcolor{comment}{\#\ executable.}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00645}00645\ \ \ \ \ \textcolor{comment}{\#\ See\ https://bitbucket.org/pypa/distlib/issue/32/}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00646}00646\ \ \ \ \ maker.set\_mode\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00647}00647\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00648}00648\ \ \ \ \ \textcolor{comment}{\#\ Generate\ the\ console\ and\ GUI\ entry\ points\ specified\ in\ the\ wheel}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00649}00649\ \ \ \ \ scripts\_to\_generate\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_adb2785c630c5b634a8108058d77b5ce4}{get\_console\_script\_specs}}(console)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00650}00650\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00651}00651\ \ \ \ \ gui\_scripts\_to\_generate\ =\ list(starmap(\textcolor{stringliteral}{"{}\{\}\ =\ \{\}"{}}.format,\ gui.items()))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00652}00652\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00653}00653\ \ \ \ \ generated\_console\_scripts\ =\ maker.make\_multiple(scripts\_to\_generate)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00654}00654\ \ \ \ \ generated.extend(generated\_console\_scripts)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00655}00655\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00656}00656\ \ \ \ \ generated.extend(maker.make\_multiple(gui\_scripts\_to\_generate,\ \{\textcolor{stringliteral}{"{}gui"{}}:\ \textcolor{keyword}{True}\}))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00657}00657\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00658}00658\ \ \ \ \ \textcolor{keywordflow}{if}\ warn\_script\_location:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00659}00659\ \ \ \ \ \ \ \ \ msg\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a98870855b6bc250cf2e277d74d8ad102}{message\_about\_scripts\_not\_on\_PATH}}(generated\_console\_scripts)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00660}00660\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ msg\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00661}00661\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(msg)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00662}00662\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00663}00663\ \ \ \ \ generated\_file\_mode\ =\ 0o666\ \&\ \string~current\_umask()}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00664}00664\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00665}00665\ \ \ \ \ \textcolor{preprocessor}{@contextlib.contextmanager}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00666}00666\ \ \ \ \ \textcolor{keyword}{def\ }\_generate\_file(path:\ str,\ **kwargs:\ Any)\ -\/>\ Generator[BinaryIO,\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00667}00667\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ adjacent\_tmp\_file(path,\ **kwargs)\ \textcolor{keyword}{as}\ f:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00668}00668\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ f}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00669}00669\ \ \ \ \ \ \ \ \ os.chmod(f.name,\ generated\_file\_mode)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00670}00670\ \ \ \ \ \ \ \ \ replace(f.name,\ path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00671}00671\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00672}00672\ \ \ \ \ dest\_info\_dir\ =\ os.path.join(lib\_dir,\ info\_dir)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00673}00673\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00674}00674\ \ \ \ \ \textcolor{comment}{\#\ Record\ pip\ as\ the\ installer}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00675}00675\ \ \ \ \ installer\_path\ =\ os.path.join(dest\_info\_dir,\ \textcolor{stringliteral}{"{}INSTALLER"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00676}00676\ \ \ \ \ \textcolor{keyword}{with}\ \_generate\_file(installer\_path)\ \textcolor{keyword}{as}\ installer\_file:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00677}00677\ \ \ \ \ \ \ \ \ installer\_file.write(b\textcolor{stringliteral}{"{}pip\(\backslash\)n"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00678}00678\ \ \ \ \ generated.append(installer\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00679}00679\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00680}00680\ \ \ \ \ \textcolor{comment}{\#\ Record\ the\ PEP\ 610\ direct\ URL\ reference}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00681}00681\ \ \ \ \ \textcolor{keywordflow}{if}\ direct\_url\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00682}00682\ \ \ \ \ \ \ \ \ direct\_url\_path\ =\ os.path.join(dest\_info\_dir,\ DIRECT\_URL\_METADATA\_NAME)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00683}00683\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ \_generate\_file(direct\_url\_path)\ \textcolor{keyword}{as}\ direct\_url\_file:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00684}00684\ \ \ \ \ \ \ \ \ \ \ \ \ direct\_url\_file.write(direct\_url.to\_json().encode(\textcolor{stringliteral}{"{}utf-\/8"{}}))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00685}00685\ \ \ \ \ \ \ \ \ generated.append(direct\_url\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00686}00686\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00687}00687\ \ \ \ \ \textcolor{comment}{\#\ Record\ the\ REQUESTED\ file}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00688}00688\ \ \ \ \ \textcolor{keywordflow}{if}\ requested:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00689}00689\ \ \ \ \ \ \ \ \ requested\_path\ =\ os.path.join(dest\_info\_dir,\ \textcolor{stringliteral}{"{}REQUESTED"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00690}00690\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ open(requested\_path,\ \textcolor{stringliteral}{"{}wb"{}}):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00691}00691\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00692}00692\ \ \ \ \ \ \ \ \ generated.append(requested\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00693}00693\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00694}00694\ \ \ \ \ record\_text\ =\ distribution.read\_text(\textcolor{stringliteral}{"{}RECORD"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00695}00695\ \ \ \ \ record\_rows\ =\ list(csv.reader(record\_text.splitlines()))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00696}00696\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00697}00697\ \ \ \ \ rows\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a7701c3e3174ec40cb00812235e07e8ab}{get\_csv\_rows\_for\_installed}}(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00698}00698\ \ \ \ \ \ \ \ \ record\_rows,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00699}00699\ \ \ \ \ \ \ \ \ installed=installed,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00700}00700\ \ \ \ \ \ \ \ \ changed=changed,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00701}00701\ \ \ \ \ \ \ \ \ generated=generated,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00702}00702\ \ \ \ \ \ \ \ \ lib\_dir=lib\_dir,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00703}00703\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00704}00704\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00705}00705\ \ \ \ \ \textcolor{comment}{\#\ Record\ details\ of\ all\ files\ installed}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00706}00706\ \ \ \ \ record\_path\ =\ os.path.join(dest\_info\_dir,\ \textcolor{stringliteral}{"{}RECORD"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00707}00707\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00708}00708\ \ \ \ \ \textcolor{keyword}{with}\ \_generate\_file(record\_path,\ **\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_ad31c91ae5ffa6ccef725b40278a925f7}{csv\_io\_kwargs}}(\textcolor{stringliteral}{"{}w"{}}))\ \textcolor{keyword}{as}\ record\_file:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00709}00709\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Explicitly\ cast\ to\ typing.IO[str]\ as\ a\ workaround\ for\ the\ mypy\ error:}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00710}00710\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ "{}writer"{}\ has\ incompatible\ type\ "{}BinaryIO"{};\ expected\ "{}\_Writer"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00711}00711\ \ \ \ \ \ \ \ \ writer\ =\ csv.writer(cast(\textcolor{stringliteral}{"{}IO[str]"{}},\ record\_file))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00712}00712\ \ \ \ \ \ \ \ \ writer.writerows(\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a90136d4691d21104579cd4d2e5f7d46b}{\_normalized\_outrows}}(rows))}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00713}00713\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00714}00714\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00715}00715\ \textcolor{preprocessor}{@contextlib.contextmanager}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00716}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a03c95f6229c87c89e57187766bd63b5f}{00716}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a03c95f6229c87c89e57187766bd63b5f}{req\_error\_context}}(req\_description:\ str)\ -\/>\ Generator[\textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00717}00717\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00718}00718\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00719}00719\ \ \ \ \ \textcolor{keywordflow}{except}\ InstallationError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00720}00720\ \ \ \ \ \ \ \ \ message\ =\ f\textcolor{stringliteral}{"{}For\ req:\ \{req\_description\}.\ \{e.args[0]\}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00721}00721\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(message)\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00722}00722\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00723}00723\ }
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00724}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a25d292cdb8f5c91d3cf7a7aab588e325}{00724}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a25d292cdb8f5c91d3cf7a7aab588e325}{install\_wheel}}(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00725}00725\ \ \ \ \ name:\ str,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00726}00726\ \ \ \ \ wheel\_path:\ str,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00727}00727\ \ \ \ \ scheme:\ Scheme,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00728}00728\ \ \ \ \ req\_description:\ str,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00729}00729\ \ \ \ \ pycompile:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00730}00730\ \ \ \ \ warn\_script\_location:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00731}00731\ \ \ \ \ direct\_url:\ DirectUrl\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00732}00732\ \ \ \ \ requested:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00733}00733\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00734}00734\ \ \ \ \ \textcolor{keyword}{with}\ ZipFile(wheel\_path,\ allowZip64=\textcolor{keyword}{True})\ \textcolor{keyword}{as}\ z:}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00735}00735\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a03c95f6229c87c89e57187766bd63b5f}{req\_error\_context}}(req\_description):}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00736}00736\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1install_1_1wheel_a74c031c1287226f00cabc16a7f79d1a0}{\_install\_wheel}}(}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00737}00737\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ name=name,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00738}00738\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_zip=z,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00739}00739\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_path=wheel\_path,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00740}00740\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ scheme=scheme,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00741}00741\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pycompile=pycompile,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00742}00742\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ warn\_script\_location=warn\_script\_location,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00743}00743\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ direct\_url=direct\_url,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00744}00744\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ requested=requested,}
+\DoxyCodeLine{\Hypertarget{operations_2install_2wheel_8py_source_l00745}00745\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+
+\end{DoxyCode}

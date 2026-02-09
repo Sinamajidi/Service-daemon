@@ -1,0 +1,969 @@
+\doxysection{lexer.\+py}
+\hypertarget{lexer_8py_source}{}\label{lexer_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/pygments/lexer.py@{venv/Lib/site-\/packages/pip/\_vendor/pygments/lexer.py}}
+\doxymbox{\hyperlink{lexer_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00002}00002\ \textcolor{stringliteral}{\ \ \ \ pygments.lexer}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00003}00003\ \textcolor{stringliteral}{\ \ \ \ \string~\string~\string~\string~\string~\string~\string~\string~\string~\string~\string~\string~\string~\string~}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00004}00004\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00005}00005\ \textcolor{stringliteral}{\ \ \ \ Base\ lexer\ classes.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00006}00006\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00007}00007\ \textcolor{stringliteral}{\ \ \ \ :copyright:\ Copyright\ 2006-\/2025\ by\ the\ Pygments\ team,\ see\ AUTHORS.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00008}00008\ \textcolor{stringliteral}{\ \ \ \ :license:\ BSD,\ see\ LICENSE\ for\ details.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00009}00009\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00011}00011\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00012}00012\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00013}00013\ \textcolor{keyword}{import}\ time}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00015}00015\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1filter}{pip.\_vendor.pygments.filter}}\ \textcolor{keyword}{import}\ apply\_filters,\ Filter}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00016}00016\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1filters}{pip.\_vendor.pygments.filters}}\ \textcolor{keyword}{import}\ get\_filter\_by\_name}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00017}00017\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1token}{pip.\_vendor.pygments.token}}\ \textcolor{keyword}{import}\ Error,\ Text,\ Other,\ Whitespace,\ \_TokenType}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00018}00018\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1util}{pip.\_vendor.pygments.util}}\ \textcolor{keyword}{import}\ get\_bool\_opt,\ get\_int\_opt,\ get\_list\_opt,\ \(\backslash\)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00019}00019\ \ \ \ \ make\_analysator,\ Future,\ guess\_decode}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00020}00020\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1regexopt}{pip.\_vendor.pygments.regexopt}}\ \textcolor{keyword}{import}\ regex\_opt}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00022}00022\ \_\_all\_\_\ =\ [\textcolor{stringliteral}{'Lexer'},\ \textcolor{stringliteral}{'RegexLexer'},\ \textcolor{stringliteral}{'ExtendedRegexLexer'},\ \textcolor{stringliteral}{'DelegatingLexer'},}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00023}00023\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'LexerContext'},\ \textcolor{stringliteral}{'include'},\ \textcolor{stringliteral}{'inherit'},\ \textcolor{stringliteral}{'bygroups'},\ \textcolor{stringliteral}{'using'},\ \textcolor{stringliteral}{'this'},}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00024}00024\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'default'},\ \textcolor{stringliteral}{'words'},\ \textcolor{stringliteral}{'line\_re'}]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00026}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer_a7549777b3bbedab5259f6564bd8c881e}{00026}}\ line\_re\ =\ re.compile(\textcolor{stringliteral}{'.*?\(\backslash\)n'})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00028}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer_adf68463137810794ad16c2c0083b5c89}{00028}}\ \_encoding\_map\ =\ [(b\textcolor{stringliteral}{'\(\backslash\)xef\(\backslash\)xbb\(\backslash\)xbf'},\ \textcolor{stringliteral}{'utf-\/8'}),}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00029}00029\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (b\textcolor{stringliteral}{'\(\backslash\)xff\(\backslash\)xfe\(\backslash\)0\(\backslash\)0'},\ \textcolor{stringliteral}{'utf-\/32'}),}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00030}00030\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (b\textcolor{stringliteral}{'\(\backslash\)0\(\backslash\)0\(\backslash\)xfe\(\backslash\)xff'},\ \textcolor{stringliteral}{'utf-\/32be'}),}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00031}00031\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (b\textcolor{stringliteral}{'\(\backslash\)xff\(\backslash\)xfe'},\ \textcolor{stringliteral}{'utf-\/16'}),}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00032}00032\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (b\textcolor{stringliteral}{'\(\backslash\)xfe\(\backslash\)xff'},\ \textcolor{stringliteral}{'utf-\/16be'})]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00034}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer_a4ae3205190d0ea5fbd17d164e162203e}{00034}}\ \_default\_analyse\ =\ staticmethod(\textcolor{keyword}{lambda}\ x:\ 0.0)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00037}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_meta}{00037}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_meta}{LexerMeta}}(type):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00038}00038\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00039}00039\ \textcolor{stringliteral}{\ \ \ \ This\ metaclass\ automagically\ converts\ \`{}\`{}analyse\_text\`{}\`{}\ methods\ into}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00040}00040\ \textcolor{stringliteral}{\ \ \ \ static\ methods\ which\ always\ return\ float\ values.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00041}00041\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00043}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_meta_a406da98fb1446ca90f2648ab98c66bad}{00043}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_meta_a406da98fb1446ca90f2648ab98c66bad}{\_\_new\_\_}}(mcs,\ name,\ bases,\ d):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{'analyse\_text'}\ \textcolor{keywordflow}{in}\ d:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \ \ \ \ d[\textcolor{stringliteral}{'analyse\_text'}]\ =\ make\_analysator(d[\textcolor{stringliteral}{'analyse\_text'}])}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ type.\_\_new\_\_(mcs,\ name,\ bases,\ d)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00047}00047\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00048}00048\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00049}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer}{00049}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer}{Lexer}}(metaclass=LexerMeta):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00050}00050\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00051}00051\ \textcolor{stringliteral}{\ \ \ \ Lexer\ for\ a\ specific\ language.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00052}00052\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00053}00053\ \textcolor{stringliteral}{\ \ \ \ See\ also\ :doc:\`{}lexerdevelopment\`{},\ a\ high-\/level\ guide\ to\ writing}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00054}00054\ \textcolor{stringliteral}{\ \ \ \ lexers.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00055}00055\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00056}00056\ \textcolor{stringliteral}{\ \ \ \ Lexer\ classes\ have\ attributes\ used\ for\ choosing\ the\ most\ appropriate}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00057}00057\ \textcolor{stringliteral}{\ \ \ \ lexer\ based\ on\ various\ criteria.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00058}00058\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00059}00059\ \textcolor{stringliteral}{\ \ \ \ ..\ autoattribute::\ name}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00060}00060\ \textcolor{stringliteral}{\ \ \ \ \ \ \ :no-\/value:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00061}00061\ \textcolor{stringliteral}{\ \ \ \ ..\ autoattribute::\ aliases}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00062}00062\ \textcolor{stringliteral}{\ \ \ \ \ \ \ :no-\/value:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00063}00063\ \textcolor{stringliteral}{\ \ \ \ ..\ autoattribute::\ filenames}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00064}00064\ \textcolor{stringliteral}{\ \ \ \ \ \ \ :no-\/value:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00065}00065\ \textcolor{stringliteral}{\ \ \ \ ..\ autoattribute::\ alias\_filenames}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00066}00066\ \textcolor{stringliteral}{\ \ \ \ ..\ autoattribute::\ mimetypes}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00067}00067\ \textcolor{stringliteral}{\ \ \ \ \ \ \ :no-\/value:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00068}00068\ \textcolor{stringliteral}{\ \ \ \ ..\ autoattribute::\ priority}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00069}00069\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00070}00070\ \textcolor{stringliteral}{\ \ \ \ Lexers\ included\ in\ Pygments\ should\ have\ two\ additional\ attributes:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00071}00071\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ ..\ autoattribute::\ url}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00073}00073\ \textcolor{stringliteral}{\ \ \ \ \ \ \ :no-\/value:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00074}00074\ \textcolor{stringliteral}{\ \ \ \ ..\ autoattribute::\ version\_added}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00075}00075\ \textcolor{stringliteral}{\ \ \ \ \ \ \ :no-\/value:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00076}00076\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00077}00077\ \textcolor{stringliteral}{\ \ \ \ Lexers\ included\ in\ Pygments\ may\ have\ additional\ attributes:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00078}00078\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ ..\ autoattribute::\ \_example}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00080}00080\ \textcolor{stringliteral}{\ \ \ \ \ \ \ :no-\/value:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00081}00081\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00082}00082\ \textcolor{stringliteral}{\ \ \ \ You\ can\ pass\ options\ to\ the\ constructor.\ The\ basic\ options\ recognized}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00083}00083\ \textcolor{stringliteral}{\ \ \ \ by\ all\ lexers\ and\ processed\ by\ the\ base\ \`{}Lexer\`{}\ class\ are:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00084}00084\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00085}00085\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}stripnl\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00086}00086\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Strip\ leading\ and\ trailing\ newlines\ from\ the\ input\ (default:\ True).}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00087}00087\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}stripall\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00088}00088\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Strip\ all\ leading\ and\ trailing\ whitespace\ from\ the\ input}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00089}00089\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (default:\ False).}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00090}00090\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}ensurenl\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00091}00091\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Make\ sure\ that\ the\ input\ ends\ with\ a\ newline\ (default:\ True).\ \ This}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00092}00092\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ is\ required\ for\ some\ lexers\ that\ consume\ input\ linewise.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00093}00093\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00094}00094\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ..\ versionadded::\ 1.3}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00095}00095\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00096}00096\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}tabsize\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00097}00097\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ given\ and\ greater\ than\ 0,\ expand\ tabs\ in\ the\ input\ (default:\ 0).}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00098}00098\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}encoding\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00099}00099\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ given,\ must\ be\ an\ encoding\ name.\ This\ encoding\ will\ be\ used\ to}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00100}00100\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ convert\ the\ input\ string\ to\ Unicode,\ if\ it\ is\ not\ already\ a\ Unicode}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00101}00101\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ string\ (default:\ \`{}\`{}'guess'\`{}\`{},\ which\ uses\ a\ simple\ UTF-\/8\ /\ Locale\ /}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00102}00102\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Latin1\ detection.\ \ Can\ also\ be\ \`{}\`{}'chardet'\`{}\`{}\ to\ use\ the\ chardet}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00103}00103\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ library,\ if\ it\ is\ installed.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00104}00104\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}inencoding\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00105}00105\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Overrides\ the\ \`{}\`{}encoding\`{}\`{}\ if\ given.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00106}00106\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00108}00108\ \ \ \ \ \textcolor{comment}{\#:\ Full\ name\ of\ the\ lexer,\ in\ human-\/readable\ form}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00109}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_ae6380bc325495c306684b797c802c84a}{00109}}\ \ \ \ \ name\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00110}00110\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00111}00111\ \ \ \ \ \textcolor{comment}{\#:\ A\ list\ of\ short,\ unique\ identifiers\ that\ can\ be\ used\ to\ look}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00112}00112\ \ \ \ \ \textcolor{comment}{\#:\ up\ the\ lexer\ from\ a\ list,\ e.g.,\ using\ \`{}get\_lexer\_by\_name()`.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00113}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_adda225733b55f5672670318a6ce089c8}{00113}}\ \ \ \ \ aliases\ =\ []}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00114}00114\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00115}00115\ \ \ \ \ \textcolor{comment}{\#:\ A\ list\ of\ \`{}fnmatch`\ patterns\ that\ match\ filenames\ which\ contain}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00116}00116\ \ \ \ \ \textcolor{comment}{\#:\ content\ for\ this\ lexer.\ The\ patterns\ in\ this\ list\ should\ be\ unique\ among}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00117}00117\ \ \ \ \ \textcolor{comment}{\#:\ all\ lexers.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00118}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_abf6807d1a6e6d791a93a98c491e9bfb6}{00118}}\ \ \ \ \ filenames\ =\ []}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00120}00120\ \ \ \ \ \textcolor{comment}{\#:\ A\ list\ of\ \`{}fnmatch`\ patterns\ that\ match\ filenames\ which\ may\ or\ may\ not}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00121}00121\ \ \ \ \ \textcolor{comment}{\#:\ contain\ content\ for\ this\ lexer.\ This\ list\ is\ used\ by\ the}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00122}00122\ \ \ \ \ \textcolor{comment}{\#:\ :func:`.guess\_lexer\_for\_filename()`\ function,\ to\ determine\ which\ lexers}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00123}00123\ \ \ \ \ \textcolor{comment}{\#:\ are\ then\ included\ in\ guessing\ the\ correct\ one.\ That\ means\ that}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00124}00124\ \ \ \ \ \textcolor{comment}{\#:\ e.g.\ every\ lexer\ for\ HTML\ and\ a\ template\ language\ should\ include}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00125}00125\ \ \ \ \ \textcolor{comment}{\#:\ \`{}\`{}\(\backslash\)*.html``\ in\ this\ list.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00126}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_aa8463d420dd019763447a896ecadf049}{00126}}\ \ \ \ \ alias\_filenames\ =\ []}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00128}00128\ \ \ \ \ \textcolor{comment}{\#:\ A\ list\ of\ MIME\ types\ for\ content\ that\ can\ be\ lexed\ with\ this\ lexer.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00129}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a4b34f876181f16d618c187a0e0c7fb99}{00129}}\ \ \ \ \ mimetypes\ =\ []}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00130}00130\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00131}00131\ \ \ \ \ \textcolor{comment}{\#:\ Priority,\ should\ multiple\ lexers\ match\ and\ no\ content\ is\ provided}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00132}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a7663d1f9ae515b20d3a1fa5631283d7e}{00132}}\ \ \ \ \ priority\ =\ 0}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00133}00133\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00134}00134\ \ \ \ \ \textcolor{comment}{\#:\ URL\ of\ the\ language\ specification/definition.\ Used\ in\ the\ Pygments}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00135}00135\ \ \ \ \ \textcolor{comment}{\#:\ documentation.\ Set\ to\ an\ empty\ string\ to\ disable.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00136}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_aaf8b0b9489e39219cadaf0e6d4b9f994}{00136}}\ \ \ \ \ url\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00137}00137\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00138}00138\ \ \ \ \ \textcolor{comment}{\#:\ Version\ of\ Pygments\ in\ which\ the\ lexer\ was\ added.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00139}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_aff0307c197481da19672a9d9253ab8c1}{00139}}\ \ \ \ \ version\_added\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00140}00140\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00141}00141\ \ \ \ \ \textcolor{comment}{\#:\ Example\ file\ name.\ Relative\ to\ the\ \`{}\`{}tests/examplefiles``\ directory.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00142}00142\ \ \ \ \ \textcolor{comment}{\#:\ This\ is\ used\ by\ the\ documentation\ generator\ to\ show\ an\ example.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00143}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a8c2131361457a9a07d0fdc1f2d2c189c}{00143}}\ \ \ \ \ \_example\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00145}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_ad3cd8656b6636f612d31c10f9408c1ec}{00145}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_ad3cd8656b6636f612d31c10f9408c1ec}{\_\_init\_\_}}(self,\ **options):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00147}00147\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ constructor\ takes\ arbitrary\ options\ as\ keyword\ arguments.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00148}00148\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Every\ subclass\ must\ first\ process\ its\ own\ options\ and\ then\ call}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00149}00149\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ the\ \`{}Lexer\`{}\ constructor,\ since\ it\ processes\ the\ basic}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00150}00150\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ options\ like\ \`{}stripnl\`{}.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00151}00151\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00152}00152\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ An\ example\ looks\ like\ this:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00153}00153\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00154}00154\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ..\ sourcecode::\ python}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00155}00155\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00156}00156\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ def\ \_\_init\_\_(self,\ **options):}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00157}00157\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.compress\ =\ options.get('compress',\ '')}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00158}00158\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Lexer.\_\_init\_\_(self,\ **options)}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00159}00159\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00160}00160\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ As\ these\ options\ must\ all\ be\ specifiable\ as\ strings\ (due\ to\ the}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00161}00161\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ command\ line\ usage),\ there\ are\ various\ utility\ functions}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00162}00162\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ available\ to\ help\ with\ that,\ see\ \`{}Utilities\`{}\_.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00163}00163\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00164}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_afcc95be3aff91181b8a1299c2b7f25b3}{00164}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_afcc95be3aff91181b8a1299c2b7f25b3}{options}}\ =\ options}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00165}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a9ae108a91f4d4009025d4e9911b6bb0d}{00165}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a9ae108a91f4d4009025d4e9911b6bb0d}{stripnl}}\ =\ get\_bool\_opt(options,\ \textcolor{stringliteral}{'stripnl'},\ \textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00166}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a15afcd4e1a11eab26999702ade18dab1}{00166}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a15afcd4e1a11eab26999702ade18dab1}{stripall}}\ =\ get\_bool\_opt(options,\ \textcolor{stringliteral}{'stripall'},\ \textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00167}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_aca187bd69b88fa6dac12fedd0f5c7a9d}{00167}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_aca187bd69b88fa6dac12fedd0f5c7a9d}{ensurenl}}\ =\ get\_bool\_opt(options,\ \textcolor{stringliteral}{'ensurenl'},\ \textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00168}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a21ac642c8e71ecc6ac9a161dff291626}{00168}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a21ac642c8e71ecc6ac9a161dff291626}{tabsize}}\ =\ get\_int\_opt(options,\ \textcolor{stringliteral}{'tabsize'},\ 0)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00169}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_ab03c49d937775241c0a88faf684342fe}{00169}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_ab03c49d937775241c0a88faf684342fe}{encoding}}\ =\ options.get(\textcolor{stringliteral}{'encoding'},\ \textcolor{stringliteral}{'guess'})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_ab03c49d937775241c0a88faf684342fe}{encoding}}\ =\ options.get(\textcolor{stringliteral}{'inencoding'})\ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_ab03c49d937775241c0a88faf684342fe}{encoding}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00171}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a02b262ace33a7dc5394857b805d55000}{00171}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a02b262ace33a7dc5394857b805d55000}{filters}}\ =\ []}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ filter\_\ \textcolor{keywordflow}{in}\ get\_list\_opt(options,\ \textcolor{stringliteral}{'filters'},\ ()):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a0a11cddccff6f8b227de11a5b510ed45}{add\_filter}}(filter\_)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00174}00174\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00175}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a01cb8d659bdc8f8b1262ac4f2c227097}{00175}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a01cb8d659bdc8f8b1262ac4f2c227097}{\_\_repr\_\_}}(self):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_afcc95be3aff91181b8a1299c2b7f25b3}{options}}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{'<pygments.lexers.\{self.\_\_class\_\_.\_\_name\_\_\}\ with\ \{self.options!r\}>'}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{'<pygments.lexers.\{self.\_\_class\_\_.\_\_name\_\_\}>'}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00180}00180\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00181}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a0a11cddccff6f8b227de11a5b510ed45}{00181}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a0a11cddccff6f8b227de11a5b510ed45}{add\_filter}}(self,\ filter\_,\ **options):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00183}00183\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Add\ a\ new\ stream\ filter\ to\ this\ lexer.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00184}00184\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(filter\_,\ Filter):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \ \ \ \ filter\_\ =\ get\_filter\_by\_name(filter\_,\ **options)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a02b262ace33a7dc5394857b805d55000}{filters}}.append(filter\_)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00188}00188\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00189}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a5fdd68838978db44474383acd3e22048}{00189}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a5fdd68838978db44474383acd3e22048}{analyse\_text}}(text):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00191}00191\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ A\ static\ method\ which\ is\ called\ for\ lexer\ guessing.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00192}00192\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00193}00193\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ It\ should\ analyse\ the\ text\ and\ return\ a\ float\ in\ the\ range}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00194}00194\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ from\ \`{}\`{}0.0\`{}\`{}\ to\ \`{}\`{}1.0\`{}\`{}.\ \ If\ it\ returns\ \`{}\`{}0.0\`{}\`{},\ the\ lexer}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00195}00195\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ will\ not\ be\ selected\ as\ the\ most\ probable\ one,\ if\ it\ returns}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00196}00196\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}\`{}1.0\`{}\`{},\ it\ will\ be\ selected\ immediately.\ \ This\ is\ used\ by}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00197}00197\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}guess\_lexer\`{}.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00198}00198\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00199}00199\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ \`{}LexerMeta\`{}\ metaclass\ automatically\ wraps\ this\ function\ so}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00200}00200\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ that\ it\ works\ like\ a\ static\ method\ (no\ \`{}\`{}self\`{}\`{}\ or\ \`{}\`{}cls\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00201}00201\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ parameter)\ and\ the\ return\ value\ is\ automatically\ converted\ to}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00202}00202\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}float\`{}.\ If\ the\ return\ value\ is\ an\ object\ that\ is\ boolean\ \`{}False\`{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00203}00203\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ it's\ the\ same\ as\ if\ the\ return\ values\ was\ \`{}\`{}0.0\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00204}00204\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00205}00205\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00206}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a65a554f884611f728c4c3d96542da4d7}{00206}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a65a554f884611f728c4c3d96542da4d7}{\_preprocess\_lexer\_input}}(self,\ text):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Apply\ preprocessing\ such\ as\ decoding\ the\ input,\ removing\ BOM\ and\ normalizing\ newlines."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00208}00208\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(text,\ str):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.encoding\ ==\ \textcolor{stringliteral}{'guess'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ text,\ \_\ =\ guess\_decode(text)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.encoding\ ==\ \textcolor{stringliteral}{'chardet'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ pip\ vendoring\ note:\ this\ code\ is\ not\ reachable\ by\ pip,}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ removed\ import\ of\ chardet\ to\ make\ it\ clear.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ImportError(\textcolor{stringliteral}{'chardet\ is\ not\ vendored\ by\ pip'})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ImportError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ImportError(\textcolor{stringliteral}{'To\ enable\ chardet\ encoding\ guessing,\ '}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'please\ install\ the\ chardet\ library\ '}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'from\ http://chardet.feedparser.org/'})\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ check\ for\ BOM\ first}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ decoded\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ bom,\ encoding\ \textcolor{keywordflow}{in}\ \_encoding\_map:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ text.startswith(bom):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ decoded\ =\ text[len(bom):].decode(encoding,\ \textcolor{stringliteral}{'replace'})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ no\ BOM\ found,\ so\ use\ chardet}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ decoded\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ enc\ =\ chardet.detect(text[:1024])\ \ \textcolor{comment}{\#\ Guess\ using\ first\ 1KB}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ decoded\ =\ text.decode(enc.get(\textcolor{stringliteral}{'encoding'})\ \textcolor{keywordflow}{or}\ \textcolor{stringliteral}{'utf-\/8'},}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'replace'})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ text\ =\ decoded}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ text\ =\ text.decode(self.encoding)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ text.startswith(\textcolor{stringliteral}{'\(\backslash\)ufeff'}):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ text\ =\ text[len(\textcolor{stringliteral}{'\(\backslash\)ufeff'}):]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ text.startswith(\textcolor{stringliteral}{'\(\backslash\)ufeff'}):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ text\ =\ text[len(\textcolor{stringliteral}{'\(\backslash\)ufeff'}):]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00240}00240\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ text\ now\ *is*\ a\ unicode\ string}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ text\ =\ text.replace(\textcolor{stringliteral}{'\(\backslash\)r\(\backslash\)n'},\ \textcolor{stringliteral}{'\(\backslash\)n'})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ text\ =\ text.replace(\textcolor{stringliteral}{'\(\backslash\)r'},\ \textcolor{stringliteral}{'\(\backslash\)n'})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.stripall:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \ \ \ \ text\ =\ text.strip()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.stripnl:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \ \ \ \ text\ =\ text.strip(\textcolor{stringliteral}{'\(\backslash\)n'})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.tabsize\ >\ 0:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \ \ \ \ text\ =\ text.expandtabs(self.tabsize)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.ensurenl\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ text.endswith(\textcolor{stringliteral}{'\(\backslash\)n'}):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ text\ +=\ \textcolor{stringliteral}{'\(\backslash\)n'}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00252}00252\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ text}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00254}00254\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00255}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a4707512dc4f122f484eb7d8fafc173ef}{00255}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a4707512dc4f122f484eb7d8fafc173ef}{get\_tokens}}(self,\ text,\ unfiltered=False):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00257}00257\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ method\ is\ the\ basic\ interface\ of\ a\ lexer.\ It\ is\ called\ by}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00258}00258\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ the\ \`{}highlight()\`{}\ function.\ It\ must\ process\ the\ text\ and\ return\ an}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00259}00259\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ iterable\ of\ \`{}\`{}(tokentype,\ value)\`{}\`{}\ pairs\ from\ \`{}text\`{}.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00260}00260\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00261}00261\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Normally,\ you\ don't\ need\ to\ override\ this\ method.\ The\ default}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00262}00262\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ implementation\ processes\ the\ options\ recognized\ by\ all\ lexers}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00263}00263\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (\`{}stripnl\`{},\ \`{}stripall\`{}\ and\ so\ on),\ and\ then\ yields\ all\ tokens}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00264}00264\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ from\ \`{}get\_tokens\_unprocessed()\`{},\ with\ the\ \`{}\`{}index\`{}\`{}\ dropped.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00265}00265\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00266}00266\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ \`{}unfiltered\`{}\ is\ set\ to\ \`{}True\`{},\ the\ filtering\ mechanism\ is}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00267}00267\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ bypassed\ even\ if\ filters\ are\ defined.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00268}00268\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ text\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a65a554f884611f728c4c3d96542da4d7}{\_preprocess\_lexer\_input}}(text)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00270}00270\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }streamer():}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ \_,\ t,\ v\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a82865ec0a779174e4499d26e78b66b7c}{get\_tokens\_unprocessed}}(text):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ t,\ v}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ stream\ =\ streamer()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ unfiltered:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ \ \ \ \ stream\ =\ apply\_filters(stream,\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a02b262ace33a7dc5394857b805d55000}{filters}},\ self)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ stream}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00278}00278\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00279}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a82865ec0a779174e4499d26e78b66b7c}{00279}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_a82865ec0a779174e4499d26e78b66b7c}{get\_tokens\_unprocessed}}(self,\ text):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00281}00281\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ method\ should\ process\ the\ text\ and\ return\ an\ iterable\ of}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00282}00282\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}\`{}(index,\ tokentype,\ value)\`{}\`{}\ tuples\ where\ \`{}\`{}index\`{}\`{}\ is\ the\ starting}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00283}00283\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ position\ of\ the\ token\ within\ the\ input\ text.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00284}00284\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00285}00285\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ It\ must\ be\ overridden\ by\ subclasses.\ It\ is\ recommended\ to}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00286}00286\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ implement\ it\ as\ a\ generator\ to\ maximize\ effectiveness.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00287}00287\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00289}00289\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00290}00290\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00291}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer}{00291}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer}{DelegatingLexer}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer}{Lexer}}):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00292}00292\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00293}00293\ \textcolor{stringliteral}{\ \ \ \ This\ lexer\ takes\ two\ lexer\ as\ arguments.\ A\ root\ lexer\ and}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00294}00294\ \textcolor{stringliteral}{\ \ \ \ a\ language\ lexer.\ First\ everything\ is\ scanned\ using\ the\ language}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00295}00295\ \textcolor{stringliteral}{\ \ \ \ lexer,\ afterwards\ all\ \`{}\`{}Other\`{}\`{}\ tokens\ are\ lexed\ using\ the\ root}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00296}00296\ \textcolor{stringliteral}{\ \ \ \ lexer.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00297}00297\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00298}00298\ \textcolor{stringliteral}{\ \ \ \ The\ lexers\ from\ the\ \`{}\`{}template\`{}\`{}\ lexer\ package\ use\ this\ base\ lexer.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00299}00299\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00300}00300\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00301}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_aeea720a819f5e42c7e1ce6abf1f5094b}{00301}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_aeea720a819f5e42c7e1ce6abf1f5094b}{\_\_init\_\_}}(self,\ \_root\_lexer,\ \_language\_lexer,\ \_needle=Other,\ **options):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00302}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_a4236b40476c4287558ce411fa72e469b}{00302}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_a4236b40476c4287558ce411fa72e469b}{root\_lexer}}\ =\ \_root\_lexer(**options)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00303}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_aaf306fbd85eea694ffd6ec8b81786091}{00303}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_aaf306fbd85eea694ffd6ec8b81786091}{language\_lexer}}\ =\ \_language\_lexer(**options)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00304}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_a87d065138821d3db319c5ac5d76fda3a}{00304}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_a87d065138821d3db319c5ac5d76fda3a}{needle}}\ =\ \_needle}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00305}00305\ \ \ \ \ \ \ \ \ Lexer.\_\_init\_\_(self,\ **options)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00306}00306\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00307}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_aaacde6862c33db65d3aa57e2df5bc857}{00307}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_aaacde6862c33db65d3aa57e2df5bc857}{get\_tokens\_unprocessed}}(self,\ text):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ buffered\ =\ \textcolor{stringliteral}{''}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ insertions\ =\ []}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ lng\_buffer\ =\ []}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i,\ t,\ v\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_aaf306fbd85eea694ffd6ec8b81786091}{language\_lexer}}.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_aaacde6862c33db65d3aa57e2df5bc857}{get\_tokens\_unprocessed}}(text):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00312}00312\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ t\ \textcolor{keywordflow}{is}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_a87d065138821d3db319c5ac5d76fda3a}{needle}}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ lng\_buffer:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00314}00314\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ insertions.append((len(buffered),\ lng\_buffer))}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00315}00315\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ lng\_buffer\ =\ []}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00316}00316\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ buffered\ +=\ v}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00318}00318\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ lng\_buffer.append((i,\ t,\ v))}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00319}00319\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ lng\_buffer:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ \ \ \ \ insertions.append((len(buffered),\ lng\_buffer))}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer_a54655e5527391f2788c63cdc86629a52}{do\_insertions}}(insertions,}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_a4236b40476c4287558ce411fa72e469b}{root\_lexer}}.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_delegating_lexer_aaacde6862c33db65d3aa57e2df5bc857}{get\_tokens\_unprocessed}}(buffered))}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00323}00323\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00324}00324\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00325}00325\ \textcolor{comment}{\#\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00326}00326\ \textcolor{comment}{\#\ RegexLexer\ and\ ExtendedRegexLexer}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00327}00327\ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00328}00328\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00329}00329\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00330}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1include}{00330}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1include}{include}}(str):\ \ \textcolor{comment}{\#\ pylint:\ disable=invalid-\/name}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00331}00331\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00332}00332\ \textcolor{stringliteral}{\ \ \ \ Indicates\ that\ a\ state\ should\ include\ rules\ from\ another\ state.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00333}00333\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00334}00334\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00335}00335\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00336}00336\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00337}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1__inherit}{00337}}\ \textcolor{keyword}{class\ }\_inherit:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00338}00338\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00339}00339\ \textcolor{stringliteral}{\ \ \ \ Indicates\ the\ a\ state\ should\ inherit\ from\ its\ superclass.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00340}00340\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00341}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1__inherit_a8897a924cc5ac7fdd1f6a6091f020678}{00341}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1__inherit_a8897a924cc5ac7fdd1f6a6091f020678}{\_\_repr\_\_}}(self):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{'inherit'}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00343}00343\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00344}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer_a2acef8782371bf0e78686f538c4bde01}{00344}}\ inherit\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1__inherit}{\_inherit}}()\ \ \textcolor{comment}{\#\ pylint:\ disable=invalid-\/name}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00345}00345\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00346}00346\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00347}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1combined}{00347}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1combined}{combined}}(tuple):\ \ \textcolor{comment}{\#\ pylint:\ disable=invalid-\/name}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00348}00348\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00349}00349\ \textcolor{stringliteral}{\ \ \ \ Indicates\ a\ state\ combined\ from\ multiple\ states.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00350}00350\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00351}00351\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00352}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1combined_a9cd33c733986590cbc88a3ab713e5ce0}{00352}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1combined_a9cd33c733986590cbc88a3ab713e5ce0}{\_\_new\_\_}}(cls,\ *args):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tuple.\_\_new\_\_(cls,\ args)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00354}00354\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00355}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1combined_a91d7ee4fe7cbb14e5e000962a82d0dc0}{00355}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1combined_a91d7ee4fe7cbb14e5e000962a82d0dc0}{\_\_init\_\_}}(self,\ *args):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ tuple.\_\_init\_\_\ doesn't\ do\ anything}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00358}00358\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00359}00359\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00360}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match}{00360}}\ \textcolor{keyword}{class\ }\_PseudoMatch:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00361}00361\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00362}00362\ \textcolor{stringliteral}{\ \ \ \ A\ pseudo\ match\ object\ constructed\ from\ a\ string.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00363}00363\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00364}00364\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00365}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_a376c52297f1564cab93aa545f64b8ff1}{00365}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_a376c52297f1564cab93aa545f64b8ff1}{\_\_init\_\_}}(self,\ start,\ text):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00366}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_aa37bbb40feadefc532953d864340d7cb}{00366}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_aa37bbb40feadefc532953d864340d7cb}{\_text}}\ =\ text}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00367}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_a01d318f5d0c27376456c1787aa02d86f}{00367}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_a01d318f5d0c27376456c1787aa02d86f}{\_start}}\ =\ start}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00368}00368\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00369}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_a0dab1b29c0e2ed959d3494125b5a1bdc}{00369}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_a0dab1b29c0e2ed959d3494125b5a1bdc}{start}}(self,\ arg=None):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_a01d318f5d0c27376456c1787aa02d86f}{\_start}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00371}00371\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00372}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_ab690fc51ad8c674078fc4e53b5124f9e}{00372}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_ab690fc51ad8c674078fc4e53b5124f9e}{end}}(self,\ arg=None):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00373}00373\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_a01d318f5d0c27376456c1787aa02d86f}{\_start}}\ +\ len(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_aa37bbb40feadefc532953d864340d7cb}{\_text}})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00374}00374\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00375}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_a202b319820013d51b8e0a4657848a1df}{00375}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_a202b319820013d51b8e0a4657848a1df}{group}}(self,\ arg=None):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ arg:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ IndexError(\textcolor{stringliteral}{'No\ such\ group'})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_aa37bbb40feadefc532953d864340d7cb}{\_text}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00379}00379\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00380}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_acb32d2337ddf4399a2aeda3502d1b7f4}{00380}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_acb32d2337ddf4399a2aeda3502d1b7f4}{groups}}(self):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_aa37bbb40feadefc532953d864340d7cb}{\_text}},)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00382}00382\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00383}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_aa06cb9f6c3fda05257d225e5860092d7}{00383}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match_aa06cb9f6c3fda05257d225e5860092d7}{groupdict}}(self):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \{\}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00385}00385\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00386}00386\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00387}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer_ad98401804e56ddad7e8d84de1072487c}{00387}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer_ad98401804e56ddad7e8d84de1072487c}{bygroups}}(*args):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00388}00388\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00389}00389\ \textcolor{stringliteral}{\ \ \ \ Callback\ that\ yields\ multiple\ actions\ for\ each\ group\ in\ the\ match.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00390}00390\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00391}00391\ \ \ \ \ \textcolor{keyword}{def\ }callback(lexer,\ match,\ ctx=None):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i,\ action\ \textcolor{keywordflow}{in}\ enumerate(args):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ action\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ type(action)\ \textcolor{keywordflow}{is}\ \_TokenType:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ data\ =\ match.group(i\ +\ 1)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ data:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ match.start(i\ +\ 1),\ action,\ data}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00399}00399\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ data\ =\ match.group(i\ +\ 1)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ data\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ctx:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctx.pos\ =\ match.start(i\ +\ 1)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ item\ \textcolor{keywordflow}{in}\ action(lexer,}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00405}00405\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___pseudo_match}{\_PseudoMatch}}(match.start(i\ +\ 1),\ data),\ ctx):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00406}00406\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ item:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ item}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00408}00408\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ctx:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00409}00409\ \ \ \ \ \ \ \ \ \ \ \ \ ctx.pos\ =\ match.end()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00410}00410\ \ \ \ \ \textcolor{keywordflow}{return}\ callback}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00411}00411\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00412}00412\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00413}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___this}{00413}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1___this}{\_This}}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00414}00414\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00415}00415\ \textcolor{stringliteral}{\ \ \ \ Special\ singleton\ used\ for\ indicating\ the\ caller\ class.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00416}00416\ \textcolor{stringliteral}{\ \ \ \ Used\ by\ \`{}\`{}using\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00417}00417\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00418}00418\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00419}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer_a17a0b7019f9435a186a5d07d50bdf2f7}{00419}}\ this\ =\ \_This()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00420}00420\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00421}00421\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00422}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer_a8bb75f41a5fa81870904b6b7b6af878d}{00422}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer_a8bb75f41a5fa81870904b6b7b6af878d}{using}}(\_other,\ **kwargs):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00423}00423\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00424}00424\ \textcolor{stringliteral}{\ \ \ \ Callback\ that\ processes\ the\ match\ with\ a\ different\ lexer.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00425}00425\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00426}00426\ \textcolor{stringliteral}{\ \ \ \ The\ keyword\ arguments\ are\ forwarded\ to\ the\ lexer,\ except\ \`{}state\`{}\ which}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00427}00427\ \textcolor{stringliteral}{\ \ \ \ is\ handled\ separately.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00428}00428\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00429}00429\ \textcolor{stringliteral}{\ \ \ \ \`{}state\`{}\ specifies\ the\ state\ that\ the\ new\ lexer\ will\ start\ in,\ and\ can}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00430}00430\ \textcolor{stringliteral}{\ \ \ \ be\ an\ enumerable\ such\ as\ ('root',\ 'inline',\ 'string')\ or\ a\ simple}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00431}00431\ \textcolor{stringliteral}{\ \ \ \ string\ which\ is\ assumed\ to\ be\ on\ top\ of\ the\ root\ state.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00432}00432\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00433}00433\ \textcolor{stringliteral}{\ \ \ \ Note:\ For\ that\ to\ work,\ \`{}\_other\`{}\ must\ not\ be\ an\ \`{}ExtendedRegexLexer\`{}.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00434}00434\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00435}00435\ \ \ \ \ gt\_kwargs\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00436}00436\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{'state'}\ \textcolor{keywordflow}{in}\ kwargs:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00437}00437\ \ \ \ \ \ \ \ \ s\ =\ kwargs.pop(\textcolor{stringliteral}{'state'})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(s,\ (list,\ tuple)):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ \ \ \ \ gt\_kwargs[\textcolor{stringliteral}{'stack'}]\ =\ s}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ \ \ \ \ gt\_kwargs[\textcolor{stringliteral}{'stack'}]\ =\ (\textcolor{stringliteral}{'root'},\ s)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00442}00442\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00443}00443\ \ \ \ \ \textcolor{keywordflow}{if}\ \_other\ \textcolor{keywordflow}{is}\ this:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }callback(lexer,\ match,\ ctx=None):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ if\ keyword\ arguments\ are\ given\ the\ callback}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00446}00446\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ function\ has\ to\ create\ a\ new\ lexer\ instance}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00447}00447\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ kwargs:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00448}00448\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ XXX:\ cache\ that\ somehow}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00449}00449\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ kwargs.update(lexer.options)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00450}00450\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ lx\ =\ lexer.\_\_class\_\_(**kwargs)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00451}00451\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ lx\ =\ lexer}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00453}00453\ \ \ \ \ \ \ \ \ \ \ \ \ s\ =\ match.start()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00454}00454\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i,\ t,\ v\ \textcolor{keywordflow}{in}\ lx.get\_tokens\_unprocessed(match.group(),\ **gt\_kwargs):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00455}00455\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ i\ +\ s,\ t,\ v}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ctx:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctx.pos\ =\ match.end()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00458}00458\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }callback(lexer,\ match,\ ctx=None):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00460}00460\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ XXX:\ cache\ that\ somehow}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ \ \ \ \ kwargs.update(lexer.options)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00462}00462\ \ \ \ \ \ \ \ \ \ \ \ \ lx\ =\ \_other(**kwargs)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00463}00463\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00464}00464\ \ \ \ \ \ \ \ \ \ \ \ \ s\ =\ match.start()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00465}00465\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i,\ t,\ v\ \textcolor{keywordflow}{in}\ lx.get\_tokens\_unprocessed(match.group(),\ **gt\_kwargs):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00466}00466\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ i\ +\ s,\ t,\ v}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00467}00467\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ctx:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00468}00468\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctx.pos\ =\ match.end()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00469}00469\ \ \ \ \ \textcolor{keywordflow}{return}\ callback}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00470}00470\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00471}00471\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00472}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1default}{00472}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1default}{default}}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00473}00473\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00474}00474\ \textcolor{stringliteral}{\ \ \ \ Indicates\ a\ state\ or\ state\ action\ (e.g.\ \#pop)\ to\ apply.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00475}00475\ \textcolor{stringliteral}{\ \ \ \ For\ example\ default('\#pop')\ is\ equivalent\ to\ ('',\ Token,\ '\#pop')}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00476}00476\ \textcolor{stringliteral}{\ \ \ \ Note\ that\ state\ tuples\ may\ be\ used\ as\ well.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00477}00477\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00478}00478\ \textcolor{stringliteral}{\ \ \ \ ..\ versionadded::\ 2.0}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00479}00479\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00480}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1default_ab8669157f6d61ea12569275c68ef1263}{00480}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1default_ab8669157f6d61ea12569275c68ef1263}{\_\_init\_\_}}(self,\ state):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00481}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1default_a9b0e0dad26f842d9370f049af4a498b9}{00481}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1default_a9b0e0dad26f842d9370f049af4a498b9}{state}}\ =\ state}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00482}00482\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00483}00483\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00484}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words}{00484}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words}{words}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1util_1_1_future}{Future}}):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00485}00485\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00486}00486\ \textcolor{stringliteral}{\ \ \ \ Indicates\ a\ list\ of\ literal\ words\ that\ is\ transformed\ into\ an\ optimized}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00487}00487\ \textcolor{stringliteral}{\ \ \ \ regex\ that\ matches\ any\ of\ the\ words.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00488}00488\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00489}00489\ \textcolor{stringliteral}{\ \ \ \ ..\ versionadded::\ 2.0}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00490}00490\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00491}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_a825401444f1413829953565cd5c7bf5a}{00491}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_a825401444f1413829953565cd5c7bf5a}{\_\_init\_\_}}(self,\ words,\ prefix='',\ suffix=''):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00492}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_a3f36ff7b2981d60f235fd1f8834690ee}{00492}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_a3f36ff7b2981d60f235fd1f8834690ee}{words}}\ =\ words}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00493}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_a1afc7ac8479618ad14542e2572e21e54}{00493}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_a1afc7ac8479618ad14542e2572e21e54}{prefix}}\ =\ prefix}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00494}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_ae35f2a0cbe165b736e1be230b2b5df9a}{00494}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_ae35f2a0cbe165b736e1be230b2b5df9a}{suffix}}\ =\ suffix}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00495}00495\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00496}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_aeb43f4277e454ae7bc128a347d8c181f}{00496}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_aeb43f4277e454ae7bc128a347d8c181f}{get}}(self):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00497}00497\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ regex\_opt(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_a3f36ff7b2981d60f235fd1f8834690ee}{words}},\ prefix=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_a1afc7ac8479618ad14542e2572e21e54}{prefix}},\ suffix=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1words_ae35f2a0cbe165b736e1be230b2b5df9a}{suffix}})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00498}00498\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00499}00499\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00500}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta}{00500}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta}{RegexLexerMeta}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_meta}{LexerMeta}}):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00501}00501\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00502}00502\ \textcolor{stringliteral}{\ \ \ \ Metaclass\ for\ RegexLexer,\ creates\ the\ self.\_tokens\ attribute\ from}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00503}00503\ \textcolor{stringliteral}{\ \ \ \ self.tokens\ on\ the\ first\ instantiation.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00504}00504\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00505}00505\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00506}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_ad11badf31a32931e7a45083b93ab7c90}{00506}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_ad11badf31a32931e7a45083b93ab7c90}{\_process\_regex}}(cls,\ regex,\ rflags,\ state):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Preprocess\ the\ regular\ expression\ component\ of\ a\ token\ definition."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00508}00508\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(regex,\ Future):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00509}00509\ \ \ \ \ \ \ \ \ \ \ \ \ regex\ =\ regex.get()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00510}00510\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ re.compile(regex,\ rflags).match}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00511}00511\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00512}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a863cb17ef01d639a2402718802854264}{00512}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a863cb17ef01d639a2402718802854264}{\_process\_token}}(cls,\ token):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00513}00513\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Preprocess\ the\ token\ component\ of\ a\ token\ definition."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00514}00514\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ type(token)\ \textcolor{keywordflow}{is}\ \_TokenType\ \textcolor{keywordflow}{or}\ callable(token),\ \(\backslash\)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{'token\ type\ must\ be\ simple\ type\ or\ callable,\ not\ \{token!r\}'}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00516}00516\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ token}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00517}00517\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00518}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a6e42e3110a5a381294ebcdee879f5d8b}{00518}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a6e42e3110a5a381294ebcdee879f5d8b}{\_process\_new\_state}}(cls,\ new\_state,\ unprocessed,\ processed):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Preprocess\ the\ state\ transition\ action\ of\ a\ token\ definition."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(new\_state,\ str):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ an\ existing\ state}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ new\_state\ ==\ \textcolor{stringliteral}{'\#pop'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00523}00523\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ -\/1}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ new\_state\ \textcolor{keywordflow}{in}\ unprocessed:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00525}00525\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (new\_state,)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00526}00526\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ new\_state\ ==\ \textcolor{stringliteral}{'\#push'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ new\_state}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00528}00528\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ new\_state[:5]\ ==\ \textcolor{stringliteral}{'\#pop:'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00529}00529\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ -\/int(new\_state[5:])}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00530}00530\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00531}00531\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keyword}{False},\ f\textcolor{stringliteral}{'unknown\ new\ state\ \{new\_state!r\}'}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00532}00532\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(new\_state,\ combined):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00533}00533\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ combine\ a\ new\ state\ from\ existing\ ones}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ \ \ \ \ tmp\_state\ =\ \textcolor{stringliteral}{'\_tmp\_\%d'}\ \%\ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_af57011b47d8ecee595a711a93ac1029e}{\_tmpname}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00535}00535\ \ \ \ \ \ \ \ \ \ \ \ \ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_af57011b47d8ecee595a711a93ac1029e}{\_tmpname}}\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00536}00536\ \ \ \ \ \ \ \ \ \ \ \ \ itokens\ =\ []}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00537}00537\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ istate\ \textcolor{keywordflow}{in}\ new\_state:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00538}00538\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ istate\ !=\ new\_state,\ f\textcolor{stringliteral}{'circular\ state\ ref\ \{istate!r\}'}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00539}00539\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ itokens.extend(cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_aa0e38f588a95bfa63b690fbfd607e203}{\_process\_state}}(unprocessed,}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00540}00540\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ processed,\ istate))}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00541}00541\ \ \ \ \ \ \ \ \ \ \ \ \ processed[tmp\_state]\ =\ itokens}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00542}00542\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (tmp\_state,)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00543}00543\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(new\_state,\ tuple):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00544}00544\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ push\ more\ than\ one\ state}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00545}00545\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ istate\ \textcolor{keywordflow}{in}\ new\_state:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00546}00546\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ (istate\ \textcolor{keywordflow}{in}\ unprocessed\ \textcolor{keywordflow}{or}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00547}00547\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ istate\ \textcolor{keywordflow}{in}\ (\textcolor{stringliteral}{'\#pop'},\ \textcolor{stringliteral}{'\#push'})),\ \(\backslash\)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'unknown\ new\ state\ '}\ +\ istate}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00549}00549\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ new\_state}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00550}00550\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00551}00551\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keyword}{False},\ f\textcolor{stringliteral}{'unknown\ new\ state\ def\ \{new\_state!r\}'}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00552}00552\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00553}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_aa0e38f588a95bfa63b690fbfd607e203}{00553}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_aa0e38f588a95bfa63b690fbfd607e203}{\_process\_state}}(cls,\ unprocessed,\ processed,\ state):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00554}00554\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Preprocess\ a\ single\ state\ definition."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00555}00555\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ isinstance(state,\ str),\ f\textcolor{stringliteral}{"{}wrong\ state\ name\ \{state!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00556}00556\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ state[0]\ !=\ \textcolor{stringliteral}{'\#'},\ f\textcolor{stringliteral}{"{}invalid\ state\ name\ \{state!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00557}00557\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ state\ \textcolor{keywordflow}{in}\ processed:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00558}00558\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ processed[state]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00559}00559\ \ \ \ \ \ \ \ \ tokens\ =\ processed[state]\ =\ []}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00560}00560\ \ \ \ \ \ \ \ \ rflags\ =\ cls.flags}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00561}00561\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ tdef\ \textcolor{keywordflow}{in}\ unprocessed[state]:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00562}00562\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(tdef,\ include):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00563}00563\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ it's\ a\ state\ reference}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00564}00564\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ tdef\ !=\ state,\ f\textcolor{stringliteral}{"{}circular\ state\ reference\ \{state!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00565}00565\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ tokens.extend(cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_aa0e38f588a95bfa63b690fbfd607e203}{\_process\_state}}(unprocessed,\ processed,}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00566}00566\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ str(tdef)))}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00567}00567\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00568}00568\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(tdef,\ \_inherit):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00569}00569\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ should\ be\ processed\ already,\ but\ may\ not\ in\ the\ case\ of:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00570}00570\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ 1.\ the\ state\ has\ no\ counterpart\ in\ any\ parent}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00571}00571\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ 2.\ the\ state\ includes\ more\ than\ one\ 'inherit'}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00572}00572\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00573}00573\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(tdef,\ default):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00574}00574\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ new\_state\ =\ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a6e42e3110a5a381294ebcdee879f5d8b}{\_process\_new\_state}}(tdef.state,\ unprocessed,\ processed)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00575}00575\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ tokens.append((re.compile(\textcolor{stringliteral}{''}).match,\ \textcolor{keywordtype}{None},\ new\_state))}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00576}00576\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00577}00577\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00578}00578\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ type(tdef)\ \textcolor{keywordflow}{is}\ tuple,\ f\textcolor{stringliteral}{"{}wrong\ rule\ def\ \{tdef!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00579}00579\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00580}00580\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00581}00581\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rex\ =\ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_ad11badf31a32931e7a45083b93ab7c90}{\_process\_regex}}(tdef[0],\ rflags,\ state)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00582}00582\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ err:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00583}00583\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(f\textcolor{stringliteral}{"{}uncompilable\ regex\ \{tdef[0]!r\}\ in\ state\ \{state!r\}\ of\ \{cls!r\}:\ \{err\}"{}})\ \textcolor{keyword}{from}\ err}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00584}00584\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00585}00585\ \ \ \ \ \ \ \ \ \ \ \ \ token\ =\ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a863cb17ef01d639a2402718802854264}{\_process\_token}}(tdef[1])}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00586}00586\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00587}00587\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(tdef)\ ==\ 2:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00588}00588\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ new\_state\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00589}00589\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00590}00590\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ new\_state\ =\ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a6e42e3110a5a381294ebcdee879f5d8b}{\_process\_new\_state}}(tdef[2],}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00591}00591\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ unprocessed,\ processed)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00592}00592\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00593}00593\ \ \ \ \ \ \ \ \ \ \ \ \ tokens.append((rex,\ token,\ new\_state))}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00594}00594\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tokens}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00595}00595\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00596}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_ae7ac876293244259a2664bbefdaa40d8}{00596}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_ae7ac876293244259a2664bbefdaa40d8}{process\_tokendef}}(cls,\ name,\ tokendefs=None):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00597}00597\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Preprocess\ a\ dictionary\ of\ token\ definitions."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00598}00598\ \ \ \ \ \ \ \ \ processed\ =\ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a9121eb7ecf6d93717c43e508db5bec8e}{\_all\_tokens}}[name]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00599}00599\ \ \ \ \ \ \ \ \ tokendefs\ =\ tokendefs\ \textcolor{keywordflow}{or}\ cls.tokens[name]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00600}00600\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ state\ \textcolor{keywordflow}{in}\ list(tokendefs):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00601}00601\ \ \ \ \ \ \ \ \ \ \ \ \ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_aa0e38f588a95bfa63b690fbfd607e203}{\_process\_state}}(tokendefs,\ processed,\ state)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00602}00602\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ processed}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00603}00603\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00604}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a7e62f94b49933787d16e9b1b9951686f}{00604}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a7e62f94b49933787d16e9b1b9951686f}{get\_tokendefs}}(cls):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00605}00605\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00606}00606\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Merge\ tokens\ from\ superclasses\ in\ MRO\ order,\ returning\ a\ single\ tokendef}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00607}00607\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ dictionary.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00608}00608\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00609}00609\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Any\ state\ that\ is\ not\ defined\ by\ a\ subclass\ will\ be\ inherited}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00610}00610\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ automatically.\ \ States\ that\ *are*\ defined\ by\ subclasses\ will,\ by}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00611}00611\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ default,\ override\ that\ state\ in\ the\ superclass.\ \ If\ a\ subclass\ wishes\ to}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00612}00612\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ inherit\ definitions\ from\ a\ superclass,\ it\ can\ use\ the\ special\ value}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00613}00613\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}inherit"{},\ which\ will\ cause\ the\ superclass'\ state\ definition\ to\ be}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00614}00614\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ included\ at\ that\ point\ in\ the\ state.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00615}00615\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00616}00616\ \ \ \ \ \ \ \ \ tokens\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00617}00617\ \ \ \ \ \ \ \ \ inheritable\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00618}00618\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ c\ \textcolor{keywordflow}{in}\ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a38cb8bd9658855629e8abbe05f460830}{\_\_mro\_\_}}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00619}00619\ \ \ \ \ \ \ \ \ \ \ \ \ toks\ =\ c.\_\_dict\_\_.get(\textcolor{stringliteral}{'tokens'},\ \{\})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00620}00620\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00621}00621\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ state,\ items\ \textcolor{keywordflow}{in}\ toks.items():}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00622}00622\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ curitems\ =\ tokens.get(state)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00623}00623\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ curitems\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00624}00624\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ N.b.\ because\ this\ is\ assigned\ by\ reference,\ sufficiently}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00625}00625\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ deep\ hierarchies\ are\ processed\ incrementally\ (e.g.\ for}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00626}00626\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ A(B),\ B(C),\ C(RegexLexer),\ B\ will\ be\ premodified\ so\ X(B)}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00627}00627\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ will\ not\ see\ any\ inherits\ in\ B).}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00628}00628\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ tokens[state]\ =\ items}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00629}00629\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00630}00630\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ inherit\_ndx\ =\ items.index(inherit)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00631}00631\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00632}00632\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00633}00633\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ inheritable[state]\ =\ inherit\_ndx}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00634}00634\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00635}00635\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00636}00636\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ inherit\_ndx\ =\ inheritable.pop(state,\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00637}00637\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ inherit\_ndx\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00638}00638\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00639}00639\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00640}00640\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Replace\ the\ "{}inherit"{}\ value\ with\ the\ items}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00641}00641\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ curitems[inherit\_ndx:inherit\_ndx+1]\ =\ items}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00642}00642\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00643}00643\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ N.b.\ this\ is\ the\ index\ in\ items\ (that\ is,\ the\ superclass}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00644}00644\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ copy),\ so\ offset\ required\ when\ storing\ below.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00645}00645\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ new\_inh\_ndx\ =\ items.index(inherit)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00646}00646\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00647}00647\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00648}00648\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00649}00649\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ inheritable[state]\ =\ inherit\_ndx\ +\ new\_inh\_ndx}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00650}00650\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00651}00651\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tokens}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00652}00652\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00653}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a974a4a6479201025b94b05e34d073bbd}{00653}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a974a4a6479201025b94b05e34d073bbd}{\_\_call\_\_}}(cls,\ *args,\ **kwds):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00654}00654\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Instantiate\ cls\ after\ preprocessing\ its\ token\ definitions."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00655}00655\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{'\_tokens'}\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_acfe5a3676a208a554bf3a034ad5577c7}{\_\_dict\_\_}}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00656}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a9121eb7ecf6d93717c43e508db5bec8e}{00656}}\ \ \ \ \ \ \ \ \ \ \ \ \ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a9121eb7ecf6d93717c43e508db5bec8e}{\_all\_tokens}}\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00657}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_af57011b47d8ecee595a711a93ac1029e}{00657}}\ \ \ \ \ \ \ \ \ \ \ \ \ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_af57011b47d8ecee595a711a93ac1029e}{\_tmpname}}\ =\ 0}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00658}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_acbf9969380642479a633385872d8dd8b}{00658}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ hasattr(cls,\ \textcolor{stringliteral}{'token\_variants'})\ \textcolor{keywordflow}{and}\ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_acbf9969380642479a633385872d8dd8b}{token\_variants}}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00659}00659\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ don't\ process\ yet}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00660}00660\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00661}00661\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00662}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a714353dd2eaaac64dd9c337f01634caa}{00662}}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a714353dd2eaaac64dd9c337f01634caa}{\_tokens}}\ =\ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_ae7ac876293244259a2664bbefdaa40d8}{process\_tokendef}}(\textcolor{stringliteral}{''},\ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a7e62f94b49933787d16e9b1b9951686f}{get\_tokendefs}}())}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00663}00663\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00664}00664\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ type.\_\_call\_\_(cls,\ *args,\ **kwds)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00665}00665\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00666}00666\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00667}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer}{00667}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer}{RegexLexer}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer}{Lexer}},\ metaclass=RegexLexerMeta):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00668}00668\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00669}00669\ \textcolor{stringliteral}{\ \ \ \ Base\ for\ simple\ stateful\ regular\ expression-\/based\ lexers.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00670}00670\ \textcolor{stringliteral}{\ \ \ \ Simplifies\ the\ lexing\ process\ so\ that\ you\ need\ only}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00671}00671\ \textcolor{stringliteral}{\ \ \ \ provide\ a\ list\ of\ states\ and\ regular\ expressions.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00672}00672\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00673}00673\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00674}00674\ \ \ \ \ \textcolor{comment}{\#:\ Flags\ for\ compiling\ the\ regular\ expressions.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00675}00675\ \ \ \ \ \textcolor{comment}{\#:\ Defaults\ to\ MULTILINE.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00676}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_aa83f15b183c33c310abf1cc3f9a0cd2e}{00676}}\ \ \ \ \ flags\ =\ re.MULTILINE}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00677}00677\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00678}00678\ \ \ \ \ \textcolor{comment}{\#:\ At\ all\ time\ there\ is\ a\ stack\ of\ states.\ Initially,\ the\ stack\ contains}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00679}00679\ \ \ \ \ \textcolor{comment}{\#:\ a\ single\ state\ 'root'.\ The\ top\ of\ the\ stack\ is\ called\ "{}the\ current\ state"{}.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00680}00680\ \ \ \ \ \textcolor{comment}{\#:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00681}00681\ \ \ \ \ \textcolor{comment}{\#:\ Dict\ of\ \`{}\`{}\{'state':\ [(regex,\ tokentype,\ new\_state),\ ...],\ ...\}``}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00682}00682\ \ \ \ \ \textcolor{comment}{\#:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00683}00683\ \ \ \ \ \textcolor{comment}{\#:\ \`{}\`{}new\_state``\ can\ be\ omitted\ to\ signify\ no\ state\ transition.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00684}00684\ \ \ \ \ \textcolor{comment}{\#:\ If\ \`{}\`{}new\_state``\ is\ a\ string,\ it\ is\ pushed\ on\ the\ stack.\ This\ ensure}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00685}00685\ \ \ \ \ \textcolor{comment}{\#:\ the\ new\ current\ state\ is\ \`{}\`{}new\_state``.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00686}00686\ \ \ \ \ \textcolor{comment}{\#:\ If\ \`{}\`{}new\_state``\ is\ a\ tuple\ of\ strings,\ all\ of\ those\ strings\ are\ pushed}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00687}00687\ \ \ \ \ \textcolor{comment}{\#:\ on\ the\ stack\ and\ the\ current\ state\ will\ be\ the\ last\ element\ of\ the\ list.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00688}00688\ \ \ \ \ \textcolor{comment}{\#:\ \`{}\`{}new\_state``\ can\ also\ be\ \`{}\`{}combined('state1',\ 'state2',\ ...)``}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00689}00689\ \ \ \ \ \textcolor{comment}{\#:\ to\ signify\ a\ new,\ anonymous\ state\ combined\ from\ the\ rules\ of\ two}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00690}00690\ \ \ \ \ \textcolor{comment}{\#:\ or\ more\ existing\ ones.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00691}00691\ \ \ \ \ \textcolor{comment}{\#:\ Furthermore,\ it\ can\ be\ '\#pop'\ to\ signify\ going\ back\ one\ step\ in}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00692}00692\ \ \ \ \ \textcolor{comment}{\#:\ the\ state\ stack,\ or\ '\#push'\ to\ push\ the\ current\ state\ on\ the\ stack}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00693}00693\ \ \ \ \ \textcolor{comment}{\#:\ again.\ Note\ that\ if\ you\ push\ while\ in\ a\ combined\ state,\ the\ combined}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00694}00694\ \ \ \ \ \textcolor{comment}{\#:\ state\ itself\ is\ pushed,\ and\ not\ only\ the\ state\ in\ which\ the\ rule\ is}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00695}00695\ \ \ \ \ \textcolor{comment}{\#:\ defined.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00696}00696\ \ \ \ \ \textcolor{comment}{\#:}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00697}00697\ \ \ \ \ \textcolor{comment}{\#:\ The\ tuple\ can\ also\ be\ replaced\ with\ \`{}\`{}include('state')``,\ in\ which}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00698}00698\ \ \ \ \ \textcolor{comment}{\#:\ case\ the\ rules\ from\ the\ state\ named\ by\ the\ string\ are\ included\ in\ the}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00699}00699\ \ \ \ \ \textcolor{comment}{\#:\ current\ one.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00700}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_a0ebd5c874079b333d8c83c6520b82ebc}{00700}}\ \ \ \ \ tokens\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00701}00701\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00702}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_aadb1135f817058ed44c5b0e8c74cb09c}{00702}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_aadb1135f817058ed44c5b0e8c74cb09c}{get\_tokens\_unprocessed}}(self,\ text,\ stack=(\textcolor{stringliteral}{'root'},)):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00703}00703\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00704}00704\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Split\ \`{}\`{}text\`{}\`{}\ into\ (tokentype,\ text)\ pairs.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00705}00705\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00706}00706\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}\`{}stack\`{}\`{}\ is\ the\ initial\ stack\ (default:\ \`{}\`{}['root']\`{}\`{})}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00707}00707\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00708}00708\ \ \ \ \ \ \ \ \ pos\ =\ 0}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00709}00709\ \ \ \ \ \ \ \ \ tokendefs\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a714353dd2eaaac64dd9c337f01634caa}{\_tokens}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00710}00710\ \ \ \ \ \ \ \ \ statestack\ =\ list(stack)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00711}00711\ \ \ \ \ \ \ \ \ statetokens\ =\ tokendefs[statestack[-\/1]]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00712}00712\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ 1:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00713}00713\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ rexmatch,\ action,\ new\_state\ \textcolor{keywordflow}{in}\ statetokens:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00714}00714\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ m\ =\ rexmatch(text,\ pos)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00715}00715\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ m:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00716}00716\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ action\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00717}00717\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ type(action)\ \textcolor{keywordflow}{is}\ \_TokenType:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00718}00718\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ pos,\ action,\ m.group()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00719}00719\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00720}00720\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ action(self,\ m)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00721}00721\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pos\ =\ m.end()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00722}00722\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ new\_state\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00723}00723\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ state\ transition}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00724}00724\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(new\_state,\ tuple):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00725}00725\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ state\ \textcolor{keywordflow}{in}\ new\_state:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00726}00726\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ state\ ==\ \textcolor{stringliteral}{'\#pop'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00727}00727\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(statestack)\ >\ 1:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00728}00728\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ statestack.pop()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00729}00729\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ state\ ==\ \textcolor{stringliteral}{'\#push'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00730}00730\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ statestack.append(statestack[-\/1])}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00731}00731\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00732}00732\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ statestack.append(state)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00733}00733\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(new\_state,\ int):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00734}00734\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ pop,\ but\ keep\ at\ least\ one\ state\ on\ the\ stack}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00735}00735\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ (random\ code\ leading\ to\ unexpected\ pops\ should}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00736}00736\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ not\ allow\ exceptions)}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00737}00737\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ abs(new\_state)\ >=\ len(statestack):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00738}00738\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ del\ statestack[1:]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00739}00739\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00740}00740\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ del\ statestack[new\_state:]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00741}00741\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ new\_state\ ==\ \textcolor{stringliteral}{'\#push'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00742}00742\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ statestack.append(statestack[-\/1])}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00743}00743\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00744}00744\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keyword}{False},\ f\textcolor{stringliteral}{"{}wrong\ state\ def:\ \{new\_state!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00745}00745\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ statetokens\ =\ tokendefs[statestack[-\/1]]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00746}00746\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00747}00747\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00748}00748\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ are\ here\ only\ if\ all\ state\ tokens\ have\ been\ considered}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00749}00749\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ and\ there\ was\ not\ a\ match\ on\ any\ of\ them.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00750}00750\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00751}00751\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ text[pos]\ ==\ \textcolor{stringliteral}{'\(\backslash\)n'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00752}00752\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ at\ EOL,\ reset\ state\ to\ "{}root"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00753}00753\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ statestack\ =\ [\textcolor{stringliteral}{'root'}]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00754}00754\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ statetokens\ =\ tokendefs[\textcolor{stringliteral}{'root'}]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00755}00755\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ pos,\ Whitespace,\ \textcolor{stringliteral}{'\(\backslash\)n'}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00756}00756\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pos\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00757}00757\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00758}00758\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ pos,\ Error,\ text[pos]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00759}00759\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pos\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00760}00760\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ IndexError:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00761}00761\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00762}00762\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00763}00763\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00764}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context}{00764}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context}{LexerContext}}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00765}00765\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00766}00766\ \textcolor{stringliteral}{\ \ \ \ A\ helper\ object\ that\ holds\ lexer\ position\ data.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00767}00767\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00768}00768\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00769}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context_a0ca42fbb1f965e7a006cf808dffe82ed}{00769}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context_a0ca42fbb1f965e7a006cf808dffe82ed}{\_\_init\_\_}}(self,\ text,\ pos,\ stack=None,\ end=None):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00770}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context_aafc88872d91fc5b72c630dc4cbb8005d}{00770}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context_aafc88872d91fc5b72c630dc4cbb8005d}{text}}\ =\ text}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00771}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context_a753b3d5e48e4a41c3c3d551bf222e99d}{00771}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context_a753b3d5e48e4a41c3c3d551bf222e99d}{pos}}\ =\ pos}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00772}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context_a04631eb3245f8066b4bb286994245dec}{00772}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context_a04631eb3245f8066b4bb286994245dec}{end}}\ =\ end\ \textcolor{keywordflow}{or}\ len(text)\ \ \textcolor{comment}{\#\ end=0\ not\ supported\ ;-\/)}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00773}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context_af454d360d2bc2c420bbbf890002790b3}{00773}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context_af454d360d2bc2c420bbbf890002790b3}{stack}}\ =\ stack\ \textcolor{keywordflow}{or}\ [\textcolor{stringliteral}{'root'}]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00774}00774\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00775}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context_ac7f96333a4908e82c6a05869a6af0bef}{00775}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context_ac7f96333a4908e82c6a05869a6af0bef}{\_\_repr\_\_}}(self):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00776}00776\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{'LexerContext(\{self.text!r\},\ \{self.pos!r\},\ \{self.stack!r\})'}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00777}00777\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00778}00778\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00779}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_extended_regex_lexer}{00779}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_extended_regex_lexer}{ExtendedRegexLexer}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer}{RegexLexer}}):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00780}00780\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00781}00781\ \textcolor{stringliteral}{\ \ \ \ A\ RegexLexer\ that\ uses\ a\ context\ object\ to\ store\ its\ state.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00782}00782\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00783}00783\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00784}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_extended_regex_lexer_abddf0b11d73e1cf560b9e26a3acbc08b}{00784}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_extended_regex_lexer_abddf0b11d73e1cf560b9e26a3acbc08b}{get\_tokens\_unprocessed}}(self,\ text=None,\ context=None):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00785}00785\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00786}00786\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Split\ \`{}\`{}text\`{}\`{}\ into\ (tokentype,\ text)\ pairs.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00787}00787\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ \`{}\`{}context\`{}\`{}\ is\ given,\ use\ this\ lexer\ context\ instead.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00788}00788\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00789}00789\ \ \ \ \ \ \ \ \ tokendefs\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta_a714353dd2eaaac64dd9c337f01634caa}{\_tokens}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00790}00790\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ context:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00791}00791\ \ \ \ \ \ \ \ \ \ \ \ \ ctx\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_lexer_context}{LexerContext}}(text,\ 0)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00792}00792\ \ \ \ \ \ \ \ \ \ \ \ \ statetokens\ =\ tokendefs[\textcolor{stringliteral}{'root'}]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00793}00793\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00794}00794\ \ \ \ \ \ \ \ \ \ \ \ \ ctx\ =\ context}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00795}00795\ \ \ \ \ \ \ \ \ \ \ \ \ statetokens\ =\ tokendefs[ctx.stack[-\/1]]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00796}00796\ \ \ \ \ \ \ \ \ \ \ \ \ text\ =\ ctx.text}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00797}00797\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ 1:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00798}00798\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ rexmatch,\ action,\ new\_state\ \textcolor{keywordflow}{in}\ statetokens:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00799}00799\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ m\ =\ rexmatch(text,\ ctx.pos,\ ctx.end)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00800}00800\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ m:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00801}00801\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ action\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00802}00802\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ type(action)\ \textcolor{keywordflow}{is}\ \_TokenType:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00803}00803\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ ctx.pos,\ action,\ m.group()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00804}00804\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctx.pos\ =\ m.end()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00805}00805\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00806}00806\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ action(self,\ m,\ ctx)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00807}00807\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ new\_state:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00808}00808\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ altered\ the\ state\ stack?}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00809}00809\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ statetokens\ =\ tokendefs[ctx.stack[-\/1]]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00810}00810\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ CAUTION:\ callback\ must\ set\ ctx.pos!}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00811}00811\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ new\_state\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00812}00812\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ state\ transition}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00813}00813\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(new\_state,\ tuple):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00814}00814\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ state\ \textcolor{keywordflow}{in}\ new\_state:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00815}00815\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ state\ ==\ \textcolor{stringliteral}{'\#pop'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00816}00816\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(ctx.stack)\ >\ 1:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00817}00817\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctx.stack.pop()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00818}00818\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ state\ ==\ \textcolor{stringliteral}{'\#push'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00819}00819\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctx.stack.append(ctx.stack[-\/1])}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00820}00820\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00821}00821\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctx.stack.append(state)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00822}00822\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(new\_state,\ int):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00823}00823\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ see\ RegexLexer\ for\ why\ this\ check\ is\ made}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00824}00824\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ abs(new\_state)\ >=\ len(ctx.stack):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00825}00825\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ del\ ctx.stack[1:]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00826}00826\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00827}00827\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ del\ ctx.stack[new\_state:]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00828}00828\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ new\_state\ ==\ \textcolor{stringliteral}{'\#push'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00829}00829\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctx.stack.append(ctx.stack[-\/1])}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00830}00830\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00831}00831\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keyword}{False},\ f\textcolor{stringliteral}{"{}wrong\ state\ def:\ \{new\_state!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00832}00832\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ statetokens\ =\ tokendefs[ctx.stack[-\/1]]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00833}00833\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00834}00834\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00835}00835\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00836}00836\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ctx.pos\ >=\ ctx.end:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00837}00837\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00838}00838\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ text[ctx.pos]\ ==\ \textcolor{stringliteral}{'\(\backslash\)n'}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00839}00839\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ at\ EOL,\ reset\ state\ to\ "{}root"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00840}00840\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctx.stack\ =\ [\textcolor{stringliteral}{'root'}]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00841}00841\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ statetokens\ =\ tokendefs[\textcolor{stringliteral}{'root'}]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00842}00842\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ ctx.pos,\ Text,\ \textcolor{stringliteral}{'\(\backslash\)n'}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00843}00843\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctx.pos\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00844}00844\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00845}00845\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ ctx.pos,\ Error,\ text[ctx.pos]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00846}00846\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ctx.pos\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00847}00847\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ IndexError:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00848}00848\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00849}00849\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00850}00850\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00851}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer_a54655e5527391f2788c63cdc86629a52}{00851}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pygments_1_1lexer_a54655e5527391f2788c63cdc86629a52}{do\_insertions}}(insertions,\ tokens):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00852}00852\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00853}00853\ \textcolor{stringliteral}{\ \ \ \ Helper\ for\ lexers\ which\ must\ combine\ the\ results\ of\ several}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00854}00854\ \textcolor{stringliteral}{\ \ \ \ sublexers.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00855}00855\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00856}00856\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}insertions\`{}\`{}\ is\ a\ list\ of\ \`{}\`{}(index,\ itokens)\`{}\`{}\ pairs.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00857}00857\ \textcolor{stringliteral}{\ \ \ \ Each\ \`{}\`{}itokens\`{}\`{}\ iterable\ should\ be\ inserted\ at\ position}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00858}00858\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}index\`{}\`{}\ into\ the\ token\ stream\ given\ by\ the\ \`{}\`{}tokens\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00859}00859\ \textcolor{stringliteral}{\ \ \ \ argument.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00860}00860\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00861}00861\ \textcolor{stringliteral}{\ \ \ \ The\ result\ is\ a\ combined\ token\ stream.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00862}00862\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00863}00863\ \textcolor{stringliteral}{\ \ \ \ TODO:\ clean\ up\ the\ code\ here.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00864}00864\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00865}00865\ \ \ \ \ insertions\ =\ iter(insertions)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00866}00866\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00867}00867\ \ \ \ \ \ \ \ \ index,\ itokens\ =\ next(insertions)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00868}00868\ \ \ \ \ \textcolor{keywordflow}{except}\ StopIteration:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00869}00869\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ no\ insertions}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00870}00870\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ tokens}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00871}00871\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00872}00872\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00873}00873\ \ \ \ \ realpos\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00874}00874\ \ \ \ \ insleft\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00875}00875\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00876}00876\ \ \ \ \ \textcolor{comment}{\#\ iterate\ over\ the\ token\ stream\ where\ we\ want\ to\ insert}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00877}00877\ \ \ \ \ \textcolor{comment}{\#\ the\ tokens\ from\ the\ insertion\ list.}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00878}00878\ \ \ \ \ \textcolor{keywordflow}{for}\ i,\ t,\ v\ \textcolor{keywordflow}{in}\ tokens:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00879}00879\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ first\ iteration.\ store\ the\ position\ of\ first\ item}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00880}00880\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ realpos\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00881}00881\ \ \ \ \ \ \ \ \ \ \ \ \ realpos\ =\ i}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00882}00882\ \ \ \ \ \ \ \ \ oldi\ =\ 0}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00883}00883\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ insleft\ \textcolor{keywordflow}{and}\ i\ +\ len(v)\ >=\ index:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00884}00884\ \ \ \ \ \ \ \ \ \ \ \ \ tmpval\ =\ v[oldi:index\ -\/\ i]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00885}00885\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ tmpval:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00886}00886\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ realpos,\ t,\ tmpval}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00887}00887\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ realpos\ +=\ len(tmpval)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00888}00888\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ it\_index,\ it\_token,\ it\_value\ \textcolor{keywordflow}{in}\ itokens:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00889}00889\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ realpos,\ it\_token,\ it\_value}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00890}00890\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ realpos\ +=\ len(it\_value)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00891}00891\ \ \ \ \ \ \ \ \ \ \ \ \ oldi\ =\ index\ -\/\ i}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00892}00892\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00893}00893\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ index,\ itokens\ =\ next(insertions)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00894}00894\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ StopIteration:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00895}00895\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ insleft\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00896}00896\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}\ \ \textcolor{comment}{\#\ not\ strictly\ necessary}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00897}00897\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ oldi\ <\ len(v):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00898}00898\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ realpos,\ t,\ v[oldi:]}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00899}00899\ \ \ \ \ \ \ \ \ \ \ \ \ realpos\ +=\ len(v)\ -\/\ oldi}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00900}00900\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00901}00901\ \ \ \ \ \textcolor{comment}{\#\ leftover\ tokens}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00902}00902\ \ \ \ \ \textcolor{keywordflow}{while}\ insleft:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00903}00903\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ no\ normal\ tokens,\ set\ realpos\ to\ zero}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00904}00904\ \ \ \ \ \ \ \ \ realpos\ =\ realpos\ \textcolor{keywordflow}{or}\ 0}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00905}00905\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ p,\ t,\ v\ \textcolor{keywordflow}{in}\ itokens:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00906}00906\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ realpos,\ t,\ v}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00907}00907\ \ \ \ \ \ \ \ \ \ \ \ \ realpos\ +=\ len(v)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00908}00908\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00909}00909\ \ \ \ \ \ \ \ \ \ \ \ \ index,\ itokens\ =\ next(insertions)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00910}00910\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ StopIteration:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00911}00911\ \ \ \ \ \ \ \ \ \ \ \ \ insleft\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00912}00912\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}\ \ \textcolor{comment}{\#\ not\ strictly\ necessary}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00913}00913\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00914}00914\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00915}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_profiling_regex_lexer_meta}{00915}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_profiling_regex_lexer_meta}{ProfilingRegexLexerMeta}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer_meta}{RegexLexerMeta}}):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00916}00916\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Metaclass\ for\ ProfilingRegexLexer,\ collects\ regex\ timing\ info."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00917}00917\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00918}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_profiling_regex_lexer_meta_a9e2597cca0eb3915f7adac03cc704b2e}{00918}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_profiling_regex_lexer_meta_a9e2597cca0eb3915f7adac03cc704b2e}{\_process\_regex}}(cls,\ regex,\ rflags,\ state):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00919}00919\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(regex,\ words):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00920}00920\ \ \ \ \ \ \ \ \ \ \ \ \ rex\ =\ regex\_opt(regex.words,\ prefix=regex.prefix,}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00921}00921\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ suffix=regex.suffix)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00922}00922\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00923}00923\ \ \ \ \ \ \ \ \ \ \ \ \ rex\ =\ regex}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00924}00924\ \ \ \ \ \ \ \ \ compiled\ =\ re.compile(rex,\ rflags)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00925}00925\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00926}00926\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }match\_func(text,\ pos,\ endpos=sys.maxsize):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00927}00927\ \ \ \ \ \ \ \ \ \ \ \ \ info\ =\ cls.\_prof\_data[-\/1].setdefault((state,\ rex),\ [0,\ 0.0])}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00928}00928\ \ \ \ \ \ \ \ \ \ \ \ \ t0\ =\ time.time()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00929}00929\ \ \ \ \ \ \ \ \ \ \ \ \ res\ =\ compiled.match(text,\ pos,\ endpos)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00930}00930\ \ \ \ \ \ \ \ \ \ \ \ \ t1\ =\ time.time()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00931}00931\ \ \ \ \ \ \ \ \ \ \ \ \ info[0]\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00932}00932\ \ \ \ \ \ \ \ \ \ \ \ \ info[1]\ +=\ t1\ -\/\ t0}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00933}00933\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ res}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00934}00934\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ match\_func}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00935}00935\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00936}00936\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00937}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_profiling_regex_lexer}{00937}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_profiling_regex_lexer}{ProfilingRegexLexer}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_regex_lexer}{RegexLexer}},\ metaclass=ProfilingRegexLexerMeta):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00938}00938\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Drop-\/in\ replacement\ for\ RegexLexer\ that\ does\ profiling\ of\ its\ regexes."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00939}00939\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00940}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_profiling_regex_lexer_a998e4aff9b5c4e494caed1b4715bed98}{00940}}\ \ \ \ \ \_prof\_data\ =\ []}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00941}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_profiling_regex_lexer_ac1d43bfda7762116772b3b6e7536cd94}{00941}}\ \ \ \ \ \_prof\_sort\_index\ =\ 4\ \ \textcolor{comment}{\#\ defaults\ to\ time\ per\ call}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00942}00942\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00943}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_profiling_regex_lexer_ace66ce4a2dfc79b56fd2f41aa23d406c}{00943}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_profiling_regex_lexer_ace66ce4a2dfc79b56fd2f41aa23d406c}{get\_tokens\_unprocessed}}(self,\ text,\ stack=(\textcolor{stringliteral}{'root'},)):}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00944}00944\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ this\ needs\ to\ be\ a\ stack,\ since\ using(this)\ will\ produce\ nested\ calls}}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00945}00945\ \ \ \ \ \ \ \ \ self.\_\_class\_\_.\_prof\_data.append(\{\})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00946}00946\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ RegexLexer.get\_tokens\_unprocessed(self,\ text,\ stack)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00947}00947\ \ \ \ \ \ \ \ \ rawdata\ =\ self.\_\_class\_\_.\_prof\_data.pop()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00948}00948\ \ \ \ \ \ \ \ \ data\ =\ sorted(((s,\ repr(r).strip(\textcolor{stringliteral}{'u\(\backslash\)''}).replace(\textcolor{stringliteral}{'\(\backslash\)\(\backslash\)\(\backslash\)\(\backslash\)'},\ \textcolor{stringliteral}{'\(\backslash\)\(\backslash\)'})[:65],}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00949}00949\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ n,\ 1000\ *\ t,\ 1000\ *\ t\ /\ n)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00950}00950\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ ((s,\ r),\ (n,\ t))\ \textcolor{keywordflow}{in}\ rawdata.items()),}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00951}00951\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ key=\textcolor{keyword}{lambda}\ x:\ x[self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pygments_1_1lexer_1_1_profiling_regex_lexer_ac1d43bfda7762116772b3b6e7536cd94}{\_prof\_sort\_index}}],}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00952}00952\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ reverse=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00953}00953\ \ \ \ \ \ \ \ \ sum\_total\ =\ sum(x[3]\ \textcolor{keywordflow}{for}\ x\ \textcolor{keywordflow}{in}\ data)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00954}00954\ }
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00955}00955\ \ \ \ \ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00956}00956\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{'Profiling\ result\ for\ \%s\ lexing\ \%d\ chars\ in\ \%.3f\ ms'}\ \%}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00957}00957\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (self.\_\_class\_\_.\_\_name\_\_,\ len(text),\ sum\_total))}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00958}00958\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{'='}\ *\ 110)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00959}00959\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{'\%-\/20s\ \%-\/64s\ ncalls\ \ tottime\ \ percall'}\ \%\ (\textcolor{stringliteral}{'state'},\ \textcolor{stringliteral}{'regex'}))}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00960}00960\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{'-\/'}\ *\ 110)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00961}00961\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ d\ \textcolor{keywordflow}{in}\ data:}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00962}00962\ \ \ \ \ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{'\%-\/20s\ \%-\/65s\ \%5d\ \%8.4f\ \%8.4f'}\ \%\ d)}
+\DoxyCodeLine{\Hypertarget{lexer_8py_source_l00963}00963\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{'='}\ *\ 110)}
+
+\end{DoxyCode}

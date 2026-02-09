@@ -1,0 +1,142 @@
+\doxysection{main\+\_\+parser.\+py}
+\hypertarget{main__parser_8py_source}{}\label{main__parser_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/cli/main\_parser.py@{venv/Lib/site-\/packages/pip/\_internal/cli/main\_parser.py}}
+\doxymbox{\hyperlink{main__parser_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1main__parser}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}A\ single\ place\ for\ constructing\ and\ exposing\ the\ main\ parser"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00002}00002\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00003}00003\ \textcolor{stringliteral}{from\ \_\_future\_\_\ import\ annotations}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00004}00004\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00005}00005\ \textcolor{stringliteral}{import\ os}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00006}00006\ \textcolor{stringliteral}{import\ subprocess}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00007}00007\ \textcolor{stringliteral}{import\ sys}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00008}00008\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00009}00009\ \textcolor{stringliteral}{from\ pip.\_vendor.rich.markup\ import\ escape}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00010}00010\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00011}00011\ \textcolor{stringliteral}{from\ pip.\_internal.build\_env\ import\ get\_runnable\_pip}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00012}00012\ \textcolor{stringliteral}{from\ pip.\_internal.cli\ import\ cmdoptions}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00013}00013\ \textcolor{stringliteral}{from\ pip.\_internal.cli.parser\ import\ ConfigOptionParser,\ UpdatingDefaultsHelpFormatter}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00014}00014\ \textcolor{stringliteral}{from\ pip.\_internal.commands\ import\ commands\_dict,\ get\_similar\_commands}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00015}00015\ \textcolor{stringliteral}{from\ pip.\_internal.exceptions\ import\ CommandError}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00016}00016\ \textcolor{stringliteral}{from\ pip.\_internal.utils.misc\ import\ get\_pip\_version,\ get\_prog}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00017}00017\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00018}00018\ \textcolor{stringliteral}{\_\_all\_\_\ =\ ["{}create\_main\_parser"{},\ "{}parse\_command"{}]}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00019}00019\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00020}00020\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00021}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1main__parser_aff6f5ceafcae643561dad634396ee382}{00021}}\ \textcolor{stringliteral}{def\ create\_main\_parser()\ -\/>\ ConfigOptionParser:}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00022}00022\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}Creates\ and\ returns\ the\ main\ parser\ for\ pip's\ CLI"{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00024}00024\ \ \ \ \ parser\ =\ ConfigOptionParser(}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00025}00025\ \ \ \ \ \ \ \ \ usage="{}\(\backslash\)n\%prog\ <command>\ [options]"{},}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00026}00026\ \ \ \ \ \ \ \ \ add\_help\_option=False,}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00027}00027\ \ \ \ \ \ \ \ \ formatter=UpdatingDefaultsHelpFormatter(),}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00028}00028\ \ \ \ \ \ \ \ \ name="{}global"{},}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00029}00029\ \ \ \ \ \ \ \ \ prog=get\_prog(),}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00030}00030\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00031}00031\ \ \ \ \ parser.disable\_interspersed\_args()}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00033}00033\ \ \ \ \ parser.version\ =\ get\_pip\_version()}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00035}00035\ \ \ \ \ \#\ add\ the\ general\ options}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00036}00036\ \ \ \ \ gen\_opts\ =\ cmdoptions.make\_option\_group(cmdoptions.general\_group,\ parser)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00037}00037\ \ \ \ \ parser.add\_option\_group(gen\_opts)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00039}00039\ \ \ \ \ \#\ so\ the\ help\ formatter\ knows}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00040}00040\ \ \ \ \ parser.main\ =\ True\ \ \#\ type:\ ignore}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00042}00042\ \ \ \ \ \#\ create\ command\ listing\ for\ description}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00043}00043\ \ \ \ \ description\ =\ ["{}"{}]\ +\ [}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ f"{}[optparse.longargs]\{name:27\}[/]\ \{escape(command\_info.summary)\}"{}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ for\ name,\ command\_info\ in\ commands\_dict.items()}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00046}00046\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00047}00047\ \ \ \ \ parser.description\ =\ "{}\(\backslash\)n"{}.join(description)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00048}00048\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00049}00049\ \ \ \ \ return\ parser}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00052}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1main__parser_a42f24c6f2ad2c8359694f1270239ab60}{00052}}\ def\ identify\_python\_interpreter(python:\ str)\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00053}00053\ \ \ \ \ \#\ If\ the\ named\ file\ exists,\ use\ it.}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00054}00054\ \ \ \ \ \#\ If\ it's\ a\ directory,\ assume\ it's\ a\ virtual\ environment\ and}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00055}00055\ \ \ \ \ \#\ look\ for\ the\ environment's\ Python\ executable.}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00056}00056\ \ \ \ \ if\ os.path.exists(python):}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ if\ os.path.isdir(python):}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ bin/python\ for\ Unix,\ Scripts/python.exe\ for\ Windows}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Try\ both\ in\ case\ of\ odd\ cases\ like\ cygwin.}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \ \ \ \ for\ exe\ in\ ("{}bin/python"{},\ "{}Scripts/python.exe"{}):}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ py\ =\ os.path.join(python,\ exe)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ os.path.exists(py):}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ return\ py}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \ \ \ \ return\ python}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00066}00066\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00067}00067\ \ \ \ \ \#\ Could\ not\ find\ the\ interpreter\ specified}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00068}00068\ \ \ \ \ return\ None}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00071}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1main__parser_aa43ee6aa94620e1c0b83fb276362e0de}{00071}}\ def\ parse\_command(args:\ list[str])\ -\/>\ tuple[str,\ list[str]]:}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00072}00072\ \ \ \ \ parser\ =\ create\_main\_parser()}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00073}00073\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00074}00074\ \ \ \ \ \#\ Note:\ parser\ calls\ disable\_interspersed\_args(),\ so\ the\ result\ of\ this}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00075}00075\ \ \ \ \ \#\ call\ is\ to\ split\ the\ initial\ args\ into\ the\ general\ options\ before\ the}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00076}00076\ \ \ \ \ \#\ subcommand\ and\ everything\ else.}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00077}00077\ \ \ \ \ \#\ For\ example:}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00078}00078\ \ \ \ \ \#\ \ args:\ ['-\/-\/timeout=5',\ 'install',\ '-\/-\/user',\ 'INITools']}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00079}00079\ \ \ \ \ \#\ \ general\_options:\ ['-\/-\/timeout==5']}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00080}00080\ \ \ \ \ \#\ \ args\_else:\ ['install',\ '-\/-\/user',\ 'INITools']}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00081}00081\ \ \ \ \ general\_options,\ args\_else\ =\ parser.parse\_args(args)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00083}00083\ \ \ \ \ \#\ -\/-\/python}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00084}00084\ \ \ \ \ if\ general\_options.python\ and\ "{}\_PIP\_RUNNING\_IN\_SUBPROCESS"{}\ not\ in\ os.environ:}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \#\ Re-\/invoke\ pip\ using\ the\ specified\ Python\ interpreter}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ interpreter\ =\ identify\_python\_interpreter(general\_options.python)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ if\ interpreter\ is\ None:}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ raise\ CommandError(}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f"{}Could\ not\ locate\ Python\ interpreter\ \{general\_options.python\}"{}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00091}00091\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ pip\_cmd\ =\ [}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ interpreter,}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ get\_runnable\_pip(),}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ pip\_cmd.extend(args)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00097}00097\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \#\ Set\ a\ flag\ so\ the\ child\ doesn't\ re-\/invoke\ itself,\ causing}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \#\ an\ infinite\ loop.}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ os.environ["{}\_PIP\_RUNNING\_IN\_SUBPROCESS"{}]\ =\ "{}1"{}}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ returncode\ =\ 0}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ proc\ =\ subprocess.run(pip\_cmd)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ returncode\ =\ proc.returncode}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ except\ (subprocess.SubprocessError,\ OSError)\ as\ exc:}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ raise\ CommandError(f"{}Failed\ to\ run\ pip\ under\ \{interpreter\}:\ \{exc\}"{})}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ sys.exit(returncode)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00109}00109\ \ \ \ \ \#\ -\/-\/version}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00110}00110\ \ \ \ \ if\ general\_options.version:}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ sys.stdout.write(parser.version)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ sys.stdout.write(os.linesep)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ sys.exit()}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00114}00114\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00115}00115\ \ \ \ \ \#\ pip\ ||\ pip\ help\ -\/>\ print\_help()}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00116}00116\ \ \ \ \ if\ not\ args\_else\ or\ (args\_else[0]\ ==\ "{}help"{}\ and\ len(args\_else)\ ==\ 1):}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ parser.print\_help()}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ sys.exit()}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00120}00120\ \ \ \ \ \#\ the\ subcommand\ name}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00121}00121\ \ \ \ \ cmd\_name\ =\ args\_else[0]}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00122}00122\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00123}00123\ \ \ \ \ if\ cmd\_name\ not\ in\ commands\_dict:}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ guess\ =\ get\_similar\_commands(cmd\_name)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00125}00125\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ msg\ =\ [f'unknown\ command\ "{}\{cmd\_name\}"{}']}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ if\ guess:}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ msg.append(f'maybe\ you\ meant\ "{}\{guess\}"{}')}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00129}00129\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ raise\ CommandError("{}\ -\/\ "{}.join(msg))}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00132}00132\ \ \ \ \ \#\ all\ the\ args\ without\ the\ subcommand}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00133}00133\ \ \ \ \ cmd\_args\ =\ args[:]}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00134}00134\ \ \ \ \ cmd\_args.remove(cmd\_name)}
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00135}00135\ }
+\DoxyCodeLine{\Hypertarget{main__parser_8py_source_l00136}00136\ \ \ \ \ return\ cmd\_name,\ cmd\_args}
+
+\end{DoxyCode}

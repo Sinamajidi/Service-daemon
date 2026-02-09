@@ -1,0 +1,209 @@
+\doxysection{filesystem.\+py}
+\hypertarget{filesystem_8py_source}{}\label{filesystem_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/utils/filesystem.py@{venv/Lib/site-\/packages/pip/\_internal/utils/filesystem.py}}
+\doxymbox{\hyperlink{filesystem_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00003}00003\ \textcolor{keyword}{import}\ fnmatch}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00004}00004\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00005}00005\ \textcolor{keyword}{import}\ os.path}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00006}00006\ \textcolor{keyword}{import}\ random}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00007}00007\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00008}00008\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Generator}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00009}00009\ \textcolor{keyword}{from}\ contextlib\ \textcolor{keyword}{import}\ contextmanager}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00010}00010\ \textcolor{keyword}{from}\ pathlib\ \textcolor{keyword}{import}\ Path}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00011}00011\ \textcolor{keyword}{from}\ tempfile\ \textcolor{keyword}{import}\ NamedTemporaryFile}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00012}00012\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Any,\ BinaryIO,\ Callable,\ cast}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00014}00014\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat}{pip.\_internal.utils.compat}}\ \textcolor{keyword}{import}\ get\_path\_uid}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00015}00015\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1misc}{pip.\_internal.utils.misc}}\ \textcolor{keyword}{import}\ format\_size}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00016}00016\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1retry}{pip.\_internal.utils.retry}}\ \textcolor{keyword}{import}\ retry}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00018}00018\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00019}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_ab95eb37f6ac7b866a56dabed6d287b8f}{00019}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_ab95eb37f6ac7b866a56dabed6d287b8f}{check\_path\_owner}}(path:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00020}00020\ \ \ \ \ \textcolor{comment}{\#\ If\ we\ don't\ have\ a\ way\ to\ check\ the\ effective\ uid\ of\ this\ process,\ then}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00021}00021\ \ \ \ \ \textcolor{comment}{\#\ we'll\ just\ assume\ that\ we\ own\ the\ directory.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00022}00022\ \ \ \ \ \textcolor{keywordflow}{if}\ sys.platform\ ==\ \textcolor{stringliteral}{"{}win32"{}}\ \textcolor{keywordflow}{or}\ \textcolor{keywordflow}{not}\ hasattr(os,\ \textcolor{stringliteral}{"{}geteuid"{}}):}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00023}00023\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00025}00025\ \ \ \ \ \textcolor{keyword}{assert}\ os.path.isabs(path)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00027}00027\ \ \ \ \ previous\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00028}00028\ \ \ \ \ \textcolor{keywordflow}{while}\ path\ !=\ previous:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00029}00029\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.lexists(path):}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00030}00030\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ if\ path\ is\ writable\ by\ current\ user.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00031}00031\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ os.geteuid()\ ==\ 0:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00032}00032\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Special\ handling\ for\ root\ user\ in\ order\ to\ handle\ properly}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00033}00033\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ cases\ where\ users\ use\ sudo\ without\ -\/H\ flag.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ path\_uid\ =\ get\_path\_uid(path)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ OSError:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ path\_uid\ ==\ 0}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ os.access(path,\ os.W\_OK)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \ \ \ \ previous,\ path\ =\ path,\ os.path.dirname(path)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00043}00043\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}\ \ \textcolor{comment}{\#\ assume\ we\ don't\ own\ the\ path}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00045}00045\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00046}00046\ \textcolor{preprocessor}{@contextmanager}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00047}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a827155074ff467e8de2ec58c7407b380}{00047}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a827155074ff467e8de2ec58c7407b380}{adjacent\_tmp\_file}}(path:\ str,\ **kwargs:\ Any)\ -\/>\ Generator[BinaryIO,\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00048}00048\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ a\ file-\/like\ object\ pointing\ to\ a\ tmp\ file\ next\ to\ path.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00049}00049\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00050}00050\ \textcolor{stringliteral}{\ \ \ \ The\ file\ is\ created\ securely\ and\ is\ ensured\ to\ be\ written\ to\ disk}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00051}00051\ \textcolor{stringliteral}{\ \ \ \ after\ the\ context\ reaches\ its\ end.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00052}00052\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00053}00053\ \textcolor{stringliteral}{\ \ \ \ kwargs\ will\ be\ passed\ to\ tempfile.NamedTemporaryFile\ to\ control}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00054}00054\ \textcolor{stringliteral}{\ \ \ \ the\ way\ the\ temporary\ file\ will\ be\ opened.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00055}00055\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00056}00056\ \ \ \ \ \textcolor{keyword}{with}\ NamedTemporaryFile(}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ delete=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ dir=os.path.dirname(path),}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ prefix=os.path.basename(path),}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ suffix=\textcolor{stringliteral}{"{}.tmp"{}},}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ **kwargs,}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00062}00062\ \ \ \ \ )\ \textcolor{keyword}{as}\ f:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ result\ =\ cast(BinaryIO,\ f)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ result}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \ \ \ \ result.flush()}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ \ \ \ \ os.fsync(result.fileno())}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00071}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a2fc3733bb724a9f843d542afc5a19055}{00071}}\ replace\ =\ retry(stop\_after\_delay=1,\ wait=0.25)(os.replace)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00072}00072\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00073}00073\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00074}00074\ \textcolor{comment}{\#\ test\_writable\_dir\ and\ \_test\_writable\_dir\_win\ are\ copied\ from\ Flit,}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00075}00075\ \textcolor{comment}{\#\ with\ the\ author's\ agreement\ to\ also\ place\ them\ under\ pip's\ license.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00076}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_ad3b187b7493402252ec25dbad99b6760}{00076}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_ad3b187b7493402252ec25dbad99b6760}{test\_writable\_dir}}(path:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00077}00077\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Check\ if\ a\ directory\ is\ writable.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00078}00078\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ Uses\ os.access()\ on\ POSIX,\ tries\ creating\ files\ on\ Windows.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00080}00080\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00081}00081\ \ \ \ \ \textcolor{comment}{\#\ If\ the\ directory\ doesn't\ exist,\ find\ the\ closest\ parent\ that\ does.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00082}00082\ \ \ \ \ \textcolor{keywordflow}{while}\ \textcolor{keywordflow}{not}\ os.path.isdir(path):}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ parent\ =\ os.path.dirname(path)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ parent\ ==\ path:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}\ \ \textcolor{comment}{\#\ Should\ never\ get\ here,\ but\ infinite\ loops\ are\ bad}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ path\ =\ parent}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00087}00087\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00088}00088\ \ \ \ \ \textcolor{keywordflow}{if}\ os.name\ ==\ \textcolor{stringliteral}{"{}posix"{}}:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ os.access(path,\ os.W\_OK)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00090}00090\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00091}00091\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_af4e069a57709750090024f7e75e1961a}{\_test\_writable\_dir\_win}}(path)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00094}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_af4e069a57709750090024f7e75e1961a}{00094}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_af4e069a57709750090024f7e75e1961a}{\_test\_writable\_dir\_win}}(path:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00095}00095\ \ \ \ \ \textcolor{comment}{\#\ os.access\ doesn't\ work\ on\ Windows:\ http://bugs.python.org/issue2528}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00096}00096\ \ \ \ \ \textcolor{comment}{\#\ and\ we\ can't\ use\ tempfile:\ http://bugs.python.org/issue22107}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00097}00097\ \ \ \ \ basename\ =\ \textcolor{stringliteral}{"{}accesstest\_deleteme\_fishfingers\_custard\_"{}}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00098}00098\ \ \ \ \ alphabet\ =\ \textcolor{stringliteral}{"{}abcdefghijklmnopqrstuvwxyz0123456789"{}}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00099}00099\ \ \ \ \ \textcolor{keywordflow}{for}\ \_\ \textcolor{keywordflow}{in}\ range(10):}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ name\ =\ basename\ +\ \textcolor{stringliteral}{"{}"{}}.join(random.choice(alphabet)\ \textcolor{keywordflow}{for}\ \_\ \textcolor{keywordflow}{in}\ range(6))}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ file\ =\ os.path.join(path,\ name)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ fd\ =\ os.open(file,\ os.O\_RDWR\ |\ os.O\_CREAT\ |\ os.O\_EXCL)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ FileExistsError:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ PermissionError:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ This\ could\ be\ because\ there's\ a\ directory\ with\ the\ same\ name.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ But\ it's\ highly\ unlikely\ there's\ a\ directory\ called\ that,}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ so\ we'll\ assume\ it's\ because\ the\ parent\ dir\ is\ not\ writable.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ This\ could\ as\ well\ be\ because\ the\ parent\ dir\ is\ not\ readable,}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ due\ to\ non-\/privileged\ user\ access.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \ \ \ \ os.close(fd)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \ \ \ \ os.unlink(file)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00117}00117\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00118}00118\ \ \ \ \ \textcolor{comment}{\#\ This\ should\ never\ be\ reached}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00119}00119\ \ \ \ \ \textcolor{keywordflow}{raise}\ OSError(\textcolor{stringliteral}{"{}Unexpected\ condition\ testing\ for\ writable\ directory"{}})}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00120}00120\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00122}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_aae2f869445eae4a1f488780c31c24f90}{00122}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_aae2f869445eae4a1f488780c31c24f90}{find\_files}}(path:\ str,\ pattern:\ str)\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00123}00123\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Returns\ a\ list\ of\ absolute\ paths\ of\ files\ beneath\ path,\ recursively,}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00124}00124\ \textcolor{stringliteral}{\ \ \ \ with\ filenames\ which\ match\ the\ UNIX-\/style\ shell\ glob\ pattern."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00125}00125\ \ \ \ \ result:\ list[str]\ =\ []}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00126}00126\ \ \ \ \ \textcolor{keywordflow}{for}\ root,\ \_,\ files\ \textcolor{keywordflow}{in}\ os.walk(path):}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ matches\ =\ fnmatch.filter(files,\ pattern)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ result.extend(os.path.join(root,\ f)\ \textcolor{keywordflow}{for}\ f\ \textcolor{keywordflow}{in}\ matches)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00129}00129\ \ \ \ \ \textcolor{keywordflow}{return}\ result}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00130}00130\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00132}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a258a7ee74f4cc297727b3eeb275ad236}{00132}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a258a7ee74f4cc297727b3eeb275ad236}{file\_size}}(path:\ str)\ -\/>\ int\ |\ float:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00133}00133\ \ \ \ \ \textcolor{comment}{\#\ If\ it's\ a\ symlink,\ return\ 0.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00134}00134\ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.islink(path):}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 0}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00136}00136\ \ \ \ \ \textcolor{keywordflow}{return}\ os.path.getsize(path)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00137}00137\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00138}00138\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00139}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_acbdf609d31ba3e9792e22532e8822ff6}{00139}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_acbdf609d31ba3e9792e22532e8822ff6}{format\_file\_size}}(path:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00140}00140\ \ \ \ \ \textcolor{keywordflow}{return}\ format\_size(\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a258a7ee74f4cc297727b3eeb275ad236}{file\_size}}(path))}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00142}00142\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00143}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a3ba5965721adb71845f11c90a82b3516}{00143}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a3ba5965721adb71845f11c90a82b3516}{directory\_size}}(path:\ str)\ -\/>\ int\ |\ float:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00144}00144\ \ \ \ \ size\ =\ 0.0}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00145}00145\ \ \ \ \ \textcolor{keywordflow}{for}\ root,\ \_dirs,\ files\ \textcolor{keywordflow}{in}\ os.walk(path):}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ filename\ \textcolor{keywordflow}{in}\ files:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \ \ \ \ file\_path\ =\ os.path.join(root,\ filename)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ size\ +=\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a258a7ee74f4cc297727b3eeb275ad236}{file\_size}}(file\_path)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00149}00149\ \ \ \ \ \textcolor{keywordflow}{return}\ size}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00150}00150\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00151}00151\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00152}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a02573fdcf87b88a94b53f68f3a0f0c60}{00152}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a02573fdcf87b88a94b53f68f3a0f0c60}{format\_directory\_size}}(path:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00153}00153\ \ \ \ \ \textcolor{keywordflow}{return}\ format\_size(\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a3ba5965721adb71845f11c90a82b3516}{directory\_size}}(path))}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00156}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a49d0d7b02899afd1f6533bd1d4de6c6d}{00156}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a49d0d7b02899afd1f6533bd1d4de6c6d}{copy\_directory\_permissions}}(directory:\ str,\ target\_file:\ BinaryIO)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00157}00157\ \ \ \ \ mode\ =\ (}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ os.stat(directory).st\_mode\ \&\ 0o666\ \ \textcolor{comment}{\#\ select\ read/write\ permissions\ of\ directory}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ |\ 0o600\ \ \textcolor{comment}{\#\ set\ owner\ read/write\ permissions}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00160}00160\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00161}00161\ \ \ \ \ \textcolor{comment}{\#\ Change\ permissions\ only\ if\ there\ is\ no\ risk\ of\ following\ a\ symlink.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00162}00162\ \ \ \ \ \textcolor{keywordflow}{if}\ os.chmod\ \textcolor{keywordflow}{in}\ os.supports\_fd:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ os.chmod(target\_file.fileno(),\ mode)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00164}00164\ \ \ \ \ \textcolor{keywordflow}{elif}\ os.chmod\ \textcolor{keywordflow}{in}\ os.supports\_follow\_symlinks:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ os.chmod(target\_file.name,\ mode,\ follow\_symlinks=\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00167}00167\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00168}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a978d830d522a2bacfd08ef81589ebd9f}{00168}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a978d830d522a2bacfd08ef81589ebd9f}{\_subdirs\_without\_generic}}(}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00169}00169\ \ \ \ \ path:\ str,\ predicate:\ Callable[[str,\ list[str]],\ bool]}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00170}00170\ )\ -\/>\ Generator[Path]:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00171}00171\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Yields\ every\ subdirectory\ of\ +path+\ that\ has\ no\ files\ matching\ the}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00172}00172\ \textcolor{stringliteral}{\ \ \ \ predicate\ under\ it."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00174}00174\ \ \ \ \ directories\ =\ []}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00175}00175\ \ \ \ \ excluded\ =\ set()}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00176}00176\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00177}00177\ \ \ \ \ \textcolor{keywordflow}{for}\ root\_str,\ \_,\ filenames\ \textcolor{keywordflow}{in}\ os.walk(Path(path).resolve()):}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ root\ =\ Path(root\_str)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ predicate(root\_str,\ filenames):}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ This\ directory\ should\ be\ excluded,\ so\ exclude\ it\ and\ all\ of\ its}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ parent\ directories.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ last\ item\ in\ root.parents\ is\ "{}."{},\ so\ we\ ignore\ it.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Wrapping\ this\ in\ \`{}list()`\ is\ only\ needed\ for\ Python\ 3.9.}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ excluded.update(list(root.parents)[:-\/1])}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \ \ \ \ excluded.add(root)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ directories.append(root)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00188}00188\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00189}00189\ \ \ \ \ \textcolor{keywordflow}{for}\ d\ \textcolor{keywordflow}{in}\ sorted(directories,\ reverse=\textcolor{keyword}{True}):}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ d\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ excluded:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ d}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00193}00193\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00194}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_ae9c162c06064a36129af1f3941a1cfd4}{00194}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_ae9c162c06064a36129af1f3941a1cfd4}{subdirs\_without\_files}}(path:\ str)\ -\/>\ Generator[Path]:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00195}00195\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Yields\ every\ subdirectory\ of\ +path+\ that\ has\ no\ files\ under\ it."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00196}00196\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a978d830d522a2bacfd08ef81589ebd9f}{\_subdirs\_without\_generic}}(path,\ \textcolor{keyword}{lambda}\ root,\ filenames:\ len(filenames)\ >\ 0)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00197}00197\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00198}00198\ }
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00199}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_af86fd0680fa00b1670000d0f9bd7f251}{00199}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_af86fd0680fa00b1670000d0f9bd7f251}{subdirs\_without\_wheels}}(path:\ str)\ -\/>\ Generator[Path]:}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00200}00200\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Yields\ every\ subdirectory\ of\ +path+\ that\ has\ no\ .whl\ files\ under\ it."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00201}00201\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filesystem_a978d830d522a2bacfd08ef81589ebd9f}{\_subdirs\_without\_generic}}(}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ path,\ \textcolor{keyword}{lambda}\ root,\ filenames:\ any(x.endswith(\textcolor{stringliteral}{"{}.whl"{}})\ \textcolor{keywordflow}{for}\ x\ \textcolor{keywordflow}{in}\ filenames)}
+\DoxyCodeLine{\Hypertarget{filesystem_8py_source_l00203}00203\ \ \ \ \ )}
+
+\end{DoxyCode}

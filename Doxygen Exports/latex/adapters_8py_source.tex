@@ -1,0 +1,702 @@
+\doxysection{adapters.\+py}
+\hypertarget{adapters_8py_source}{}\label{adapters_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/requests/adapters.py@{venv/Lib/site-\/packages/pip/\_vendor/requests/adapters.py}}
+\doxymbox{\hyperlink{adapters_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests_1_1adapters}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00002}00002\ \textcolor{stringliteral}{requests.adapters}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00003}00003\ \textcolor{stringliteral}{\string~\string~\string~\string~\string~\string~\string~\string~\string~\string~\string~\string~\string~\string~\string~\string~\string~}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00004}00004\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00005}00005\ \textcolor{stringliteral}{This\ module\ contains\ the\ transport\ adapters\ that\ Requests\ uses\ to\ define}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00006}00006\ \textcolor{stringliteral}{and\ maintain\ connections.}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00007}00007\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00009}00009\ \textcolor{keyword}{import}\ os.path}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00010}00010\ \textcolor{keyword}{import}\ socket\ \ \textcolor{comment}{\#\ noqa:\ F401}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00011}00011\ \textcolor{keyword}{import}\ typing}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00012}00012\ \textcolor{keyword}{import}\ warnings}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00014}00014\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1exceptions}{pip.\_vendor.urllib3.exceptions}}\ \textcolor{keyword}{import}\ ClosedPoolError,\ ConnectTimeoutError}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00015}00015\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1exceptions}{pip.\_vendor.urllib3.exceptions}}\ \textcolor{keyword}{import}\ HTTPError\ \textcolor{keyword}{as}\ \_HTTPError}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00016}00016\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1exceptions}{pip.\_vendor.urllib3.exceptions}}\ \textcolor{keyword}{import}\ InvalidHeader\ \textcolor{keyword}{as}\ \_InvalidHeader}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00017}00017\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1exceptions}{pip.\_vendor.urllib3.exceptions}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00018}00018\ \ \ \ \ LocationValueError,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00019}00019\ \ \ \ \ MaxRetryError,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00020}00020\ \ \ \ \ NewConnectionError,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00021}00021\ \ \ \ \ ProtocolError,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00022}00022\ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00023}00023\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1exceptions}{pip.\_vendor.urllib3.exceptions}}\ \textcolor{keyword}{import}\ ProxyError\ \textcolor{keyword}{as}\ \_ProxyError}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00024}00024\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1exceptions}{pip.\_vendor.urllib3.exceptions}}\ \textcolor{keyword}{import}\ ReadTimeoutError,\ ResponseError}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00025}00025\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1exceptions}{pip.\_vendor.urllib3.exceptions}}\ \textcolor{keyword}{import}\ SSLError\ \textcolor{keyword}{as}\ \_SSLError}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00026}00026\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1poolmanager}{pip.\_vendor.urllib3.poolmanager}}\ \textcolor{keyword}{import}\ PoolManager,\ proxy\_from\_url}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00027}00027\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1util}{pip.\_vendor.urllib3.util}}\ \textcolor{keyword}{import}\ Timeout\ \textcolor{keyword}{as}\ TimeoutSauce}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00028}00028\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1util}{pip.\_vendor.urllib3.util}}\ \textcolor{keyword}{import}\ parse\_url}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00029}00029\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1util_1_1retry}{pip.\_vendor.urllib3.util.retry}}\ \textcolor{keyword}{import}\ Retry}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00031}00031\ \textcolor{keyword}{from}\ .auth\ \textcolor{keyword}{import}\ \_basic\_auth\_str}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00032}00032\ \textcolor{keyword}{from}\ .compat\ \textcolor{keyword}{import}\ basestring,\ urlparse}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00033}00033\ \textcolor{keyword}{from}\ .cookies\ \textcolor{keyword}{import}\ extract\_cookies\_to\_jar}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00034}00034\ \textcolor{keyword}{from}\ .exceptions\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00035}00035\ \ \ \ \ ConnectionError,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00036}00036\ \ \ \ \ ConnectTimeout,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00037}00037\ \ \ \ \ InvalidHeader,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00038}00038\ \ \ \ \ InvalidProxyURL,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00039}00039\ \ \ \ \ InvalidSchema,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00040}00040\ \ \ \ \ InvalidURL,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00041}00041\ \ \ \ \ ProxyError,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00042}00042\ \ \ \ \ ReadTimeout,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00043}00043\ \ \ \ \ RetryError,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00044}00044\ \ \ \ \ SSLError,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00045}00045\ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00046}00046\ \textcolor{keyword}{from}\ .models\ \textcolor{keyword}{import}\ Response}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00047}00047\ \textcolor{keyword}{from}\ .structures\ \textcolor{keyword}{import}\ CaseInsensitiveDict}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00048}00048\ \textcolor{keyword}{from}\ .utils\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00049}00049\ \ \ \ \ DEFAULT\_CA\_BUNDLE\_PATH,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00050}00050\ \ \ \ \ extract\_zipped\_paths,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00051}00051\ \ \ \ \ get\_auth\_from\_url,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00052}00052\ \ \ \ \ get\_encoding\_from\_headers,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00053}00053\ \ \ \ \ prepend\_scheme\_if\_needed,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00054}00054\ \ \ \ \ select\_proxy,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00055}00055\ \ \ \ \ urldefragauth,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00056}00056\ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00057}00057\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00058}00058\ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00059}00059\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1socks}{pip.\_vendor.urllib3.contrib.socks}}\ \textcolor{keyword}{import}\ SOCKSProxyManager}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00060}00060\ \textcolor{keywordflow}{except}\ ImportError:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00061}00061\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00062}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests_1_1adapters_acc4aac4ae30fd22dbba8aeda3fd17389}{00062}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests_1_1adapters_acc4aac4ae30fd22dbba8aeda3fd17389}{SOCKSProxyManager}}(*args,\ **kwargs):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1exceptions_1_1_invalid_schema}{InvalidSchema}}(\textcolor{stringliteral}{"{}Missing\ dependencies\ for\ SOCKS\ support."{}})}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00065}00065\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00066}00066\ \textcolor{keywordflow}{if}\ typing.TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00067}00067\ \ \ \ \ \textcolor{keyword}{from}\ .models\ \textcolor{keyword}{import}\ PreparedRequest}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00070}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests_1_1adapters_abfd1b3bd1cc5f681274b1dd236bf4c8d}{00070}}\ DEFAULT\_POOLBLOCK\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00071}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests_1_1adapters_ad2048dd9165515ae35c0dbf4b235670f}{00071}}\ DEFAULT\_POOLSIZE\ =\ 10}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00072}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests_1_1adapters_a9cf225d5ed7e9d5a418c58dea5d0bd93}{00072}}\ DEFAULT\_RETRIES\ =\ 0}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00073}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests_1_1adapters_aa2c62b416e319ab9b2146f7e9dd36ff6}{00073}}\ DEFAULT\_POOL\_TIMEOUT\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00075}00075\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00076}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests_1_1adapters_aa32da7bc86e851983dfdb8d56e61aca6}{00076}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests_1_1adapters_aa32da7bc86e851983dfdb8d56e61aca6}{\_urllib3\_request\_context}}(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00077}00077\ \ \ \ \ request:\ \textcolor{stringliteral}{"{}PreparedRequest"{}},}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00078}00078\ \ \ \ \ verify:\ \textcolor{stringliteral}{"{}bool\ |\ str\ |\ None"{}},}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00079}00079\ \ \ \ \ client\_cert:\ \textcolor{stringliteral}{"{}typing.Tuple[str,\ str]\ |\ str\ |\ None"{}},}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00080}00080\ \ \ \ \ poolmanager:\ \textcolor{stringliteral}{"{}PoolManager"{}},}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00081}00081\ )\ -\/>\ \textcolor{stringliteral}{"{}(typing.Dict[str,\ typing.Any],\ typing.Dict[str,\ typing.Any])"{}}:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00082}00082\ \ \ \ \ host\_params\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00083}00083\ \ \ \ \ pool\_kwargs\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00084}00084\ \ \ \ \ parsed\_request\_url\ =\ urlparse(request.url)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00085}00085\ \ \ \ \ scheme\ =\ parsed\_request\_url.scheme.lower()}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00086}00086\ \ \ \ \ port\ =\ parsed\_request\_url.port}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00087}00087\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00088}00088\ \ \ \ \ cert\_reqs\ =\ \textcolor{stringliteral}{"{}CERT\_REQUIRED"{}}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00089}00089\ \ \ \ \ \textcolor{keywordflow}{if}\ verify\ \textcolor{keywordflow}{is}\ \textcolor{keyword}{False}:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ cert\_reqs\ =\ \textcolor{stringliteral}{"{}CERT\_NONE"{}}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00091}00091\ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(verify,\ str):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ os.path.isdir(verify):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ pool\_kwargs[\textcolor{stringliteral}{"{}ca\_certs"{}}]\ =\ verify}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \ \ \ \ pool\_kwargs[\textcolor{stringliteral}{"{}ca\_cert\_dir"{}}]\ =\ verify}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00096}00096\ \ \ \ \ pool\_kwargs[\textcolor{stringliteral}{"{}cert\_reqs"{}}]\ =\ cert\_reqs}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00097}00097\ \ \ \ \ \textcolor{keywordflow}{if}\ client\_cert\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(client\_cert,\ tuple)\ \textcolor{keywordflow}{and}\ len(client\_cert)\ ==\ 2:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ pool\_kwargs[\textcolor{stringliteral}{"{}cert\_file"{}}]\ =\ client\_cert[0]}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \ \ \ \ pool\_kwargs[\textcolor{stringliteral}{"{}key\_file"{}}]\ =\ client\_cert[1]}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ According\ to\ our\ docs,\ we\ allow\ users\ to\ specify\ just\ the\ client}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ cert\ path}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ pool\_kwargs[\textcolor{stringliteral}{"{}cert\_file"{}}]\ =\ client\_cert}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00105}00105\ \ \ \ \ host\_params\ =\ \{}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}scheme"{}}:\ scheme,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}host"{}}:\ parsed\_request\_url.hostname,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}port"{}}:\ port,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00109}00109\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00110}00110\ \ \ \ \ \textcolor{keywordflow}{return}\ host\_params,\ pool\_kwargs}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00111}00111\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00112}00112\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00113}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_base_adapter}{00113}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_base_adapter}{BaseAdapter}}:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00114}00114\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ Base\ Transport\ Adapter"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00115}00115\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00116}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_base_adapter_a5a8cac4f76d9fa526172e4804b74301f}{00116}}\ \textcolor{stringliteral}{\ \ \ \ def\ \_\_init\_\_(self):}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00117}00117\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ super().\_\_init\_\_()}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00118}00118\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00119}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_base_adapter_a71b96d00d14b1eb64886afb3d5a6e2b0}{00119}}\ \textcolor{stringliteral}{\ \ \ \ def\ send(}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00120}00120\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ self,\ request,\ stream=False,\ timeout=None,\ verify=True,\ cert=None,\ proxies=None}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00121}00121\ \textcolor{stringliteral}{\ \ \ \ ):}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00122}00122\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}Sends\ PreparedRequest\ object.\ Returns\ Response\ object.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00123}00123\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ :param\ request:\ The\ :class:\`{}PreparedRequest\ <PreparedRequest>\`{}\ being\ sent.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ :param\ stream:\ (optional)\ Whether\ to\ stream\ the\ request\ content.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ :param\ timeout:\ (optional)\ How\ long\ to\ wait\ for\ the\ server\ to\ send}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ data\ before\ giving\ up,\ as\ a\ float,\ or\ a\ :ref:\`{}(connect\ timeout,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ read\ timeout)\ <timeouts>\`{}\ tuple.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ :type\ timeout:\ float\ or\ tuple}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ :param\ verify:\ (optional)\ Either\ a\ boolean,\ in\ which\ case\ it\ controls\ whether\ we\ verify}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ the\ server's\ TLS\ certificate,\ or\ a\ string,\ in\ which\ case\ it\ must\ be\ a\ path}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \ \ \ \ to\ a\ CA\ bundle\ to\ use}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ :param\ cert:\ (optional)\ Any\ user-\/provided\ SSL\ certificate\ to\ be\ trusted.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ :param\ proxies:\ (optional)\ The\ proxies\ dictionary\ to\ apply\ to\ the\ request.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ raise\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00137}00137\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00138}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_base_adapter_ab52f259a4633310e303f4ac6b07eb1e5}{00138}}\ \ \ \ \ def\ close(self):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ "{}"{}"{}Cleans\ up\ adapter\ specific\ items."{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ raise\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00142}00142\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00143}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter}{00143}}\ class\ HTTPAdapter(BaseAdapter):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00144}00144\ \ \ \ \ "{}"{}"{}The\ built-\/in\ HTTP\ Adapter\ for\ urllib3.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00145}00145\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00146}00146\ \ \ \ \ Provides\ a\ general-\/case\ interface\ for\ Requests\ sessions\ to\ contact\ HTTP\ and}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00147}00147\ \ \ \ \ HTTPS\ urls\ by\ implementing\ the\ Transport\ Adapter\ interface.\ This\ class\ will}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00148}00148\ \ \ \ \ usually\ be\ created\ by\ the\ :class:\`{}Session\ <Session>\`{}\ class\ under\ the}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00149}00149\ \ \ \ \ covers.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00150}00150\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00151}00151\ \ \ \ \ :param\ pool\_connections:\ The\ number\ of\ urllib3\ connection\ pools\ to\ cache.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00152}00152\ \ \ \ \ :param\ pool\_maxsize:\ The\ maximum\ number\ of\ connections\ to\ save\ in\ the\ pool.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00153}00153\ \ \ \ \ :param\ max\_retries:\ The\ maximum\ number\ of\ retries\ each\ connection}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ should\ attempt.\ Note,\ this\ applies\ only\ to\ failed\ DNS\ lookups,\ socket}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ connections\ and\ connection\ timeouts,\ never\ to\ requests\ where\ data\ has}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ made\ it\ to\ the\ server.\ By\ default,\ Requests\ does\ not\ retry\ failed}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ connections.\ If\ you\ need\ granular\ control\ over\ the\ conditions\ under}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ which\ we\ retry\ a\ request,\ import\ urllib3's\ \`{}\`{}Retry\`{}\`{}\ class\ and\ pass}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ that\ instead.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00160}00160\ \ \ \ \ :param\ pool\_block:\ Whether\ the\ connection\ pool\ should\ block\ for\ connections.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00161}00161\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00162}00162\ \ \ \ \ Usage::}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00163}00163\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00164}00164\ \ \ \ \ \ \ >>>\ import\ requests}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00165}00165\ \ \ \ \ \ \ >>>\ s\ =\ requests.Session()}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00166}00166\ \ \ \ \ \ \ >>>\ a\ =\ requests.adapters.HTTPAdapter(max\_retries=3)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00167}00167\ \ \ \ \ \ \ >>>\ s.mount('http://',\ a)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00168}00168\ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00169}00169\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00170}00170\ \ \ \ \ \_\_attrs\_\_\ =\ [}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ "{}max\_retries"{},}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ "{}config"{},}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ "{}\_pool\_connections"{},}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ "{}\_pool\_maxsize"{},}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ "{}\_pool\_block"{},}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00176}00176\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00177}00177\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00178}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_a2bbd277b3872d718575e54dfac505be8}{00178}}\ \ \ \ \ def\ \_\_init\_\_(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ pool\_connections=DEFAULT\_POOLSIZE,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ pool\_maxsize=DEFAULT\_POOLSIZE,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ max\_retries=DEFAULT\_RETRIES,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ pool\_block=DEFAULT\_POOLBLOCK,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00184}00184\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ if\ max\_retries\ ==\ DEFAULT\_RETRIES:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00186}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_a1890f4528c843662658f580eb7f541cd}{00186}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.max\_retries\ =\ Retry(0,\ read=False)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \ \ \ \ self.max\_retries\ =\ Retry.from\_int(max\_retries)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00189}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_acb802c56259a46661202b616b2f1aa91}{00189}}\ \ \ \ \ \ \ \ \ self.config\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00190}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_a32a17942c0a63a37f9ecc770c52b4a3c}{00190}}\ \ \ \ \ \ \ \ \ self.proxy\_manager\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00191}00191\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ super().\_\_init\_\_()}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00193}00193\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00194}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_a66de601643b8b401778dcadb1e3a4624}{00194}}\ \ \ \ \ \ \ \ \ self.\_pool\_connections\ =\ pool\_connections}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00195}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_ae64aa42aa8dda63c4b4548f0bb1d6a1c}{00195}}\ \ \ \ \ \ \ \ \ self.\_pool\_maxsize\ =\ pool\_maxsize}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00196}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_a39e6a269183c5a2ed65191ba04fd8058}{00196}}\ \ \ \ \ \ \ \ \ self.\_pool\_block\ =\ pool\_block}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00197}00197\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ self.init\_poolmanager(pool\_connections,\ pool\_maxsize,\ block=pool\_block)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00199}00199\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00200}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_ae6eae9f50bd4370bb9ea68117c605592}{00200}}\ \ \ \ \ def\ \_\_getstate\_\_(self):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ return\ \{attr:\ getattr(self,\ attr,\ None)\ for\ attr\ in\ self.\_\_attrs\_\_\}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00202}00202\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00203}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_a2ebc3366ecf7d972efac07b9087dd063}{00203}}\ \ \ \ \ def\ \_\_setstate\_\_(self,\ state):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \#\ Can't\ handle\ by\ adding\ 'proxy\_manager'\ to\ self.\_\_attrs\_\_\ because}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \#\ self.poolmanager\ uses\ a\ lambda\ function,\ which\ isn't\ pickleable.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ self.proxy\_manager\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ self.config\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00208}00208\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ for\ attr,\ value\ in\ state.items():}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ setattr(self,\ attr,\ value)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00211}00211\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ self.init\_poolmanager(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \ \ \ \ self.\_pool\_connections,\ self.\_pool\_maxsize,\ block=self.\_pool\_block}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00215}00215\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00216}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_a69ef6c51cee109b473658e850b2cb38d}{00216}}\ \ \ \ \ def\ init\_poolmanager(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ self,\ connections,\ maxsize,\ block=DEFAULT\_POOLBLOCK,\ **pool\_kwargs}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00218}00218\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ "{}"{}"{}Initializes\ a\ urllib3\ PoolManager.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00220}00220\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ This\ method\ should\ not\ be\ called\ from\ user\ code,\ and\ is\ only}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ exposed\ for\ use\ when\ subclassing\ the}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ :class:\`{}HTTPAdapter\ <requests.adapters.HTTPAdapter>\`{}.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00224}00224\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ :param\ connections:\ The\ number\ of\ urllib3\ connection\ pools\ to\ cache.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ :param\ maxsize:\ The\ maximum\ number\ of\ connections\ to\ save\ in\ the\ pool.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ :param\ block:\ Block\ when\ no\ free\ connections\ are\ available.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ :param\ pool\_kwargs:\ Extra\ keyword\ arguments\ used\ to\ initialize\ the\ Pool\ Manager.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \#\ save\ these\ values\ for\ pickling}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ self.\_pool\_connections\ =\ connections}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ self.\_pool\_maxsize\ =\ maxsize}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ self.\_pool\_block\ =\ block}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00234}00234\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00235}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_addf767ae1a4a21d920ab3e0680214496}{00235}}\ \ \ \ \ \ \ \ \ self.poolmanager\ =\ PoolManager(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ num\_pools=connections,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ maxsize=maxsize,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \ \ \ \ block=block,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ **pool\_kwargs,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00241}00241\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00242}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_ad251a3bbf64e37a9f151818862cbc53d}{00242}}\ \ \ \ \ def\ proxy\_manager\_for(self,\ proxy,\ **proxy\_kwargs):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ "{}"{}"{}Return\ urllib3\ ProxyManager\ for\ the\ given\ proxy.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00244}00244\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ This\ method\ should\ not\ be\ called\ from\ user\ code,\ and\ is\ only}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ exposed\ for\ use\ when\ subclassing\ the}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ :class:\`{}HTTPAdapter\ <requests.adapters.HTTPAdapter>\`{}.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00248}00248\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ :param\ proxy:\ The\ proxy\ to\ return\ a\ urllib3\ ProxyManager\ for.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ :param\ proxy\_kwargs:\ Extra\ keyword\ arguments\ used\ to\ configure\ the\ Proxy\ Manager.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ :returns:\ ProxyManager}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ :rtype:\ urllib3.ProxyManager}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ if\ proxy\ in\ self.proxy\_manager:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ manager\ =\ self.proxy\_manager[proxy]}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ elif\ proxy.lower().startswith("{}socks"{}):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ username,\ password\ =\ get\_auth\_from\_url(proxy)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ manager\ =\ self.proxy\_manager[proxy]\ =\ SOCKSProxyManager(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ proxy,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ username=username,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ password=password,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ num\_pools=self.\_pool\_connections,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ maxsize=self.\_pool\_maxsize,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ block=self.\_pool\_block,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ **proxy\_kwargs,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \ \ \ \ proxy\_headers\ =\ self.proxy\_headers(proxy)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \ \ \ \ manager\ =\ self.proxy\_manager[proxy]\ =\ proxy\_from\_url(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ proxy,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ proxy\_headers=proxy\_headers,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ num\_pools=self.\_pool\_connections,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ maxsize=self.\_pool\_maxsize,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ block=self.\_pool\_block,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ **proxy\_kwargs,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00277}00277\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ return\ manager}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00279}00279\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00280}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_aec59dce3054074a27a7fc889279e33cc}{00280}}\ \ \ \ \ def\ cert\_verify(self,\ conn,\ url,\ verify,\ cert):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ "{}"{}"{}Verify\ a\ SSL\ certificate.\ This\ method\ should\ not\ be\ called\ from\ user}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ code,\ and\ is\ only\ exposed\ for\ use\ when\ subclassing\ the}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ :class:\`{}HTTPAdapter\ <requests.adapters.HTTPAdapter>\`{}.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00284}00284\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ :param\ conn:\ The\ urllib3\ connection\ object\ associated\ with\ the\ cert.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ :param\ url:\ The\ requested\ URL.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ :param\ verify:\ Either\ a\ boolean,\ in\ which\ case\ it\ controls\ whether\ we\ verify}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \ \ \ \ the\ server's\ TLS\ certificate,\ or\ a\ string,\ in\ which\ case\ it\ must\ be\ a\ path}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ \ \ \ \ to\ a\ CA\ bundle\ to\ use}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ :param\ cert:\ The\ SSL\ certificate\ to\ verify.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ if\ url.lower().startswith("{}https"{})\ and\ verify:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ \ \ \ \ cert\_loc\ =\ None}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00294}00294\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Allow\ self-\/specified\ cert\ location.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ \ \ \ \ if\ verify\ is\ not\ True:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00297}00297\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cert\_loc\ =\ verify}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00298}00298\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \ \ \ \ if\ not\ cert\_loc:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cert\_loc\ =\ extract\_zipped\_paths(DEFAULT\_CA\_BUNDLE\_PATH)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00301}00301\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ \ \ \ \ if\ not\ cert\_loc\ or\ not\ os.path.exists(cert\_loc):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ OSError(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f"{}Could\ not\ find\ a\ suitable\ TLS\ CA\ certificate\ bundle,\ "{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00305}00305\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f"{}invalid\ path:\ \{cert\_loc\}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00307}00307\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ \ \ \ \ conn.cert\_reqs\ =\ "{}CERT\_REQUIRED"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00309}00309\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ \ \ \ \ if\ not\ os.path.isdir(cert\_loc):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conn.ca\_certs\ =\ cert\_loc}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00312}00312\ \ \ \ \ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conn.ca\_cert\_dir\ =\ cert\_loc}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00314}00314\ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00315}00315\ \ \ \ \ \ \ \ \ \ \ \ \ conn.cert\_reqs\ =\ "{}CERT\_NONE"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00316}00316\ \ \ \ \ \ \ \ \ \ \ \ \ conn.ca\_certs\ =\ None}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ \ \ \ \ conn.ca\_cert\_dir\ =\ None}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00318}00318\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00319}00319\ \ \ \ \ \ \ \ \ if\ cert:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ \ \ \ \ if\ not\ isinstance(cert,\ basestring):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conn.cert\_file\ =\ cert[0]}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conn.key\_file\ =\ cert[1]}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00323}00323\ \ \ \ \ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conn.cert\_file\ =\ cert}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00325}00325\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conn.key\_file\ =\ None}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00326}00326\ \ \ \ \ \ \ \ \ \ \ \ \ if\ conn.cert\_file\ and\ not\ os.path.exists(conn.cert\_file):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00327}00327\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ OSError(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f"{}Could\ not\ find\ the\ TLS\ certificate\ file,\ "{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f"{}invalid\ path:\ \{conn.cert\_file\}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00331}00331\ \ \ \ \ \ \ \ \ \ \ \ \ if\ conn.key\_file\ and\ not\ os.path.exists(conn.key\_file):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00332}00332\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ OSError(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f"{}Could\ not\ find\ the\ TLS\ key\ file,\ invalid\ path:\ \{conn.key\_file\}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00334}00334\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00335}00335\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00336}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_a9eac29fb2d7645757607d92462ef25a1}{00336}}\ \ \ \ \ def\ build\_response(self,\ req,\ resp):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ "{}"{}"{}Builds\ a\ :class:\`{}Response\ <requests.Response>\`{}\ object\ from\ a\ urllib3}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ response.\ This\ should\ not\ be\ called\ from\ user\ code,\ and\ is\ only\ exposed}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ for\ use\ when\ subclassing\ the}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ :class:\`{}HTTPAdapter\ <requests.adapters.HTTPAdapter>\`{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00341}00341\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ :param\ req:\ The\ :class:\`{}PreparedRequest\ <PreparedRequest>\`{}\ used\ to\ generate\ the\ response.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ :param\ resp:\ The\ urllib3\ response\ object.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ :rtype:\ requests.Response}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ response\ =\ Response()}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00347}00347\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ \#\ Fallback\ to\ None\ if\ there's\ no\ status\_code,\ for\ whatever\ reason.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ response.status\_code\ =\ getattr(resp,\ "{}status"{},\ None)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00350}00350\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \#\ Make\ headers\ case-\/insensitive.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ response.headers\ =\ CaseInsensitiveDict(getattr(resp,\ "{}headers"{},\ \{\}))}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00353}00353\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ \#\ Set\ encoding.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ response.encoding\ =\ get\_encoding\_from\_headers(response.headers)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ response.raw\ =\ resp}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ response.reason\ =\ response.raw.reason}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00358}00358\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ if\ isinstance(req.url,\ bytes):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \ \ \ \ response.url\ =\ req.url.decode("{}utf-\/8"{})}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ \ \ \ \ response.url\ =\ req.url}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00363}00363\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ \#\ Add\ new\ cookies\ from\ the\ server.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ extract\_cookies\_to\_jar(response.cookies,\ req,\ resp)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00366}00366\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00367}00367\ \ \ \ \ \ \ \ \ \#\ Give\ the\ Response\ some\ context.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00368}00368\ \ \ \ \ \ \ \ \ response.request\ =\ req}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ response.connection\ =\ self}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00370}00370\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ return\ response}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00372}00372\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00373}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_abf5ead1279d7ac22fc7522a242e9f06a}{00373}}\ \ \ \ \ def\ build\_connection\_pool\_key\_attributes(self,\ request,\ verify,\ cert=None):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ "{}"{}"{}Build\ the\ PoolKey\ attributes\ used\ by\ urllib3\ to\ return\ a\ connection.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00375}00375\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ This\ looks\ at\ the\ PreparedRequest,\ the\ user-\/specified\ verify\ value,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ and\ the\ value\ of\ the\ cert\ parameter\ to\ determine\ what\ PoolKey\ values}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ to\ use\ to\ select\ a\ connection\ from\ a\ given\ urllib3\ Connection\ Pool.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00379}00379\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ The\ SSL\ related\ pool\ key\ arguments\ are\ not\ consistently\ set.\ As\ of}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ this\ writing,\ use\ the\ following\ to\ determine\ what\ keys\ may\ be\ in\ that}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ dictionary:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00383}00383\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ *\ If\ \`{}\`{}verify\`{}\`{}\ is\ \`{}\`{}True\`{}\`{},\ \`{}\`{}"{}ssl\_context"{}\`{}\`{}\ will\ be\ set\ and\ will\ be\ the}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00385}00385\ \ \ \ \ \ \ \ \ \ \ default\ Requests\ SSL\ Context}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ *\ If\ \`{}\`{}verify\`{}\`{}\ is\ \`{}\`{}False\`{}\`{},\ \`{}\`{}"{}ssl\_context"{}\`{}\`{}\ will\ not\ be\ set\ but}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ \ \ \`{}\`{}"{}cert\_reqs"{}\`{}\`{}\ will\ be\ set}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ *\ If\ \`{}\`{}verify\`{}\`{}\ is\ a\ string,\ (i.e.,\ it\ is\ a\ user-\/specified\ trust\ bundle)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ \ \ \`{}\`{}"{}ca\_certs"{}\`{}\`{}\ will\ be\ set\ if\ the\ string\ is\ not\ a\ directory\ recognized}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00390}00390\ \ \ \ \ \ \ \ \ \ \ by\ :py:func:\`{}os.path.isdir\`{},\ otherwise\ \`{}\`{}"{}ca\_cert\_dir"{}\`{}\`{}\ will\ be}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ \ \ set.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ *\ If\ \`{}\`{}"{}cert"{}\`{}\`{}\ is\ specified,\ \`{}\`{}"{}cert\_file"{}\`{}\`{}\ will\ always\ be\ set.\ If}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ \ \ \`{}\`{}"{}cert"{}\`{}\`{}\ is\ a\ tuple\ with\ a\ second\ item,\ \`{}\`{}"{}key\_file"{}\`{}\`{}\ will\ also}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \ \ be\ present}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00395}00395\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ To\ override\ these\ settings,\ one\ may\ subclass\ this\ class,\ call\ this}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ method\ and\ use\ the\ above\ logic\ to\ change\ parameters\ as\ desired.\ For}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ example,\ if\ one\ wishes\ to\ use\ a\ custom\ :py:class:\`{}ssl.SSLContext\`{}\ one}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00399}00399\ \ \ \ \ \ \ \ \ must\ both\ set\ \`{}\`{}"{}ssl\_context"{}\`{}\`{}\ and\ based\ on\ what\ else\ they\ require,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ alter\ the\ other\ keys\ to\ ensure\ the\ desired\ behaviour.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00401}00401\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ :param\ request:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \ \ \ \ The\ PreparedReqest\ being\ sent\ over\ the\ connection.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ :type\ request:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00405}00405\ \ \ \ \ \ \ \ \ \ \ \ \ :class:\`{}\string~requests.models.PreparedRequest\`{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00406}00406\ \ \ \ \ \ \ \ \ :param\ verify:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ \ \ \ \ Either\ a\ boolean,\ in\ which\ case\ it\ controls\ whether}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00408}00408\ \ \ \ \ \ \ \ \ \ \ \ \ we\ verify\ the\ server's\ TLS\ certificate,\ or\ a\ string,\ in\ which\ case\ it}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00409}00409\ \ \ \ \ \ \ \ \ \ \ \ \ must\ be\ a\ path\ to\ a\ CA\ bundle\ to\ use.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ :param\ cert:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00411}00411\ \ \ \ \ \ \ \ \ \ \ \ \ (optional)\ Any\ user-\/provided\ SSL\ certificate\ for\ client}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00412}00412\ \ \ \ \ \ \ \ \ \ \ \ \ authentication\ (a.k.a.,\ mTLS).\ This\ may\ be\ a\ string\ (i.e.,\ just}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00413}00413\ \ \ \ \ \ \ \ \ \ \ \ \ the\ path\ to\ a\ file\ which\ holds\ both\ certificate\ and\ key)\ or\ a}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00414}00414\ \ \ \ \ \ \ \ \ \ \ \ \ tuple\ of\ length\ 2\ with\ the\ certificate\ file\ path\ and\ key\ file}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00415}00415\ \ \ \ \ \ \ \ \ \ \ \ \ path.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00416}00416\ \ \ \ \ \ \ \ \ :returns:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ \ \ \ \ A\ tuple\ of\ two\ dictionaries.\ The\ first\ is\ the\ "{}host\ parameters"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ \ \ \ \ portion\ of\ the\ Pool\ Key\ including\ scheme,\ hostname,\ and\ port.\ The}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ \ \ \ \ second\ is\ a\ dictionary\ of\ SSLContext\ related\ parameters.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00420}00420\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00421}00421\ \ \ \ \ \ \ \ \ return\ \_urllib3\_request\_context(request,\ verify,\ cert,\ self.poolmanager)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00422}00422\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00423}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_a2e59bb5252bc45f8e946bac0bd6750c6}{00423}}\ \ \ \ \ def\ get\_connection\_with\_tls\_context(self,\ request,\ verify,\ proxies=None,\ cert=None):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00424}00424\ \ \ \ \ \ \ \ \ "{}"{}"{}Returns\ a\ urllib3\ connection\ for\ the\ given\ request\ and\ TLS\ settings.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ This\ should\ not\ be\ called\ from\ user\ code,\ and\ is\ only\ exposed\ for\ use}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00426}00426\ \ \ \ \ \ \ \ \ when\ subclassing\ the\ :class:\`{}HTTPAdapter\ <requests.adapters.HTTPAdapter>\`{}.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00427}00427\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00428}00428\ \ \ \ \ \ \ \ \ :param\ request:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00429}00429\ \ \ \ \ \ \ \ \ \ \ \ \ The\ :class:\`{}PreparedRequest\ <PreparedRequest>\`{}\ object\ to\ be\ sent}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00430}00430\ \ \ \ \ \ \ \ \ \ \ \ \ over\ the\ connection.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00431}00431\ \ \ \ \ \ \ \ \ :param\ verify:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00432}00432\ \ \ \ \ \ \ \ \ \ \ \ \ Either\ a\ boolean,\ in\ which\ case\ it\ controls\ whether\ we\ verify\ the}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00433}00433\ \ \ \ \ \ \ \ \ \ \ \ \ server's\ TLS\ certificate,\ or\ a\ string,\ in\ which\ case\ it\ must\ be\ a}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00434}00434\ \ \ \ \ \ \ \ \ \ \ \ \ path\ to\ a\ CA\ bundle\ to\ use.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00435}00435\ \ \ \ \ \ \ \ \ :param\ proxies:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00436}00436\ \ \ \ \ \ \ \ \ \ \ \ \ (optional)\ The\ proxies\ dictionary\ to\ apply\ to\ the\ request.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00437}00437\ \ \ \ \ \ \ \ \ :param\ cert:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ \ \ \ \ (optional)\ Any\ user-\/provided\ SSL\ certificate\ to\ be\ used\ for\ client}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ \ \ \ \ authentication\ (a.k.a.,\ mTLS).}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ :rtype:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ \ \ \ \ urllib3.ConnectionPool}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00442}00442\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00443}00443\ \ \ \ \ \ \ \ \ proxy\ =\ select\_proxy(request.url,\ proxies)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ \ \ \ \ host\_params,\ pool\_kwargs\ =\ self.build\_connection\_pool\_key\_attributes(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00446}00446\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ request,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00447}00447\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ verify,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00448}00448\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cert,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00449}00449\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00450}00450\ \ \ \ \ \ \ \ \ except\ ValueError\ as\ e:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00451}00451\ \ \ \ \ \ \ \ \ \ \ \ \ raise\ InvalidURL(e,\ request=request)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ if\ proxy:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00453}00453\ \ \ \ \ \ \ \ \ \ \ \ \ proxy\ =\ prepend\_scheme\_if\_needed(proxy,\ "{}http"{})}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00454}00454\ \ \ \ \ \ \ \ \ \ \ \ \ proxy\_url\ =\ parse\_url(proxy)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00455}00455\ \ \ \ \ \ \ \ \ \ \ \ \ if\ not\ proxy\_url.host:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ InvalidProxyURL(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}Please\ check\ proxy\ URL.\ It\ is\ malformed\ "{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00458}00458\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}and\ could\ be\ missing\ the\ host."{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00460}00460\ \ \ \ \ \ \ \ \ \ \ \ \ proxy\_manager\ =\ self.proxy\_manager\_for(proxy)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ proxy\_manager.connection\_from\_host(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00462}00462\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ **host\_params,\ pool\_kwargs=pool\_kwargs}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00463}00463\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00464}00464\ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00465}00465\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Only\ scheme\ should\ be\ lower\ case}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00466}00466\ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ self.poolmanager.connection\_from\_host(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00467}00467\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ **host\_params,\ pool\_kwargs=pool\_kwargs}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00468}00468\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00469}00469\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00470}00470\ \ \ \ \ \ \ \ \ return\ conn}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00471}00471\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00472}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_addd116a14f6d7cd083aaf4405253555a}{00472}}\ \ \ \ \ def\ get\_connection(self,\ url,\ proxies=None):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00473}00473\ \ \ \ \ \ \ \ \ "{}"{}"{}DEPRECATED:\ Users\ should\ move\ to\ \`{}get\_connection\_with\_tls\_context\`{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00474}00474\ \ \ \ \ \ \ \ \ for\ all\ subclasses\ of\ HTTPAdapter\ using\ Requests>=2.32.2.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00475}00475\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00476}00476\ \ \ \ \ \ \ \ \ Returns\ a\ urllib3\ connection\ for\ the\ given\ URL.\ This\ should\ not\ be}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00477}00477\ \ \ \ \ \ \ \ \ called\ from\ user\ code,\ and\ is\ only\ exposed\ for\ use\ when\ subclassing\ the}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00478}00478\ \ \ \ \ \ \ \ \ :class:\`{}HTTPAdapter\ <requests.adapters.HTTPAdapter>\`{}.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00479}00479\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00480}00480\ \ \ \ \ \ \ \ \ :param\ url:\ The\ URL\ to\ connect\ to.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00481}00481\ \ \ \ \ \ \ \ \ :param\ proxies:\ (optional)\ A\ Requests-\/style\ dictionary\ of\ proxies\ used\ on\ this\ request.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00482}00482\ \ \ \ \ \ \ \ \ :rtype:\ urllib3.ConnectionPool}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00483}00483\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ warnings.warn(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00485}00485\ \ \ \ \ \ \ \ \ \ \ \ \ (}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00486}00486\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}\`{}get\_connection\`{}\ has\ been\ deprecated\ in\ favor\ of\ "{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00487}00487\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}\`{}get\_connection\_with\_tls\_context\`{}.\ Custom\ HTTPAdapter\ subclasses\ "{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00488}00488\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}will\ need\ to\ migrate\ for\ Requests>=2.32.2.\ Please\ see\ "{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00489}00489\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}https://github.com/psf/requests/pull/6710\ for\ more\ details."{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00490}00490\ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00491}00491\ \ \ \ \ \ \ \ \ \ \ \ \ DeprecationWarning,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00492}00492\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00493}00493\ \ \ \ \ \ \ \ \ proxy\ =\ select\_proxy(url,\ proxies)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00494}00494\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00495}00495\ \ \ \ \ \ \ \ \ if\ proxy:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00496}00496\ \ \ \ \ \ \ \ \ \ \ \ \ proxy\ =\ prepend\_scheme\_if\_needed(proxy,\ "{}http"{})}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00497}00497\ \ \ \ \ \ \ \ \ \ \ \ \ proxy\_url\ =\ parse\_url(proxy)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00498}00498\ \ \ \ \ \ \ \ \ \ \ \ \ if\ not\ proxy\_url.host:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00499}00499\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ InvalidProxyURL(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}Please\ check\ proxy\ URL.\ It\ is\ malformed\ "{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00501}00501\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}and\ could\ be\ missing\ the\ host."{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00502}00502\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00503}00503\ \ \ \ \ \ \ \ \ \ \ \ \ proxy\_manager\ =\ self.proxy\_manager\_for(proxy)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00504}00504\ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ proxy\_manager.connection\_from\_url(url)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00505}00505\ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00506}00506\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Only\ scheme\ should\ be\ lower\ case}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ \ \ \ \ parsed\ =\ urlparse(url)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00508}00508\ \ \ \ \ \ \ \ \ \ \ \ \ url\ =\ parsed.geturl()}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00509}00509\ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ self.poolmanager.connection\_from\_url(url)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00510}00510\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00511}00511\ \ \ \ \ \ \ \ \ return\ conn}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00512}00512\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00513}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_abce959ea97f8378278ff019c78481a11}{00513}}\ \ \ \ \ def\ close(self):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00514}00514\ \ \ \ \ \ \ \ \ "{}"{}"{}Disposes\ of\ any\ internal\ state.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00515}00515\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00516}00516\ \ \ \ \ \ \ \ \ Currently,\ this\ closes\ the\ PoolManager\ and\ any\ active\ ProxyManager,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00517}00517\ \ \ \ \ \ \ \ \ which\ closes\ any\ pooled\ connections.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00518}00518\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ self.poolmanager.clear()}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ for\ proxy\ in\ self.proxy\_manager.values():}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \ \ \ \ proxy.clear()}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00522}00522\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00523}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_a34f8556298bd7d8eb9e3bcb0d11e46e3}{00523}}\ \ \ \ \ def\ request\_url(self,\ request,\ proxies):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ "{}"{}"{}Obtain\ the\ url\ to\ use\ when\ making\ the\ final\ request.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00525}00525\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00526}00526\ \ \ \ \ \ \ \ \ If\ the\ message\ is\ being\ sent\ through\ a\ HTTP\ proxy,\ the\ full\ URL\ has\ to}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ be\ used.\ Otherwise,\ we\ should\ only\ use\ the\ path\ portion\ of\ the\ URL.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00528}00528\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00529}00529\ \ \ \ \ \ \ \ \ This\ should\ not\ be\ called\ from\ user\ code,\ and\ is\ only\ exposed\ for\ use}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00530}00530\ \ \ \ \ \ \ \ \ when\ subclassing\ the}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00531}00531\ \ \ \ \ \ \ \ \ :class:\`{}HTTPAdapter\ <requests.adapters.HTTPAdapter>\`{}.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00532}00532\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00533}00533\ \ \ \ \ \ \ \ \ :param\ request:\ The\ :class:\`{}PreparedRequest\ <PreparedRequest>\`{}\ being\ sent.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ :param\ proxies:\ A\ dictionary\ of\ schemes\ or\ schemes\ and\ hosts\ to\ proxy\ URLs.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00535}00535\ \ \ \ \ \ \ \ \ :rtype:\ str}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00536}00536\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00537}00537\ \ \ \ \ \ \ \ \ proxy\ =\ select\_proxy(request.url,\ proxies)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00538}00538\ \ \ \ \ \ \ \ \ scheme\ =\ urlparse(request.url).scheme}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00539}00539\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00540}00540\ \ \ \ \ \ \ \ \ is\_proxied\_http\_request\ =\ proxy\ and\ scheme\ !=\ "{}https"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00541}00541\ \ \ \ \ \ \ \ \ using\_socks\_proxy\ =\ False}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00542}00542\ \ \ \ \ \ \ \ \ if\ proxy:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00543}00543\ \ \ \ \ \ \ \ \ \ \ \ \ proxy\_scheme\ =\ urlparse(proxy).scheme.lower()}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00544}00544\ \ \ \ \ \ \ \ \ \ \ \ \ using\_socks\_proxy\ =\ proxy\_scheme.startswith("{}socks"{})}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00545}00545\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00546}00546\ \ \ \ \ \ \ \ \ url\ =\ request.path\_url}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00547}00547\ \ \ \ \ \ \ \ \ if\ url.startswith("{}//"{}):\ \ \#\ Don't\ confuse\ urllib3}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ \ \ \ \ url\ =\ f"{}/\{url.lstrip('/')\}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00549}00549\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00550}00550\ \ \ \ \ \ \ \ \ if\ is\_proxied\_http\_request\ and\ not\ using\_socks\_proxy:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00551}00551\ \ \ \ \ \ \ \ \ \ \ \ \ url\ =\ urldefragauth(request.url)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00552}00552\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00553}00553\ \ \ \ \ \ \ \ \ return\ url}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00554}00554\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00555}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_ac6c2ace37ef6a3e132ef246cd18ceaf3}{00555}}\ \ \ \ \ def\ add\_headers(self,\ request,\ **kwargs):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00556}00556\ \ \ \ \ \ \ \ \ "{}"{}"{}Add\ any\ headers\ needed\ by\ the\ connection.\ As\ of\ v2.0\ this\ does}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00557}00557\ \ \ \ \ \ \ \ \ nothing\ by\ default,\ but\ is\ left\ for\ overriding\ by\ users\ that\ subclass}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00558}00558\ \ \ \ \ \ \ \ \ the\ :class:\`{}HTTPAdapter\ <requests.adapters.HTTPAdapter>\`{}.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00559}00559\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00560}00560\ \ \ \ \ \ \ \ \ This\ should\ not\ be\ called\ from\ user\ code,\ and\ is\ only\ exposed\ for\ use}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00561}00561\ \ \ \ \ \ \ \ \ when\ subclassing\ the}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00562}00562\ \ \ \ \ \ \ \ \ :class:\`{}HTTPAdapter\ <requests.adapters.HTTPAdapter>\`{}.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00563}00563\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00564}00564\ \ \ \ \ \ \ \ \ :param\ request:\ The\ :class:\`{}PreparedRequest\ <PreparedRequest>\`{}\ to\ add\ headers\ to.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00565}00565\ \ \ \ \ \ \ \ \ :param\ kwargs:\ The\ keyword\ arguments\ from\ the\ call\ to\ send().}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00566}00566\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00567}00567\ \ \ \ \ \ \ \ \ pass}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00568}00568\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00569}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_a1dcd305e5dbdbbe34a3ab4eeb559645f}{00569}}\ \ \ \ \ def\ proxy\_headers(self,\ proxy):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00570}00570\ \ \ \ \ \ \ \ \ "{}"{}"{}Returns\ a\ dictionary\ of\ the\ headers\ to\ add\ to\ any\ request\ sent}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00571}00571\ \ \ \ \ \ \ \ \ through\ a\ proxy.\ This\ works\ with\ urllib3\ magic\ to\ ensure\ that\ they\ are}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00572}00572\ \ \ \ \ \ \ \ \ correctly\ sent\ to\ the\ proxy,\ rather\ than\ in\ a\ tunnelled\ request\ if}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00573}00573\ \ \ \ \ \ \ \ \ CONNECT\ is\ being\ used.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00574}00574\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00575}00575\ \ \ \ \ \ \ \ \ This\ should\ not\ be\ called\ from\ user\ code,\ and\ is\ only\ exposed\ for\ use}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00576}00576\ \ \ \ \ \ \ \ \ when\ subclassing\ the}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00577}00577\ \ \ \ \ \ \ \ \ :class:\`{}HTTPAdapter\ <requests.adapters.HTTPAdapter>\`{}.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00578}00578\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00579}00579\ \ \ \ \ \ \ \ \ :param\ proxy:\ The\ url\ of\ the\ proxy\ being\ used\ for\ this\ request.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00580}00580\ \ \ \ \ \ \ \ \ :rtype:\ dict}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00581}00581\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00582}00582\ \ \ \ \ \ \ \ \ headers\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00583}00583\ \ \ \ \ \ \ \ \ username,\ password\ =\ get\_auth\_from\_url(proxy)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00584}00584\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00585}00585\ \ \ \ \ \ \ \ \ if\ username:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00586}00586\ \ \ \ \ \ \ \ \ \ \ \ \ headers["{}Proxy-\/Authorization"{}]\ =\ \_basic\_auth\_str(username,\ password)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00587}00587\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00588}00588\ \ \ \ \ \ \ \ \ return\ headers}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00589}00589\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00590}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1requests_1_1adapters_1_1_h_t_t_p_adapter_aa75dd0f80148babfc8b50bbc9a504e8d}{00590}}\ \ \ \ \ def\ send(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00591}00591\ \ \ \ \ \ \ \ \ self,\ request,\ stream=False,\ timeout=None,\ verify=True,\ cert=None,\ proxies=None}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00592}00592\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00593}00593\ \ \ \ \ \ \ \ \ "{}"{}"{}Sends\ PreparedRequest\ object.\ Returns\ Response\ object.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00594}00594\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00595}00595\ \ \ \ \ \ \ \ \ :param\ request:\ The\ :class:\`{}PreparedRequest\ <PreparedRequest>\`{}\ being\ sent.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00596}00596\ \ \ \ \ \ \ \ \ :param\ stream:\ (optional)\ Whether\ to\ stream\ the\ request\ content.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00597}00597\ \ \ \ \ \ \ \ \ :param\ timeout:\ (optional)\ How\ long\ to\ wait\ for\ the\ server\ to\ send}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00598}00598\ \ \ \ \ \ \ \ \ \ \ \ \ data\ before\ giving\ up,\ as\ a\ float,\ or\ a\ :ref:\`{}(connect\ timeout,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00599}00599\ \ \ \ \ \ \ \ \ \ \ \ \ read\ timeout)\ <timeouts>\`{}\ tuple.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00600}00600\ \ \ \ \ \ \ \ \ :type\ timeout:\ float\ or\ tuple\ or\ urllib3\ Timeout\ object}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00601}00601\ \ \ \ \ \ \ \ \ :param\ verify:\ (optional)\ Either\ a\ boolean,\ in\ which\ case\ it\ controls\ whether}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00602}00602\ \ \ \ \ \ \ \ \ \ \ \ \ we\ verify\ the\ server's\ TLS\ certificate,\ or\ a\ string,\ in\ which\ case\ it}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00603}00603\ \ \ \ \ \ \ \ \ \ \ \ \ must\ be\ a\ path\ to\ a\ CA\ bundle\ to\ use}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00604}00604\ \ \ \ \ \ \ \ \ :param\ cert:\ (optional)\ Any\ user-\/provided\ SSL\ certificate\ to\ be\ trusted.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00605}00605\ \ \ \ \ \ \ \ \ :param\ proxies:\ (optional)\ The\ proxies\ dictionary\ to\ apply\ to\ the\ request.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00606}00606\ \ \ \ \ \ \ \ \ :rtype:\ requests.Response}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00607}00607\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00608}00608\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00609}00609\ \ \ \ \ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00610}00610\ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ self.get\_connection\_with\_tls\_context(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00611}00611\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ request,\ verify,\ proxies=proxies,\ cert=cert}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00612}00612\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00613}00613\ \ \ \ \ \ \ \ \ except\ LocationValueError\ as\ e:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00614}00614\ \ \ \ \ \ \ \ \ \ \ \ \ raise\ InvalidURL(e,\ request=request)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00615}00615\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00616}00616\ \ \ \ \ \ \ \ \ self.cert\_verify(conn,\ request.url,\ verify,\ cert)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00617}00617\ \ \ \ \ \ \ \ \ url\ =\ self.request\_url(request,\ proxies)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00618}00618\ \ \ \ \ \ \ \ \ self.add\_headers(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00619}00619\ \ \ \ \ \ \ \ \ \ \ \ \ request,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00620}00620\ \ \ \ \ \ \ \ \ \ \ \ \ stream=stream,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00621}00621\ \ \ \ \ \ \ \ \ \ \ \ \ timeout=timeout,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00622}00622\ \ \ \ \ \ \ \ \ \ \ \ \ verify=verify,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00623}00623\ \ \ \ \ \ \ \ \ \ \ \ \ cert=cert,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00624}00624\ \ \ \ \ \ \ \ \ \ \ \ \ proxies=proxies,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00625}00625\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00626}00626\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00627}00627\ \ \ \ \ \ \ \ \ chunked\ =\ not\ (request.body\ is\ None\ or\ "{}Content-\/Length"{}\ in\ request.headers)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00628}00628\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00629}00629\ \ \ \ \ \ \ \ \ if\ isinstance(timeout,\ tuple):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00630}00630\ \ \ \ \ \ \ \ \ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00631}00631\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ connect,\ read\ =\ timeout}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00632}00632\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ timeout\ =\ TimeoutSauce(connect=connect,\ read=read)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00633}00633\ \ \ \ \ \ \ \ \ \ \ \ \ except\ ValueError:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00634}00634\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ ValueError(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00635}00635\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f"{}Invalid\ timeout\ \{timeout\}.\ Pass\ a\ (connect,\ read)\ timeout\ tuple,\ "{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00636}00636\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f"{}or\ a\ single\ float\ to\ set\ both\ timeouts\ to\ the\ same\ value."{}}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00637}00637\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00638}00638\ \ \ \ \ \ \ \ \ elif\ isinstance(timeout,\ TimeoutSauce):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00639}00639\ \ \ \ \ \ \ \ \ \ \ \ \ pass}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00640}00640\ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00641}00641\ \ \ \ \ \ \ \ \ \ \ \ \ timeout\ =\ TimeoutSauce(connect=timeout,\ read=timeout)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00642}00642\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00643}00643\ \ \ \ \ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00644}00644\ \ \ \ \ \ \ \ \ \ \ \ \ resp\ =\ conn.urlopen(}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00645}00645\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ method=request.method,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00646}00646\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ url=url,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00647}00647\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ body=request.body,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00648}00648\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ headers=request.headers,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00649}00649\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ redirect=False,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00650}00650\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ assert\_same\_host=False,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00651}00651\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ preload\_content=False,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00652}00652\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ decode\_content=False,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00653}00653\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ retries=self.max\_retries,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00654}00654\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ timeout=timeout,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00655}00655\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ chunked=chunked,}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00656}00656\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00657}00657\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00658}00658\ \ \ \ \ \ \ \ \ except\ (ProtocolError,\ OSError)\ as\ err:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00659}00659\ \ \ \ \ \ \ \ \ \ \ \ \ raise\ ConnectionError(err,\ request=request)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00660}00660\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00661}00661\ \ \ \ \ \ \ \ \ except\ MaxRetryError\ as\ e:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00662}00662\ \ \ \ \ \ \ \ \ \ \ \ \ if\ isinstance(e.reason,\ ConnectTimeoutError):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00663}00663\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ TODO:\ Remove\ this\ in\ 3.0.0:\ see\ \#2811}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00664}00664\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ not\ isinstance(e.reason,\ NewConnectionError):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00665}00665\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ ConnectTimeout(e,\ request=request)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00666}00666\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00667}00667\ \ \ \ \ \ \ \ \ \ \ \ \ if\ isinstance(e.reason,\ ResponseError):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00668}00668\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ RetryError(e,\ request=request)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00669}00669\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00670}00670\ \ \ \ \ \ \ \ \ \ \ \ \ if\ isinstance(e.reason,\ \_ProxyError):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00671}00671\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ ProxyError(e,\ request=request)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00672}00672\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00673}00673\ \ \ \ \ \ \ \ \ \ \ \ \ if\ isinstance(e.reason,\ \_SSLError):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00674}00674\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ This\ branch\ is\ for\ urllib3\ v1.22\ and\ later.}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00675}00675\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ SSLError(e,\ request=request)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00676}00676\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00677}00677\ \ \ \ \ \ \ \ \ \ \ \ \ raise\ ConnectionError(e,\ request=request)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00678}00678\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00679}00679\ \ \ \ \ \ \ \ \ except\ ClosedPoolError\ as\ e:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00680}00680\ \ \ \ \ \ \ \ \ \ \ \ \ raise\ ConnectionError(e,\ request=request)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00681}00681\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00682}00682\ \ \ \ \ \ \ \ \ except\ \_ProxyError\ as\ e:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00683}00683\ \ \ \ \ \ \ \ \ \ \ \ \ raise\ ProxyError(e)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00684}00684\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00685}00685\ \ \ \ \ \ \ \ \ except\ (\_SSLError,\ \_HTTPError)\ as\ e:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00686}00686\ \ \ \ \ \ \ \ \ \ \ \ \ if\ isinstance(e,\ \_SSLError):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00687}00687\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ This\ branch\ is\ for\ urllib3\ versions\ earlier\ than\ v1.22}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00688}00688\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ SSLError(e,\ request=request)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00689}00689\ \ \ \ \ \ \ \ \ \ \ \ \ elif\ isinstance(e,\ ReadTimeoutError):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00690}00690\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ ReadTimeout(e,\ request=request)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00691}00691\ \ \ \ \ \ \ \ \ \ \ \ \ elif\ isinstance(e,\ \_InvalidHeader):}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00692}00692\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise\ InvalidHeader(e,\ request=request)}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00693}00693\ \ \ \ \ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00694}00694\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise}
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00695}00695\ }
+\DoxyCodeLine{\Hypertarget{adapters_8py_source_l00696}00696\ \ \ \ \ \ \ \ \ return\ self.build\_response(request,\ resp)}
+
+\end{DoxyCode}

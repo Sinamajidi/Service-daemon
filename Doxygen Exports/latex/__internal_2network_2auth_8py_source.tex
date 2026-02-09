@@ -1,0 +1,574 @@
+\doxysection{auth.\+py}
+\hypertarget{__internal_2network_2auth_8py_source}{}\label{__internal_2network_2auth_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/network/auth.py@{venv/Lib/site-\/packages/pip/\_internal/network/auth.py}}
+\doxymbox{\hyperlink{__internal_2network_2auth_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1auth}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}Network\ Authentication\ Helpers}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00002}00002\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00003}00003\ \textcolor{stringliteral}{Contains\ interface\ (MultiDomainBasicAuth)\ and\ associated\ glue\ code\ for}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00004}00004\ \textcolor{stringliteral}{providing\ credentials\ in\ the\ context\ of\ network\ requests.}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00005}00005\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00009}00009\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00010}00010\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00011}00011\ \textcolor{keyword}{import}\ shutil}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00012}00012\ \textcolor{keyword}{import}\ subprocess}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00013}00013\ \textcolor{keyword}{import}\ sysconfig}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00014}00014\ \textcolor{keyword}{import}\ typing}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00015}00015\ \textcolor{keyword}{import}\ urllib.parse}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00016}00016\ \textcolor{keyword}{from}\ abc\ \textcolor{keyword}{import}\ ABC,\ abstractmethod}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00017}00017\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ cache}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00018}00018\ \textcolor{keyword}{from}\ os.path\ \textcolor{keyword}{import}\ commonprefix}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00019}00019\ \textcolor{keyword}{from}\ pathlib\ \textcolor{keyword}{import}\ Path}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00020}00020\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Any,\ NamedTuple}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00022}00022\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests_1_1auth}{pip.\_vendor.requests.auth}}\ \textcolor{keyword}{import}\ AuthBase,\ HTTPBasicAuth}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00023}00023\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests_1_1utils}{pip.\_vendor.requests.utils}}\ \textcolor{keyword}{import}\ get\_netrc\_auth}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00025}00025\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1logging}{pip.\_internal.utils.logging}}\ \textcolor{keyword}{import}\ getLogger}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00026}00026\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1misc}{pip.\_internal.utils.misc}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00027}00027\ \ \ \ \ ask,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00028}00028\ \ \ \ \ ask\_input,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00029}00029\ \ \ \ \ ask\_password,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00030}00030\ \ \ \ \ remove\_auth\_from\_url,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00031}00031\ \ \ \ \ split\_auth\_netloc\_from\_url,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00032}00032\ )}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00033}00033\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs_1_1versioncontrol}{pip.\_internal.vcs.versioncontrol}}\ \textcolor{keyword}{import}\ AuthInfo}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00035}00035\ \textcolor{keywordflow}{if}\ typing.TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00036}00036\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests}{pip.\_vendor.requests}}\ \textcolor{keyword}{import}\ PreparedRequest}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00037}00037\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1requests_1_1models}{pip.\_vendor.requests.models}}\ \textcolor{keyword}{import}\ Response}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00039}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1auth_a752907f944416effb2b53d03bd71dc85}{00039}}\ logger\ =\ getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00041}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1auth_a5a69dd8a8af0589e5ee85030ab234df9}{00041}}\ KEYRING\_DISABLED\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00044}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_credentials}{00044}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_credentials}{Credentials}}(NamedTuple):}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00045}00045\ \ \ \ \ url:\ str}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00046}00046\ \ \ \ \ username:\ str}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00047}00047\ \ \ \ \ password:\ str}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00048}00048\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00050}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_base_provider}{00050}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_base_provider}{KeyRingBaseProvider}}(ABC):}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00051}00051\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Keyring\ base\ provider\ interface"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00053}00053\ \ \ \ \ has\_keyring:\ bool}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00055}00055\ \ \ \ \ \textcolor{preprocessor}{@abstractmethod}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00056}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_base_provider_ad38c17594f4766245b48f5d96444908f}{00056}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_base_provider_ad38c17594f4766245b48f5d96444908f}{get\_auth\_info}}(self,\ url:\ str,\ username:\ str\ |\ \textcolor{keywordtype}{None})\ -\/>\ AuthInfo\ |\ \textcolor{keywordtype}{None}:\ ...}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00057}00057\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00058}00058\ \ \ \ \ \textcolor{preprocessor}{@abstractmethod}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00059}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_base_provider_a90caa8be2bc51e0037fdb8ca83f0a19d}{00059}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_base_provider_a90caa8be2bc51e0037fdb8ca83f0a19d}{save\_auth\_info}}(self,\ url:\ str,\ username:\ str,\ password:\ str)\ -\/>\ \textcolor{keywordtype}{None}:\ ...}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00061}00061\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00062}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_null_provider}{00062}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_null_provider}{KeyRingNullProvider}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_base_provider}{KeyRingBaseProvider}}):}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00063}00063\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Keyring\ null\ provider"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00064}00064\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00065}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_null_provider_a5df771f22d6218255e512c32007dfbcd}{00065}}\ \textcolor{stringliteral}{\ \ \ \ has\_keyring\ =\ False}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00066}00066\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00067}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_null_provider_a370b59920576ac13819a0579431c10cc}{00067}}\ \textcolor{stringliteral}{\ \ \ \ def\ get\_auth\_info(self,\ url:\ str,\ username:\ str\ |\ None)\ -\/>\ AuthInfo\ |\ None:}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00068}00068\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ return\ None}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00069}00069\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00070}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_null_provider_a1b20af2d990174096e4ebc39a53494ca}{00070}}\ \textcolor{stringliteral}{\ \ \ \ def\ save\_auth\_info(self,\ url:\ str,\ username:\ str,\ password:\ str)\ -\/>\ None:}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00071}00071\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ return\ None}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00072}00072\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00073}00073\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00074}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_python_provider}{00074}}\ \textcolor{stringliteral}{class\ KeyRingPythonProvider(KeyRingBaseProvider):}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00075}00075\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}Keyring\ interface\ which\ uses\ locally\ imported\ \`{}keyring\`{}"{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00076}00076\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00077}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_python_provider_a6cb8d0f489942a2e0b9c30d26b6e2ddc}{00077}}\ \ \ \ \ has\_keyring\ =\ True}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00078}00078\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00079}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_python_provider_ad096ef886ce694ab5971cacd92e39fb7}{00079}}\ \ \ \ \ def\ \_\_init\_\_(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ import\ keyring}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00082}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_python_provider_a9d52e8fbed106175c263d5d267f3a14f}{00082}}\ \ \ \ \ \ \ \ \ self.keyring\ =\ keyring}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00083}00083\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00084}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_python_provider_a72d0f4a57686a945c71eb50c3f162e38}{00084}}\ \ \ \ \ def\ get\_auth\_info(self,\ url:\ str,\ username:\ str\ |\ None)\ -\/>\ AuthInfo\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \#\ Support\ keyring's\ get\_credential\ interface\ which\ supports\ getting}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \#\ credentials\ without\ a\ username.\ This\ is\ only\ available\ for}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \#\ keyring>=15.2.0.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ if\ hasattr(self.keyring,\ "{}get\_credential"{}):}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug("{}Getting\ credentials\ from\ keyring\ for\ \%s"{},\ url)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ cred\ =\ self.keyring.get\_credential(url,\ username)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ if\ cred\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ return\ cred.username,\ cred.password}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ return\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ if\ username\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug("{}Getting\ password\ from\ keyring\ for\ \%s"{},\ url)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \ \ \ \ password\ =\ self.keyring.get\_password(url,\ username)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \ \ \ \ if\ password:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ return\ username,\ password}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ return\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00101}00101\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00102}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_python_provider_a65b7a9c7186797fdf14bcb54aba653a6}{00102}}\ \ \ \ \ def\ save\_auth\_info(self,\ url:\ str,\ username:\ str,\ password:\ str)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ self.keyring.set\_password(url,\ username,\ password)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00106}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_cli_provider}{00106}}\ class\ KeyRingCliProvider(KeyRingBaseProvider):}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00107}00107\ \ \ \ \ "{}"{}"{}Provider\ which\ uses\ \`{}keyring\`{}\ cli}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00109}00109\ \ \ \ \ Instead\ of\ calling\ the\ keyring\ package\ installed\ alongside\ pip}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00110}00110\ \ \ \ \ we\ call\ keyring\ on\ the\ command\ line\ which\ will\ enable\ pip\ to}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00111}00111\ \ \ \ \ use\ which\ ever\ installation\ of\ keyring\ is\ available\ first\ in}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00112}00112\ \ \ \ \ PATH.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00113}00113\ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00114}00114\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00115}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_cli_provider_adb4f320285ed5a65082e441fe78a9e72}{00115}}\ \ \ \ \ has\_keyring\ =\ True}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00116}00116\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00117}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_cli_provider_a0f0f1628fc2d219c660e466fc680b1e7}{00117}}\ \ \ \ \ def\ \_\_init\_\_(self,\ cmd:\ str)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00118}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_cli_provider_adf819f53262496bba24305453d974b16}{00118}}\ \ \ \ \ \ \ \ \ self.keyring\ =\ cmd}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00120}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_cli_provider_aea38e69f5597dde2084c58f27aad0c6c}{00120}}\ \ \ \ \ def\ get\_auth\_info(self,\ url:\ str,\ username:\ str\ |\ None)\ -\/>\ AuthInfo\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \#\ This\ is\ the\ default\ implementation\ of\ keyring.get\_credential}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \#\ https://github.com/jaraco/keyring/blob/97689324abcf01bd1793d49063e7ca01e03d7d07/keyring/backend.py\#L134-\/L139}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ if\ username\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ password\ =\ self.\_get\_password(url,\ username)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ if\ password\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ return\ username,\ password}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ return\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00128}00128\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00129}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_cli_provider_a77b60baaf9e070b4e0a28b1959aaebcc}{00129}}\ \ \ \ \ def\ save\_auth\_info(self,\ url:\ str,\ username:\ str,\ password:\ str)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ return\ self.\_set\_password(url,\ username,\ password)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00132}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_cli_provider_a5d9ca0de4711461af915eb7b304f3802}{00132}}\ \ \ \ \ def\ \_get\_password(self,\ service\_name:\ str,\ username:\ str)\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ "{}"{}"{}Mirror\ the\ implementation\ of\ keyring.get\_password\ using\ cli"{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ if\ self.keyring\ is\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \ \ \ \ return\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00136}00136\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ cmd\ =\ [self.keyring,\ "{}get"{},\ service\_name,\ username]}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ env\ =\ os.environ.copy()}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ env["{}PYTHONIOENCODING"{}]\ =\ "{}utf-\/8"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ res\ =\ subprocess.run(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \ \ \ \ cmd,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ stdin=subprocess.DEVNULL,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ stdout=subprocess.PIPE,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \ \ \ \ env=env,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ if\ res.returncode:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \ \ \ \ return\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ return\ res.stdout.decode("{}utf-\/8"{}).strip(os.linesep)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00149}00149\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00150}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_key_ring_cli_provider_a44e46f742e3b68ca57acb3e12869ae4c}{00150}}\ \ \ \ \ def\ \_set\_password(self,\ service\_name:\ str,\ username:\ str,\ password:\ str)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ "{}"{}"{}Mirror\ the\ implementation\ of\ keyring.set\_password\ using\ cli"{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ if\ self.keyring\ is\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \ \ \ \ return\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ env\ =\ os.environ.copy()}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ env["{}PYTHONIOENCODING"{}]\ =\ "{}utf-\/8"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ subprocess.run(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \ \ \ \ [self.keyring,\ "{}set"{},\ service\_name,\ username],}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \ \ \ \ input=f"{}\{password\}\{os.linesep\}"{}.encode(),}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ env=env,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \ \ \ \ check=True,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ return\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00163}00163\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00164}00164\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00165}00165\ @cache}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00166}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1auth_adda0b3aa8642728a004c0cb026be0d84}{00166}}\ def\ get\_keyring\_provider(provider:\ str)\ -\/>\ KeyRingBaseProvider:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00167}00167\ \ \ \ \ logger.verbose("{}Keyring\ provider\ requested:\ \%s"{},\ provider)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00168}00168\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00169}00169\ \ \ \ \ \#\ keyring\ has\ previously\ failed\ and\ been\ disabled}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00170}00170\ \ \ \ \ if\ KEYRING\_DISABLED:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ provider\ =\ "{}disabled"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00172}00172\ \ \ \ \ if\ provider\ in\ ["{}import"{},\ "{}auto"{}]:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \ \ \ \ impl\ =\ KeyRingPythonProvider()}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \ \ \ \ logger.verbose("{}Keyring\ provider\ set:\ import"{})}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \ \ \ \ return\ impl}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ except\ ImportError:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \ \ \ \ pass}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ except\ Exception\ as\ exc:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ In\ the\ event\ of\ an\ unexpected\ exception}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ we\ should\ warn\ the\ user}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \ \ \ \ msg\ =\ "{}Installed\ copy\ of\ keyring\ fails\ with\ exception\ \%s"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ if\ provider\ ==\ "{}auto"{}:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ msg\ =\ msg\ +\ "{},\ trying\ to\ find\ a\ keyring\ executable\ as\ a\ fallback"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(msg,\ exc,\ exc\_info=logger.isEnabledFor(logging.DEBUG))}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00186}00186\ \ \ \ \ if\ provider\ in\ ["{}subprocess"{},\ "{}auto"{}]:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ cli\ =\ shutil.which("{}keyring"{})}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ if\ cli\ and\ cli.startswith(sysconfig.get\_path("{}scripts"{})):}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ all\ code\ within\ this\ function\ is\ stolen\ from\ shutil.which\ implementation}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \ \ \ \ @typing.no\_type\_check}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \ \ \ \ def\ PATH\_as\_shutil\_which\_determines\_it()\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ path\ =\ os.environ.get("{}PATH"{},\ None)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ path\ is\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ path\ =\ os.confstr("{}CS\_PATH"{})}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ except\ (AttributeError,\ ValueError):}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ os.confstr()\ or\ CS\_PATH\ is\ not\ available}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ path\ =\ os.defpath}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ bpo-\/35755:\ Don't\ use\ os.defpath\ if\ the\ PATH\ environment\ variable\ is}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ set\ to\ an\ empty\ string}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00201}00201\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ return\ path}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00203}00203\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ scripts\ =\ Path(sysconfig.get\_path("{}scripts"{}))}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00205}00205\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ paths\ =\ []}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \ \ \ \ for\ path\ in\ PATH\_as\_shutil\_which\_determines\_it().split(os.pathsep):}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ p\ =\ Path(path)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ not\ p.samefile(scripts):}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ paths.append(path)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ except\ FileNotFoundError:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pass}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00214}00214\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ path\ =\ os.pathsep.join(paths)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00216}00216\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \ \ \ \ cli\ =\ shutil.which("{}keyring"{},\ path=path)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00218}00218\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ if\ cli:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ logger.verbose("{}Keyring\ provider\ set:\ subprocess\ with\ executable\ \%s"{},\ cli)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ return\ KeyRingCliProvider(cli)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00222}00222\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00223}00223\ \ \ \ \ logger.verbose("{}Keyring\ provider\ set:\ disabled"{})}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00224}00224\ \ \ \ \ return\ KeyRingNullProvider()}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00225}00225\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00226}00226\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00227}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth}{00227}}\ class\ MultiDomainBasicAuth(AuthBase):}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00228}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_ae82d82700357d87096c6be7638c314ec}{00228}}\ \ \ \ \ def\ \_\_init\_\_(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ prompting:\ bool\ =\ True,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ index\_urls:\ list[str]\ |\ None\ =\ None,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ keyring\_provider:\ str\ =\ "{}auto"{},}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00233}00233\ \ \ \ \ )\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00234}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a6a7037f9ddb77c8979bb92978fd2b448}{00234}}\ \ \ \ \ \ \ \ \ self.prompting\ =\ prompting}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00235}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a9ba735c35c640118753c3e6f8f7afa08}{00235}}\ \ \ \ \ \ \ \ \ self.index\_urls\ =\ index\_urls}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00236}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a6835bd3c9c46b8f576267bc8118c9392}{00236}}\ \ \ \ \ \ \ \ \ self.keyring\_provider\ =\ keyring\_provider}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00237}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_af871f91dd5c6604ee821ff483b940d4a}{00237}}\ \ \ \ \ \ \ \ \ self.passwords:\ dict[str,\ AuthInfo]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \#\ When\ the\ user\ is\ prompted\ to\ enter\ credentials\ and\ keyring\ is}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \#\ available,\ we\ will\ offer\ to\ save\ them.\ If\ the\ user\ accepts,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ \#\ this\ value\ is\ set\ to\ the\ credentials\ they\ entered.\ After\ the}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \#\ request\ authenticates,\ the\ caller\ should\ call}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \#\ \`{}\`{}save\_credentials\`{}\`{}\ to\ save\ these.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00243}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a0c13ca9b40623583066014144497ad4e}{00243}}\ \ \ \ \ \ \ \ \ self.\_credentials\_to\_save:\ Credentials\ |\ None\ =\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00244}00244\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00245}00245\ \ \ \ \ @property}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00246}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_afbf12cc802bc5daa7b395e1d2147ab5b}{00246}}\ \ \ \ \ def\ keyring\_provider(self)\ -\/>\ KeyRingBaseProvider:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00247}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_ac13388d907a76698d54745eeb2e9b62b}{00247}}\ \ \ \ \ \ \ \ \ return\ get\_keyring\_provider(self.\_keyring\_provider)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00248}00248\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00249}00249\ \ \ \ \ @keyring\_provider.setter}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00250}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a37685db8058b8d075f34ac90ae313dd2}{00250}}\ \ \ \ \ def\ keyring\_provider(self,\ provider:\ str)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \#\ The\ free\ function\ get\_keyring\_provider\ has\ been\ decorated\ with}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \#\ functools.cache.\ If\ an\ exception\ occurs\ in\ get\_keyring\_auth\ that}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \#\ cache\ will\ be\ cleared\ and\ keyring\ disabled,\ take\ that\ into\ account}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \#\ if\ you\ want\ to\ remove\ this\ indirection.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ self.\_keyring\_provider\ =\ provider}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00256}00256\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00257}00257\ \ \ \ \ @property}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00258}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a8141697fd1718ea26998d22144d30fac}{00258}}\ \ \ \ \ def\ use\_keyring(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \#\ We\ won't\ use\ keyring\ when\ -\/-\/no-\/input\ is\ passed\ unless}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \#\ a\ specific\ provider\ is\ requested\ because\ it\ might\ require}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \#\ user\ interaction}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ return\ self.prompting\ or\ self.\_keyring\_provider\ not\ in\ ["{}auto"{},\ "{}disabled"{}]}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00263}00263\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00264}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a087e1f5f84dd89a5f361b82ce18eb9c9}{00264}}\ \ \ \ \ def\ \_get\_keyring\_auth(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ url:\ str\ |\ None,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ username:\ str\ |\ None,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00268}00268\ \ \ \ \ )\ -\/>\ AuthInfo\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ "{}"{}"{}Return\ the\ tuple\ auth\ for\ a\ given\ url\ from\ keyring."{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \#\ Do\ nothing\ if\ no\ url\ was\ provided}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ if\ not\ url:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ return\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00273}00273\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \ \ \ \ return\ self.keyring\_provider.get\_auth\_info(url,\ username)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ except\ Exception\ as\ exc:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Log\ the\ full\ exception\ (with\ stacktrace)\ at\ debug,\ so\ it'll\ only}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ show\ up\ when\ running\ in\ verbose\ mode.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug("{}Keyring\ is\ skipped\ due\ to\ an\ exception"{},\ exc\_info=True)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Always\ log\ a\ shortened\ version\ of\ the\ exception.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}Keyring\ is\ skipped\ due\ to\ an\ exception:\ \%s"{},}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ str(exc),}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \ \ \ \ global\ KEYRING\_DISABLED}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \ \ \ \ KEYRING\_DISABLED\ =\ True}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ \ \ \ \ get\_keyring\_provider.cache\_clear()}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \ \ \ \ return\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00289}00289\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00290}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a4a7b6c4467340a6cd88d63aa1f589cb0}{00290}}\ \ \ \ \ def\ \_get\_index\_url(self,\ url:\ str)\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ "{}"{}"{}Return\ the\ original\ index\ URL\ matching\ the\ requested\ URL.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00292}00292\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ Cached\ or\ dynamically\ generated\ credentials\ may\ work\ against}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ the\ original\ index\ URL\ rather\ than\ just\ the\ netloc.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00295}00295\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ The\ provided\ url\ should\ have\ had\ its\ username\ and\ password}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00297}00297\ \ \ \ \ \ \ \ \ removed\ already.\ If\ the\ original\ index\ url\ had\ credentials\ then}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00298}00298\ \ \ \ \ \ \ \ \ they\ will\ be\ included\ in\ the\ return\ value.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00299}00299\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ Returns\ None\ if\ no\ matching\ index\ was\ found,\ or\ if\ -\/-\/no-\/index}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ was\ specified\ by\ the\ user.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ if\ not\ url\ or\ not\ self.index\_urls:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \ \ \ \ return\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00305}00305\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ url\ =\ remove\_auth\_from\_url(url).rstrip("{}/"{})\ +\ "{}/"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ parsed\_url\ =\ urllib.parse.urlsplit(url)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00308}00308\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ candidates\ =\ []}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00310}00310\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ for\ index\ in\ self.index\_urls:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00312}00312\ \ \ \ \ \ \ \ \ \ \ \ \ index\ =\ index.rstrip("{}/"{})\ +\ "{}/"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ \ \ \ \ parsed\_index\ =\ urllib.parse.urlsplit(remove\_auth\_from\_url(index))}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00314}00314\ \ \ \ \ \ \ \ \ \ \ \ \ if\ parsed\_url\ ==\ parsed\_index:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00315}00315\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ return\ index}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00316}00316\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ \ \ \ \ if\ parsed\_url.netloc\ !=\ parsed\_index.netloc:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00318}00318\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ continue}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00319}00319\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ \ \ \ \ candidate\ =\ urllib.parse.urlsplit(index)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ \ \ \ \ candidates.append(candidate)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00322}00322\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00323}00323\ \ \ \ \ \ \ \ \ if\ not\ candidates:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ \ \ \ \ return\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00325}00325\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00326}00326\ \ \ \ \ \ \ \ \ candidates.sort(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00327}00327\ \ \ \ \ \ \ \ \ \ \ \ \ reverse=True,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ \ \ \ \ key=lambda\ candidate:\ commonprefix(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ [}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ parsed\_url.path,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00331}00331\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ candidate.path,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00332}00332\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ \ \ \ \ ).rfind("{}/"{}),}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00334}00334\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00335}00335\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00336}00336\ \ \ \ \ \ \ \ \ return\ urllib.parse.urlunsplit(candidates[0])}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00337}00337\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00338}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_adf7b98823e626448681702b7a118b211}{00338}}\ \ \ \ \ def\ \_get\_new\_credentials(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ original\_url:\ str,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00341}00341\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ allow\_netrc:\ bool\ =\ True,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ allow\_keyring:\ bool\ =\ False,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00344}00344\ \ \ \ \ )\ -\/>\ AuthInfo:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ "{}"{}"{}Find\ and\ return\ credentials\ for\ the\ specified\ URL."{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ \#\ Split\ the\ credentials\ and\ netloc\ from\ the\ url.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ url,\ netloc,\ url\_user\_password\ =\ split\_auth\_netloc\_from\_url(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ \ \ \ \ original\_url,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00350}00350\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \#\ Start\ with\ the\ credentials\ embedded\ in\ the\ url}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ username,\ password\ =\ url\_user\_password}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ if\ username\ is\ not\ None\ and\ password\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug("{}Found\ credentials\ in\ url\ for\ \%s"{},\ netloc)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ \ \ \ \ return\ url\_user\_password}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00356}00356\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \#\ Find\ a\ matching\ index\ url\ for\ this\ request}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00358}00358\ \ \ \ \ \ \ \ \ index\_url\ =\ self.\_get\_index\_url(url)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ if\ index\_url:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Split\ the\ credentials\ from\ the\ url.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ \ \ \ \ index\_info\ =\ split\_auth\_netloc\_from\_url(index\_url)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ \ \ \ \ if\ index\_info:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ index\_url,\ \_,\ index\_url\_user\_password\ =\ index\_info}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug("{}Found\ index\ url\ \%s"{},\ index\_url)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00365}00365\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00366}00366\ \ \ \ \ \ \ \ \ \#\ If\ an\ index\ URL\ was\ found,\ try\ its\ embedded\ credentials}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00367}00367\ \ \ \ \ \ \ \ \ if\ index\_url\ and\ index\_url\_user\_password[0]\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00368}00368\ \ \ \ \ \ \ \ \ \ \ \ \ username,\ password\ =\ index\_url\_user\_password}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ \ \ \ \ if\ username\ is\ not\ None\ and\ password\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug("{}Found\ credentials\ in\ index\ url\ for\ \%s"{},\ netloc)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ return\ index\_url\_user\_password}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00372}00372\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00373}00373\ \ \ \ \ \ \ \ \ \#\ Get\ creds\ from\ netrc\ if\ we\ still\ don't\ have\ them}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ if\ allow\_netrc:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ \ \ \ \ netrc\_auth\ =\ get\_netrc\_auth(original\_url)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ \ \ \ \ if\ netrc\_auth:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug("{}Found\ credentials\ in\ netrc\ for\ \%s"{},\ netloc)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ return\ netrc\_auth}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00379}00379\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ \#\ If\ we\ don't\ have\ a\ password\ and\ keyring\ is\ available,\ use\ it.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ if\ allow\_keyring:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ The\ index\ url\ is\ more\ specific\ than\ the\ netloc,\ so\ try\ it\ first}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ fmt:\ off}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ \ \ \ \ kr\_auth\ =\ (}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00385}00385\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\_get\_keyring\_auth(index\_url,\ username)\ or}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\_get\_keyring\_auth(netloc,\ username)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ fmt:\ on}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ \ \ \ \ if\ kr\_auth:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00390}00390\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug("{}Found\ credentials\ in\ keyring\ for\ \%s"{},\ netloc)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ return\ kr\_auth}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00392}00392\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ return\ username,\ password}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00394}00394\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00395}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a8eb0a4a9a1297bfebd3dc4bf245974da}{00395}}\ \ \ \ \ def\ \_get\_url\_and\_credentials(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ self,\ original\_url:\ str}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00397}00397\ \ \ \ \ )\ -\/>\ tuple[str,\ str\ |\ None,\ str\ |\ None]:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ "{}"{}"{}Return\ the\ credentials\ to\ use\ for\ the\ provided\ URL.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00399}00399\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ If\ allowed,\ netrc\ and\ keyring\ may\ be\ used\ to\ obtain\ the}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ correct\ credentials.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00402}00402\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ Returns\ (url\_without\_credentials,\ username,\ password).\ Note}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ that\ even\ if\ the\ original\ URL\ contains\ credentials,\ this}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00405}00405\ \ \ \ \ \ \ \ \ function\ may\ return\ a\ different\ username\ and\ password.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00406}00406\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ url,\ netloc,\ \_\ =\ split\_auth\_netloc\_from\_url(original\_url)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00408}00408\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00409}00409\ \ \ \ \ \ \ \ \ \#\ Try\ to\ get\ credentials\ from\ original\ url}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ username,\ password\ =\ self.\_get\_new\_credentials(original\_url)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00411}00411\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00412}00412\ \ \ \ \ \ \ \ \ \#\ If\ credentials\ not\ found,\ use\ any\ stored\ credentials\ for\ this\ netloc.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00413}00413\ \ \ \ \ \ \ \ \ \#\ Do\ this\ if\ either\ the\ username\ or\ the\ password\ is\ missing.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00414}00414\ \ \ \ \ \ \ \ \ \#\ This\ accounts\ for\ the\ situation\ in\ which\ the\ user\ has\ specified}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00415}00415\ \ \ \ \ \ \ \ \ \#\ the\ username\ in\ the\ index\ url,\ but\ the\ password\ comes\ from\ keyring.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00416}00416\ \ \ \ \ \ \ \ \ if\ (username\ is\ None\ or\ password\ is\ None)\ and\ netloc\ in\ self.passwords:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ \ \ \ \ un,\ pw\ =\ self.passwords[netloc]}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ It\ is\ possible\ that\ the\ cached\ credentials\ are\ for\ a\ different\ username,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ in\ which\ case\ the\ cache\ should\ be\ ignored.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00420}00420\ \ \ \ \ \ \ \ \ \ \ \ \ if\ username\ is\ None\ or\ username\ ==\ un:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00421}00421\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ username,\ password\ =\ un,\ pw}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00422}00422\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ if\ username\ is\ not\ None\ or\ password\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00424}00424\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Convert\ the\ username\ and\ password\ if\ they're\ None,\ so\ that}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ this\ netloc\ will\ show\ up\ as\ "{}cached"{}\ in\ the\ conditional\ above.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00426}00426\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Further,\ HTTPBasicAuth\ doesn't\ accept\ None,\ so\ it\ makes\ sense\ to}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00427}00427\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ cache\ the\ value\ that\ is\ going\ to\ be\ used.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00428}00428\ \ \ \ \ \ \ \ \ \ \ \ \ username\ =\ username\ or\ "{}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00429}00429\ \ \ \ \ \ \ \ \ \ \ \ \ password\ =\ password\ or\ "{}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00430}00430\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00431}00431\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Store\ any\ acquired\ credentials.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00432}00432\ \ \ \ \ \ \ \ \ \ \ \ \ self.passwords[netloc]\ =\ (username,\ password)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00433}00433\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00434}00434\ \ \ \ \ \ \ \ \ assert\ (}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00435}00435\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Credentials\ were\ found}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00436}00436\ \ \ \ \ \ \ \ \ \ \ \ \ (username\ is\ not\ None\ and\ password\ is\ not\ None)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00437}00437\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Credentials\ were\ not\ found}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ \ \ \ \ or\ (username\ is\ None\ and\ password\ is\ None)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ ),\ f"{}Could\ not\ load\ credentials\ from\ url:\ \{original\_url\}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00440}00440\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ return\ url,\ username,\ password}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00442}00442\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00443}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a7810c7e05d64d0c20047dd8acbe92f62}{00443}}\ \ \ \ \ def\ \_\_call\_\_(self,\ req:\ PreparedRequest)\ -\/>\ PreparedRequest:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ \#\ Get\ credentials\ for\ this\ request}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ assert\ req.url\ is\ not\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00446}00446\ \ \ \ \ \ \ \ \ url,\ username,\ password\ =\ self.\_get\_url\_and\_credentials(req.url)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00447}00447\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00448}00448\ \ \ \ \ \ \ \ \ \#\ Set\ the\ url\ of\ the\ request\ to\ the\ url\ without\ any\ credentials}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00449}00449\ \ \ \ \ \ \ \ \ req.url\ =\ url}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00450}00450\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00451}00451\ \ \ \ \ \ \ \ \ if\ username\ is\ not\ None\ and\ password\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Send\ the\ basic\ auth\ with\ this\ request}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00453}00453\ \ \ \ \ \ \ \ \ \ \ \ \ req\ =\ HTTPBasicAuth(username,\ password)(req)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00454}00454\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00455}00455\ \ \ \ \ \ \ \ \ \#\ Attach\ a\ hook\ to\ handle\ 401\ responses}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00456}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_ab32ea796962e077fc8870e132ec07ee7}{00456}}\ \ \ \ \ \ \ \ \ req.register\_hook("{}response"{},\ self.handle\_401)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00457}00457\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00458}00458\ \ \ \ \ \ \ \ \ return\ req}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00459}00459\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00460}00460\ \ \ \ \ \#\ Factored\ out\ to\ allow\ for\ easy\ patching\ in\ tests}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00461}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a2dbc4e791acf7da4057ed012b70afbce}{00461}}\ \ \ \ \ def\ \_prompt\_for\_password(self,\ netloc:\ str)\ -\/>\ tuple[str\ |\ None,\ str\ |\ None,\ bool]:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00462}00462\ \ \ \ \ \ \ \ \ username\ =\ ask\_input(f"{}User\ for\ \{netloc\}:\ "{})\ if\ self.prompting\ else\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00463}00463\ \ \ \ \ \ \ \ \ if\ not\ username:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00464}00464\ \ \ \ \ \ \ \ \ \ \ \ \ return\ None,\ None,\ False}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00465}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a8d2e395d8b2a72795de887535142883a}{00465}}\ \ \ \ \ \ \ \ \ if\ self.use\_keyring:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00466}00466\ \ \ \ \ \ \ \ \ \ \ \ \ auth\ =\ self.\_get\_keyring\_auth(netloc,\ username)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00467}00467\ \ \ \ \ \ \ \ \ \ \ \ \ if\ auth\ and\ auth[0]\ is\ not\ None\ and\ auth[1]\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00468}00468\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ return\ auth[0],\ auth[1],\ False}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00469}00469\ \ \ \ \ \ \ \ \ password\ =\ ask\_password("{}Password:\ "{})}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00470}00470\ \ \ \ \ \ \ \ \ return\ username,\ password,\ True}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00471}00471\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00472}00472\ \ \ \ \ \#\ Factored\ out\ to\ allow\ for\ easy\ patching\ in\ tests}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00473}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a9e5a0d1376a1a6d5946d4ca40dc95ac6}{00473}}\ \ \ \ \ def\ \_should\_save\_password\_to\_keyring(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00474}00474\ \ \ \ \ \ \ \ \ if\ (}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00475}00475\ \ \ \ \ \ \ \ \ \ \ \ \ not\ self.prompting}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00476}00476\ \ \ \ \ \ \ \ \ \ \ \ \ or\ not\ self.use\_keyring}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00477}00477\ \ \ \ \ \ \ \ \ \ \ \ \ or\ not\ self.keyring\_provider.has\_keyring}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00478}00478\ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00479}00479\ \ \ \ \ \ \ \ \ \ \ \ \ return\ False}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00480}00480\ \ \ \ \ \ \ \ \ return\ ask("{}Save\ credentials\ to\ keyring\ [y/N]:\ "{},\ ["{}y"{},\ "{}n"{}])\ ==\ "{}y"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00481}00481\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00482}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_aeac66746a2db5a8ed5998baf1dba7017}{00482}}\ \ \ \ \ def\ handle\_401(self,\ resp:\ Response,\ **kwargs:\ Any)\ -\/>\ Response:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00483}00483\ \ \ \ \ \ \ \ \ \#\ We\ only\ care\ about\ 401\ responses,\ anything\ else\ we\ want\ to\ just}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ \#\ \ \ pass\ through\ the\ actual\ response}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00485}00485\ \ \ \ \ \ \ \ \ if\ resp.status\_code\ !=\ 401:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00486}00486\ \ \ \ \ \ \ \ \ \ \ \ \ return\ resp}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00487}00487\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00488}00488\ \ \ \ \ \ \ \ \ username,\ password\ =\ None,\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00489}00489\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00490}00490\ \ \ \ \ \ \ \ \ \#\ Query\ the\ keyring\ for\ credentials:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00491}00491\ \ \ \ \ \ \ \ \ if\ self.use\_keyring:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00492}00492\ \ \ \ \ \ \ \ \ \ \ \ \ username,\ password\ =\ self.\_get\_new\_credentials(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00493}00493\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ resp.url,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00494}00494\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ allow\_netrc=False,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00495}00495\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ allow\_keyring=True,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00496}00496\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00497}00497\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00498}00498\ \ \ \ \ \ \ \ \ \#\ We\ are\ not\ able\ to\ prompt\ the\ user\ so\ simply\ return\ the\ response}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00499}00499\ \ \ \ \ \ \ \ \ if\ not\ self.prompting\ and\ not\ username\ and\ not\ password:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ \ \ \ \ return\ resp}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00501}00501\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00502}00502\ \ \ \ \ \ \ \ \ parsed\ =\ urllib.parse.urlparse(resp.url)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00503}00503\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00504}00504\ \ \ \ \ \ \ \ \ \#\ Prompt\ the\ user\ for\ a\ new\ username\ and\ password}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00505}00505\ \ \ \ \ \ \ \ \ save\ =\ False}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00506}00506\ \ \ \ \ \ \ \ \ if\ not\ username\ and\ not\ password:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ \ \ \ \ username,\ password,\ save\ =\ self.\_prompt\_for\_password(parsed.netloc)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00508}00508\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00509}00509\ \ \ \ \ \ \ \ \ \#\ Store\ the\ new\ username\ and\ password\ to\ use\ for\ future\ requests}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00510}00510\ \ \ \ \ \ \ \ \ self.\_credentials\_to\_save\ =\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00511}00511\ \ \ \ \ \ \ \ \ if\ username\ is\ not\ None\ and\ password\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00512}00512\ \ \ \ \ \ \ \ \ \ \ \ \ self.passwords[parsed.netloc]\ =\ (username,\ password)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00513}00513\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00514}00514\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Prompt\ to\ save\ the\ password\ to\ keyring}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ \ \ \ \ if\ save\ and\ self.\_should\_save\_password\_to\_keyring():}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00516}00516\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\_credentials\_to\_save\ =\ Credentials(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00517}00517\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ url=parsed.netloc,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00518}00518\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ username=username,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ password=password,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00521}00521\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \#\ Consume\ content\ and\ release\ the\ original\ connection\ to\ allow\ our\ new}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00523}00523\ \ \ \ \ \ \ \ \ \#\ \ \ request\ to\ reuse\ the\ same\ one.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ \#\ The\ result\ of\ the\ assignment\ isn't\ used,\ it's\ just\ needed\ to\ consume}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00525}00525\ \ \ \ \ \ \ \ \ \#\ the\ content.}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00526}00526\ \ \ \ \ \ \ \ \ \_\ =\ resp.content}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ resp.raw.release\_conn()}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00528}00528\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00529}00529\ \ \ \ \ \ \ \ \ \#\ Add\ our\ new\ username\ and\ password\ to\ the\ request}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00530}00530\ \ \ \ \ \ \ \ \ req\ =\ HTTPBasicAuth(username\ or\ "{}"{},\ password\ or\ "{}"{})(resp.request)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00531}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a9ca55e7ef87d427f426261ceb514d959}{00531}}\ \ \ \ \ \ \ \ \ req.register\_hook("{}response"{},\ self.warn\_on\_401)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00532}00532\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00533}00533\ \ \ \ \ \ \ \ \ \#\ On\ successful\ request,\ save\ the\ credentials\ that\ were\ used\ to}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ \#\ keyring.\ (Note\ that\ if\ the\ user\ responded\ "{}no"{}\ above,\ this\ member}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00535}00535\ \ \ \ \ \ \ \ \ \#\ is\ not\ set\ and\ nothing\ will\ be\ saved.)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00536}00536\ \ \ \ \ \ \ \ \ if\ self.\_credentials\_to\_save:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00537}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_ab7ef0a3c689e7ac666bbdd1eebb46dcd}{00537}}\ \ \ \ \ \ \ \ \ \ \ \ \ req.register\_hook("{}response"{},\ self.save\_credentials)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00538}00538\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00539}00539\ \ \ \ \ \ \ \ \ \#\ Send\ our\ new\ request}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00540}00540\ \ \ \ \ \ \ \ \ new\_resp\ =\ resp.connection.send(req,\ **kwargs)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00541}00541\ \ \ \ \ \ \ \ \ new\_resp.history.append(resp)}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00542}00542\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00543}00543\ \ \ \ \ \ \ \ \ return\ new\_resp}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00544}00544\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00545}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_ac6af370b947f65baaf72be10c78a7256}{00545}}\ \ \ \ \ def\ warn\_on\_401(self,\ resp:\ Response,\ **kwargs:\ Any)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00546}00546\ \ \ \ \ \ \ \ \ "{}"{}"{}Response\ callback\ to\ warn\ about\ incorrect\ credentials."{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00547}00547\ \ \ \ \ \ \ \ \ if\ resp.status\_code\ ==\ 401:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00549}00549\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}401\ Error,\ Credentials\ not\ correct\ for\ \%s"{},}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00550}00550\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ resp.request.url,}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00551}00551\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00552}00552\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00553}\doxymbox{\hyperlink{classpip_1_1__internal_1_1network_1_1auth_1_1_multi_domain_basic_auth_a5e72e8959b7cfd36f5746099f085cc0e}{00553}}\ \ \ \ \ def\ save\_credentials(self,\ resp:\ Response,\ **kwargs:\ Any)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00554}00554\ \ \ \ \ \ \ \ \ "{}"{}"{}Response\ callback\ to\ save\ credentials\ on\ success."{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00555}00555\ \ \ \ \ \ \ \ \ assert\ (}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00556}00556\ \ \ \ \ \ \ \ \ \ \ \ \ self.keyring\_provider.has\_keyring}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00557}00557\ \ \ \ \ \ \ \ \ ),\ "{}should\ never\ reach\ here\ without\ keyring"{}}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00558}00558\ }
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00559}00559\ \ \ \ \ \ \ \ \ creds\ =\ self.\_credentials\_to\_save}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00560}00560\ \ \ \ \ \ \ \ \ self.\_credentials\_to\_save\ =\ None}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00561}00561\ \ \ \ \ \ \ \ \ if\ creds\ and\ resp.status\_code\ <\ 400:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00562}00562\ \ \ \ \ \ \ \ \ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00563}00563\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info("{}Saving\ credentials\ to\ keyring"{})}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00564}00564\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.keyring\_provider.save\_auth\_info(}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00565}00565\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ creds.url,\ creds.username,\ creds.password}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00566}00566\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00567}00567\ \ \ \ \ \ \ \ \ \ \ \ \ except\ Exception:}
+\DoxyCodeLine{\Hypertarget{__internal_2network_2auth_8py_source_l00568}00568\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.exception("{}Failed\ to\ save\ credentials"{})}
+
+\end{DoxyCode}

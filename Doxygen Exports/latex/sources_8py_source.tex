@@ -1,0 +1,293 @@
+\doxysection{sources.\+py}
+\hypertarget{sources_8py_source}{}\label{sources_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/index/sources.py@{venv/Lib/site-\/packages/pip/\_internal/index/sources.py}}
+\doxymbox{\hyperlink{sources_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00003}00003\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00004}00004\ \textcolor{keyword}{import}\ mimetypes}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00005}00005\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00006}00006\ \textcolor{keyword}{from}\ collections\ \textcolor{keyword}{import}\ defaultdict}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00007}00007\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterable}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00008}00008\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Callable}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1utils}{pip.\_vendor.packaging.utils}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00011}00011\ \ \ \ \ InvalidSdistFilename,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00012}00012\ \ \ \ \ InvalidWheelFilename,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00013}00013\ \ \ \ \ canonicalize\_name,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00014}00014\ \ \ \ \ parse\_sdist\_filename,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00015}00015\ \ \ \ \ parse\_wheel\_filename,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00016}00016\ )}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00018}00018\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1candidate}{pip.\_internal.models.candidate}}\ \textcolor{keyword}{import}\ InstallationCandidate}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00019}00019\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1link}{pip.\_internal.models.link}}\ \textcolor{keyword}{import}\ Link}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00020}00020\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1urls}{pip.\_internal.utils.urls}}\ \textcolor{keyword}{import}\ path\_to\_url,\ url\_to\_path}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00021}00021\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs}{pip.\_internal.vcs}}\ \textcolor{keyword}{import}\ is\_url}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00023}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources_a7aa91e70f71301e276f024e43982fab5}{00023}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00025}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources_a1b1f5d620c539472b38006b0749aa0c2}{00025}}\ FoundCandidates\ =\ Iterable[InstallationCandidate]}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00026}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources_a39ba0822c7a6490947cf4a90b65c0159}{00026}}\ FoundLinks\ =\ Iterable[Link]}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00027}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources_acd21780bb093d0986d8cad8c2aa19ca1}{00027}}\ CandidatesFromPage\ =\ Callable[[Link],\ Iterable[InstallationCandidate]]}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00028}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources_a5c46d1951f640dfe6d3ca0acc5d8f1e0}{00028}}\ PageValidator\ =\ Callable[[Link],\ bool]}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00031}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1_link_source}{00031}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1_link_source}{LinkSource}}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00032}00032\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00033}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1_link_source_a8256fb9246032d2d995b470901743c5d}{00033}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1_link_source_a8256fb9246032d2d995b470901743c5d}{link}}(self)\ -\/>\ Link\ |\ None:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Returns\ the\ underlying\ link,\ if\ there's\ one."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError()}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00037}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1_link_source_a7b6338a8376e7b2955ef9966a169ae5f}{00037}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1_link_source_a7b6338a8376e7b2955ef9966a169ae5f}{page\_candidates}}(self)\ -\/>\ FoundCandidates:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Candidates\ found\ by\ parsing\ an\ archive\ listing\ HTML\ file."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError()}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00041}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1_link_source_a5cb07057595bc2cb48c20cbcf6f9a909}{00041}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1_link_source_a5cb07057595bc2cb48c20cbcf6f9a909}{file\_links}}(self)\ -\/>\ FoundLinks:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Links\ found\ by\ specifying\ archives\ directly."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError()}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00045}00045\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00046}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources_a920c5a4c7132f201b9a2c1b988ca5d59}{00046}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources_a920c5a4c7132f201b9a2c1b988ca5d59}{\_is\_html\_file}}(file\_url:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00047}00047\ \ \ \ \ \textcolor{keywordflow}{return}\ mimetypes.guess\_type(file\_url,\ strict=\textcolor{keyword}{False})[0]\ ==\ \textcolor{stringliteral}{"{}text/html"{}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00048}00048\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00050}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls}{00050}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls}{\_FlatDirectoryToUrls}}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00051}00051\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Scans\ directory\ and\ caches\ results"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00053}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a3940206879318c8ca54ad982889c1ae5}{00053}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a3940206879318c8ca54ad982889c1ae5}{\_\_init\_\_}}(self,\ path:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00054}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a574f7122938b83f3b8181630495628ce}{00054}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a574f7122938b83f3b8181630495628ce}{\_path}}\ =\ path}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00055}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_ac1740c713d4a8bac6ebc49f962d7be10}{00055}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_ac1740c713d4a8bac6ebc49f962d7be10}{\_page\_candidates}}:\ list[str]\ =\ []}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00056}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a6ec1a03d70b8ff625d875de38eeafdf5}{00056}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a6ec1a03d70b8ff625d875de38eeafdf5}{\_project\_name\_to\_urls}}:\ dict[str,\ list[str]]\ =\ defaultdict(list)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00057}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a07cd92e2cb5296d6a4a6dc7b06aaacd6}{00057}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a07cd92e2cb5296d6a4a6dc7b06aaacd6}{\_scanned\_directory}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00059}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a1b8263588bb20f126be5cb8daae15ac0}{00059}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a1b8263588bb20f126be5cb8daae15ac0}{\_scan\_directory}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Scans\ directory\ once\ and\ populates\ both\ page\_candidates}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00061}00061\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ and\ project\_name\_to\_urls\ at\ the\ same\ time}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00062}00062\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ entry\ \textcolor{keywordflow}{in}\ os.scandir(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a574f7122938b83f3b8181630495628ce}{\_path}}):}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \ \ \ \ url\ =\ path\_to\_url(entry.path)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources_a920c5a4c7132f201b9a2c1b988ca5d59}{\_is\_html\_file}}(url):}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_ac1740c713d4a8bac6ebc49f962d7be10}{\_page\_candidates}}.append(url)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ File\ must\ have\ a\ valid\ wheel\ or\ sdist\ name,}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ otherwise\ not\ worth\ considering\ as\ a\ package}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ project\_filename\ =\ parse\_wheel\_filename(entry.name)[0]}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ InvalidWheelFilename:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ project\_filename\ =\ parse\_sdist\_filename(entry.name)[0]}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ InvalidSdistFilename:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00078}00078\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a6ec1a03d70b8ff625d875de38eeafdf5}{\_project\_name\_to\_urls}}[project\_filename].append(url)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a07cd92e2cb5296d6a4a6dc7b06aaacd6}{\_scanned\_directory}}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00082}00082\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00083}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_ad8714f5450c65cbcc001ed70cf9e3170}{00083}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_ad8714f5450c65cbcc001ed70cf9e3170}{page\_candidates}}(self)\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a07cd92e2cb5296d6a4a6dc7b06aaacd6}{\_scanned\_directory}}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a1b8263588bb20f126be5cb8daae15ac0}{\_scan\_directory}}()}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_ac1740c713d4a8bac6ebc49f962d7be10}{\_page\_candidates}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00089}00089\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00090}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_aeae9570e01b9586582bafe6ca81383da}{00090}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_aeae9570e01b9586582bafe6ca81383da}{project\_name\_to\_urls}}(self)\ -\/>\ dict[str,\ list[str]]:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a07cd92e2cb5296d6a4a6dc7b06aaacd6}{\_scanned\_directory}}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a1b8263588bb20f126be5cb8daae15ac0}{\_scan\_directory}}()}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls_a6ec1a03d70b8ff625d875de38eeafdf5}{\_project\_name\_to\_urls}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00095}00095\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00097}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source}{00097}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source}{\_FlatDirectorySource}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1_link_source}{LinkSource}}):}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00098}00098\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Link\ source\ specified\ by\ \`{}\`{}-\/-\/find-\/links=<path-\/to-\/dir>\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00099}00099\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00100}00100\ \textcolor{stringliteral}{\ \ \ \ This\ looks\ the\ content\ of\ the\ directory,\ and\ returns:}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00101}00101\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00102}00102\ \textcolor{stringliteral}{\ \ \ \ *\ \`{}\`{}page\_candidates\`{}\`{}:\ Links\ listed\ on\ each\ HTML\ file\ in\ the\ directory.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00103}00103\ \textcolor{stringliteral}{\ \ \ \ *\ \`{}\`{}file\_candidates\`{}\`{}:\ Archives\ in\ the\ directory.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00104}00104\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00106}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a0c7c8b42e0323728c0908fab5a5f8380}{00106}}\ \ \ \ \ \_paths\_to\_urls:\ dict[str,\ \_FlatDirectoryToUrls]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00108}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a84c4593aff125617d40953cea368c314}{00108}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a84c4593aff125617d40953cea368c314}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ candidates\_from\_page:\ CandidatesFromPage,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ path:\ str,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ project\_name:\ str,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00113}00113\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00114}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_ad56d90de37f3c24df8de24e3c4b3f97f}{00114}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_ad56d90de37f3c24df8de24e3c4b3f97f}{\_candidates\_from\_page}}\ =\ candidates\_from\_page}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00115}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_ad5adb5be947e10f8ab76c133402e3e38}{00115}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_ad5adb5be947e10f8ab76c133402e3e38}{\_project\_name}}\ =\ canonicalize\_name(project\_name)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00116}00116\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Get\ existing\ instance\ of\ \_FlatDirectoryToUrls\ if\ it\ exists}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ path\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a0c7c8b42e0323728c0908fab5a5f8380}{\_paths\_to\_urls}}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00119}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a4a9fb072bc1c0e50ddf079f1c0b92bb6}{00119}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a4a9fb072bc1c0e50ddf079f1c0b92bb6}{\_path\_to\_urls}}\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a0c7c8b42e0323728c0908fab5a5f8380}{\_paths\_to\_urls}}[path]}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a4a9fb072bc1c0e50ddf079f1c0b92bb6}{\_path\_to\_urls}}\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_to_urls}{\_FlatDirectoryToUrls}}(path=path)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a0c7c8b42e0323728c0908fab5a5f8380}{\_paths\_to\_urls}}[path]\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a4a9fb072bc1c0e50ddf079f1c0b92bb6}{\_path\_to\_urls}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00123}00123\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00124}00124\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00125}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a95f9a09dc1a189a167f4f2bff15a8902}{00125}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a95f9a09dc1a189a167f4f2bff15a8902}{link}}(self)\ -\/>\ Link\ |\ None:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00128}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_aeef8f758f4fdceba7769919f27f64ea7}{00128}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_aeef8f758f4fdceba7769919f27f64ea7}{page\_candidates}}(self)\ -\/>\ FoundCandidates:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ url\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a4a9fb072bc1c0e50ddf079f1c0b92bb6}{\_path\_to\_urls}}.page\_candidates:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_ad56d90de37f3c24df8de24e3c4b3f97f}{\_candidates\_from\_page}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1link_1_1_link}{Link}}(url))}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00132}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_aece9da68ba99d883973bfc4f3f1fd3ad}{00132}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_aece9da68ba99d883973bfc4f3f1fd3ad}{file\_links}}(self)\ -\/>\ FoundLinks:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ url\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_a4a9fb072bc1c0e50ddf079f1c0b92bb6}{\_path\_to\_urls}}.project\_name\_to\_urls[self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source_ad5adb5be947e10f8ab76c133402e3e38}{\_project\_name}}]:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1link_1_1_link}{Link}}(url)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00135}00135\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00136}00136\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00137}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source}{00137}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source}{\_LocalFileSource}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1_link_source}{LinkSource}}):}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00138}00138\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}\`{}\`{}-\/-\/find-\/links=<path-\/or-\/url>\`{}\`{}\ or\ \`{}\`{}-\/-\/[extra-\/]index-\/url=<path-\/or-\/url>\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00139}00139\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00140}00140\ \textcolor{stringliteral}{\ \ \ \ If\ a\ URL\ is\ supplied,\ it\ must\ be\ a\ \`{}\`{}file:\`{}\`{}\ URL.\ If\ a\ path\ is\ supplied\ to}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00141}00141\ \textcolor{stringliteral}{\ \ \ \ the\ option,\ it\ is\ converted\ to\ a\ URL\ first.\ This\ returns:}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00142}00142\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00143}00143\ \textcolor{stringliteral}{\ \ \ \ *\ \`{}\`{}page\_candidates\`{}\`{}:\ Links\ listed\ on\ an\ HTML\ file.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00144}00144\ \textcolor{stringliteral}{\ \ \ \ *\ \`{}\`{}file\_candidates\`{}\`{}:\ The\ non-\/HTML\ file.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00145}00145\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00147}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_a74d6766015a625ee3837c31eabb27db6}{00147}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_a74d6766015a625ee3837c31eabb27db6}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ candidates\_from\_page:\ CandidatesFromPage,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ link:\ Link,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00151}00151\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00152}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_ad5bc82f0d1d5347e5025884dc285431d}{00152}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_ad5bc82f0d1d5347e5025884dc285431d}{\_candidates\_from\_page}}\ =\ candidates\_from\_page}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00153}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_af8ba364c2017a278082e1704c36f6d37}{00153}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_af8ba364c2017a278082e1704c36f6d37}{\_link}}\ =\ link}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00155}00155\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00156}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_a85dfa5661d920731b7ece0ae31ef471f}{00156}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_a85dfa5661d920731b7ece0ae31ef471f}{link}}(self)\ -\/>\ Link\ |\ None:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_af8ba364c2017a278082e1704c36f6d37}{\_link}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00158}00158\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00159}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_ac2d31f04f65f67c47dfcfc55fd075207}{00159}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_ac2d31f04f65f67c47dfcfc55fd075207}{page\_candidates}}(self)\ -\/>\ FoundCandidates:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources_a920c5a4c7132f201b9a2c1b988ca5d59}{\_is\_html\_file}}(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_af8ba364c2017a278082e1704c36f6d37}{\_link}}.url):}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_ad5bc82f0d1d5347e5025884dc285431d}{\_candidates\_from\_page}}(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_af8ba364c2017a278082e1704c36f6d37}{\_link}})}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00163}00163\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00164}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_ab40635ef667ab8b629dd1b076bcb700c}{00164}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_ab40635ef667ab8b629dd1b076bcb700c}{file\_links}}(self)\ -\/>\ FoundLinks:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources_a920c5a4c7132f201b9a2c1b988ca5d59}{\_is\_html\_file}}(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_af8ba364c2017a278082e1704c36f6d37}{\_link}}.url):}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source_af8ba364c2017a278082e1704c36f6d37}{\_link}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00168}00168\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00169}00169\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00170}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source}{00170}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source}{\_RemoteFileSource}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1_link_source}{LinkSource}}):}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00171}00171\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}\`{}\`{}-\/-\/find-\/links=<url>\`{}\`{}\ or\ \`{}\`{}-\/-\/[extra-\/]index-\/url=<url>\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00172}00172\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00173}00173\ \textcolor{stringliteral}{\ \ \ \ This\ returns:}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00174}00174\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00175}00175\ \textcolor{stringliteral}{\ \ \ \ *\ \`{}\`{}page\_candidates\`{}\`{}:\ Links\ listed\ on\ an\ HTML\ file.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00176}00176\ \textcolor{stringliteral}{\ \ \ \ *\ \`{}\`{}file\_candidates\`{}\`{}:\ The\ non-\/HTML\ file.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00177}00177\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00178}00178\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00179}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_aedecac7caae1eff674ca4f097ae369e5}{00179}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_aedecac7caae1eff674ca4f097ae369e5}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ candidates\_from\_page:\ CandidatesFromPage,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ page\_validator:\ PageValidator,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ link:\ Link,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00184}00184\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00185}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a2d82e4108d1fb3fceec81b61023f317b}{00185}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a2d82e4108d1fb3fceec81b61023f317b}{\_candidates\_from\_page}}\ =\ candidates\_from\_page}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00186}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a0643e70d28b5c060a58eb4d7767bf916}{00186}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a0643e70d28b5c060a58eb4d7767bf916}{\_page\_validator}}\ =\ page\_validator}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00187}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a74edf73ceb544d029c0f70540bb11b26}{00187}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a74edf73ceb544d029c0f70540bb11b26}{\_link}}\ =\ link}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00188}00188\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00189}00189\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00190}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a2a1f3daf28c1b3de8cbace665cf93d9d}{00190}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a2a1f3daf28c1b3de8cbace665cf93d9d}{link}}(self)\ -\/>\ Link\ |\ None:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a74edf73ceb544d029c0f70540bb11b26}{\_link}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00193}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_aabe7a6f85aa07a76a212f8654e28b515}{00193}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_aabe7a6f85aa07a76a212f8654e28b515}{page\_candidates}}(self)\ -\/>\ FoundCandidates:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a0643e70d28b5c060a58eb4d7767bf916}{\_page\_validator}}(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a74edf73ceb544d029c0f70540bb11b26}{\_link}}):}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a2d82e4108d1fb3fceec81b61023f317b}{\_candidates\_from\_page}}(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a74edf73ceb544d029c0f70540bb11b26}{\_link}})}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00197}00197\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00198}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_aed898e12d69669f0d4564761675579ac}{00198}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_aed898e12d69669f0d4564761675579ac}{file\_links}}(self)\ -\/>\ FoundLinks:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source_a74edf73ceb544d029c0f70540bb11b26}{\_link}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00200}00200\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00201}00201\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00202}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source}{00202}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source}{\_IndexDirectorySource}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1_link_source}{LinkSource}}):}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00203}00203\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}\`{}\`{}-\/-\/[extra-\/]index-\/url=<path-\/to-\/directory>\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00204}00204\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00205}00205\ \textcolor{stringliteral}{\ \ \ \ This\ is\ treated\ like\ a\ remote\ URL;\ \`{}\`{}candidates\_from\_page\`{}\`{}\ contains\ logic}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00206}00206\ \textcolor{stringliteral}{\ \ \ \ for\ this\ by\ appending\ \`{}\`{}index.html\`{}\`{}\ to\ the\ link.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00207}00207\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00208}00208\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00209}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_a828c4db185d13828c279bbdfd3136901}{00209}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_a828c4db185d13828c279bbdfd3136901}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ candidates\_from\_page:\ CandidatesFromPage,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ link:\ Link,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00213}00213\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00214}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_aae19dc3c289f58b6e4434a1a5ae57e44}{00214}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_aae19dc3c289f58b6e4434a1a5ae57e44}{\_candidates\_from\_page}}\ =\ candidates\_from\_page}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00215}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_a466603053ae7e792dfbf39b6d524d6e9}{00215}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_a466603053ae7e792dfbf39b6d524d6e9}{\_link}}\ =\ link}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00216}00216\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00217}00217\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00218}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_ace99ac246194327a930bdb012b478fc2}{00218}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_ace99ac246194327a930bdb012b478fc2}{link}}(self)\ -\/>\ Link\ |\ None:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_a466603053ae7e792dfbf39b6d524d6e9}{\_link}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00220}00220\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00221}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_a52adaa0f99a6d8623af9a2e2d844fce7}{00221}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_a52adaa0f99a6d8623af9a2e2d844fce7}{page\_candidates}}(self)\ -\/>\ FoundCandidates:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_aae19dc3c289f58b6e4434a1a5ae57e44}{\_candidates\_from\_page}}(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_a466603053ae7e792dfbf39b6d524d6e9}{\_link}})}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00223}00223\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00224}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_ae42627935b1aa8f4bf6bc0e9c9e21bc7}{00224}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source_ae42627935b1aa8f4bf6bc0e9c9e21bc7}{file\_links}}(self)\ -\/>\ FoundLinks:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ()}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00226}00226\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00227}00227\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00228}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources_a4e5eb4d21057b6e0adec37002e26ac7e}{00228}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1sources_a4e5eb4d21057b6e0adec37002e26ac7e}{build\_source}}(}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00229}00229\ \ \ \ \ location:\ str,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00230}00230\ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00231}00231\ \ \ \ \ candidates\_from\_page:\ CandidatesFromPage,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00232}00232\ \ \ \ \ page\_validator:\ PageValidator,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00233}00233\ \ \ \ \ expand\_dir:\ bool,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00234}00234\ \ \ \ \ cache\_link\_parsing:\ bool,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00235}00235\ \ \ \ \ project\_name:\ str,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00236}00236\ )\ -\/>\ tuple[str\ |\ \textcolor{keywordtype}{None},\ LinkSource\ |\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00237}00237\ \ \ \ \ path:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00238}00238\ \ \ \ \ url:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00239}00239\ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.exists(location):\ \ \textcolor{comment}{\#\ Is\ a\ local\ path.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ url\ =\ path\_to\_url(location)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ path\ =\ location}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00242}00242\ \ \ \ \ \textcolor{keywordflow}{elif}\ location.startswith(\textcolor{stringliteral}{"{}file:"{}}):\ \ \textcolor{comment}{\#\ A\ file:\ URL.}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ url\ =\ location}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ path\ =\ url\_to\_path(location)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00245}00245\ \ \ \ \ \textcolor{keywordflow}{elif}\ is\_url(location):}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ url\ =\ location}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00247}00247\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00248}00248\ \ \ \ \ \textcolor{keywordflow}{if}\ url\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ msg\ =\ (}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Location\ '\%s'\ is\ ignored:\ "{}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}it\ is\ either\ a\ non-\/existing\ path\ or\ lacks\ a\ specific\ scheme."{}}}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ logger.warning(msg,\ location)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (\textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00255}00255\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00256}00256\ \ \ \ \ \textcolor{keywordflow}{if}\ path\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ source:\ LinkSource\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___remote_file_source}{\_RemoteFileSource}}(}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ candidates\_from\_page=candidates\_from\_page,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ page\_validator=page\_validator,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ link=\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1link_1_1_link}{Link}}(url,\ cache\_link\_parsing=cache\_link\_parsing),}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (url,\ source)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00263}00263\ }
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00264}00264\ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.isdir(path):}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ expand\_dir:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ source\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___flat_directory_source}{\_FlatDirectorySource}}(}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ candidates\_from\_page=candidates\_from\_page,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ path=path,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ project\_name=project\_name,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ source\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___index_directory_source}{\_IndexDirectorySource}}(}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ candidates\_from\_page=candidates\_from\_page,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ link=\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1link_1_1_link}{Link}}(url,\ cache\_link\_parsing=cache\_link\_parsing),}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (url,\ source)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00277}00277\ \ \ \ \ \textcolor{keywordflow}{elif}\ os.path.isfile(path):}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ source\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1sources_1_1___local_file_source}{\_LocalFileSource}}(}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \ \ \ \ candidates\_from\_page=candidates\_from\_page,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \ \ \ \ link=\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1link_1_1_link}{Link}}(url,\ cache\_link\_parsing=cache\_link\_parsing),}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (url,\ source)}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00283}00283\ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Location\ '\%s'\ is\ ignored:\ it\ is\ neither\ a\ file\ nor\ a\ directory."{}},}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ location,}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00286}00286\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{sources_8py_source_l00287}00287\ \ \ \ \ \textcolor{keywordflow}{return}\ (url,\ \textcolor{keywordtype}{None})}
+
+\end{DoxyCode}

@@ -1,0 +1,164 @@
+\doxysection{tz.\+py}
+\hypertarget{tz_8py_source}{}\label{tz_8py_source}\index{venv/Lib/site-\/packages/psycopg2/tz.py@{venv/Lib/site-\/packages/psycopg2/tz.py}}
+\doxymbox{\hyperlink{tz_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg2_1_1tz}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}tzinfo\ implementations\ for\ psycopg2}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00002}00002\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00003}00003\ \textcolor{stringliteral}{This\ module\ holds\ two\ different\ tzinfo\ implementations\ that\ can\ be\ used\ as}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00004}00004\ \textcolor{stringliteral}{the\ 'tzinfo'\ argument\ to\ datetime\ constructors,\ directly\ passed\ to\ psycopg}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00005}00005\ \textcolor{stringliteral}{functions\ or\ used\ to\ set\ the\ .tzinfo\_factory\ attribute\ in\ cursors.}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00006}00006\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00007}00007\ \textcolor{comment}{\#\ psycopg/tz.py\ -\/\ tzinfo\ implementation}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00008}00008\ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00009}00009\ \textcolor{comment}{\#\ Copyright\ (C)\ 2003-\/2019\ Federico\ Di\ Gregorio\ \ <fog@debian.org>}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00010}00010\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020-\/2021\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00011}00011\ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00012}00012\ \textcolor{comment}{\#\ psycopg2\ is\ free\ software:\ you\ can\ redistribute\ it\ and/or\ modify\ it}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00013}00013\ \textcolor{comment}{\#\ under\ the\ terms\ of\ the\ GNU\ Lesser\ General\ Public\ License\ as\ published}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00014}00014\ \textcolor{comment}{\#\ by\ the\ Free\ Software\ Foundation,\ either\ version\ 3\ of\ the\ License,\ or}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00015}00015\ \textcolor{comment}{\#\ (at\ your\ option)\ any\ later\ version.}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00016}00016\ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00017}00017\ \textcolor{comment}{\#\ In\ addition,\ as\ a\ special\ exception,\ the\ copyright\ holders\ give}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00018}00018\ \textcolor{comment}{\#\ permission\ to\ link\ this\ program\ with\ the\ OpenSSL\ library\ (or\ with}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00019}00019\ \textcolor{comment}{\#\ modified\ versions\ of\ OpenSSL\ that\ use\ the\ same\ license\ as\ OpenSSL),}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00020}00020\ \textcolor{comment}{\#\ and\ distribute\ linked\ combinations\ including\ the\ two.}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00021}00021\ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00022}00022\ \textcolor{comment}{\#\ You\ must\ obey\ the\ GNU\ Lesser\ General\ Public\ License\ in\ all\ respects\ for}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00023}00023\ \textcolor{comment}{\#\ all\ of\ the\ code\ used\ other\ than\ OpenSSL.}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00024}00024\ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00025}00025\ \textcolor{comment}{\#\ psycopg2\ is\ distributed\ in\ the\ hope\ that\ it\ will\ be\ useful,\ but\ WITHOUT}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00026}00026\ \textcolor{comment}{\#\ ANY\ WARRANTY;\ without\ even\ the\ implied\ warranty\ of\ MERCHANTABILITY\ or}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00027}00027\ \textcolor{comment}{\#\ FITNESS\ FOR\ A\ PARTICULAR\ PURPOSE.\ \ See\ the\ GNU\ Lesser\ General\ Public}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00028}00028\ \textcolor{comment}{\#\ License\ for\ more\ details.}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00030}00030\ \textcolor{keyword}{import}\ datetime}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00031}00031\ \textcolor{keyword}{import}\ time}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00033}\doxymbox{\hyperlink{namespacepsycopg2_1_1tz_a81fbc4f68c8e0984f730a9d61a576555}{00033}}\ ZERO\ =\ datetime.timedelta(0)}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00036}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone}{00036}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone}{FixedOffsetTimezone}}(datetime.tzinfo):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00037}00037\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Fixed\ offset\ in\ minutes\ east\ from\ UTC.}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00038}00038\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00039}00039\ \textcolor{stringliteral}{\ \ \ \ This\ is\ exactly\ the\ implementation\_\_\ found\ in\ Python\ 2.3.x\ documentation,}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00040}00040\ \textcolor{stringliteral}{\ \ \ \ with\ a\ small\ change\ to\ the\ \`{}!\_\_init\_\_()\`{}\ method\ to\ allow\ for\ pickling}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00041}00041\ \textcolor{stringliteral}{\ \ \ \ and\ a\ default\ name\ in\ the\ form\ \`{}\`{}sHH:MM\`{}\`{}\ (\`{}\`{}s\`{}\`{}\ is\ the\ sign.).}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00042}00042\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00043}00043\ \textcolor{stringliteral}{\ \ \ \ The\ implementation\ also\ caches\ instances.\ During\ creation,\ if\ a}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00044}00044\ \textcolor{stringliteral}{\ \ \ \ FixedOffsetTimezone\ instance\ has\ previously\ been\ created\ with\ the\ same}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00045}00045\ \textcolor{stringliteral}{\ \ \ \ offset\ and\ name\ that\ instance\ will\ be\ returned.\ This\ saves\ memory\ and}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00046}00046\ \textcolor{stringliteral}{\ \ \ \ improves\ comparability.}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00047}00047\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00048}00048\ \textcolor{stringliteral}{\ \ \ \ ..\ versionchanged::\ 2.9}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00049}00049\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00050}00050\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ constructor\ can\ take\ either\ a\ timedelta\ or\ a\ number\ of\ minutes\ of}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00051}00051\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ offset.\ Previously\ only\ minutes\ were\ supported.}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00052}00052\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00053}00053\ \textcolor{stringliteral}{\ \ \ \ ..\ \_\_:\ https://docs.python.org/library/datetime.html}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00054}00054\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00055}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a2c030cd16541dcb47d0dfbbd257ccf3b}{00055}}\ \ \ \ \ \_name\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00056}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a4f2f968d7a4cf26ed4a63a1984263d8e}{00056}}\ \ \ \ \ \_offset\ =\ ZERO}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00057}00057\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00058}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_af791ab40c0e4ee49f443a8dd7866be42}{00058}}\ \ \ \ \ \_cache\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00060}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a4e8b47f422294328343a047ecee86d62}{00060}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a4e8b47f422294328343a047ecee86d62}{\_\_init\_\_}}(self,\ offset=None,\ name=None):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ offset\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(offset,\ datetime.timedelta):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ offset\ =\ datetime.timedelta(minutes=offset)}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a4f2f968d7a4cf26ed4a63a1984263d8e}{\_offset}}\ =\ offset}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ name\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a2c030cd16541dcb47d0dfbbd257ccf3b}{\_name}}\ =\ name}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00068}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a069b80a1f674008b656434ed781797b1}{00068}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a069b80a1f674008b656434ed781797b1}{\_\_new\_\_}}(cls,\ offset=None,\ name=None):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ a\ suitable\ instance\ created\ earlier\ if\ it\ exists}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00070}00070\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ key\ =\ (offset,\ name)}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_af791ab40c0e4ee49f443a8dd7866be42}{\_cache}}[key]}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ tz\ =\ super().\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a069b80a1f674008b656434ed781797b1}{\_\_new\_\_}}(cls,\ offset,\ name)}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ cls.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_af791ab40c0e4ee49f443a8dd7866be42}{\_cache}}[key]\ =\ tz}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tz}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00078}00078\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00079}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a0a2394652ac4b23dba3cab4a2bd8243b}{00079}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a0a2394652ac4b23dba3cab4a2bd8243b}{\_\_repr\_\_}}(self):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}psycopg2.tz.FixedOffsetTimezone(offset=\%r,\ name=\%r)"{}}\ \(\backslash\)}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \ \ \ \ \%\ (self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a4f2f968d7a4cf26ed4a63a1984263d8e}{\_offset}},\ self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a2c030cd16541dcb47d0dfbbd257ccf3b}{\_name}})}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00083}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a26231bfa2b52aa0fdcdbb5bbed78542b}{00083}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a26231bfa2b52aa0fdcdbb5bbed78542b}{\_\_eq\_\_}}(self,\ other):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(other,\ FixedOffsetTimezone):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a4f2f968d7a4cf26ed4a63a1984263d8e}{\_offset}}\ ==\ other.\_offset}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00089}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a50dfce31138718ffe383fd5b316323ad}{00089}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a50dfce31138718ffe383fd5b316323ad}{\_\_ne\_\_}}(self,\ other):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(other,\ FixedOffsetTimezone):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a4f2f968d7a4cf26ed4a63a1984263d8e}{\_offset}}\ !=\ other.\_offset}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00095}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a9c1bacec30c950ebaf63aaf57cd4c2d6}{00095}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a9c1bacec30c950ebaf63aaf57cd4c2d6}{\_\_getinitargs\_\_}}(self):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a4f2f968d7a4cf26ed4a63a1984263d8e}{\_offset}},\ self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a2c030cd16541dcb47d0dfbbd257ccf3b}{\_name}}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00097}00097\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00098}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a76a75fe273fc30041b4d77b9d47f6670}{00098}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a76a75fe273fc30041b4d77b9d47f6670}{utcoffset}}(self,\ dt):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a4f2f968d7a4cf26ed4a63a1984263d8e}{\_offset}}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00100}00100\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00101}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a7d0217234b2cc51b5664668cdfe78007}{00101}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a7d0217234b2cc51b5664668cdfe78007}{tzname}}(self,\ dt):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a2c030cd16541dcb47d0dfbbd257ccf3b}{\_name}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a2c030cd16541dcb47d0dfbbd257ccf3b}{\_name}}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ minutes,\ seconds\ =\ divmod(self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a4f2f968d7a4cf26ed4a63a1984263d8e}{\_offset}}.total\_seconds(),\ 60)}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ hours,\ minutes\ =\ divmod(minutes,\ 60)}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ rv\ =\ \textcolor{stringliteral}{"{}\%+03d"{}}\ \%\ hours}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ minutes\ \textcolor{keywordflow}{or}\ seconds:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \ \ \ \ rv\ +=\ \textcolor{stringliteral}{"{}:\%02d"{}}\ \%\ minutes}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ seconds:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rv\ +=\ \textcolor{stringliteral}{"{}:\%02d"{}}\ \%\ seconds}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00112}00112\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ rv}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00114}00114\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00115}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a1feb3a663b6894e449a1f6ae9045e01b}{00115}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_fixed_offset_timezone_a1feb3a663b6894e449a1f6ae9045e01b}{dst}}(self,\ dt):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ZERO}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00117}00117\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00118}00118\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00119}\doxymbox{\hyperlink{namespacepsycopg2_1_1tz_ae328797972f64703533daf7c39e37f79}{00119}}\ STDOFFSET\ =\ datetime.timedelta(seconds=-\/time.timezone)}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00120}00120\ \textcolor{keywordflow}{if}\ time.daylight:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00121}\doxymbox{\hyperlink{namespacepsycopg2_1_1tz_a5fd191b68688bb4e06f85dac6d2eb16e}{00121}}\ \ \ \ \ DSTOFFSET\ =\ datetime.timedelta(seconds=-\/time.altzone)}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00122}00122\ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00123}00123\ \ \ \ \ DSTOFFSET\ =\ STDOFFSET}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00124}\doxymbox{\hyperlink{namespacepsycopg2_1_1tz_abdc2814301f0125df0c1a903265a5984}{00124}}\ DSTDIFF\ =\ DSTOFFSET\ -\/\ STDOFFSET}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00125}00125\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00126}00126\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00127}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone}{00127}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone}{LocalTimezone}}(datetime.tzinfo):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00128}00128\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Platform\ idea\ of\ local\ timezone.}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00129}00129\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00130}00130\ \textcolor{stringliteral}{\ \ \ \ This\ is\ the\ exact\ implementation\ from\ the\ Python\ 2.3\ documentation.}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00131}00131\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00132}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone_aa9cfa1712e5f2e6ff9fe8a41bdd8a1c5}{00132}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone_aa9cfa1712e5f2e6ff9fe8a41bdd8a1c5}{utcoffset}}(self,\ dt):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone_a629baf3557e21062380dbe581739bd31}{\_isdst}}(dt):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ DSTOFFSET}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ STDOFFSET}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00137}00137\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00138}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone_afd1da2848fa5a9ca2e638fa389bb0efc}{00138}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone_afd1da2848fa5a9ca2e638fa389bb0efc}{dst}}(self,\ dt):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone_a629baf3557e21062380dbe581739bd31}{\_isdst}}(dt):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ DSTDIFF}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ZERO}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00143}00143\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00144}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone_a43cde086876af9b4cc81ef2e76d62efc}{00144}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone_a43cde086876af9b4cc81ef2e76d62efc}{tzname}}(self,\ dt):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ time.tzname[self.\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone_a629baf3557e21062380dbe581739bd31}{\_isdst}}(dt)]}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00147}\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone_a629baf3557e21062380dbe581739bd31}{00147}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone_a629baf3557e21062380dbe581739bd31}{\_isdst}}(self,\ dt):}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ tt\ =\ (dt.year,\ dt.month,\ dt.day,}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dt.hour,\ dt.minute,\ dt.second,}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dt.weekday(),\ 0,\ -\/1)}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ stamp\ =\ time.mktime(tt)}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ tt\ =\ time.localtime(stamp)}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tt.tm\_isdst\ >\ 0}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00156}\doxymbox{\hyperlink{namespacepsycopg2_1_1tz_aa4b5925c18f11ca490ade8ff3665fce8}{00156}}\ LOCAL\ =\ \doxymbox{\hyperlink{classpsycopg2_1_1tz_1_1_local_timezone}{LocalTimezone}}()}
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00157}00157\ }
+\DoxyCodeLine{\Hypertarget{tz_8py_source_l00158}00158\ \textcolor{comment}{\#\ TODO:\ pre-\/generate\ some\ interesting\ time\ zones?}}
+
+\end{DoxyCode}

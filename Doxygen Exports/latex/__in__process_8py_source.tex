@@ -1,0 +1,395 @@
+\doxysection{\+\_\+in\+\_\+process.\+py}
+\hypertarget{__in__process_8py_source}{}\label{__in__process_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/pyproject\_hooks/\_in\_process/\_in\_process.py@{venv/Lib/site-\/packages/pip/\_vendor/pyproject\_hooks/\_in\_process/\_in\_process.py}}
+\doxymbox{\hyperlink{__in__process_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}This\ is\ invoked\ in\ a\ subprocess\ to\ call\ the\ build\ backend\ hooks.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00002}00002\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00003}00003\ \textcolor{stringliteral}{It\ expects:}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00004}00004\ \textcolor{stringliteral}{-\/\ Command\ line\ args:\ hook\_name,\ control\_dir}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00005}00005\ \textcolor{stringliteral}{-\/\ Environment\ variables:}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00006}00006\ \textcolor{stringliteral}{\ \ \ \ \ \ \_PYPROJECT\_HOOKS\_BUILD\_BACKEND=entry.point:spec}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00007}00007\ \textcolor{stringliteral}{\ \ \ \ \ \ \_PYPROJECT\_HOOKS\_BACKEND\_PATH=paths\ (separated\ with\ os.pathsep)}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00008}00008\ \textcolor{stringliteral}{-\/\ control\_dir/input.json:}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00009}00009\ \textcolor{stringliteral}{\ \ -\/\ \{"{}kwargs"{}:\ \{...\}\}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00010}00010\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00011}00011\ \textcolor{stringliteral}{Results:}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00012}00012\ \textcolor{stringliteral}{-\/\ control\_dir/output.json}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00013}00013\ \textcolor{stringliteral}{\ \ -\/\ \{"{}return\_val"{}:\ ...\}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00014}00014\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00015}00015\ \textcolor{keyword}{import}\ json}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00016}00016\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00017}00017\ \textcolor{keyword}{import}\ os.path}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00018}00018\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00019}00019\ \textcolor{keyword}{import}\ shutil}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00020}00020\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00021}00021\ \textcolor{keyword}{import}\ traceback}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00022}00022\ \textcolor{keyword}{from}\ glob\ \textcolor{keyword}{import}\ glob}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00023}00023\ \textcolor{keyword}{from}\ importlib\ \textcolor{keyword}{import}\ import\_module}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00024}00024\ \textcolor{keyword}{from}\ importlib.machinery\ \textcolor{keyword}{import}\ PathFinder}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00025}00025\ \textcolor{keyword}{from}\ os.path\ \textcolor{keyword}{import}\ join\ \textcolor{keyword}{as}\ pjoin}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00027}00027\ \textcolor{comment}{\#\ This\ file\ is\ run\ as\ a\ script,\ and\ \`{}import\ wrappers`\ is\ not\ zip-\/safe,\ so\ we}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00028}00028\ \textcolor{comment}{\#\ include\ write\_json()\ and\ read\_json()\ from\ wrappers.py.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00031}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a57e360dea786536bd3ae605d2e59f361}{00031}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a57e360dea786536bd3ae605d2e59f361}{write\_json}}(obj,\ path,\ **kwargs):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00032}00032\ \ \ \ \ \textcolor{keyword}{with}\ open(path,\ \textcolor{stringliteral}{"{}w"{}},\ encoding=\textcolor{stringliteral}{"{}utf-\/8"{}})\ \textcolor{keyword}{as}\ f:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00033}00033\ \ \ \ \ \ \ \ \ json.dump(obj,\ f,\ **kwargs)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00036}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_aed58eb59230a42c167f88b03a6d884d3}{00036}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_aed58eb59230a42c167f88b03a6d884d3}{read\_json}}(path):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00037}00037\ \ \ \ \ \textcolor{keyword}{with}\ open(path,\ encoding=\textcolor{stringliteral}{"{}utf-\/8"{}})\ \textcolor{keyword}{as}\ f:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ json.load(f)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00041}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_backend_unavailable}{00041}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_backend_unavailable}{BackendUnavailable}}(Exception):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00042}00042\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Raised\ if\ we\ cannot\ import\ the\ backend"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00044}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_backend_unavailable_a792b1054de5814ea78c29ab8350c0468}{00044}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_backend_unavailable_a792b1054de5814ea78c29ab8350c0468}{\_\_init\_\_}}(self,\ message,\ traceback=None):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_backend_unavailable_a792b1054de5814ea78c29ab8350c0468}{\_\_init\_\_}}(message)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00046}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_backend_unavailable_a873ce9b50a3acbdf06f960e821dadf86}{00046}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_backend_unavailable_a873ce9b50a3acbdf06f960e821dadf86}{message}}\ =\ message}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00047}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_backend_unavailable_a916aaf52ea4a444212568bcc63ef9c9a}{00047}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_backend_unavailable_a916aaf52ea4a444212568bcc63ef9c9a}{traceback}}\ =\ traceback}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00048}00048\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00050}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_hook_missing}{00050}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_hook_missing}{HookMissing}}(Exception):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00051}00051\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Raised\ if\ a\ hook\ is\ missing\ and\ we\ are\ not\ executing\ the\ fallback"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00053}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_hook_missing_a0666c03e9b27b712d558213d757978c1}{00053}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_hook_missing_a0666c03e9b27b712d558213d757978c1}{\_\_init\_\_}}(self,\ hook\_name=None):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_hook_missing_a0666c03e9b27b712d558213d757978c1}{\_\_init\_\_}}(hook\_name)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00055}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_hook_missing_a6ef3337f7e4125ee688ef8c7594cbfe5}{00055}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_hook_missing_a6ef3337f7e4125ee688ef8c7594cbfe5}{hook\_name}}\ =\ hook\_name}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00057}00057\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00058}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a1344631ed340c60313a1027a4c82bf70}{00058}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a1344631ed340c60313a1027a4c82bf70}{\_build\_backend}}():}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00059}00059\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Find\ and\ load\ the\ build\ backend"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00060}00060\ \ \ \ \ backend\_path\ =\ os.environ.get(\textcolor{stringliteral}{"{}\_PYPROJECT\_HOOKS\_BACKEND\_PATH"{}})}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00061}00061\ \ \ \ \ ep\ =\ os.environ[\textcolor{stringliteral}{"{}\_PYPROJECT\_HOOKS\_BUILD\_BACKEND"{}}]}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00062}00062\ \ \ \ \ mod\_path,\ \_,\ obj\_path\ =\ ep.partition(\textcolor{stringliteral}{"{}:"{}})}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00064}00064\ \ \ \ \ \textcolor{keywordflow}{if}\ backend\_path:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Ensure\ in-\/tree\ backend\ directories\ have\ the\ highest\ priority\ when\ importing.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ extra\_pathitems\ =\ backend\_path.split(os.pathsep)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ sys.meta\_path.insert(0,\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder}{\_BackendPathFinder}}(extra\_pathitems,\ mod\_path))}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00069}00069\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ obj\ =\ import\_module(mod\_path)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00071}00071\ \ \ \ \ \textcolor{keywordflow}{except}\ ImportError:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}Cannot\ import\ \{mod\_path!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_backend_unavailable}{BackendUnavailable}}(msg,\ traceback.format\_exc())}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00075}00075\ \ \ \ \ \textcolor{keywordflow}{if}\ obj\_path:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ path\_part\ \textcolor{keywordflow}{in}\ obj\_path.split(\textcolor{stringliteral}{"{}."{}}):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \ \ \ \ obj\ =\ getattr(obj,\ path\_part)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00078}00078\ \ \ \ \ \textcolor{keywordflow}{return}\ obj}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00081}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder}{00081}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder}{\_BackendPathFinder}}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00082}00082\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Implements\ the\ MetaPathFinder\ interface\ to\ locate\ modules\ in\ \`{}\`{}backend-\/path\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00083}00083\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00084}00084\ \textcolor{stringliteral}{\ \ \ \ Since\ the\ environment\ provided\ by\ the\ frontend\ can\ contain\ all\ sorts\ of}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00085}00085\ \textcolor{stringliteral}{\ \ \ \ MetaPathFinders,\ the\ only\ way\ to\ ensure\ the\ backend\ is\ loaded\ from\ the}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00086}00086\ \textcolor{stringliteral}{\ \ \ \ right\ place\ is\ to\ prepend\ our\ own.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00087}00087\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00089}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_ae6fc95acc2d0e6dcb40544afa39b4e01}{00089}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_ae6fc95acc2d0e6dcb40544afa39b4e01}{\_\_init\_\_}}(self,\ backend\_path,\ backend\_module):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00090}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_a0728eb16b109b306db61e650ec88c87b}{00090}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_a0728eb16b109b306db61e650ec88c87b}{backend\_path}}\ =\ backend\_path}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00091}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_ab8e947e37feb09be75e3d5fa9eb3b60a}{00091}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_ab8e947e37feb09be75e3d5fa9eb3b60a}{backend\_module}}\ =\ backend\_module}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00092}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_a58e4cf414f2c1b82d0d8e7e7c6261671}{00092}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_a58e4cf414f2c1b82d0d8e7e7c6261671}{backend\_parent}},\ \_,\ \_\ =\ backend\_module.partition(\textcolor{stringliteral}{"{}."{}})}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00094}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_acec8ef5cf196cda3b77fb65ab710119a}{00094}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_acec8ef5cf196cda3b77fb65ab710119a}{find\_spec}}(self,\ fullname,\ \_path,\ \_target=None):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}."{}}\ \textcolor{keywordflow}{in}\ fullname:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Rely\ on\ importlib\ to\ find\ nested\ modules\ based\ on\ parent's\ path}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00098}00098\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Ignore\ other\ items\ in\ \_path\ or\ sys.path\ and\ use\ backend\_path\ instead:}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ spec\ =\ PathFinder.find\_spec(fullname,\ path=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_a0728eb16b109b306db61e650ec88c87b}{backend\_path}})}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ spec\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ fullname\ ==\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_a58e4cf414f2c1b82d0d8e7e7c6261671}{backend\_parent}}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ According\ to\ the\ spec,\ the\ backend\ MUST\ be\ loaded\ from\ backend-\/path.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Therefore,\ we\ can\ halt\ the\ import\ machinery\ and\ raise\ a\ clean\ error.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}Cannot\ find\ module\ \{self.backend\_module!r\}\ in\ \{self.backend\_path!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_backend_unavailable}{BackendUnavailable}}(msg)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ spec}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00109}00109\ \ \ \ \ \textcolor{keywordflow}{if}\ sys.version\_info\ >=\ (3,\ 8):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00110}00110\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00111}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_ae796d9705162816f67a4a2a05990c32b}{00111}}\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_ae796d9705162816f67a4a2a05990c32b}{find\_distributions}}(self,\ context=None):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Delayed\ import:\ Python\ 3.7\ does\ not\ contain\ importlib.metadata}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespaceimportlib_1_1metadata}{importlib.metadata}}\ \textcolor{keyword}{import}\ DistributionFinder,\ MetadataPathFinder}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00114}00114\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \ \ \ \ context\ =\ DistributionFinder.Context(path=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___backend_path_finder_a0728eb16b109b306db61e650ec88c87b}{backend\_path}})}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ MetadataPathFinder.find\_distributions(context=context)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00117}00117\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00118}00118\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00119}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a0995770b7bc21add903dffd94f1f2bd4}{00119}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a0995770b7bc21add903dffd94f1f2bd4}{\_supported\_features}}():}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00120}00120\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ the\ list\ of\ options\ features\ supported\ by\ the\ backend.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00121}00121\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00122}00122\ \textcolor{stringliteral}{\ \ \ \ Returns\ a\ list\ of\ strings.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00123}00123\ \textcolor{stringliteral}{\ \ \ \ The\ only\ possible\ value\ is\ 'build\_editable'.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00124}00124\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00125}00125\ \ \ \ \ backend\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a1344631ed340c60313a1027a4c82bf70}{\_build\_backend}}()}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00126}00126\ \ \ \ \ features\ =\ []}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00127}00127\ \ \ \ \ \textcolor{keywordflow}{if}\ hasattr(backend,\ \textcolor{stringliteral}{"{}build\_editable"{}}):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ features.append(\textcolor{stringliteral}{"{}build\_editable"{}})}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00129}00129\ \ \ \ \ \textcolor{keywordflow}{return}\ features}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00130}00130\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00132}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a267e4bf07ec3e3d89d776f5acf926c73}{00132}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a267e4bf07ec3e3d89d776f5acf926c73}{get\_requires\_for\_build\_wheel}}(config\_settings):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00133}00133\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Invoke\ the\ optional\ get\_requires\_for\_build\_wheel\ hook}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00134}00134\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00135}00135\ \textcolor{stringliteral}{\ \ \ \ Returns\ []\ if\ the\ hook\ is\ not\ defined.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00136}00136\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00137}00137\ \ \ \ \ backend\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a1344631ed340c60313a1027a4c82bf70}{\_build\_backend}}()}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00138}00138\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ hook\ =\ backend.get\_requires\_for\_build\_wheel}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00140}00140\ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ []}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00142}00142\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hook(config\_settings)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00145}00145\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00146}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_ac2dbfc573b1c4515bb68b93eae4924a4}{00146}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_ac2dbfc573b1c4515bb68b93eae4924a4}{get\_requires\_for\_build\_editable}}(config\_settings):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00147}00147\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Invoke\ the\ optional\ get\_requires\_for\_build\_editable\ hook}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00148}00148\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00149}00149\ \textcolor{stringliteral}{\ \ \ \ Returns\ []\ if\ the\ hook\ is\ not\ defined.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00150}00150\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00151}00151\ \ \ \ \ backend\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a1344631ed340c60313a1027a4c82bf70}{\_build\_backend}}()}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00152}00152\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ hook\ =\ backend.get\_requires\_for\_build\_editable}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00154}00154\ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ []}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00156}00156\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hook(config\_settings)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00158}00158\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00159}00159\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00160}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a480ad724d74ef1d46ded9601223e6458}{00160}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a480ad724d74ef1d46ded9601223e6458}{prepare\_metadata\_for\_build\_wheel}}(}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00161}00161\ \ \ \ \ metadata\_directory,\ config\_settings,\ \_allow\_fallback}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00162}00162\ ):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00163}00163\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Invoke\ optional\ prepare\_metadata\_for\_build\_wheel}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00164}00164\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00165}00165\ \textcolor{stringliteral}{\ \ \ \ Implements\ a\ fallback\ by\ building\ a\ wheel\ if\ the\ hook\ isn't\ defined,}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00166}00166\ \textcolor{stringliteral}{\ \ \ \ unless\ \_allow\_fallback\ is\ False\ in\ which\ case\ HookMissing\ is\ raised.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00167}00167\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00168}00168\ \ \ \ \ backend\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a1344631ed340c60313a1027a4c82bf70}{\_build\_backend}}()}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00169}00169\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ hook\ =\ backend.prepare\_metadata\_for\_build\_wheel}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00171}00171\ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ \_allow\_fallback:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_hook_missing}{HookMissing}}()}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00174}00174\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hook(metadata\_directory,\ config\_settings)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00176}00176\ \ \ \ \ \textcolor{comment}{\#\ fallback\ to\ build\_wheel\ outside\ the\ try\ block\ to\ avoid\ exception\ chaining}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00177}00177\ \ \ \ \ \textcolor{comment}{\#\ which\ can\ be\ confusing\ to\ users\ and\ is\ not\ relevant}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00178}00178\ \ \ \ \ whl\_basename\ =\ backend.build\_wheel(metadata\_directory,\ config\_settings)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00179}00179\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_ac9a48265c01a6e5b129422eada8d8793}{\_get\_wheel\_metadata\_from\_wheel}}(}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ whl\_basename,\ metadata\_directory,\ config\_settings}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00181}00181\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00182}00182\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00183}00183\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00184}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a731d5914e426c3df1dabf37a5bbd9129}{00184}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a731d5914e426c3df1dabf37a5bbd9129}{prepare\_metadata\_for\_build\_editable}}(}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00185}00185\ \ \ \ \ metadata\_directory,\ config\_settings,\ \_allow\_fallback}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00186}00186\ ):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00187}00187\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Invoke\ optional\ prepare\_metadata\_for\_build\_editable}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00188}00188\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00189}00189\ \textcolor{stringliteral}{\ \ \ \ Implements\ a\ fallback\ by\ building\ an\ editable\ wheel\ if\ the\ hook\ isn't}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00190}00190\ \textcolor{stringliteral}{\ \ \ \ defined,\ unless\ \_allow\_fallback\ is\ False\ in\ which\ case\ HookMissing\ is}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00191}00191\ \textcolor{stringliteral}{\ \ \ \ raised.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00192}00192\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00193}00193\ \ \ \ \ backend\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a1344631ed340c60313a1027a4c82bf70}{\_build\_backend}}()}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00194}00194\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ hook\ =\ backend.prepare\_metadata\_for\_build\_editable}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00196}00196\ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ \_allow\_fallback:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_hook_missing}{HookMissing}}()}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ build\_hook\ =\ backend.build\_editable}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_hook_missing}{HookMissing}}(hook\_name=\textcolor{stringliteral}{"{}build\_editable"{}})}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ whl\_basename\ =\ build\_hook(metadata\_directory,\ config\_settings)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_ac9a48265c01a6e5b129422eada8d8793}{\_get\_wheel\_metadata\_from\_wheel}}(}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ whl\_basename,\ metadata\_directory,\ config\_settings}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00208}00208\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hook(metadata\_directory,\ config\_settings)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00210}00210\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00211}00211\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00212}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_af29020c31e0f74a6b5c30b5a7af53664}{00212}}\ WHEEL\_BUILT\_MARKER\ =\ \textcolor{stringliteral}{"{}PYPROJECT\_HOOKS\_ALREADY\_BUILT\_WHEEL"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00213}00213\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00214}00214\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00215}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a6b11db6d7a7db44a8db576148a942487}{00215}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a6b11db6d7a7db44a8db576148a942487}{\_dist\_info\_files}}(whl\_zip):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00216}00216\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Identify\ the\ .dist-\/info\ folder\ inside\ a\ wheel\ ZipFile."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00217}00217\ \ \ \ \ res\ =\ []}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00218}00218\ \ \ \ \ \textcolor{keywordflow}{for}\ path\ \textcolor{keywordflow}{in}\ whl\_zip.namelist():}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ m\ =\ re.match(\textcolor{stringliteral}{r"{}[\string^/\(\backslash\)\(\backslash\)]+-\/[\string^/\(\backslash\)\(\backslash\)]+\(\backslash\).dist-\/info/"{}},\ path)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ m:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ res.append(path)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00222}00222\ \ \ \ \ \textcolor{keywordflow}{if}\ res:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ res}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00224}00224\ \ \ \ \ \textcolor{keywordflow}{raise}\ Exception(\textcolor{stringliteral}{"{}No\ .dist-\/info\ folder\ found\ in\ wheel"{}})}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00225}00225\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00226}00226\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00227}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_ac9a48265c01a6e5b129422eada8d8793}{00227}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_ac9a48265c01a6e5b129422eada8d8793}{\_get\_wheel\_metadata\_from\_wheel}}(whl\_basename,\ metadata\_directory,\ config\_settings):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00228}00228\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Extract\ the\ metadata\ from\ a\ wheel.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00229}00229\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00230}00230\ \textcolor{stringliteral}{\ \ \ \ Fallback\ for\ when\ the\ build\ backend\ does\ not}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00231}00231\ \textcolor{stringliteral}{\ \ \ \ define\ the\ 'get\_wheel\_metadata'\ hook.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00232}00232\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00233}00233\ \ \ \ \ \textcolor{keyword}{from}\ zipfile\ \textcolor{keyword}{import}\ ZipFile}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00234}00234\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00235}00235\ \ \ \ \ \textcolor{keyword}{with}\ open(os.path.join(metadata\_directory,\ WHEEL\_BUILT\_MARKER),\ \textcolor{stringliteral}{"{}wb"{}}):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}\ \ \textcolor{comment}{\#\ Touch\ marker\ file}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00237}00237\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00238}00238\ \ \ \ \ whl\_file\ =\ os.path.join(metadata\_directory,\ whl\_basename)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00239}00239\ \ \ \ \ \textcolor{keyword}{with}\ ZipFile(whl\_file)\ \textcolor{keyword}{as}\ zipf:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ dist\_info\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a6b11db6d7a7db44a8db576148a942487}{\_dist\_info\_files}}(zipf)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ zipf.extractall(path=metadata\_directory,\ members=dist\_info)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00242}00242\ \ \ \ \ \textcolor{keywordflow}{return}\ dist\_info[0].split(\textcolor{stringliteral}{"{}/"{}})[0]}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00243}00243\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00244}00244\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00245}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_afb4c283ad67585ae6396b0ee33cd88c6}{00245}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_afb4c283ad67585ae6396b0ee33cd88c6}{\_find\_already\_built\_wheel}}(metadata\_directory):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00246}00246\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Check\ for\ a\ wheel\ already\ built\ during\ the\ get\_wheel\_metadata\ hook."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00247}00247\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ metadata\_directory:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00249}00249\ \ \ \ \ metadata\_parent\ =\ os.path.dirname(metadata\_directory)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00250}00250\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ os.path.isfile(pjoin(metadata\_parent,\ WHEEL\_BUILT\_MARKER)):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00252}00252\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00253}00253\ \ \ \ \ whl\_files\ =\ glob(os.path.join(metadata\_parent,\ \textcolor{stringliteral}{"{}*.whl"{}}))}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00254}00254\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ whl\_files:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}Found\ wheel\ built\ marker,\ but\ no\ .whl\ files"{}})}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00257}00257\ \ \ \ \ \textcolor{keywordflow}{if}\ len(whl\_files)\ >\ 1:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ print(}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Found\ multiple\ .whl\ files;\ unspecified\ behaviour.\ "{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Will\ call\ build\_wheel."{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00263}00263\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00264}00264\ \ \ \ \ \textcolor{comment}{\#\ Exactly\ one\ .whl\ file}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00265}00265\ \ \ \ \ \textcolor{keywordflow}{return}\ whl\_files[0]}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00266}00266\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00267}00267\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00268}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a98d451e9faf44cbf9a8ee86019f48b31}{00268}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a98d451e9faf44cbf9a8ee86019f48b31}{build\_wheel}}(wheel\_directory,\ config\_settings,\ metadata\_directory=None):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00269}00269\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Invoke\ the\ mandatory\ build\_wheel\ hook.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00270}00270\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00271}00271\ \textcolor{stringliteral}{\ \ \ \ If\ a\ wheel\ was\ already\ built\ in\ the}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00272}00272\ \textcolor{stringliteral}{\ \ \ \ prepare\_metadata\_for\_build\_wheel\ fallback,\ this}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00273}00273\ \textcolor{stringliteral}{\ \ \ \ will\ copy\ it\ rather\ than\ rebuilding\ the\ wheel.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00274}00274\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00275}00275\ \ \ \ \ prebuilt\_whl\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_afb4c283ad67585ae6396b0ee33cd88c6}{\_find\_already\_built\_wheel}}(metadata\_directory)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00276}00276\ \ \ \ \ \textcolor{keywordflow}{if}\ prebuilt\_whl:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ shutil.copy2(prebuilt\_whl,\ wheel\_directory)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ os.path.basename(prebuilt\_whl)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00279}00279\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00280}00280\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a1344631ed340c60313a1027a4c82bf70}{\_build\_backend}}().\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a98d451e9faf44cbf9a8ee86019f48b31}{build\_wheel}}(}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ wheel\_directory,\ config\_settings,\ metadata\_directory}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00282}00282\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00283}00283\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00284}00284\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00285}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_abdadcb1c3b4dcbb572e36a7daee54bf9}{00285}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_abdadcb1c3b4dcbb572e36a7daee54bf9}{build\_editable}}(wheel\_directory,\ config\_settings,\ metadata\_directory=None):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00286}00286\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Invoke\ the\ optional\ build\_editable\ hook.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00287}00287\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00288}00288\ \textcolor{stringliteral}{\ \ \ \ If\ a\ wheel\ was\ already\ built\ in\ the}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00289}00289\ \textcolor{stringliteral}{\ \ \ \ prepare\_metadata\_for\_build\_editable\ fallback,\ this}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00290}00290\ \textcolor{stringliteral}{\ \ \ \ will\ copy\ it\ rather\ than\ rebuilding\ the\ wheel.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00291}00291\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00292}00292\ \ \ \ \ backend\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a1344631ed340c60313a1027a4c82bf70}{\_build\_backend}}()}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00293}00293\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ hook\ =\ backend.build\_editable}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00295}00295\ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_hook_missing}{HookMissing}}()}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00297}00297\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00298}00298\ \ \ \ \ \ \ \ \ prebuilt\_whl\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_afb4c283ad67585ae6396b0ee33cd88c6}{\_find\_already\_built\_wheel}}(metadata\_directory)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ prebuilt\_whl:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ \ \ \ \ shutil.copy2(prebuilt\_whl,\ wheel\_directory)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ os.path.basename(prebuilt\_whl)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00302}00302\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hook(wheel\_directory,\ config\_settings,\ metadata\_directory)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00304}00304\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00305}00305\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00306}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_ac3da0802b64d6fb96deaaf035d36bfa5}{00306}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_ac3da0802b64d6fb96deaaf035d36bfa5}{get\_requires\_for\_build\_sdist}}(config\_settings):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00307}00307\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Invoke\ the\ optional\ get\_requires\_for\_build\_wheel\ hook}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00308}00308\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00309}00309\ \textcolor{stringliteral}{\ \ \ \ Returns\ []\ if\ the\ hook\ is\ not\ defined.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00310}00310\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00311}00311\ \ \ \ \ backend\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a1344631ed340c60313a1027a4c82bf70}{\_build\_backend}}()}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00312}00312\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ hook\ =\ backend.get\_requires\_for\_build\_sdist}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00314}00314\ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00315}00315\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ []}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00316}00316\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hook(config\_settings)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00318}00318\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00319}00319\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00320}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___dummy_exception}{00320}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1___dummy_exception}{\_DummyException}}(Exception):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00321}00321\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Nothing\ should\ ever\ raise\ this\ exception"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00322}00322\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00323}00323\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00324}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_got_unsupported_operation}{00324}}\ \textcolor{keyword}{class\ }GotUnsupportedOperation(Exception):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00325}00325\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}For\ internal\ use\ when\ backend\ raises\ UnsupportedOperation"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00326}00326\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00327}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_got_unsupported_operation_a58e063b5dc09688397a8fc9546c4e539}{00327}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_got_unsupported_operation_a58e063b5dc09688397a8fc9546c4e539}{\_\_init\_\_}}(self,\ traceback):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00328}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_got_unsupported_operation_a35f9e8e1f158a36d85e58199f81702c7}{00328}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_got_unsupported_operation_a35f9e8e1f158a36d85e58199f81702c7}{traceback}}\ =\ traceback}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00329}00329\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00330}00330\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00331}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a0dd13a3b1bbd8c66cb92a1484ffcf5dc}{00331}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a0dd13a3b1bbd8c66cb92a1484ffcf5dc}{build\_sdist}}(sdist\_directory,\ config\_settings):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00332}00332\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Invoke\ the\ mandatory\ build\_sdist\ hook."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00333}00333\ \ \ \ \ backend\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a1344631ed340c60313a1027a4c82bf70}{\_build\_backend}}()}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00334}00334\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00335}00335\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ backend.build\_sdist(sdist\_directory,\ config\_settings)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00336}00336\ \ \ \ \ \textcolor{keywordflow}{except}\ getattr(backend,\ \textcolor{stringliteral}{"{}UnsupportedOperation"{}},\ \_DummyException):}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_1_1_got_unsupported_operation}{GotUnsupportedOperation}}(traceback.format\_exc())}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00338}00338\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00339}00339\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00340}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a99a137690959390c5a921683b0bfaafc}{00340}}\ HOOK\_NAMES\ =\ \{}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00341}00341\ \ \ \ \ \textcolor{stringliteral}{"{}get\_requires\_for\_build\_wheel"{}},}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00342}00342\ \ \ \ \ \textcolor{stringliteral}{"{}prepare\_metadata\_for\_build\_wheel"{}},}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00343}00343\ \ \ \ \ \textcolor{stringliteral}{"{}build\_wheel"{}},}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00344}00344\ \ \ \ \ \textcolor{stringliteral}{"{}get\_requires\_for\_build\_editable"{}},}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00345}00345\ \ \ \ \ \textcolor{stringliteral}{"{}prepare\_metadata\_for\_build\_editable"{}},}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00346}00346\ \ \ \ \ \textcolor{stringliteral}{"{}build\_editable"{}},}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00347}00347\ \ \ \ \ \textcolor{stringliteral}{"{}get\_requires\_for\_build\_sdist"{}},}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00348}00348\ \ \ \ \ \textcolor{stringliteral}{"{}build\_sdist"{}},}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00349}00349\ \ \ \ \ \textcolor{stringliteral}{"{}\_supported\_features"{}},}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00350}00350\ \}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00351}00351\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00352}00352\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00353}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a821a9ec68a847d862543287dd6845102}{00353}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a821a9ec68a847d862543287dd6845102}{main}}():}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00354}00354\ \ \ \ \ \textcolor{keywordflow}{if}\ len(sys.argv)\ <\ 3:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ sys.exit(\textcolor{stringliteral}{"{}Needs\ args:\ hook\_name,\ control\_dir"{}})}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00356}00356\ \ \ \ \ hook\_name\ =\ sys.argv[1]}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00357}00357\ \ \ \ \ control\_dir\ =\ sys.argv[2]}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00358}00358\ \ \ \ \ \textcolor{keywordflow}{if}\ hook\_name\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ HOOK\_NAMES:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ sys.exit(\textcolor{stringliteral}{"{}Unknown\ hook:\ \%s"{}}\ \%\ hook\_name)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00360}00360\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00361}00361\ \ \ \ \ \textcolor{comment}{\#\ Remove\ the\ parent\ directory\ from\ sys.path\ to\ avoid\ polluting\ the\ backend}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00362}00362\ \ \ \ \ \textcolor{comment}{\#\ import\ namespace\ with\ this\ directory.}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00363}00363\ \ \ \ \ here\ =\ os.path.dirname(\_\_file\_\_)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00364}00364\ \ \ \ \ \textcolor{keywordflow}{if}\ here\ \textcolor{keywordflow}{in}\ sys.path:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ sys.path.remove(here)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00366}00366\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00367}00367\ \ \ \ \ hook\ =\ globals()[hook\_name]}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00368}00368\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00369}00369\ \ \ \ \ hook\_input\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_aed58eb59230a42c167f88b03a6d884d3}{read\_json}}(pjoin(control\_dir,\ \textcolor{stringliteral}{"{}input.json"{}}))}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00370}00370\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00371}00371\ \ \ \ \ json\_out\ =\ \{\textcolor{stringliteral}{"{}unsupported"{}}:\ \textcolor{keyword}{False},\ \textcolor{stringliteral}{"{}return\_val"{}}:\ \textcolor{keywordtype}{None}\}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00372}00372\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00373}00373\ \ \ \ \ \ \ \ \ json\_out[\textcolor{stringliteral}{"{}return\_val"{}}]\ =\ hook(**hook\_input[\textcolor{stringliteral}{"{}kwargs"{}}])}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00374}00374\ \ \ \ \ \textcolor{keywordflow}{except}\ BackendUnavailable\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ json\_out[\textcolor{stringliteral}{"{}no\_backend"{}}]\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ json\_out[\textcolor{stringliteral}{"{}traceback"{}}]\ =\ e.traceback}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ json\_out[\textcolor{stringliteral}{"{}backend\_error"{}}]\ =\ e.message}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00378}00378\ \ \ \ \ \textcolor{keywordflow}{except}\ GotUnsupportedOperation\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00379}00379\ \ \ \ \ \ \ \ \ json\_out[\textcolor{stringliteral}{"{}unsupported"{}}]\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ json\_out[\textcolor{stringliteral}{"{}traceback"{}}]\ =\ e.traceback}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00381}00381\ \ \ \ \ \textcolor{keywordflow}{except}\ HookMissing\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ json\_out[\textcolor{stringliteral}{"{}hook\_missing"{}}]\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ json\_out[\textcolor{stringliteral}{"{}missing\_hook\_name"{}}]\ =\ e.hook\_name\ \textcolor{keywordflow}{or}\ hook\_name}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00384}00384\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00385}00385\ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a57e360dea786536bd3ae605d2e59f361}{write\_json}}(json\_out,\ pjoin(control\_dir,\ \textcolor{stringliteral}{"{}output.json"{}}),\ indent=2)}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00386}00386\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00387}00387\ }
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00388}00388\ \textcolor{keywordflow}{if}\ \_\_name\_\_\ ==\ \textcolor{stringliteral}{"{}\_\_main\_\_"{}}:}
+\DoxyCodeLine{\Hypertarget{__in__process_8py_source_l00389}00389\ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks_1_1__in__process_1_1__in__process_a821a9ec68a847d862543287dd6845102}{main}}()}
+
+\end{DoxyCode}

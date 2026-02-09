@@ -1,0 +1,705 @@
+\doxysection{\+\_\+connection\+\_\+base.\+py}
+\hypertarget{__connection__base_8py_source}{}\label{__connection__base_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_connection\_base.py@{venv/Lib/site-\/packages/psycopg/\_connection\_base.py}}
+\doxymbox{\hyperlink{__connection__base_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00002}00002\ \textcolor{stringliteral}{psycopg\ connection\ objects}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00009}00009\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00010}00010\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00011}00011\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any,\ Generic,\ NamedTuple,\ TypeAlias}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00012}00012\ \textcolor{keyword}{from}\ weakref\ \textcolor{keyword}{import}\ ReferenceType,\ ref}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00013}00013\ \textcolor{keyword}{from}\ warnings\ \textcolor{keyword}{import}\ warn}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00014}00014\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ partial}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00015}00015\ \textcolor{keyword}{from}\ collections\ \textcolor{keyword}{import}\ deque}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00016}00016\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Callable}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00018}00018\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00019}00019\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ generators,\ postgres,\ pq}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00020}00020\ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ PQGen,\ PQGenConn,\ QueryNoTemplate}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00021}00021\ \textcolor{keyword}{from}\ .sql\ \textcolor{keyword}{import}\ SQL,\ Composable}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00022}00022\ \textcolor{keyword}{from}\ .\_tpc\ \textcolor{keyword}{import}\ Xid}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00023}00023\ \textcolor{keyword}{from}\ .rows\ \textcolor{keyword}{import}\ Row}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00024}00024\ \textcolor{keyword}{from}\ .adapt\ \textcolor{keyword}{import}\ AdaptersMap}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00025}00025\ \textcolor{keyword}{from}\ .\_enums\ \textcolor{keyword}{import}\ IsolationLevel}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00026}00026\ \textcolor{keyword}{from}\ .\_compat\ \textcolor{keyword}{import}\ LiteralString,\ Self,\ TypeVar}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00027}00027\ \textcolor{keyword}{from}\ .pq.misc\ \textcolor{keyword}{import}\ connection\_summary}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00028}00028\ \textcolor{keyword}{from}\ .\_preparing\ \textcolor{keyword}{import}\ PrepareManager}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00029}00029\ \textcolor{keyword}{from}\ .\_capabilities\ \textcolor{keyword}{import}\ capabilities}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00030}00030\ \textcolor{keyword}{from}\ .\_pipeline\_base\ \textcolor{keyword}{import}\ BasePipeline}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00031}00031\ \textcolor{keyword}{from}\ .\_connection\_info\ \textcolor{keyword}{import}\ ConnectionInfo}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00033}00033\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00034}00034\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepsycopg__pool_1_1base}{psycopg\_pool.base}}\ \textcolor{keyword}{import}\ BasePool}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00036}00036\ \ \ \ \ \textcolor{keyword}{from}\ .pq.abc\ \textcolor{keyword}{import}\ PGconn,\ PGresult}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00038}00038\ \textcolor{comment}{\#\ Row\ Type\ variable\ for\ Cursor\ (when\ it\ needs\ to\ be\ distinguished\ from\ the}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00039}00039\ \textcolor{comment}{\#\ connection's\ one)}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00040}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base_a62904579722106e39ef29ddde19f5855}{00040}}\ CursorRow\ =\ \doxymbox{\hyperlink{classtyping__extensions_1_1_type_var}{TypeVar}}(\textcolor{stringliteral}{"{}CursorRow"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00042}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base_ad60658c3685ba5acd0c8f958b8af1f68}{00042}}\ TEXT\ =\ pq.Format.TEXT}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00043}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base_a954f79241edc848fc4298378c1f10431}{00043}}\ BINARY\ =\ pq.Format.BINARY}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00045}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base_a331c9353ad6d9f6672b58bb598806722}{00045}}\ OK\ =\ pq.ConnStatus.OK}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00046}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base_a719b82c85cc807e357d4fa674cad8d90}{00046}}\ BAD\ =\ pq.ConnStatus.BAD}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00047}00047\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00048}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base_aaf5740c05330bfad13ca53019fe516d6}{00048}}\ COMMAND\_OK\ =\ pq.ExecStatus.COMMAND\_OK}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00049}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base_a3d9e1339c6505b341750f513769767aa}{00049}}\ TUPLES\_OK\ =\ pq.ExecStatus.TUPLES\_OK}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00050}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base_acd2197d91fe5b0eca00a173958208391}{00050}}\ FATAL\_ERROR\ =\ pq.ExecStatus.FATAL\_ERROR}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00052}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base_ad1016202eeb3130c5a88231445019400}{00052}}\ IDLE\ =\ pq.TransactionStatus.IDLE}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00053}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base_a38f237ad522c516941f495c00eb8d850}{00053}}\ INTRANS\ =\ pq.TransactionStatus.INTRANS}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00055}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base_ae390c97f5970c5cf372531549a748f28}{00055}}\ \_HAS\_SEND\_CLOSE\ =\ capabilities.has\_send\_close\_prepared()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00057}\doxymbox{\hyperlink{namespacepsycopg_1_1__connection__base_aa283540d3d83675c959a20dba7747892}{00057}}\ logger\ =\ logging.getLogger(\textcolor{stringliteral}{"{}psycopg"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00060}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_notify}{00060}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_notify}{Notify}}(NamedTuple):}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00061}00061\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}An\ asynchronous\ notification\ received\ from\ the\ database."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00062}00062\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00063}00063\ \ \ \ \ channel:\ str}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00064}00064\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ name\ of\ the\ channel\ on\ which\ the\ notification\ was\ received."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00065}00065\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00066}00066\ \ \ \ \ payload:\ str}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00067}00067\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ message\ attached\ to\ the\ notification."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00069}00069\ \ \ \ \ pid:\ int}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00070}00070\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ PID\ of\ the\ backend\ process\ which\ sent\ the\ notification."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00071}00071\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00072}00072\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00073}00073\ Notify.\_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00075}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_notify_a523585f7dbdd4003cc0668f88ef2fede}{00075}}\ NoticeHandler:\ TypeAlias\ =\ Callable[[e.Diagnostic],\ \textcolor{keywordtype}{None}]}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00076}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_notify_a9c3144a3612edbfcb65ececfca08c7df}{00076}}\ NotifyHandler:\ TypeAlias\ =\ Callable[[Notify],\ \textcolor{keywordtype}{None}]}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00078}00078\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00079}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection}{00079}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection}{BaseConnection}}(Generic[Row]):}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00080}00080\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00081}00081\ \textcolor{stringliteral}{\ \ \ \ Base\ class\ for\ different\ types\ of\ connections.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00082}00082\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00083}00083\ \textcolor{stringliteral}{\ \ \ \ Share\ common\ functionalities\ such\ as\ access\ to\ the\ wrapped\ PGconn,\ but}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00084}00084\ \textcolor{stringliteral}{\ \ \ \ allow\ different\ interfaces\ (sync/async).}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00085}00085\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00087}00087\ \ \ \ \ \textcolor{comment}{\#\ DBAPI2\ exposed\ exceptions}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00088}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a910c51e0da4fa615a9c7e39108655165}{00088}}\ \ \ \ \ Warning\ =\ e.Warning}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00089}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a96cf58eb16cda39accf7d870551425b6}{00089}}\ \ \ \ \ Error\ =\ e.Error}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00090}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a2fa0f9757f96102bdbc78fe65a5b6f28}{00090}}\ \ \ \ \ InterfaceError\ =\ e.InterfaceError}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00091}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aeedaf8018fcb3027af8ba56bcf05dc23}{00091}}\ \ \ \ \ DatabaseError\ =\ e.DatabaseError}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00092}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a7d919a283c73c9352ed553cd74bee9a5}{00092}}\ \ \ \ \ DataError\ =\ e.DataError}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00093}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a252eb7561809ba606c8da9d4ef61f16e}{00093}}\ \ \ \ \ OperationalError\ =\ e.OperationalError}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00094}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aa60e855773379ee959479fd42a6ff5e9}{00094}}\ \ \ \ \ IntegrityError\ =\ e.IntegrityError}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00095}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aaff5bdc2c79d7ec4f88e221ac9f31774}{00095}}\ \ \ \ \ InternalError\ =\ e.InternalError}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00096}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aa049cca8addbdccd127dc9c78f45b25c}{00096}}\ \ \ \ \ ProgrammingError\ =\ e.ProgrammingError}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00097}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_abed204895bb3b7d1892ce56a483f249f}{00097}}\ \ \ \ \ NotSupportedError\ =\ e.NotSupportedError}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00098}00098\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00099}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a0ac197d1e56d8700f916151eff0b4add}{00099}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a0ac197d1e56d8700f916151eff0b4add}{\_\_init\_\_}}(self,\ pgconn:\ PGconn):}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00100}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{00100}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}\ =\ pgconn}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00101}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ac242ed93e33cdb3ac2fc256470420858}{00101}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ac242ed93e33cdb3ac2fc256470420858}{\_autocommit}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ None,\ but\ set\ to\ a\ copy\ of\ the\ global\ adapters\ map\ as\ soon\ as\ requested.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00104}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab0b4f77e153270385b76384e3a42dfd3}{00104}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab0b4f77e153270385b76384e3a42dfd3}{\_adapters}}:\ AdaptersMap\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00106}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a1666faa2a8b8faa0dc810f1456ac424e}{00106}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a1666faa2a8b8faa0dc810f1456ac424e}{\_notice\_handlers}}:\ list[NoticeHandler]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00107}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a853cf2bf56c75c19449d6dfba6ba8e72}{00107}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a853cf2bf56c75c19449d6dfba6ba8e72}{\_notify\_handlers}}:\ list[NotifyHandler]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Number\ of\ transaction\ blocks\ currently\ entered}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00110}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab682ffd2170f2f3999936fe47617451f}{00110}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab682ffd2170f2f3999936fe47617451f}{\_num\_transactions}}\ =\ 0}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00111}00111\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00112}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a73d71f9e872ea5a1422ee2b853766ffd}{00112}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a73d71f9e872ea5a1422ee2b853766ffd}{\_closed}}\ =\ \textcolor{keyword}{False}\ \ \textcolor{comment}{\#\ closed\ by\ an\ explicit\ close()}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00113}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a8e01c177b4bc4a2b3ad4be50e075dd49}{00113}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a8e01c177b4bc4a2b3ad4be50e075dd49}{\_prepared}}:\ PrepareManager\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__preparing_1_1_prepare_manager}{PrepareManager}}()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00114}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{00114}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}:\ tuple[Xid,\ bool]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}\ \ \textcolor{comment}{\#\ xid,\ prepared}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00115}00115\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Gather\ notifies\ when\ the\ notifies()\ generator\ is\ not\ running.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ It\ will\ be\ set\ to\ None\ during\ \`{}notifies()`\ generator\ run.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00118}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a6160b387bba9d0883e058845b6a2a79d}{00118}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a6160b387bba9d0883e058845b6a2a79d}{\_notifies\_backlog}}:\ deque[Notify]\ |\ \textcolor{keywordtype}{None}\ =\ deque()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ wself\ =\ ref(self)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ pgconn.notice\_handler\ =\ partial(BaseConnection.\_notice\_handler,\ wself)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ pgconn.notify\_handler\ =\ partial(BaseConnection.\_notify\_handler,\ wself)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00123}00123\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Attribute\ is\ only\ set\ if\ the\ connection\ is\ from\ a\ pool\ so\ we\ can\ tell}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ apart\ a\ connection\ in\ the\ pool\ too\ (when\ \_pool\ =\ None)}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00126}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad4341255e682deee221f6ea4eb278a5b}{00126}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad4341255e682deee221f6ea4eb278a5b}{\_pool}}:\ BasePool\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00128}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{00128}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}:\ BasePipeline\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00129}00129\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Time\ when\ the\ connection\ was\ created\ (currently\ only\ used\ by\ the\ pool)}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00131}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_adc375c95fa71c117676ca9e0aeefbf3d}{00131}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_adc375c95fa71c117676ca9e0aeefbf3d}{\_created\_at}}:\ float}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Time\ after\ which\ the\ connection\ should\ be\ closed}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00133}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae463e4eb319ff5283a2577e4f2bfa201}{00133}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae463e4eb319ff5283a2577e4f2bfa201}{\_expire\_at}}:\ float}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00134}00134\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00135}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ade6c830fa9716a9a5036a434e5b0b1d0}{00135}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ade6c830fa9716a9a5036a434e5b0b1d0}{\_isolation\_level}}:\ IsolationLevel\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00136}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a5db4ac2952cec0a36fca3e7caccff6fe}{00136}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a5db4ac2952cec0a36fca3e7caccff6fe}{\_read\_only}}:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00137}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a7a76db15dab6055fbd1c6ec41c08507b}{00137}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a7a76db15dab6055fbd1c6ec41c08507b}{\_deferrable}}:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00138}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a93336e5c20a93f7356b8e9d9bdd55764}{00138}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a93336e5c20a93f7356b8e9d9bdd55764}{\_begin\_statement}}\ =\ b\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00139}00139\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00140}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_af40c20dc72a3dd7b731d7d759cf77ba5}{00140}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_af40c20dc72a3dd7b731d7d759cf77ba5}{\_\_del\_\_}}(self,\ \_\_warn:\ Any\ =\ warn)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ fails\ on\ connection\ we\ might\ not\ have\ this\ attribute\ yet}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ hasattr(self,\ \textcolor{stringliteral}{"{}pgconn"{}}):}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Connection\ correctly\ closed}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00146}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad8723b67a2a3a8f81b36f09b16dd6266}{00146}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad8723b67a2a3a8f81b36f09b16dd6266}{closed}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00148}00148\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Connection\ in\ a\ pool\ so\ terminating\ with\ the\ program\ is\ normal}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ hasattr(self,\ \textcolor{stringliteral}{"{}\_pool"{}}):}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00152}00152\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \_\_warn(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{object.\_\_repr\_\_(self)\}\ was\ deleted\ while\ still\ open."{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ Please\ use\ 'with'\ or\ '.close()'\ to\ close\ the\ connection\ properly"{}},}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \ \ \ \ ResourceWarning,}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00158}00158\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00159}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a5360b27a32355ae8f474b6bd6e29bfe2}{00159}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a5360b27a32355ae8f474b6bd6e29bfe2}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ cls\ =\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_module\_\_\}.\{self.\_\_class\_\_.\_\_qualname\_\_\}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ info\ =\ connection\_summary(self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}<\{cls\}\ \{info\}\ at\ 0x\{id(self):x\}>"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00163}00163\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00164}00164\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00165}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a385fb0f50504b809efd9a9413f8a8e12}{00165}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad8723b67a2a3a8f81b36f09b16dd6266}{closed}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}\`{}!True\`{}\ if\ the\ connection\ is\ closed."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.status\ ==\ BAD}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00168}00168\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00169}00169\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00170}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a4cafd25b6f3293e76702701ea67f65f1}{00170}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a4cafd25b6f3293e76702701ea67f65f1}{broken}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00172}00172\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}!True\`{}\ if\ the\ connection\ was\ interrupted.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00173}00173\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00174}00174\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ A\ broken\ connection\ is\ always\ \`{}closed\`{},\ but\ wasn't\ closed\ in\ a\ clean}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00175}00175\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ way,\ such\ as\ using\ \`{}close()\`{}\ or\ a\ \`{}!with\`{}\ block.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00176}00176\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.status\ ==\ BAD\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a73d71f9e872ea5a1422ee2b853766ffd}{\_closed}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00178}00178\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00179}00179\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00180}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a709ee5d5bd7b7a408c6d42c46f1c9e3d}{00180}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a709ee5d5bd7b7a408c6d42c46f1c9e3d}{autocommit}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ autocommit\ state\ of\ the\ connection."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ac242ed93e33cdb3ac2fc256470420858}{\_autocommit}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00183}00183\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00184}00184\ \ \ \ \ \textcolor{preprocessor}{@autocommit.setter}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00185}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a34a0673888fe65bc8ec79a31e19a5c8c}{00185}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a709ee5d5bd7b7a408c6d42c46f1c9e3d}{autocommit}}(self,\ value:\ bool)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a18388a303c4d49fbacf8705f5e978171}{\_set\_autocommit}}(value)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00187}00187\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00188}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a18388a303c4d49fbacf8705f5e978171}{00188}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a18388a303c4d49fbacf8705f5e978171}{\_set\_autocommit}}(self,\ value:\ bool)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00190}00190\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00191}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad218a4d1d7781e15b6d6b939870c7ee5}{00191}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad218a4d1d7781e15b6d6b939870c7ee5}{\_set\_autocommit\_gen}}(self,\ value:\ bool)\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad2f6d9968b3032cfcfd2e09c632d5d3f}{\_check\_intrans\_gen}}(\textcolor{stringliteral}{"{}autocommit"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ac242ed93e33cdb3ac2fc256470420858}{\_autocommit}}\ =\ bool(value)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00194}00194\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00195}00195\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00196}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_afdbfcfe7bce4ebc94f0927c9e59773d4}{00196}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_afdbfcfe7bce4ebc94f0927c9e59773d4}{isolation\_level}}(self)\ -\/>\ IsolationLevel\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00198}00198\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ isolation\ level\ of\ the\ new\ transactions\ started\ on\ the\ connection.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00199}00199\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ade6c830fa9716a9a5036a434e5b0b1d0}{\_isolation\_level}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00201}00201\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00202}00202\ \ \ \ \ \textcolor{preprocessor}{@isolation\_level.setter}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00203}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aa939576d07a04b9e68fb27d328ba4297}{00203}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_afdbfcfe7bce4ebc94f0927c9e59773d4}{isolation\_level}}(self,\ value:\ IsolationLevel\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a7a4aca091f674d7590ea1d3037fd56d9}{\_set\_isolation\_level}}(value)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00205}00205\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00206}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a7a4aca091f674d7590ea1d3037fd56d9}{00206}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a7a4aca091f674d7590ea1d3037fd56d9}{\_set\_isolation\_level}}(self,\ value:\ IsolationLevel\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00208}00208\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00209}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_acff02f520a32ee06a1305bdad3b7cd27}{00209}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_acff02f520a32ee06a1305bdad3b7cd27}{\_set\_isolation\_level\_gen}}(self,\ value:\ IsolationLevel\ |\ \textcolor{keywordtype}{None})\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad2f6d9968b3032cfcfd2e09c632d5d3f}{\_check\_intrans\_gen}}(\textcolor{stringliteral}{"{}isolation\_level"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ade6c830fa9716a9a5036a434e5b0b1d0}{\_isolation\_level}}\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__enums_1_1_isolation_level}{IsolationLevel}}(value)\ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a93336e5c20a93f7356b8e9d9bdd55764}{\_begin\_statement}}\ =\ b\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00213}00213\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00214}00214\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00215}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a1cfd8f9a4f2987a680f6df1fbb7edb01}{00215}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a1cfd8f9a4f2987a680f6df1fbb7edb01}{read\_only}}(self)\ -\/>\ bool\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00217}00217\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ read-\/only\ state\ of\ the\ new\ transactions\ started\ on\ the\ connection.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00218}00218\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a5db4ac2952cec0a36fca3e7caccff6fe}{\_read\_only}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00220}00220\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00221}00221\ \ \ \ \ \textcolor{preprocessor}{@read\_only.setter}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00222}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a8e02bec63ae283c9d1c39cb521a5b341}{00222}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a1cfd8f9a4f2987a680f6df1fbb7edb01}{read\_only}}(self,\ value:\ bool\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab45f6ad37adfdabcad241fd710a40615}{\_set\_read\_only}}(value)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00224}00224\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00225}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab45f6ad37adfdabcad241fd710a40615}{00225}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab45f6ad37adfdabcad241fd710a40615}{\_set\_read\_only}}(self,\ value:\ bool\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00227}00227\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00228}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a789727afd0d7b3f91af293cffbc43984}{00228}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a789727afd0d7b3f91af293cffbc43984}{\_set\_read\_only\_gen}}(self,\ value:\ bool\ |\ \textcolor{keywordtype}{None})\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad2f6d9968b3032cfcfd2e09c632d5d3f}{\_check\_intrans\_gen}}(\textcolor{stringliteral}{"{}read\_only"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a5db4ac2952cec0a36fca3e7caccff6fe}{\_read\_only}}\ =\ bool(value)\ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a93336e5c20a93f7356b8e9d9bdd55764}{\_begin\_statement}}\ =\ b\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00232}00232\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00233}00233\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00234}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_adf99e6625dd7c81d5de83727c8bbb0aa}{00234}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_adf99e6625dd7c81d5de83727c8bbb0aa}{deferrable}}(self)\ -\/>\ bool\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00236}00236\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ deferrable\ state\ of\ the\ new\ transactions\ started\ on\ the\ connection.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00237}00237\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a7a76db15dab6055fbd1c6ec41c08507b}{\_deferrable}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00239}00239\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00240}00240\ \ \ \ \ \textcolor{preprocessor}{@deferrable.setter}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00241}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a0639e800b77fa36e00c4f5389b9cb4f0}{00241}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_adf99e6625dd7c81d5de83727c8bbb0aa}{deferrable}}(self,\ value:\ bool\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a6e7f0f611628c09ee1d56284835c1e9d}{\_set\_deferrable}}(value)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00243}00243\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00244}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a6e7f0f611628c09ee1d56284835c1e9d}{00244}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a6e7f0f611628c09ee1d56284835c1e9d}{\_set\_deferrable}}(self,\ value:\ bool\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00246}00246\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00247}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a5184b56afa96a6296a659b3f2157f900}{00247}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a5184b56afa96a6296a659b3f2157f900}{\_set\_deferrable\_gen}}(self,\ value:\ bool\ |\ \textcolor{keywordtype}{None})\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad2f6d9968b3032cfcfd2e09c632d5d3f}{\_check\_intrans\_gen}}(\textcolor{stringliteral}{"{}deferrable"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a7a76db15dab6055fbd1c6ec41c08507b}{\_deferrable}}\ =\ bool(value)\ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a93336e5c20a93f7356b8e9d9bdd55764}{\_begin\_statement}}\ =\ b\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00251}00251\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00252}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad2f6d9968b3032cfcfd2e09c632d5d3f}{00252}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad2f6d9968b3032cfcfd2e09c632d5d3f}{\_check\_intrans\_gen}}(self,\ attribute:\ str)\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Raise\ an\ exception\ if\ we\ are\ in\ a\ transaction}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (status\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.transaction\_status)\ ==\ IDLE\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}.\_sync\_gen()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ status\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.transaction\_status}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ status\ !=\ IDLE:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab682ffd2170f2f3999936fe47617451f}{\_num\_transactions}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}can't\ change\ \{attribute!r\}\ now:\ "{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}connection.transaction()\ context\ in\ progress"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}can't\ change\ \{attribute!r\}\ now:\ "{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}connection\ in\ transaction\ status\ "{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{pq.TransactionStatus(status).name\}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00269}00269\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00270}00270\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00271}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_af7c95e6359da03186c0faaf584d7b31d}{00271}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_af7c95e6359da03186c0faaf584d7b31d}{info}}(self)\ -\/>\ ConnectionInfo:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ \`{}ConnectionInfo\`{}\ attribute\ to\ inspect\ connection\ properties."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1__connection__info_1_1_connection_info}{ConnectionInfo}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00274}00274\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00275}00275\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00276}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a6cfb62d6c5b0e0a0959126488c99a503}{00276}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_acc2de5016d8f73efa8751639302fdfdc}{adapters}}(self)\ -\/>\ AdaptersMap:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab0b4f77e153270385b76384e3a42dfd3}{\_adapters}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab0b4f77e153270385b76384e3a42dfd3}{\_adapters}}\ =\ AdaptersMap(postgres.adapters)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00279}00279\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab0b4f77e153270385b76384e3a42dfd3}{\_adapters}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00281}00281\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00282}00282\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00283}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab9a40c7baee58b2fa2a7cf4e148a0138}{00283}}\ \ \ \ \ \textcolor{keyword}{def\ }connection(self)\ -\/>\ BaseConnection[Row]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ implement\ the\ AdaptContext\ protocol}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00286}00286\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00287}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aecc2bdd214db708cd7c4d329aae3e4ef}{00287}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aecc2bdd214db708cd7c4d329aae3e4ef}{fileno}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ the\ file\ descriptor\ of\ the\ connection.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00289}00289\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00290}00290\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ function\ allows\ to\ use\ the\ connection\ as\ file-\/like\ object\ in}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00291}00291\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ functions\ waiting\ for\ readiness,\ such\ as\ the\ ones\ defined\ in\ the}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00292}00292\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}selectors\`{}\ module.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00293}00293\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.socket}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00295}00295\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00296}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a665c402f5416749e775aaa9044d375ca}{00296}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a665c402f5416749e775aaa9044d375ca}{cancel}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00297}00297\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Cancel\ the\ current\ operation\ on\ the\ connection."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00298}00298\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a816c96347711d1caa3c401c3e5c7cdd9}{\_should\_cancel}}():}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \ \ \ \ c\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.get\_cancel()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ \ \ \ \ c.cancel()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00301}00301\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00302}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a816c96347711d1caa3c401c3e5c7cdd9}{00302}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a816c96347711d1caa3c401c3e5c7cdd9}{\_should\_cancel}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Check\ whether\ the\ current\ command\ should\ actually\ be\ cancelled\ when}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00304}00304\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ invoking\ cancel*().}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00305}00305\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ cancel()\ is\ a\ no-\/op\ if\ the\ connection\ is\ closed;}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ this\ allows\ to\ use\ the\ method\ as\ callback\ handler\ without\ caring}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ about\ its\ life.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad8723b67a2a3a8f81b36f09b16dd6266}{closed}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}[1]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00312}00312\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}cancel()\ cannot\ be\ used\ with\ a\ prepared\ two-\/phase\ transaction"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00314}00314\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00315}00315\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00316}00316\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00317}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a0f51d35e09814068de048e12939b10b4}{00317}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a0f51d35e09814068de048e12939b10b4}{\_cancel\_gen}}(self,\ *,\ timeout:\ float)\ -\/>\ PQGenConn[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00318}00318\ \ \ \ \ \ \ \ \ cancel\_conn\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.cancel\_conn()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00319}00319\ \ \ \ \ \ \ \ \ cancel\_conn.start()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ generators.cancel(cancel\_conn,\ timeout=timeout)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00321}00321\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00322}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_af097b50ed9c48bf3eec618c94a129fd4}{00322}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_af097b50ed9c48bf3eec618c94a129fd4}{add\_notice\_handler}}(self,\ callback:\ NoticeHandler)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00323}00323\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00324}00324\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Register\ a\ callable\ to\ be\ invoked\ when\ a\ notice\ message\ is\ received.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00325}00325\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00326}00326\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ callback:\ the\ callback\ to\ call\ upon\ message\ received.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00327}00327\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :type\ callback:\ Callable[[\string~psycopg.errors.Diagnostic],\ None]}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00328}00328\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a1666faa2a8b8faa0dc810f1456ac424e}{\_notice\_handlers}}.append(callback)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00330}00330\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00331}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ac6c32bf65534973fad2d25a040c0df5f}{00331}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ac6c32bf65534973fad2d25a040c0df5f}{remove\_notice\_handler}}(self,\ callback:\ NoticeHandler)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00332}00332\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00333}00333\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Unregister\ a\ notice\ message\ callable\ previously\ registered.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00334}00334\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00335}00335\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ callback:\ the\ callback\ to\ remove.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00336}00336\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :type\ callback:\ Callable[[\string~psycopg.errors.Diagnostic],\ None]}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00337}00337\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a1666faa2a8b8faa0dc810f1456ac424e}{\_notice\_handlers}}.remove(callback)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00339}00339\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00340}00340\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00341}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad65ab24fc313ca3329e69457c9f67ea9}{00341}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad65ab24fc313ca3329e69457c9f67ea9}{\_notice\_handler}}(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ wself:\ ReferenceType[BaseConnection[Row]],\ res:\ PGresult}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00343}00343\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ self\ =\ wself()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (self\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a1666faa2a8b8faa0dc810f1456ac424e}{\_notice\_handlers}}):}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00347}00347\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ diag\ =\ e.Diagnostic(res,\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.\_encoding)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ cb\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a1666faa2a8b8faa0dc810f1456ac424e}{\_notice\_handlers}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cb(diag)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.exception(\textcolor{stringliteral}{"{}error\ processing\ notice\ callback\ '\%s':\ \%s"{}},\ cb,\ ex)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00354}00354\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00355}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a6ed451565a1ebe8b90c2b4b906e5d9a4}{00355}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a6ed451565a1ebe8b90c2b4b906e5d9a4}{add\_notify\_handler}}(self,\ callback:\ NotifyHandler)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00357}00357\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Register\ a\ callable\ to\ be\ invoked\ whenever\ a\ notification\ is\ received.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00358}00358\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00359}00359\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ callback:\ the\ callback\ to\ call\ upon\ notification\ received.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00360}00360\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :type\ callback:\ Callable[[\string~psycopg.Notify],\ None]}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00361}00361\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a853cf2bf56c75c19449d6dfba6ba8e72}{\_notify\_handlers}}.append(callback)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00363}00363\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00364}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a6c9056ed06879ebcc9100e4c72f3c90e}{00364}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a6c9056ed06879ebcc9100e4c72f3c90e}{remove\_notify\_handler}}(self,\ callback:\ NotifyHandler)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00366}00366\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Unregister\ a\ notification\ callable\ previously\ registered.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00367}00367\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00368}00368\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ callback:\ the\ callback\ to\ remove.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00369}00369\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :type\ callback:\ Callable[[\string~psycopg.Notify],\ None]}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00370}00370\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a853cf2bf56c75c19449d6dfba6ba8e72}{\_notify\_handlers}}.remove(callback)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00372}00372\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00373}00373\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00374}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aea57920b0ddb79fa81784fc95c9b3487}{00374}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aea57920b0ddb79fa81784fc95c9b3487}{\_notify\_handler}}(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ wself:\ ReferenceType[BaseConnection[Row]],\ pgn:\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1misc_1_1_p_gnotify}{pq.PGnotify}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00376}00376\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (self\ :=\ wself()):}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00379}00379\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ enc\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.\_encoding}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ n\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_notify}{Notify}}(pgn.relname.decode(enc),\ pgn.extra.decode(enc),\ pgn.be\_pid)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00382}00382\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a853cf2bf56c75c19449d6dfba6ba8e72}{\_notify\_handlers}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ cb\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a853cf2bf56c75c19449d6dfba6ba8e72}{\_notify\_handlers}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00385}00385\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cb(n)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \`{}\_notifies\_backlog`\ is\ None\ if\ the\ \`{}notifies()`\ generator\ is\ running}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (d\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a6160b387bba9d0883e058845b6a2a79d}{\_notifies\_backlog}})\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ d.append(n)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00390}00390\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00391}00391\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00392}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a7192d55458cfc6ab676c29c8b26e2b05}{00392}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a7192d55458cfc6ab676c29c8b26e2b05}{prepare\_threshold}}(self)\ -\/>\ int\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00394}00394\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Number\ of\ times\ a\ query\ is\ executed\ before\ it\ is\ prepared.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00395}00395\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00396}00396\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ -\/\ If\ it\ is\ set\ to\ 0,\ every\ query\ is\ prepared\ the\ first\ time\ it\ is}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00397}00397\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ executed.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00398}00398\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ -\/\ If\ it\ is\ set\ to\ \`{}!None\`{},\ prepared\ statements\ are\ disabled\ on\ the}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00399}00399\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ connection.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00400}00400\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00401}00401\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Default\ value:\ 5}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00402}00402\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a8e01c177b4bc4a2b3ad4be50e075dd49}{\_prepared}}.prepare\_threshold}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00404}00404\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00405}00405\ \ \ \ \ \textcolor{preprocessor}{@prepare\_threshold.setter}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00406}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a9f32507ab3d39195cd7b3989683a4f60}{00406}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a7192d55458cfc6ab676c29c8b26e2b05}{prepare\_threshold}}(self,\ value:\ int\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a8e01c177b4bc4a2b3ad4be50e075dd49}{\_prepared}}.prepare\_threshold\ =\ value}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00408}00408\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00409}00409\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00410}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a5da6be5da51635e77021ca27703ff27a}{00410}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a5da6be5da51635e77021ca27703ff27a}{prepared\_max}}(self)\ -\/>\ int\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00411}00411\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00412}00412\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Maximum\ number\ of\ prepared\ statements\ on\ the\ connection.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00413}00413\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00414}00414\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}!None\`{}\ means\ no\ max\ number\ of\ prepared\ statements.\ The\ default\ value}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00415}00415\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ is\ 100.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00416}00416\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ rv\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a8e01c177b4bc4a2b3ad4be50e075dd49}{\_prepared}}.prepared\_max}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ rv\ \textcolor{keywordflow}{if}\ rv\ !=\ sys.maxsize\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00419}00419\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00420}00420\ \ \ \ \ \textcolor{preprocessor}{@prepared\_max.setter}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00421}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ad98f6e00ccc00794fe4e81dadc63921a}{00421}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a5da6be5da51635e77021ca27703ff27a}{prepared\_max}}(self,\ value:\ int\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ \ \ \ \ value\ =\ sys.maxsize}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00424}00424\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a8e01c177b4bc4a2b3ad4be50e075dd49}{\_prepared}}.prepared\_max\ =\ value}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00425}00425\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00426}00426\ \ \ \ \ \textcolor{comment}{\#\ Generators\ to\ perform\ high-\/level\ operations\ on\ the\ connection}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00427}00427\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00428}00428\ \ \ \ \ \textcolor{comment}{\#\ These\ operations\ are\ expressed\ in\ terms\ of\ non-\/blocking\ generators}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00429}00429\ \ \ \ \ \textcolor{comment}{\#\ and\ the\ task\ of\ waiting\ when\ needed\ (when\ the\ generators\ yield)\ is\ left}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00430}00430\ \ \ \ \ \textcolor{comment}{\#\ to\ the\ connections\ subclass,\ which\ might\ wait\ either\ in\ blocking\ mode}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00431}00431\ \ \ \ \ \textcolor{comment}{\#\ or\ through\ asyncio.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00432}00432\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00433}00433\ \ \ \ \ \textcolor{comment}{\#\ All\ these\ generators\ assume\ exclusive\ access\ to\ the\ connection:\ subclasses}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00434}00434\ \ \ \ \ \textcolor{comment}{\#\ should\ have\ a\ lock\ and\ hold\ it\ before\ calling\ and\ consuming\ them.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00435}00435\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00436}00436\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00437}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a3fb6265630931d3bda45972e9a213f66}{00437}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a3fb6265630931d3bda45972e9a213f66}{\_connect\_gen}}(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ cls,\ conninfo:\ str\ =\ \textcolor{stringliteral}{"{}"{}},\ *,\ timeout:\ float\ =\ 0.0}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00439}00439\ \ \ \ \ )\ -\/>\ PQGenConn[Self]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Generator\ to\ connect\ to\ the\ database\ and\ create\ a\ new\ instance."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ pgconn\ =\ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ generators.connect(conninfo,\ timeout=timeout)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00442}00442\ \ \ \ \ \ \ \ \ conn\ =\ cls(pgconn)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00443}00443\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ conn}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00444}00444\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00445}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aa774faf52caff14d7c4364676d6d3058}{00445}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aa774faf52caff14d7c4364676d6d3058}{\_exec\_command}}(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00446}00446\ \ \ \ \ \ \ \ \ self,\ command:\ QueryNoTemplate,\ result\_format:\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_format}{pq.Format}}\ =\ TEXT}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00447}00447\ \ \ \ \ )\ -\/>\ PQGen[PGresult\ |\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00448}00448\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00449}00449\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Generator\ to\ send\ a\ command\ and\ receive\ the\ result\ to\ the\ backend.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00450}00450\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00451}00451\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Only\ used\ to\ implement\ internal\ commands\ such\ as\ "{}commit"{},\ with\ eventual}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00452}00452\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ arguments\ bound\ client-\/side.\ The\ cursor\ can\ do\ more\ complex\ stuff.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00453}00453\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00454}00454\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a2f3a5d6655400cdbaa99f769b7478e1a}{\_check\_connection\_ok}}()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00455}00455\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(command,\ str):}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ \ \ \ \ command\ =\ command.encode(self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.\_encoding)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00458}00458\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(command,\ Composable):}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ \ \ \ \ command\ =\ command.as\_bytes(self)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00460}00460\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00462}00462\ \ \ \ \ \ \ \ \ \ \ \ \ cmd\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00463}00463\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.send\_query\_params,}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00464}00464\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ command,}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00465}00465\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00466}00466\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ result\_format=result\_format,}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00467}00467\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00468}00468\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}.command\_queue.append(cmd)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00469}00469\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}.result\_queue.append(\textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00470}00470\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00471}00471\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00472}00472\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Unless\ needed,\ use\ the\ simple\ query\ protocol,\ e.g.\ to\ interact\ with}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00473}00473\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ pgbouncer.\ In\ pipeline\ mode\ we\ always\ use\ the\ advanced\ query\ protocol}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00474}00474\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ instead,\ see\ \#350}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00475}00475\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ result\_format\ ==\ TEXT:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00476}00476\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.send\_query(command)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00477}00477\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00478}00478\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.send\_query\_params(command,\ \textcolor{keywordtype}{None},\ result\_format=result\_format)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00479}00479\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00480}00480\ \ \ \ \ \ \ \ \ result:\ PGresult\ =\ (\textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ generators.execute(self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}))[-\/1]}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00481}00481\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ result.status\ !=\ COMMAND\_OK\ \textcolor{keywordflow}{and}\ result.status\ !=\ TUPLES\_OK:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00482}00482\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ result.status\ ==\ FATAL\_ERROR:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00483}00483\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.error\_from\_result(result,\ encoding=self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.\_encoding)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00485}00485\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InterfaceError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00486}00486\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}unexpected\ result\ \{pq.ExecStatus(result.status).name\}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00487}00487\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ from\ command\ \{command.decode()!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00488}00488\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00489}00489\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ result}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00490}00490\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00491}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_af0f1e715805e75237fe5d0752930a564}{00491}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_af0f1e715805e75237fe5d0752930a564}{\_deallocate}}(self,\ name:\ bytes\ |\ \textcolor{keywordtype}{None})\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00492}00492\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00493}00493\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Deallocate\ one,\ or\ all,\ prepared\ statement\ in\ the\ session.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00494}00494\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00495}00495\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}\`{}name\ ==\ None\`{}\`{}\ stands\ for\ DEALLOCATE\ ALL.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00496}00496\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00497}00497\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ possible,\ use\ protocol-\/level\ commands;\ otherwise\ use\ SQL\ statements.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00498}00498\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00499}00499\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Note\ that\ PgBouncer\ doesn't\ support\ DEALLOCATE\ name,\ but\ it\ supports}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00500}00500\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ protocol-\/level\ Close\ from\ 1.21\ and\ DEALLOCATE\ ALL\ from\ 1.22.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00501}00501\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00502}00502\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ name\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{or}\ \textcolor{keywordflow}{not}\ \_HAS\_SEND\_CLOSE:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00503}00503\ \ \ \ \ \ \ \ \ \ \ \ \ stmt\ =\ b\textcolor{stringliteral}{"{}DEALLOCATE\ "{}}\ +\ name\ \textcolor{keywordflow}{if}\ name\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ b\textcolor{stringliteral}{"{}DEALLOCATE\ ALL"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00504}00504\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aa774faf52caff14d7c4364676d6d3058}{\_exec\_command}}(stmt)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00505}00505\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00506}00506\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a2f3a5d6655400cdbaa99f769b7478e1a}{\_check\_connection\_ok}}()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00508}00508\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00509}00509\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00510}00510\ \ \ \ \ \ \ \ \ \ \ \ \ cmd\ =\ partial(self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.send\_close\_prepared,\ name)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00511}00511\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}.command\_queue.append(cmd)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00512}00512\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}.result\_queue.append(\textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00513}00513\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00514}00514\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.send\_close\_prepared(name)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00516}00516\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00517}00517\ \ \ \ \ \ \ \ \ result\ =\ (\textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ generators.execute(self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}))[-\/1]}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00518}00518\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ result.status\ !=\ COMMAND\_OK:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ result.status\ ==\ FATAL\_ERROR:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.error\_from\_result(result,\ encoding=self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.\_encoding)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InterfaceError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00523}00523\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}unexpected\ result\ \{pq.ExecStatus(result.status).name\}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ from\ sending\ closing\ prepared\ statement\ message"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00525}00525\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00526}00526\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00527}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a2f3a5d6655400cdbaa99f769b7478e1a}{00527}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a2f3a5d6655400cdbaa99f769b7478e1a}{\_check\_connection\_ok}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00528}00528\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.status\ ==\ OK:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00529}00529\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00530}00530\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00531}00531\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.status\ ==\ BAD:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00532}00532\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.OperationalError(\textcolor{stringliteral}{"{}the\ connection\ is\ closed"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00533}00533\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InterfaceError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}cannot\ execute\ operations:\ the\ connection\ is"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00535}00535\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ in\ status\ \{self.pgconn.status\}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00536}00536\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00537}00537\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00538}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aaa57520ce86c8d66d2d4d276890cb79e}{00538}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aaa57520ce86c8d66d2d4d276890cb79e}{\_start\_query}}(self)\ -\/>\ PQGen[None]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00539}00539\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Generator\ to\ start\ a\ transaction\ if\ necessary."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00540}00540\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ac242ed93e33cdb3ac2fc256470420858}{\_autocommit}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00541}00541\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00542}00542\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00543}00543\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.transaction\_status\ !=\ IDLE:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00544}00544\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00545}00545\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00546}00546\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aa774faf52caff14d7c4364676d6d3058}{\_exec\_command}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_acfd649c67bed1431c44dba4a2a236068}{\_get\_tx\_start\_command}}())}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00547}00547\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}.\_sync\_gen()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00549}00549\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00550}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_acfd649c67bed1431c44dba4a2a236068}{00550}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_acfd649c67bed1431c44dba4a2a236068}{\_get\_tx\_start\_command}}(self)\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00551}00551\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a93336e5c20a93f7356b8e9d9bdd55764}{\_begin\_statement}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00552}00552\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a93336e5c20a93f7356b8e9d9bdd55764}{\_begin\_statement}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00553}00553\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00554}00554\ \ \ \ \ \ \ \ \ parts\ =\ [b\textcolor{stringliteral}{"{}BEGIN"{}}]}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00555}00555\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00556}00556\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_afdbfcfe7bce4ebc94f0927c9e59773d4}{isolation\_level}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00557}00557\ \ \ \ \ \ \ \ \ \ \ \ \ val\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__enums_1_1_isolation_level}{IsolationLevel}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_afdbfcfe7bce4ebc94f0927c9e59773d4}{isolation\_level}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00558}00558\ \ \ \ \ \ \ \ \ \ \ \ \ parts.append(b\textcolor{stringliteral}{"{}ISOLATION\ LEVEL"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00559}00559\ \ \ \ \ \ \ \ \ \ \ \ \ parts.append(val.name.replace(\textcolor{stringliteral}{"{}\_"{}},\ \textcolor{stringliteral}{"{}\ "{}}).encode())}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00560}00560\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00561}00561\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a1cfd8f9a4f2987a680f6df1fbb7edb01}{read\_only}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00562}00562\ \ \ \ \ \ \ \ \ \ \ \ \ parts.append(b\textcolor{stringliteral}{"{}READ\ ONLY"{}}\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a1cfd8f9a4f2987a680f6df1fbb7edb01}{read\_only}}\ \textcolor{keywordflow}{else}\ b\textcolor{stringliteral}{"{}READ\ WRITE"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00563}00563\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00564}00564\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_adf99e6625dd7c81d5de83727c8bbb0aa}{deferrable}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00565}00565\ \ \ \ \ \ \ \ \ \ \ \ \ parts.append(b\textcolor{stringliteral}{"{}DEFERRABLE"{}}\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_adf99e6625dd7c81d5de83727c8bbb0aa}{deferrable}}\ \textcolor{keywordflow}{else}\ b\textcolor{stringliteral}{"{}NOT\ DEFERRABLE"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00566}00566\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00567}00567\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a93336e5c20a93f7356b8e9d9bdd55764}{\_begin\_statement}}\ =\ b\textcolor{stringliteral}{"{}\ "{}}.join(parts)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00568}00568\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a93336e5c20a93f7356b8e9d9bdd55764}{\_begin\_statement}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00569}00569\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00570}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aeffbfdbce5179fa608bb0cc72f5652eb}{00570}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aeffbfdbce5179fa608bb0cc72f5652eb}{\_commit\_gen}}(self)\ -\/>\ PQGen[None]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00571}00571\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Generator\ implementing\ \`{}Connection.commit()\`{}."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00572}00572\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab682ffd2170f2f3999936fe47617451f}{\_num\_transactions}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00573}00573\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00574}00574\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Explicit\ commit()\ forbidden\ within\ a\ Transaction\ "{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00575}00575\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}context.\ (Transaction\ will\ be\ automatically\ committed\ "{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00576}00576\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}on\ successful\ exit\ from\ context.)"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00577}00577\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00578}00578\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00579}00579\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00580}00580\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}commit()\ cannot\ be\ used\ during\ a\ two-\/phase\ transaction"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00581}00581\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00582}00582\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.transaction\_status\ ==\ IDLE:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00583}00583\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00584}00584\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00585}00585\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aa774faf52caff14d7c4364676d6d3058}{\_exec\_command}}(b\textcolor{stringliteral}{"{}COMMIT"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00586}00586\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00587}00587\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00588}00588\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}.\_sync\_gen()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00589}00589\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00590}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a9357f83d34aa0c6e8d1337e85dd25edf}{00590}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a9357f83d34aa0c6e8d1337e85dd25edf}{\_rollback\_gen}}(self)\ -\/>\ PQGen[None]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00591}00591\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Generator\ implementing\ \`{}Connection.rollback()\`{}."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00592}00592\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ab682ffd2170f2f3999936fe47617451f}{\_num\_transactions}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00593}00593\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00594}00594\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Explicit\ rollback()\ forbidden\ within\ a\ Transaction\ "{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00595}00595\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}context.\ (Either\ raise\ Rollback()\ or\ allow\ "{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00596}00596\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}an\ exception\ to\ propagate\ out\ of\ the\ context.)"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00597}00597\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00598}00598\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00599}00599\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00600}00600\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}rollback()\ cannot\ be\ used\ during\ a\ two-\/phase\ transaction"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00601}00601\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00602}00602\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00603}00603\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Get\ out\ of\ a\ "{}pipeline\ aborted"{}\ state}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00604}00604\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00605}00605\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}.\_sync\_gen()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00606}00606\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00607}00607\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.transaction\_status\ ==\ IDLE:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00608}00608\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00609}00609\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00610}00610\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aa774faf52caff14d7c4364676d6d3058}{\_exec\_command}}(b\textcolor{stringliteral}{"{}ROLLBACK"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00611}00611\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a8e01c177b4bc4a2b3ad4be50e075dd49}{\_prepared}}.clear()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00612}00612\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a8e01c177b4bc4a2b3ad4be50e075dd49}{\_prepared}}.maintain\_gen(self)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00613}00613\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00614}00614\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00615}00615\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}.\_sync\_gen()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00616}00616\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00617}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a66eeccdc454a0c255c1f645011ec32da}{00617}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a66eeccdc454a0c255c1f645011ec32da}{xid}}(self,\ format\_id:\ int,\ gtrid:\ str,\ bqual:\ str)\ -\/>\ Xid:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00618}00618\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00619}00619\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Returns\ a\ \`{}Xid\`{}\ to\ pass\ to\ the\ \`{}!tpc\_*()\`{}\ methods\ of\ this\ connection.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00620}00620\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00621}00621\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ argument\ types\ and\ constraints\ are\ explained\ in}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00622}00622\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :ref:\`{}two-\/phase-\/commit\`{}.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00623}00623\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00624}00624\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ values\ passed\ to\ the\ method\ will\ be\ available\ on\ the\ returned}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00625}00625\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ object\ as\ the\ members\ \`{}\string~Xid.format\_id\`{},\ \`{}\string~Xid.gtrid\`{},\ \`{}\string~Xid.bqual\`{}.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00626}00626\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00627}00627\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_afd68dd01821546c34dba43993e866756}{\_check\_tpc}}()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00628}00628\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ Xid.from\_parts(format\_id,\ gtrid,\ bqual)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00629}00629\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00630}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a3b97ddcc243a14d52149def4b5703130}{00630}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a3b97ddcc243a14d52149def4b5703130}{\_tpc\_begin\_gen}}(self,\ xid:\ Xid\ |\ str)\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00631}00631\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_afd68dd01821546c34dba43993e866756}{\_check\_tpc}}()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00632}00632\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00633}00633\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(xid,\ Xid):}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00634}00634\ \ \ \ \ \ \ \ \ \ \ \ \ xid\ =\ Xid.from\_string(xid)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00635}00635\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00636}00636\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ae9f9a7c8143b6e7fd8c9cdfc78ee5327}{pgconn}}.transaction\_status\ !=\ IDLE:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00637}00637\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00638}00638\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}can't\ start\ two-\/phase\ transaction:\ connection\ in\ status"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00639}00639\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ \{pq.TransactionStatus(self.pgconn.transaction\_status).name\}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00640}00640\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00641}00641\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00642}00642\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_ac242ed93e33cdb3ac2fc256470420858}{\_autocommit}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00643}00643\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00644}00644\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}can't\ use\ two-\/phase\ transactions\ in\ autocommit\ mode"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00645}00645\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00646}00646\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00647}00647\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}\ =\ (xid,\ \textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00648}00648\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aa774faf52caff14d7c4364676d6d3058}{\_exec\_command}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_acfd649c67bed1431c44dba4a2a236068}{\_get\_tx\_start\_command}}())}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00649}00649\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00650}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a06f6133114dc91e61ba86c7bd87d9c4e}{00650}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a06f6133114dc91e61ba86c7bd87d9c4e}{\_tpc\_prepare\_gen}}(self)\ -\/>\ PQGen[None]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00651}00651\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00652}00652\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00653}00653\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}'tpc\_prepare()'\ must\ be\ called\ inside\ a\ two-\/phase\ transaction"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00654}00654\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00655}00655\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}[1]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00656}00656\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00657}00657\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}'tpc\_prepare()'\ cannot\ be\ used\ during\ a\ prepared\ two-\/phase\ transaction"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00658}00658\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00659}00659\ \ \ \ \ \ \ \ \ xid\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}[0]}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00660}00660\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}\ =\ (xid,\ \textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00661}00661\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aa774faf52caff14d7c4364676d6d3058}{\_exec\_command}}(\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{SQL}}(\textcolor{stringliteral}{"{}PREPARE\ TRANSACTION\ \{\}"{}}).format(str(xid)))}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00662}00662\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00663}00663\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a57dca68741336caf27b8d1e8cd424367}{\_pipeline}}.\_sync\_gen()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00664}00664\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00665}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a31e1f76c4fbf3487c8a5bf44e7d2e1db}{00665}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a31e1f76c4fbf3487c8a5bf44e7d2e1db}{\_tpc\_finish\_gen}}(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00666}00666\ \ \ \ \ \ \ \ \ self,\ action:\ LiteralString,\ xid:\ Xid\ |\ str\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00667}00667\ \ \ \ \ )\ -\/>\ PQGen[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00668}00668\ \ \ \ \ \ \ \ \ fname\ =\ f\textcolor{stringliteral}{"{}tpc\_\{action.lower()\}()"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00669}00669\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ xid\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00670}00670\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00671}00671\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00672}00672\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{fname\}\ without\ xid\ must\ must\ be"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00673}00673\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ called\ inside\ a\ two-\/phase\ transaction"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00674}00674\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00675}00675\ \ \ \ \ \ \ \ \ \ \ \ \ xid\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}[0]}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00676}00676\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00677}00677\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00678}00678\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00679}00679\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{fname\}\ with\ xid\ must\ must\ be\ called"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00680}00680\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ outside\ a\ two-\/phase\ transaction"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00681}00681\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00682}00682\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(xid,\ Xid):}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00683}00683\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ xid\ =\ Xid.from\_string(xid)}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00684}00684\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00685}00685\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}[1]:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00686}00686\ \ \ \ \ \ \ \ \ \ \ \ \ meth:\ Callable[[],\ PQGen[\textcolor{keywordtype}{None}]]}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00687}00687\ \ \ \ \ \ \ \ \ \ \ \ \ meth\ =\ getattr(self,\ f\textcolor{stringliteral}{"{}\_\{action.lower()\}\_gen"{}})}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00688}00688\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00689}00689\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ meth()}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00690}00690\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00691}00691\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_aa774faf52caff14d7c4364676d6d3058}{\_exec\_command}}(}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00692}00692\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{SQL}}(\textcolor{stringliteral}{"{}\{\}\ PREPARED\ \{\}"{}}).format(\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{SQL}}(action),\ str(xid))}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00693}00693\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00694}00694\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_a421c32a2c1a6d0c4718716520ede8c3d}{\_tpc}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00695}00695\ }
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00696}\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_afd68dd01821546c34dba43993e866756}{00696}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__connection__base_1_1_base_connection_afd68dd01821546c34dba43993e866756}{\_check\_tpc}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00697}00697\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Raise\ NotSupportedError\ if\ TPC\ is\ not\ supported."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00698}00698\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ TPC\ supported\ on\ every\ supported\ PostgreSQL\ version.}}
+\DoxyCodeLine{\Hypertarget{__connection__base_8py_source_l00699}00699\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+
+\end{DoxyCode}

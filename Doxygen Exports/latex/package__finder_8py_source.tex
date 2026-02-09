@@ -1,0 +1,1131 @@
+\doxysection{package\+\_\+finder.\+py}
+\hypertarget{package__finder_8py_source}{}\label{package__finder_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/index/package\_finder.py@{venv/Lib/site-\/packages/pip/\_internal/index/package\_finder.py}}
+\doxymbox{\hyperlink{package__finder_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}Routines\ related\ to\ PyPI,\ indexes"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00003}00003\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00005}00005\ \textcolor{keyword}{import}\ datetime}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00006}00006\ \textcolor{keyword}{import}\ enum}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00007}00007\ \textcolor{keyword}{import}\ functools}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00008}00008\ \textcolor{keyword}{import}\ itertools}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00009}00009\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00010}00010\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00011}00011\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterable}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00012}00012\ \textcolor{keyword}{from}\ dataclasses\ \textcolor{keyword}{import}\ dataclass}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00013}00013\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00014}00014\ \ \ \ \ TYPE\_CHECKING,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00015}00015\ \ \ \ \ Optional,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00016}00016\ \ \ \ \ Union,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00017}00017\ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00018}00018\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00019}00019\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging}{pip.\_vendor.packaging}}\ \textcolor{keyword}{import}\ specifiers}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00020}00020\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1tags}{pip.\_vendor.packaging.tags}}\ \textcolor{keyword}{import}\ Tag}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00021}00021\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1utils}{pip.\_vendor.packaging.utils}}\ \textcolor{keyword}{import}\ NormalizedName,\ canonicalize\_name}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00022}00022\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version}{pip.\_vendor.packaging.version}}\ \textcolor{keyword}{import}\ InvalidVersion,\ Version,\ \_BaseVersion}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00023}00023\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version}{pip.\_vendor.packaging.version}}\ \textcolor{keyword}{import}\ parse\ \textcolor{keyword}{as}\ parse\_version}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00025}00025\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00026}00026\ \ \ \ \ BestVersionAlreadyInstalled,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00027}00027\ \ \ \ \ DistributionNotFound,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00028}00028\ \ \ \ \ InstallationError,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00029}00029\ \ \ \ \ InvalidWheelFilename,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00030}00030\ \ \ \ \ UnsupportedWheel,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00031}00031\ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00032}00032\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1collector}{pip.\_internal.index.collector}}\ \textcolor{keyword}{import}\ LinkCollector,\ parse\_links}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00033}00033\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1metadata}{pip.\_internal.metadata}}\ \textcolor{keyword}{import}\ select\_backend}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00034}00034\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1candidate}{pip.\_internal.models.candidate}}\ \textcolor{keyword}{import}\ InstallationCandidate}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00035}00035\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1format__control}{pip.\_internal.models.format\_control}}\ \textcolor{keyword}{import}\ FormatControl}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00036}00036\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1link}{pip.\_internal.models.link}}\ \textcolor{keyword}{import}\ Link}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00037}00037\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1release__control}{pip.\_internal.models.release\_control}}\ \textcolor{keyword}{import}\ ReleaseControl}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00038}00038\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1search__scope}{pip.\_internal.models.search\_scope}}\ \textcolor{keyword}{import}\ SearchScope}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00039}00039\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1selection__prefs}{pip.\_internal.models.selection\_prefs}}\ \textcolor{keyword}{import}\ SelectionPreferences}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00040}00040\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1target__python}{pip.\_internal.models.target\_python}}\ \textcolor{keyword}{import}\ TargetPython}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00041}00041\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1wheel}{pip.\_internal.models.wheel}}\ \textcolor{keyword}{import}\ Wheel}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00042}00042\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req}{pip.\_internal.req}}\ \textcolor{keyword}{import}\ InstallRequirement}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00043}00043\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1__log}{pip.\_internal.utils.\_log}}\ \textcolor{keyword}{import}\ getLogger}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00044}00044\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1filetypes}{pip.\_internal.utils.filetypes}}\ \textcolor{keyword}{import}\ WHEEL\_EXTENSION}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00045}00045\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1hashes}{pip.\_internal.utils.hashes}}\ \textcolor{keyword}{import}\ Hashes}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00046}00046\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1logging}{pip.\_internal.utils.logging}}\ \textcolor{keyword}{import}\ indent\_log}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00047}00047\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1misc}{pip.\_internal.utils.misc}}\ \textcolor{keyword}{import}\ build\_netloc}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00048}00048\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1packaging}{pip.\_internal.utils.packaging}}\ \textcolor{keyword}{import}\ check\_requires\_python}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00049}00049\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1unpacking}{pip.\_internal.utils.unpacking}}\ \textcolor{keyword}{import}\ SUPPORTED\_EXTENSIONS}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00051}00051\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00052}00052\ \ \ \ \ \textcolor{keyword}{from}\ typing\_extensions\ \textcolor{keyword}{import}\ TypeGuard}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00054}00054\ \_\_all\_\_\ =\ [\textcolor{stringliteral}{"{}FormatControl"{}},\ \textcolor{stringliteral}{"{}BestCandidateResult"{}},\ \textcolor{stringliteral}{"{}PackageFinder"{}}]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00057}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_a230f7eba264091230ab47832046fc2f5}{00057}}\ logger\ =\ getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00059}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_a6e43cd6584e1508c9578cad30e0fdc2a}{00059}}\ BuildTag\ =\ Union[tuple[()],\ tuple[int,\ str]]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00060}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_a8c4b6db75eb88d67a055ab321dd6ec30}{00060}}\ CandidateSortingKey\ =\ tuple[int,\ int,\ int,\ \_BaseVersion,\ Optional[int],\ BuildTag]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00061}00061\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00062}00062\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00063}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_a9c91bf44253cd91b4a2e1a57f3db7f68}{00063}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_a9c91bf44253cd91b4a2e1a57f3db7f68}{\_check\_link\_requires\_python}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00064}00064\ \ \ \ \ link:\ Link,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00065}00065\ \ \ \ \ version\_info:\ tuple[int,\ int,\ int],}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00066}00066\ \ \ \ \ ignore\_requires\_python:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00067}00067\ )\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00068}00068\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00069}00069\ \textcolor{stringliteral}{\ \ \ \ Return\ whether\ the\ given\ Python\ version\ is\ compatible\ with\ a\ link's}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00070}00070\ \textcolor{stringliteral}{\ \ \ \ "{}Requires-\/Python"{}\ value.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00071}00071\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ :param\ version\_info:\ A\ 3-\/tuple\ of\ ints\ representing\ the\ Python}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00073}00073\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ major-\/minor-\/micro\ version\ to\ check.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00074}00074\ \textcolor{stringliteral}{\ \ \ \ :param\ ignore\_requires\_python:\ Whether\ to\ ignore\ the\ "{}Requires-\/Python"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00075}00075\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ value\ if\ the\ given\ Python\ version\ isn't\ compatible.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00076}00076\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00077}00077\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ is\_compatible\ =\ check\_requires\_python(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \ \ \ \ link.requires\_python,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \ \ \ \ version\_info=version\_info,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00082}00082\ \ \ \ \ \textcolor{keywordflow}{except}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1specifiers_1_1_invalid_specifier}{specifiers.InvalidSpecifier}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Ignoring\ invalid\ Requires-\/Python\ (\%r)\ for\ link:\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ link.requires\_python,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ link,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00088}00088\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ is\_compatible:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ version\ =\ \textcolor{stringliteral}{"{}."{}}.join(map(str,\ version\_info))}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ ignore\_requires\_python:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.verbose(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Link\ requires\ a\ different\ Python\ (\%s\ not\ in:\ \%r):\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ version,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ link.requires\_python,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ link,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00099}00099\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Ignoring\ failed\ Requires-\/Python\ check\ (\%s\ not\ in:\ \%r)\ for\ link:\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ version,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ link.requires\_python,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ link,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00107}00107\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00109}00109\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00110}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_type}{00110}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_type}{LinkType}}(enum.Enum):}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00111}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_type_a2014d62e67305ebcb50d6824f8f55911}{00111}}\ \ \ \ \ candidate\ =\ enum.auto()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00112}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_type_a45ff85c5cd31256d98f6582b709b5cfe}{00112}}\ \ \ \ \ different\_project\ =\ enum.auto()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00113}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_type_ae0f79a697f3045d6d5164df2d519664a}{00113}}\ \ \ \ \ yanked\ =\ enum.auto()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00114}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_type_a53e33d1779182f20fc26e245392cbb8a}{00114}}\ \ \ \ \ format\_unsupported\ =\ enum.auto()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00115}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_type_aa5b4545ef37e226a0440b5d37cd5007d}{00115}}\ \ \ \ \ format\_invalid\ =\ enum.auto()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00116}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_type_ab10e765acf86f25c52e6594c77548d89}{00116}}\ \ \ \ \ platform\_mismatch\ =\ enum.auto()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00117}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_type_a5a853f93f67a9f8b363cfd0451a65303}{00117}}\ \ \ \ \ requires\_python\_mismatch\ =\ enum.auto()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00118}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_type_a62bbb75b42993404fd020ba1d251daec}{00118}}\ \ \ \ \ upload\_too\_late\ =\ enum.auto()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00119}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_type_af0ce852dd86608cb92e7d86f41138817}{00119}}\ \ \ \ \ upload\_time\_missing\ =\ enum.auto()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00120}00120\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00122}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator}{00122}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator}{LinkEvaluator}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00123}00123\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00124}00124\ \textcolor{stringliteral}{\ \ \ \ Responsible\ for\ evaluating\ links\ for\ a\ particular\ project.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00125}00125\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00126}00126\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00127}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a2d4a52d56dd347cdd4c8d3e42e289b4e}{00127}}\ \ \ \ \ \_py\_version\_re\ =\ re.compile(\textcolor{stringliteral}{r"{}-\/py([123]\(\backslash\).?[0-\/9]?)\$"{}})}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00128}00128\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00129}00129\ \ \ \ \ \textcolor{comment}{\#\ Don't\ include\ an\ allow\_yanked\ default\ value\ to\ make\ sure\ each\ call}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00130}00130\ \ \ \ \ \textcolor{comment}{\#\ site\ considers\ whether\ yanked\ releases\ are\ allowed.\ This\ also\ causes}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00131}00131\ \ \ \ \ \textcolor{comment}{\#\ that\ decision\ to\ be\ made\ explicit\ in\ the\ calling\ code,\ which\ helps}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00132}00132\ \ \ \ \ \textcolor{comment}{\#\ people\ when\ reading\ the\ code.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00133}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_ad5c6412897b339f83fede7318f345ae4}{00133}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_ad5c6412897b339f83fede7318f345ae4}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ project\_name:\ str,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ canonical\_name:\ NormalizedName,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ formats:\ frozenset[str],}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ target\_python:\ TargetPython,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ allow\_yanked:\ bool,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ ignore\_requires\_python:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ uploaded\_prior\_to:\ datetime.datetime\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00142}00142\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00144}00144\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ project\_name:\ The\ user\ supplied\ package\ name.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00145}00145\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ canonical\_name:\ The\ canonical\ package\ name.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00146}00146\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ formats:\ The\ formats\ allowed\ for\ this\ package.\ Should\ be\ a\ set}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00147}00147\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ with\ 'binary'\ or\ 'source'\ or\ both\ in\ it.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00148}00148\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ target\_python:\ The\ target\ Python\ interpreter\ to\ use\ when}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00149}00149\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ evaluating\ link\ compatibility.\ This\ is\ used,\ for\ example,\ to}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00150}00150\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ check\ wheel\ compatibility,\ as\ well\ as\ when\ checking\ the\ Python}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00151}00151\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ version,\ e.g.\ the\ Python\ version\ embedded\ in\ a\ link\ filename}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00152}00152\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (or\ egg\ fragment)\ and\ against\ an\ HTML\ link's\ optional\ PEP\ 503}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00153}00153\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ "{}data-\/requires-\/python"{}\ attribute.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00154}00154\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ allow\_yanked:\ Whether\ files\ marked\ as\ yanked\ (in\ the\ sense}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00155}00155\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ of\ PEP\ 592)\ are\ permitted\ to\ be\ candidates\ for\ install.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00156}00156\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ ignore\_requires\_python:\ Whether\ to\ ignore\ incompatible}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00157}00157\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ PEP\ 503\ "{}data-\/requires-\/python"{}\ values\ in\ HTML\ links.\ Defaults}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00158}00158\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ to\ False.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00159}00159\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ uploaded\_prior\_to:\ If\ set,\ only\ allow\ links\ uploaded\ prior\ to}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00160}00160\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ the\ given\ datetime.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00161}00161\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ignore\_requires\_python\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_requires\_python\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00164}00164\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00165}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a36327a67901d33c8b8e5815e0c7bd6c8}{00165}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a36327a67901d33c8b8e5815e0c7bd6c8}{\_allow\_yanked}}\ =\ allow\_yanked}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00166}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a12661ce4e7fa44c39ac0a7e0ea3bc0d4}{00166}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a12661ce4e7fa44c39ac0a7e0ea3bc0d4}{\_canonical\_name}}\ =\ canonical\_name}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00167}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a10112ac71e291de37dfe81f55e851e30}{00167}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a10112ac71e291de37dfe81f55e851e30}{\_ignore\_requires\_python}}\ =\ ignore\_requires\_python}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00168}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_ab36c4d515fe94141209cc584770ada4d}{00168}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_ab36c4d515fe94141209cc584770ada4d}{\_formats}}\ =\ formats}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00169}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a029989879e554c5668633b7a7a169047}{00169}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a029989879e554c5668633b7a7a169047}{\_target\_python}}\ =\ target\_python}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00170}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a6bb912e161cd55678830b9910ae6203c}{00170}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a6bb912e161cd55678830b9910ae6203c}{\_uploaded\_prior\_to}}\ =\ uploaded\_prior\_to}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00171}00171\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00172}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a863c5807bac2d54e03b1269df84ef341}{00172}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a863c5807bac2d54e03b1269df84ef341}{project\_name}}\ =\ project\_name}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00174}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a1a75cc2992371e8621395e27bb4e1d05}{00174}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a1a75cc2992371e8621395e27bb4e1d05}{evaluate\_link}}(self,\ link:\ Link)\ -\/>\ tuple[LinkType,\ str]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00176}00176\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Determine\ whether\ a\ link\ is\ a\ candidate\ for\ installation.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00177}00177\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00178}00178\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :return:\ A\ tuple\ (result,\ detail),\ where\ *result*\ is\ an\ enum}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00179}00179\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ representing\ whether\ the\ evaluation\ found\ a\ candidate,\ or\ the\ reason}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00180}00180\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ why\ one\ is\ not\ found.\ If\ a\ candidate\ is\ found,\ *detail*\ will\ be\ the}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00181}00181\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ candidate's\ version\ string;\ if\ one\ is\ not\ found,\ it\ contains\ the}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00182}00182\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ reason\ the\ link\ fails\ to\ qualify.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00183}00183\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ version\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ link.is\_yanked\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a36327a67901d33c8b8e5815e0c7bd6c8}{\_allow\_yanked}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \ \ \ \ reason\ =\ link.yanked\_reason\ \textcolor{keywordflow}{or}\ \textcolor{stringliteral}{"{}<none\ given>"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (LinkType.yanked,\ f\textcolor{stringliteral}{"{}yanked\ for\ reason:\ \{reason\}"{}})}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00188}00188\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ link.egg\_fragment:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \ \ \ \ egg\_info\ =\ link.egg\_fragment}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \ \ \ \ ext\ =\ link.ext}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \ \ \ \ egg\_info,\ ext\ =\ link.splitext()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ ext:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (LinkType.format\_unsupported,\ \textcolor{stringliteral}{"{}not\ a\ file"{}})}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ext\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ SUPPORTED\_EXTENSIONS:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ LinkType.format\_unsupported,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}unsupported\ archive\ format:\ \{ext\}"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}binary"{}}\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_ab36c4d515fe94141209cc584770ada4d}{\_formats}}\ \textcolor{keywordflow}{and}\ ext\ ==\ WHEEL\_EXTENSION:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ reason\ =\ f\textcolor{stringliteral}{"{}No\ binaries\ permitted\ for\ \{self.project\_name\}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (LinkType.format\_unsupported,\ reason)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}macosx10"{}}\ \textcolor{keywordflow}{in}\ link.path\ \textcolor{keywordflow}{and}\ ext\ ==\ \textcolor{stringliteral}{"{}.zip"{}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (LinkType.format\_unsupported,\ \textcolor{stringliteral}{"{}macosx10\ one"{}})}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ext\ ==\ WHEEL\_EXTENSION:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1wheel_1_1_wheel}{Wheel}}(link.filename)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ InvalidWheelFilename:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ LinkType.format\_invalid,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}invalid\ wheel\ filename"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ wheel.name\ !=\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a12661ce4e7fa44c39ac0a7e0ea3bc0d4}{\_canonical\_name}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ reason\ =\ f\textcolor{stringliteral}{"{}wrong\ project\ name\ (not\ \{self.project\_name\})"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (LinkType.different\_project,\ reason)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00217}00217\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ supported\_tags\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a029989879e554c5668633b7a7a169047}{\_target\_python}}.get\_unsorted\_tags()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ wheel.supported(supported\_tags):}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Include\ the\ wheel's\ tags\ in\ the\ reason\ string\ to}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ simplify\ troubleshooting\ compatibility\ issues.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ file\_tags\ =\ \textcolor{stringliteral}{"{},\ "{}}.join(wheel.get\_formatted\_file\_tags())}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ reason\ =\ (}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}none\ of\ the\ wheel's\ tags\ (\{file\_tags\})\ are\ compatible\ "{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}(run\ pip\ debug\ -\/-\/verbose\ to\ show\ compatible\ tags)"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (LinkType.platform\_mismatch,\ reason)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00228}00228\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ version\ =\ wheel.version}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00230}00230\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ upload-\/time\ filter\ after\ verifying\ the\ link\ is\ a\ package\ file.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Skip\ this\ check\ for\ local\ files,\ as\ -\/-\/uploaded-\/prior-\/to\ only\ applies}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ to\ packages\ from\ indexes.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a6bb912e161cd55678830b9910ae6203c}{\_uploaded\_prior\_to}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ link.is\_file:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ link.upload\_time\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ link.comes\_from:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ index\_info\ =\ f\textcolor{stringliteral}{"{}Index\ \{link.comes\_from\}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ index\_info\ =\ \textcolor{stringliteral}{"{}Index"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00240}00240\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ LinkType.upload\_time\_missing,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{index\_info\}\ does\ not\ provide\ upload-\/time\ metadata."{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ link.upload\_time\ >=\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a6bb912e161cd55678830b9910ae6203c}{\_uploaded\_prior\_to}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ LinkType.upload\_too\_late,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Upload\ time\ \{link.upload\_time\}\ not\ "{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}prior\ to\ \{self.\_uploaded\_prior\_to\}"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00251}00251\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ This\ should\ be\ up\ by\ the\ self.ok\_binary\ check,\ but\ see\ issue\ 2700.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}source"{}}\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_ab36c4d515fe94141209cc584770ada4d}{\_formats}}\ \textcolor{keywordflow}{and}\ ext\ !=\ WHEEL\_EXTENSION:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ reason\ =\ f\textcolor{stringliteral}{"{}No\ sources\ permitted\ for\ \{self.project\_name\}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (LinkType.format\_unsupported,\ reason)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00256}00256\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ version:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ version\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_a78562be88acaae797151edadfa8980d0}{\_extract\_version\_from\_fragment}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ egg\_info,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a12661ce4e7fa44c39ac0a7e0ea3bc0d4}{\_canonical\_name}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ version:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ reason\ =\ f\textcolor{stringliteral}{"{}Missing\ project\ version\ for\ \{self.project\_name\}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (LinkType.format\_invalid,\ reason)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00265}00265\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ match\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a2d4a52d56dd347cdd4c8d3e42e289b4e}{\_py\_version\_re}}.search(version)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ match:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \ \ \ \ version\ =\ version[:\ match.start()]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \ \ \ \ py\_version\ =\ match.group(1)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ py\_version\ !=\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a029989879e554c5668633b7a7a169047}{\_target\_python}}.py\_version:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ LinkType.platform\_mismatch,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Python\ version\ is\ incorrect"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00275}00275\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ supports\_python\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_a9c91bf44253cd91b4a2e1a57f3db7f68}{\_check\_link\_requires\_python}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \ \ \ \ link,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ \ \ \ \ version\_info=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a029989879e554c5668633b7a7a169047}{\_target\_python}}.py\_version\_info,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_requires\_python=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator_a10112ac71e291de37dfe81f55e851e30}{\_ignore\_requires\_python}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ supports\_python:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ requires\_python\ =\ link.requires\_python}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ requires\_python:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00284}00284\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }get\_version\_sort\_key(v:\ str)\ -\/>\ tuple[int,\ ...]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tuple(int(s)\ \textcolor{keywordflow}{for}\ s\ \textcolor{keywordflow}{in}\ v.split(\textcolor{stringliteral}{"{}."{}})\ \textcolor{keywordflow}{if}\ s.isdigit())}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00287}00287\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ requires\_python\ =\ \textcolor{stringliteral}{"{},"{}}.join(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ sorted(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (str(s)\ \textcolor{keywordflow}{for}\ s\ \textcolor{keywordflow}{in}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1specifiers_1_1_specifier_set}{specifiers.SpecifierSet}}(requires\_python)),}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ key=get\_version\_sort\_key,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ \ \ \ \ reason\ =\ f\textcolor{stringliteral}{"{}\{version\}\ Requires-\/Python\ \{requires\_python\}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (LinkType.requires\_python\_mismatch,\ reason)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00296}00296\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00297}00297\ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Found\ link\ \%s,\ version:\ \%s"{}},\ link,\ version)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00298}00298\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (LinkType.candidate,\ version)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00300}00300\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00301}00301\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00302}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_af40e4e24b2dd7cfc3f1dda5ac6bcc241}{00302}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_af40e4e24b2dd7cfc3f1dda5ac6bcc241}{filter\_unallowed\_hashes}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00303}00303\ \ \ \ \ candidates:\ list[InstallationCandidate],}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00304}00304\ \ \ \ \ hashes:\ Hashes\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00305}00305\ \ \ \ \ project\_name:\ str,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00306}00306\ )\ -\/>\ list[InstallationCandidate]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00307}00307\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00308}00308\ \textcolor{stringliteral}{\ \ \ \ Filter\ out\ candidates\ whose\ hashes\ aren't\ allowed,\ and\ return\ a\ new}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00309}00309\ \textcolor{stringliteral}{\ \ \ \ list\ of\ candidates.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00310}00310\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00311}00311\ \textcolor{stringliteral}{\ \ \ \ If\ at\ least\ one\ candidate\ has\ an\ allowed\ hash,\ then\ all\ candidates\ with}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00312}00312\ \textcolor{stringliteral}{\ \ \ \ either\ an\ allowed\ hash\ or\ no\ hash\ specified\ are\ returned.\ \ Otherwise,}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00313}00313\ \textcolor{stringliteral}{\ \ \ \ the\ given\ candidates\ are\ returned.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00314}00314\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00315}00315\ \textcolor{stringliteral}{\ \ \ \ Including\ the\ candidates\ with\ no\ hash\ specified\ when\ there\ is\ a\ match}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00316}00316\ \textcolor{stringliteral}{\ \ \ \ allows\ a\ warning\ to\ be\ logged\ if\ there\ is\ a\ more\ preferred\ candidate}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00317}00317\ \textcolor{stringliteral}{\ \ \ \ with\ no\ hash\ specified.\ \ Returning\ all\ candidates\ in\ the\ case\ of\ no}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00318}00318\ \textcolor{stringliteral}{\ \ \ \ matches\ lets\ pip\ report\ the\ hash\ of\ the\ candidate\ that\ would\ otherwise}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00319}00319\ \textcolor{stringliteral}{\ \ \ \ have\ been\ installed\ (e.g.\ permitting\ the\ user\ to\ more\ easily\ update}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00320}00320\ \textcolor{stringliteral}{\ \ \ \ their\ requirements\ file\ with\ the\ desired\ hash).}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00321}00321\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00322}00322\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ hashes:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00323}00323\ \ \ \ \ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Given\ no\ hashes\ to\ check\ \%s\ links\ for\ project\ \%r:\ "{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00325}00325\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}discarding\ no\ candidates"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00326}00326\ \ \ \ \ \ \ \ \ \ \ \ \ len(candidates),}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00327}00327\ \ \ \ \ \ \ \ \ \ \ \ \ project\_name,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Make\ sure\ we're\ not\ returning\ back\ the\ given\ value.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ list(candidates)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00331}00331\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00332}00332\ \ \ \ \ matches\_or\_no\_digest\ =\ []}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00333}00333\ \ \ \ \ \textcolor{comment}{\#\ Collect\ the\ non-\/matches\ for\ logging\ purposes.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00334}00334\ \ \ \ \ non\_matches\ =\ []}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00335}00335\ \ \ \ \ match\_count\ =\ 0}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00336}00336\ \ \ \ \ \textcolor{keywordflow}{for}\ candidate\ \textcolor{keywordflow}{in}\ candidates:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ link\ =\ candidate.link}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ link.has\_hash:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ link.is\_hash\_allowed(hashes=hashes):}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00341}00341\ \ \ \ \ \ \ \ \ \ \ \ \ match\_count\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ \ \ \ \ non\_matches.append(candidate)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00345}00345\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ matches\_or\_no\_digest.append(candidate)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00347}00347\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00348}00348\ \ \ \ \ \textcolor{keywordflow}{if}\ match\_count:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ filtered\ =\ matches\_or\_no\_digest}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00350}00350\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Make\ sure\ we're\ not\ returning\ back\ the\ given\ value.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ filtered\ =\ list(candidates)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00353}00353\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00354}00354\ \ \ \ \ \textcolor{keywordflow}{if}\ len(filtered)\ ==\ len(candidates):}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ discard\_message\ =\ \textcolor{stringliteral}{"{}discarding\ no\ candidates"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00356}00356\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ discard\_message\ =\ \textcolor{stringliteral}{"{}discarding\ \{\}\ non-\/matches:\(\backslash\)n\ \ \{\}"{}}.format(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00358}00358\ \ \ \ \ \ \ \ \ \ \ \ \ len(non\_matches),}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\(\backslash\)n\ \ "{}}.join(str(candidate.link)\ \textcolor{keywordflow}{for}\ candidate\ \textcolor{keywordflow}{in}\ non\_matches),}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00361}00361\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00362}00362\ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Checked\ \%s\ links\ for\ project\ \%r\ against\ \%s\ hashes\ "{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}(\%s\ matches,\ \%s\ no\ digest):\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ len(candidates),}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00366}00366\ \ \ \ \ \ \ \ \ project\_name,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00367}00367\ \ \ \ \ \ \ \ \ hashes.digest\_count,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00368}00368\ \ \ \ \ \ \ \ \ match\_count,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ len(matches\_or\_no\_digest)\ -\/\ match\_count,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ discard\_message,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00371}00371\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00372}00372\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00373}00373\ \ \ \ \ \textcolor{keywordflow}{return}\ filtered}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00374}00374\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00375}00375\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00376}00376\ \textcolor{preprocessor}{@dataclass}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00377}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_preferences}{00377}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_preferences}{CandidatePreferences}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00378}00378\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00379}00379\ \textcolor{stringliteral}{\ \ \ \ Encapsulates\ some\ of\ the\ preferences\ for\ filtering\ and\ sorting}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00380}00380\ \textcolor{stringliteral}{\ \ \ \ InstallationCandidate\ objects.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00381}00381\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00382}00382\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00383}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_preferences_a2703c9c24502e9b4d5ba886b1f7694ad}{00383}}\ \ \ \ \ prefer\_binary:\ bool\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00384}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_preferences_a5fc492997a3dfed20182fef4a776e088}{00384}}\ \ \ \ \ release\_control:\ ReleaseControl\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00385}00385\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00386}00386\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00387}00387\ \textcolor{preprocessor}{@dataclass(frozen=True)}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00388}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result}{00388}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result}{BestCandidateResult}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00389}00389\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ collection\ of\ candidates,\ returned\ by\ \`{}PackageFinder.find\_best\_candidate\`{}.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00390}00390\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00391}00391\ \textcolor{stringliteral}{\ \ \ \ This\ class\ is\ only\ intended\ to\ be\ instantiated\ by\ CandidateEvaluator's}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00392}00392\ \textcolor{stringliteral}{\ \ \ \ \`{}compute\_best\_candidate()\`{}\ method.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00393}00393\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00394}00394\ \textcolor{stringliteral}{\ \ \ \ :param\ all\_candidates:\ A\ sequence\ of\ all\ available\ candidates\ found.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00395}00395\ \textcolor{stringliteral}{\ \ \ \ :param\ applicable\_candidates:\ The\ applicable\ candidates.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00396}00396\ \textcolor{stringliteral}{\ \ \ \ :param\ best\_candidate:\ The\ most\ preferred\ candidate\ found,\ or\ None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00397}00397\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ if\ no\ applicable\ candidates\ were\ found.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00398}00398\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00399}00399\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00400}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result_a0a1e8f28060e3da64c79a0da47ec7cb1}{00400}}\ \ \ \ \ all\_candidates:\ list[InstallationCandidate]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00401}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result_ac1bd4092bfb75819b185700498274788}{00401}}\ \ \ \ \ applicable\_candidates:\ list[InstallationCandidate]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00402}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result_a6d12b9c04865a1a4e100ccb75e8f9ebe}{00402}}\ \ \ \ \ best\_candidate:\ InstallationCandidate\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00403}00403\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00404}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result_a006681cd5471dbf7d4221931329d474f}{00404}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result_a006681cd5471dbf7d4221931329d474f}{\_\_post\_init\_\_}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00405}00405\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ set(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result_ac1bd4092bfb75819b185700498274788}{applicable\_candidates}})\ <=\ set(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result_a0a1e8f28060e3da64c79a0da47ec7cb1}{all\_candidates}})}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00406}00406\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result_a6d12b9c04865a1a4e100ccb75e8f9ebe}{best\_candidate}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00408}00408\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result_ac1bd4092bfb75819b185700498274788}{applicable\_candidates}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00409}00409\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result_a6d12b9c04865a1a4e100ccb75e8f9ebe}{best\_candidate}}\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result_ac1bd4092bfb75819b185700498274788}{applicable\_candidates}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00411}00411\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00412}00412\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00413}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator}{00413}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator}{CandidateEvaluator}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00414}00414\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00415}00415\ \textcolor{stringliteral}{\ \ \ \ Responsible\ for\ filtering\ and\ sorting\ candidates\ for\ installation\ based}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00416}00416\ \textcolor{stringliteral}{\ \ \ \ on\ what\ tags\ are\ valid.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00417}00417\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00418}00418\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00419}00419\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00420}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a994adeb37fb714f6e35971487a25cf17}{00420}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a994adeb37fb714f6e35971487a25cf17}{create}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00421}00421\ \ \ \ \ \ \ \ \ cls,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ project\_name:\ str,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ target\_python:\ TargetPython\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00424}00424\ \ \ \ \ \ \ \ \ prefer\_binary:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ release\_control:\ ReleaseControl\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00426}00426\ \ \ \ \ \ \ \ \ specifier:\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1specifiers_1_1_base_specifier}{specifiers.BaseSpecifier}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00427}00427\ \ \ \ \ \ \ \ \ hashes:\ Hashes\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00428}00428\ \ \ \ \ )\ -\/>\ CandidateEvaluator:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00429}00429\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Create\ a\ CandidateEvaluator\ object.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00430}00430\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00431}00431\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ target\_python:\ The\ target\ Python\ interpreter\ to\ use\ when}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00432}00432\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ checking\ compatibility.\ If\ None\ (the\ default),\ a\ TargetPython}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00433}00433\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ object\ will\ be\ constructed\ from\ the\ running\ Python.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00434}00434\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ specifier:\ An\ optional\ object\ implementing\ \`{}filter\`{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00435}00435\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (e.g.\ \`{}packaging.specifiers.SpecifierSet\`{})\ to\ filter\ applicable}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00436}00436\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ versions.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00437}00437\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ hashes:\ An\ optional\ collection\ of\ allowed\ hashes.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00438}00438\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ target\_python\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ \ \ \ \ target\_python\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1target__python_1_1_target_python}{TargetPython}}()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ specifier\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00442}00442\ \ \ \ \ \ \ \ \ \ \ \ \ specifier\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1specifiers_1_1_specifier_set}{specifiers.SpecifierSet}}()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00443}00443\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ supported\_tags\ =\ target\_python.get\_sorted\_tags()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00445}00445\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00446}00446\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00447}00447\ \ \ \ \ \ \ \ \ \ \ \ \ project\_name=project\_name,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00448}00448\ \ \ \ \ \ \ \ \ \ \ \ \ supported\_tags=supported\_tags,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00449}00449\ \ \ \ \ \ \ \ \ \ \ \ \ specifier=specifier,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00450}00450\ \ \ \ \ \ \ \ \ \ \ \ \ prefer\_binary=prefer\_binary,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00451}00451\ \ \ \ \ \ \ \ \ \ \ \ \ release\_control=release\_control,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ \ \ \ \ hashes=hashes,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00453}00453\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00454}00454\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00455}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a27e14806646dd7f7cf94f2d60c122b97}{00455}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a27e14806646dd7f7cf94f2d60c122b97}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ project\_name:\ str,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00458}00458\ \ \ \ \ \ \ \ \ supported\_tags:\ list[Tag],}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ specifier:\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1specifiers_1_1_base_specifier}{specifiers.BaseSpecifier}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00460}00460\ \ \ \ \ \ \ \ \ prefer\_binary:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ release\_control:\ ReleaseControl\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00462}00462\ \ \ \ \ \ \ \ \ hashes:\ Hashes\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00463}00463\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00464}00464\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00465}00465\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ supported\_tags:\ The\ PEP\ 425\ tags\ supported\ by\ the\ target}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00466}00466\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ Python\ in\ order\ of\ preference\ (most\ preferred\ first).}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00467}00467\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00468}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a08b9b356a265e23e3b24d8cd8a5e2cff}{00468}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a08b9b356a265e23e3b24d8cd8a5e2cff}{\_release\_control}}\ =\ release\_control}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00469}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_aa62505242469c8bd1e413ac0fd512d17}{00469}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_aa62505242469c8bd1e413ac0fd512d17}{\_hashes}}\ =\ hashes}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00470}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_aeca1d6b2b2264d94cabc2585809c119e}{00470}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_aeca1d6b2b2264d94cabc2585809c119e}{\_prefer\_binary}}\ =\ prefer\_binary}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00471}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a404be04fca1b7b39dbacb631c2dc719b}{00471}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a404be04fca1b7b39dbacb631c2dc719b}{\_project\_name}}\ =\ project\_name}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00472}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_add0f7e554b98a7d585d6b8fe7b87e405}{00472}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_add0f7e554b98a7d585d6b8fe7b87e405}{\_specifier}}\ =\ specifier}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00473}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a9ec0efd31b2d88d63afa8b32eed7e009}{00473}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a9ec0efd31b2d88d63afa8b32eed7e009}{\_supported\_tags}}\ =\ supported\_tags}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00474}00474\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Since\ the\ index\ of\ the\ tag\ in\ the\ \_supported\_tags\ list\ is\ used}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00475}00475\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ as\ a\ priority,\ precompute\ a\ map\ from\ tag\ to\ index/priority\ to\ be}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00476}00476\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ used\ in\ wheel.find\_most\_preferred\_tag.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00477}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_ae249e979e25b58990aecf7c48047a064}{00477}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_ae249e979e25b58990aecf7c48047a064}{\_wheel\_tag\_preferences}}\ =\ \{}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00478}00478\ \ \ \ \ \ \ \ \ \ \ \ \ tag:\ idx\ \textcolor{keywordflow}{for}\ idx,\ tag\ \textcolor{keywordflow}{in}\ enumerate(supported\_tags)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00479}00479\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00480}00480\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00481}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a848e95b0b28db82fa15e90e12346c53f}{00481}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a848e95b0b28db82fa15e90e12346c53f}{get\_applicable\_candidates}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00482}00482\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00483}00483\ \ \ \ \ \ \ \ \ candidates:\ list[InstallationCandidate],}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00484}00484\ \ \ \ \ )\ -\/>\ list[InstallationCandidate]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00485}00485\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00486}00486\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ applicable\ candidates\ from\ a\ list\ of\ candidates.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00487}00487\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00488}00488\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Using\ None\ infers\ from\ the\ specifier\ instead.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00489}00489\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a08b9b356a265e23e3b24d8cd8a5e2cff}{\_release\_control}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00490}00490\ \ \ \ \ \ \ \ \ \ \ \ \ allow\_prereleases\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a08b9b356a265e23e3b24d8cd8a5e2cff}{\_release\_control}}.allows\_prereleases(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00491}00491\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canonicalize\_name(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a404be04fca1b7b39dbacb631c2dc719b}{\_project\_name}})}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00492}00492\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00493}00493\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00494}00494\ \ \ \ \ \ \ \ \ \ \ \ \ allow\_prereleases\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00495}00495\ \ \ \ \ \ \ \ \ specifier\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_add0f7e554b98a7d585d6b8fe7b87e405}{\_specifier}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00496}00496\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00497}00497\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ When\ using\ the\ pkg\_resources\ backend\ we\ turn\ the\ version\ object\ into}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00498}00498\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ a\ str\ here\ because\ otherwise\ when\ we're\ debundled\ but\ setuptools\ isn't,}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00499}00499\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Python\ will\ see\ packaging.version.Version\ and}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ pkg\_resources.\_vendor.packaging.version.Version\ as\ different}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00501}00501\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ types.\ This\ way\ we'll\ use\ a\ str\ as\ a\ common\ data\ interchange}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00502}00502\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ format.\ If\ we\ stop\ using\ the\ pkg\_resources\ provided\ specifier}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00503}00503\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ and\ start\ using\ our\ own,\ we\ can\ drop\ the\ cast\ to\ str().}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00504}00504\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ select\_backend().NAME\ ==\ \textcolor{stringliteral}{"{}pkg\_resources"{}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00505}00505\ \ \ \ \ \ \ \ \ \ \ \ \ candidates\_and\_versions:\ list[}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00506}00506\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ tuple[InstallationCandidate,\ str\ |\ Version]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ \ \ \ \ ]\ =\ [(c,\ str(c.version))\ \textcolor{keywordflow}{for}\ c\ \textcolor{keywordflow}{in}\ candidates]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00508}00508\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00509}00509\ \ \ \ \ \ \ \ \ \ \ \ \ candidates\_and\_versions\ =\ [(c,\ c.version)\ \textcolor{keywordflow}{for}\ c\ \textcolor{keywordflow}{in}\ candidates]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00510}00510\ \ \ \ \ \ \ \ \ versions\ =\ set(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00511}00511\ \ \ \ \ \ \ \ \ \ \ \ \ specifier.filter(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00512}00512\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (v\ \textcolor{keywordflow}{for}\ \_,\ v\ \textcolor{keywordflow}{in}\ candidates\_and\_versions),}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00513}00513\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ prereleases=allow\_prereleases,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00514}00514\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00516}00516\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00517}00517\ \ \ \ \ \ \ \ \ applicable\_candidates\ =\ [c\ \textcolor{keywordflow}{for}\ c,\ v\ \textcolor{keywordflow}{in}\ candidates\_and\_versions\ \textcolor{keywordflow}{if}\ v\ \textcolor{keywordflow}{in}\ versions]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00518}00518\ \ \ \ \ \ \ \ \ filtered\_applicable\_candidates\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_af40e4e24b2dd7cfc3f1dda5ac6bcc241}{filter\_unallowed\_hashes}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ \ \ \ \ candidates=applicable\_candidates,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ \ \ \ \ hashes=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_aa62505242469c8bd1e413ac0fd512d17}{\_hashes}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \ \ \ \ project\_name=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a404be04fca1b7b39dbacb631c2dc719b}{\_project\_name}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00523}00523\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ sorted(filtered\_applicable\_candidates,\ key=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a6b46a2e7e38f36cd766d45bdfd49feb4}{\_sort\_key}})}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00525}00525\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00526}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a6b46a2e7e38f36cd766d45bdfd49feb4}{00526}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a6b46a2e7e38f36cd766d45bdfd49feb4}{\_sort\_key}}(self,\ candidate:\ InstallationCandidate)\ -\/>\ CandidateSortingKey:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00528}00528\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Function\ to\ pass\ as\ the\ \`{}key\`{}\ argument\ to\ a\ call\ to\ sorted()\ to\ sort}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00529}00529\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ InstallationCandidates\ by\ preference.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00530}00530\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00531}00531\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Returns\ a\ tuple\ such\ that\ tuples\ sorting\ as\ greater\ using\ Python's}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00532}00532\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ default\ comparison\ operator\ are\ more\ preferred.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00533}00533\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00534}00534\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ preference\ is\ as\ follows:}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00535}00535\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00536}00536\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ First\ and\ foremost,\ candidates\ with\ allowed\ (matching)\ hashes\ are}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00537}00537\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ always\ preferred\ over\ candidates\ without\ matching\ hashes.\ This\ is}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00538}00538\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ because\ e.g.\ if\ the\ only\ candidate\ with\ an\ allowed\ hash\ is\ yanked,}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00539}00539\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ we\ still\ want\ to\ use\ that\ candidate.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00540}00540\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00541}00541\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Second,\ excepting\ hash\ considerations,\ candidates\ that\ have\ been}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00542}00542\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ yanked\ (in\ the\ sense\ of\ PEP\ 592)\ are\ always\ less\ preferred\ than}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00543}00543\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ candidates\ that\ haven't\ been\ yanked.\ Then:}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00544}00544\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00545}00545\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ not\ finding\ wheels,\ they\ are\ sorted\ by\ version\ only.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00546}00546\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ finding\ wheels,\ then\ the\ sort\ order\ is\ by\ version,\ then:}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00547}00547\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ 1.\ existing\ installs}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00548}00548\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ 2.\ wheels\ ordered\ via\ Wheel.support\_index\_min(self.\_supported\_tags)}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00549}00549\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ 3.\ source\ archives}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00550}00550\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ prefer\_binary\ was\ set,\ then\ all\ wheels\ are\ sorted\ above\ sources.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00551}00551\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00552}00552\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Note:\ it\ was\ considered\ to\ embed\ this\ logic\ into\ the\ Link}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00553}00553\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ comparison\ operators,\ but\ then\ different\ sdist\ links}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00554}00554\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ with\ the\ same\ version,\ would\ have\ to\ be\ considered\ equal}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00555}00555\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00556}00556\ \ \ \ \ \ \ \ \ valid\_tags\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a9ec0efd31b2d88d63afa8b32eed7e009}{\_supported\_tags}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00557}00557\ \ \ \ \ \ \ \ \ support\_num\ =\ len(valid\_tags)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00558}00558\ \ \ \ \ \ \ \ \ build\_tag:\ BuildTag\ =\ ()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00559}00559\ \ \ \ \ \ \ \ \ binary\_preference\ =\ 0}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00560}00560\ \ \ \ \ \ \ \ \ link\ =\ candidate.link}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00561}00561\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ link.is\_wheel:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00562}00562\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ can\ raise\ InvalidWheelFilename}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00563}00563\ \ \ \ \ \ \ \ \ \ \ \ \ wheel\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1wheel_1_1_wheel}{Wheel}}(link.filename)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00564}00564\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00565}00565\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pri\ =\ -\/(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00566}00566\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel.find\_most\_preferred\_tag(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00567}00567\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ valid\_tags,\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_ae249e979e25b58990aecf7c48047a064}{\_wheel\_tag\_preferences}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00568}00568\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00569}00569\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00570}00570\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00571}00571\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00572}00572\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{wheel.filename\}\ is\ not\ a\ supported\ wheel\ for\ this\ platform.\ It\ "{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00573}00573\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}can't\ be\ sorted."{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00574}00574\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00575}00575\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_aeca1d6b2b2264d94cabc2585809c119e}{\_prefer\_binary}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00576}00576\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ binary\_preference\ =\ 1}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00577}00577\ \ \ \ \ \ \ \ \ \ \ \ \ build\_tag\ =\ wheel.build\_tag}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00578}00578\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:\ \ \textcolor{comment}{\#\ sdist}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00579}00579\ \ \ \ \ \ \ \ \ \ \ \ \ pri\ =\ -\/(support\_num)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00580}00580\ \ \ \ \ \ \ \ \ has\_allowed\_hash\ =\ int(link.is\_hash\_allowed(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_aa62505242469c8bd1e413ac0fd512d17}{\_hashes}}))}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00581}00581\ \ \ \ \ \ \ \ \ yank\_value\ =\ -\/1\ *\ int(link.is\_yanked)\ \ \textcolor{comment}{\#\ -\/1\ for\ yanked.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00582}00582\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00583}00583\ \ \ \ \ \ \ \ \ \ \ \ \ has\_allowed\_hash,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00584}00584\ \ \ \ \ \ \ \ \ \ \ \ \ yank\_value,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00585}00585\ \ \ \ \ \ \ \ \ \ \ \ \ binary\_preference,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00586}00586\ \ \ \ \ \ \ \ \ \ \ \ \ candidate.version,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00587}00587\ \ \ \ \ \ \ \ \ \ \ \ \ pri,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00588}00588\ \ \ \ \ \ \ \ \ \ \ \ \ build\_tag,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00589}00589\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00590}00590\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00591}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_acc8e4293b8dd09859ea38a0870e16975}{00591}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_acc8e4293b8dd09859ea38a0870e16975}{sort\_best\_candidate}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00592}00592\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00593}00593\ \ \ \ \ \ \ \ \ candidates:\ list[InstallationCandidate],}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00594}00594\ \ \ \ \ )\ -\/>\ InstallationCandidate\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00595}00595\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00596}00596\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ best\ candidate\ per\ the\ instance's\ sort\ order,\ or\ None\ if}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00597}00597\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ no\ candidate\ is\ acceptable.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00598}00598\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00599}00599\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ candidates:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00600}00600\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00601}00601\ \ \ \ \ \ \ \ \ best\_candidate\ =\ max(candidates,\ key=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a6b46a2e7e38f36cd766d45bdfd49feb4}{\_sort\_key}})}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00602}00602\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ best\_candidate}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00603}00603\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00604}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a6369d9f742d7989f4130a51a33e024c0}{00604}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a6369d9f742d7989f4130a51a33e024c0}{compute\_best\_candidate}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00605}00605\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00606}00606\ \ \ \ \ \ \ \ \ candidates:\ list[InstallationCandidate],}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00607}00607\ \ \ \ \ )\ -\/>\ BestCandidateResult:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00608}00608\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00609}00609\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Compute\ and\ return\ a\ \`{}BestCandidateResult\`{}\ instance.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00610}00610\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00611}00611\ \ \ \ \ \ \ \ \ applicable\_candidates\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_a848e95b0b28db82fa15e90e12346c53f}{get\_applicable\_candidates}}(candidates)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00612}00612\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00613}00613\ \ \ \ \ \ \ \ \ best\_candidate\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_evaluator_acc8e4293b8dd09859ea38a0870e16975}{sort\_best\_candidate}}(applicable\_candidates)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00614}00614\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00615}00615\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_best_candidate_result}{BestCandidateResult}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00616}00616\ \ \ \ \ \ \ \ \ \ \ \ \ candidates,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00617}00617\ \ \ \ \ \ \ \ \ \ \ \ \ applicable\_candidates=applicable\_candidates,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00618}00618\ \ \ \ \ \ \ \ \ \ \ \ \ best\_candidate=best\_candidate,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00619}00619\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00620}00620\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00621}00621\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00622}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder}{00622}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder}{PackageFinder}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00623}00623\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}This\ finds\ packages.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00624}00624\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00625}00625\ \textcolor{stringliteral}{\ \ \ \ This\ is\ meant\ to\ match\ easy\_install's\ technique\ for\ looking\ for}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00626}00626\ \textcolor{stringliteral}{\ \ \ \ packages,\ by\ reading\ pages\ and\ looking\ for\ appropriate\ links.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00627}00627\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00628}00628\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00629}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a36e9bebf6df29d4ba8d5013785a7654b}{00629}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a36e9bebf6df29d4ba8d5013785a7654b}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00630}00630\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00631}00631\ \ \ \ \ \ \ \ \ link\_collector:\ LinkCollector,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00632}00632\ \ \ \ \ \ \ \ \ target\_python:\ TargetPython,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00633}00633\ \ \ \ \ \ \ \ \ allow\_yanked:\ bool,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00634}00634\ \ \ \ \ \ \ \ \ format\_control:\ FormatControl\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00635}00635\ \ \ \ \ \ \ \ \ candidate\_prefs:\ CandidatePreferences\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00636}00636\ \ \ \ \ \ \ \ \ ignore\_requires\_python:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00637}00637\ \ \ \ \ \ \ \ \ uploaded\_prior\_to:\ datetime.datetime\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00638}00638\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00639}00639\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00640}00640\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ constructor\ is\ primarily\ meant\ to\ be\ used\ by\ the\ create()\ class}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00641}00641\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ method\ and\ from\ tests.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00642}00642\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00643}00643\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ format\_control:\ A\ FormatControl\ object,\ used\ to\ control}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00644}00644\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ the\ selection\ of\ source\ packages\ /\ binary\ packages\ when\ consulting}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00645}00645\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ the\ index\ and\ links.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00646}00646\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ candidate\_prefs:\ Options\ to\ use\ when\ creating\ a}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00647}00647\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ CandidateEvaluator\ object.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00648}00648\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00649}00649\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ candidate\_prefs\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00650}00650\ \ \ \ \ \ \ \ \ \ \ \ \ candidate\_prefs\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_preferences}{CandidatePreferences}}()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00651}00651\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00652}00652\ \ \ \ \ \ \ \ \ format\_control\ =\ format\_control\ \textcolor{keywordflow}{or}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1format__control_1_1_format_control}{FormatControl}}(set(),\ set())}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00653}00653\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00654}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_aa769f70eaa7c4ce4206578db1f394cf6}{00654}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_aa769f70eaa7c4ce4206578db1f394cf6}{\_allow\_yanked}}\ =\ allow\_yanked}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00655}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab18bbef86ef9afb5b5d1224c519228ca}{00655}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab18bbef86ef9afb5b5d1224c519228ca}{\_candidate\_prefs}}\ =\ candidate\_prefs}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00656}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_adc2208abe2eed3ba4b28656dacb1d0e0}{00656}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_adc2208abe2eed3ba4b28656dacb1d0e0}{\_ignore\_requires\_python}}\ =\ ignore\_requires\_python}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00657}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a1a6b34bd4a1895dfa6cbf88b882fbe3c}{00657}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a1a6b34bd4a1895dfa6cbf88b882fbe3c}{\_link\_collector}}\ =\ link\_collector}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00658}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab5870657073cec3c1fde088fa57be7eb}{00658}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab5870657073cec3c1fde088fa57be7eb}{\_target\_python}}\ =\ target\_python}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00659}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a003b090c58bfcae58ec269bec059b13c}{00659}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a003b090c58bfcae58ec269bec059b13c}{\_uploaded\_prior\_to}}\ =\ uploaded\_prior\_to}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00660}00660\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00661}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af41c5f14312febfe0356c11130402ad4}{00661}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af41c5f14312febfe0356c11130402ad4}{format\_control}}\ =\ format\_control}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00662}00662\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00663}00663\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ These\ are\ boring\ links\ that\ have\ already\ been\ logged\ somehow.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00664}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ae2aa2066c25c4844e8418bbcd33d0785}{00664}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ae2aa2066c25c4844e8418bbcd33d0785}{\_logged\_links}}:\ set[tuple[Link,\ LinkType,\ str]]\ =\ set()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00665}00665\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00666}00666\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Cache\ of\ the\ result\ of\ finding\ candidates}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00667}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a8015614888fb1fe57e108c5a26841ef2}{00667}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a8015614888fb1fe57e108c5a26841ef2}{\_all\_candidates}}:\ dict[str,\ list[InstallationCandidate]]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00668}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a29f373da9aaffdc05e18e7e81504fea4}{00668}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a29f373da9aaffdc05e18e7e81504fea4}{\_best\_candidates}}:\ dict[}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00669}00669\ \ \ \ \ \ \ \ \ \ \ \ \ tuple[str,\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1specifiers_1_1_base_specifier}{specifiers.BaseSpecifier}}\ |\ \textcolor{keywordtype}{None},\ Hashes\ |\ \textcolor{keywordtype}{None}],}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00670}00670\ \ \ \ \ \ \ \ \ \ \ \ \ BestCandidateResult,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00671}00671\ \ \ \ \ \ \ \ \ ]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00672}00672\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00673}00673\ \ \ \ \ \textcolor{comment}{\#\ Don't\ include\ an\ allow\_yanked\ default\ value\ to\ make\ sure\ each\ call}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00674}00674\ \ \ \ \ \textcolor{comment}{\#\ site\ considers\ whether\ yanked\ releases\ are\ allowed.\ This\ also\ causes}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00675}00675\ \ \ \ \ \textcolor{comment}{\#\ that\ decision\ to\ be\ made\ explicit\ in\ the\ calling\ code,\ which\ helps}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00676}00676\ \ \ \ \ \textcolor{comment}{\#\ people\ when\ reading\ the\ code.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00677}00677\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00678}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ac5e46bb80c1a020a691dffa5d29090ac}{00678}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ac5e46bb80c1a020a691dffa5d29090ac}{create}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00679}00679\ \ \ \ \ \ \ \ \ cls,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00680}00680\ \ \ \ \ \ \ \ \ link\_collector:\ LinkCollector,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00681}00681\ \ \ \ \ \ \ \ \ selection\_prefs:\ SelectionPreferences,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00682}00682\ \ \ \ \ \ \ \ \ target\_python:\ TargetPython\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00683}00683\ \ \ \ \ \ \ \ \ uploaded\_prior\_to:\ datetime.datetime\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00684}00684\ \ \ \ \ )\ -\/>\ PackageFinder:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00685}00685\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Create\ a\ PackageFinder.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00686}00686\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00687}00687\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ selection\_prefs:\ The\ candidate\ selection\ preferences,\ as\ a}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00688}00688\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ SelectionPreferences\ object.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00689}00689\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ target\_python:\ The\ target\ Python\ interpreter\ to\ use\ when}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00690}00690\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ checking\ compatibility.\ If\ None\ (the\ default),\ a\ TargetPython}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00691}00691\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ object\ will\ be\ constructed\ from\ the\ running\ Python.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00692}00692\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ uploaded\_prior\_to:\ If\ set,\ only\ find\ links\ uploaded\ prior}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00693}00693\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ to\ the\ given\ datetime.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00694}00694\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00695}00695\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ target\_python\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00696}00696\ \ \ \ \ \ \ \ \ \ \ \ \ target\_python\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1target__python_1_1_target_python}{TargetPython}}()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00697}00697\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00698}00698\ \ \ \ \ \ \ \ \ candidate\_prefs\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_candidate_preferences}{CandidatePreferences}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00699}00699\ \ \ \ \ \ \ \ \ \ \ \ \ prefer\_binary=selection\_prefs.prefer\_binary,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00700}00700\ \ \ \ \ \ \ \ \ \ \ \ \ release\_control=selection\_prefs.release\_control,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00701}00701\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00702}00702\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00703}00703\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00704}00704\ \ \ \ \ \ \ \ \ \ \ \ \ candidate\_prefs=candidate\_prefs,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00705}00705\ \ \ \ \ \ \ \ \ \ \ \ \ link\_collector=link\_collector,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00706}00706\ \ \ \ \ \ \ \ \ \ \ \ \ target\_python=target\_python,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00707}00707\ \ \ \ \ \ \ \ \ \ \ \ \ allow\_yanked=selection\_prefs.allow\_yanked,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00708}00708\ \ \ \ \ \ \ \ \ \ \ \ \ format\_control=selection\_prefs.format\_control,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00709}00709\ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_requires\_python=selection\_prefs.ignore\_requires\_python,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00710}00710\ \ \ \ \ \ \ \ \ \ \ \ \ uploaded\_prior\_to=uploaded\_prior\_to,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00711}00711\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00712}00712\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00713}00713\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00714}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a6a3ce7981bed89157337d65e98ff18d6}{00714}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a6a3ce7981bed89157337d65e98ff18d6}{target\_python}}(self)\ -\/>\ TargetPython:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00715}00715\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab5870657073cec3c1fde088fa57be7eb}{\_target\_python}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00716}00716\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00717}00717\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00718}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a8d0f4df7686f95480c3447af09daf47c}{00718}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a8d0f4df7686f95480c3447af09daf47c}{search\_scope}}(self)\ -\/>\ SearchScope:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00719}00719\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a1a6b34bd4a1895dfa6cbf88b882fbe3c}{\_link\_collector}}.search\_scope}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00720}00720\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00721}00721\ \ \ \ \ \textcolor{preprocessor}{@search\_scope.setter}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00722}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ae13be82d03033a9ae9f984ebf2cd55be}{00722}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a8d0f4df7686f95480c3447af09daf47c}{search\_scope}}(self,\ search\_scope:\ SearchScope)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00723}00723\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a1a6b34bd4a1895dfa6cbf88b882fbe3c}{\_link\_collector}}.search\_scope\ =\ search\_scope}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00724}00724\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00725}00725\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00726}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a5afb5172b9b78016d9e7c0bb8ab37d76}{00726}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a5afb5172b9b78016d9e7c0bb8ab37d76}{find\_links}}(self)\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00727}00727\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a1a6b34bd4a1895dfa6cbf88b882fbe3c}{\_link\_collector}}.find\_links}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00728}00728\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00729}00729\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00730}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab0c3353b0b912d55fa9204214db0541f}{00730}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab0c3353b0b912d55fa9204214db0541f}{index\_urls}}(self)\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00731}00731\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a8d0f4df7686f95480c3447af09daf47c}{search\_scope}}.index\_urls}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00732}00732\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00733}00733\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00734}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a076739ad79cb76df7b31b2210e766c67}{00734}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a076739ad79cb76df7b31b2210e766c67}{proxy}}(self)\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00735}00735\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a1a6b34bd4a1895dfa6cbf88b882fbe3c}{\_link\_collector}}.session.pip\_proxy}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00736}00736\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00737}00737\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00738}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_acee01adbe87804308aec45de3abf1373}{00738}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_acee01adbe87804308aec45de3abf1373}{trusted\_hosts}}(self)\ -\/>\ Iterable[str]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00739}00739\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ host\_port\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a1a6b34bd4a1895dfa6cbf88b882fbe3c}{\_link\_collector}}.session.pip\_trusted\_origins:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00740}00740\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ build\_netloc(*host\_port)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00741}00741\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00742}00742\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00743}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_abc17808622aa16e41787b2853350e967}{00743}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_abc17808622aa16e41787b2853350e967}{custom\_cert}}(self)\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00744}00744\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ session.verify\ is\ either\ a\ boolean\ (use\ default\ bundle/no\ SSL}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00745}00745\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ verification)\ or\ a\ string\ path\ to\ a\ custom\ CA\ bundle\ to\ use.\ We\ only}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00746}00746\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ care\ about\ the\ latter.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00747}00747\ \ \ \ \ \ \ \ \ verify\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a1a6b34bd4a1895dfa6cbf88b882fbe3c}{\_link\_collector}}.session.verify}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00748}00748\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ verify\ \textcolor{keywordflow}{if}\ isinstance(verify,\ str)\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00749}00749\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00750}00750\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00751}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a2703b608f50b035d0b2b612376509a0b}{00751}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a2703b608f50b035d0b2b612376509a0b}{client\_cert}}(self)\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00752}00752\ \ \ \ \ \ \ \ \ cert\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a1a6b34bd4a1895dfa6cbf88b882fbe3c}{\_link\_collector}}.session.cert}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00753}00753\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ isinstance(cert,\ tuple),\ \textcolor{stringliteral}{"{}pip\ only\ supports\ PEM\ client\ certs"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00754}00754\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cert}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00755}00755\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00756}00756\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00757}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af07b72804d076bbddeffe5ea22b5ba94}{00757}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af07b72804d076bbddeffe5ea22b5ba94}{release\_control}}(self)\ -\/>\ ReleaseControl\ |\ None:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00758}00758\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab18bbef86ef9afb5b5d1224c519228ca}{\_candidate\_prefs}}.release\_control}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00759}00759\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00760}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a00809a69e1b677939b0421e9d2bf9338}{00760}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a00809a69e1b677939b0421e9d2bf9338}{set\_release\_control}}(self,\ release\_control:\ ReleaseControl)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00761}00761\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab18bbef86ef9afb5b5d1224c519228ca}{\_candidate\_prefs}}.release\_control\ =\ release\_control}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00762}00762\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00763}00763\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00764}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ac0be3d81f34706d193f726e19eeb33ce}{00764}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ac0be3d81f34706d193f726e19eeb33ce}{prefer\_binary}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00765}00765\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab18bbef86ef9afb5b5d1224c519228ca}{\_candidate\_prefs}}.prefer\_binary}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00766}00766\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00767}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a5a73bb7f7300dea364d8d78e03dcd841}{00767}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a5a73bb7f7300dea364d8d78e03dcd841}{set\_prefer\_binary}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00768}00768\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab18bbef86ef9afb5b5d1224c519228ca}{\_candidate\_prefs}}.prefer\_binary\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00769}00769\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00770}00770\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00771}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a559affd73e8ac48dbc0a076cfa9ac498}{00771}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a559affd73e8ac48dbc0a076cfa9ac498}{uploaded\_prior\_to}}(self)\ -\/>\ datetime.datetime\ |\ None:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00772}00772\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a003b090c58bfcae58ec269bec059b13c}{\_uploaded\_prior\_to}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00773}00773\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00774}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a406ef54ab9aac7ab4d3c9e9bb0378886}{00774}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a406ef54ab9aac7ab4d3c9e9bb0378886}{requires\_python\_skipped\_reasons}}(self)\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00775}00775\ \ \ \ \ \ \ \ \ reasons\ =\ \{}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00776}00776\ \ \ \ \ \ \ \ \ \ \ \ \ detail}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00777}00777\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ \_,\ result,\ detail\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ae2aa2066c25c4844e8418bbcd33d0785}{\_logged\_links}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00778}00778\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ result\ ==\ LinkType.requires\_python\_mismatch}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00779}00779\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00780}00780\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ sorted(reasons)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00781}00781\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00782}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_aa700a69dcbed4485a8c6ca1eb28c0c6e}{00782}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_aa700a69dcbed4485a8c6ca1eb28c0c6e}{make\_link\_evaluator}}(self,\ project\_name:\ str)\ -\/>\ LinkEvaluator:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00783}00783\ \ \ \ \ \ \ \ \ canonical\_name\ =\ canonicalize\_name(project\_name)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00784}00784\ \ \ \ \ \ \ \ \ formats\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af41c5f14312febfe0356c11130402ad4}{format\_control}}.get\_allowed\_formats(canonical\_name)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00785}00785\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00786}00786\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_link_evaluator}{LinkEvaluator}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00787}00787\ \ \ \ \ \ \ \ \ \ \ \ \ project\_name=project\_name,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00788}00788\ \ \ \ \ \ \ \ \ \ \ \ \ canonical\_name=canonical\_name,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00789}00789\ \ \ \ \ \ \ \ \ \ \ \ \ formats=formats,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00790}00790\ \ \ \ \ \ \ \ \ \ \ \ \ target\_python=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab5870657073cec3c1fde088fa57be7eb}{\_target\_python}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00791}00791\ \ \ \ \ \ \ \ \ \ \ \ \ allow\_yanked=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_aa769f70eaa7c4ce4206578db1f394cf6}{\_allow\_yanked}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00792}00792\ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_requires\_python=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_adc2208abe2eed3ba4b28656dacb1d0e0}{\_ignore\_requires\_python}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00793}00793\ \ \ \ \ \ \ \ \ \ \ \ \ uploaded\_prior\_to=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a003b090c58bfcae58ec269bec059b13c}{\_uploaded\_prior\_to}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00794}00794\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00795}00795\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00796}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af9757ea44a1bcec545ae8700ee524461}{00796}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af9757ea44a1bcec545ae8700ee524461}{\_sort\_links}}(self,\ links:\ Iterable[Link])\ -\/>\ list[Link]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00797}00797\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00798}00798\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Returns\ elements\ of\ links\ in\ order,\ non-\/egg\ links\ first,\ egg\ links}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00799}00799\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ second,\ while\ eliminating\ duplicates}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00800}00800\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00801}00801\ \ \ \ \ \ \ \ \ eggs,\ no\_eggs\ =\ [],\ []}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00802}00802\ \ \ \ \ \ \ \ \ seen:\ set[Link]\ =\ set()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00803}00803\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ link\ \textcolor{keywordflow}{in}\ links:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00804}00804\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ link\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ seen:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00805}00805\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ seen.add(link)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00806}00806\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ link.egg\_fragment:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00807}00807\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ eggs.append(link)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00808}00808\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00809}00809\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ no\_eggs.append(link)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00810}00810\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ no\_eggs\ +\ eggs}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00811}00811\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00812}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab8dcd68032495e1cc04072d115cd703a}{00812}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab8dcd68032495e1cc04072d115cd703a}{\_log\_skipped\_link}}(self,\ link:\ Link,\ result:\ LinkType,\ detail:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00813}00813\ \ \ \ \ \ \ \ \ entry\ =\ (link,\ result,\ detail)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00814}00814\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ entry\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ae2aa2066c25c4844e8418bbcd33d0785}{\_logged\_links}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00815}00815\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Put\ the\ link\ at\ the\ end\ so\ the\ reason\ is\ more\ visible\ and\ because}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00816}00816\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ link\ string\ is\ usually\ very\ long.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00817}00817\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Skipping\ link:\ \%s:\ \%s"{}},\ detail,\ link)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00818}00818\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ae2aa2066c25c4844e8418bbcd33d0785}{\_logged\_links}}.add(entry)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00819}00819\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00820}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a7db3a587e7635accd9364655ece77e9f}{00820}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a7db3a587e7635accd9364655ece77e9f}{get\_install\_candidate}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00821}00821\ \ \ \ \ \ \ \ \ self,\ link\_evaluator:\ LinkEvaluator,\ link:\ Link}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00822}00822\ \ \ \ \ )\ -\/>\ InstallationCandidate\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00823}00823\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00824}00824\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ the\ link\ is\ a\ candidate\ for\ install,\ convert\ it\ to\ an}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00825}00825\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ InstallationCandidate\ and\ return\ it.\ Otherwise,\ return\ None.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00826}00826\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00827}00827\ \ \ \ \ \ \ \ \ result,\ detail\ =\ link\_evaluator.evaluate\_link(link)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00828}00828\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ result\ ==\ LinkType.upload\_time\_missing:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00829}00829\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Fail\ immediately\ if\ the\ index\ doesn't\ provide\ upload-\/time}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00830}00830\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ when\ -\/-\/uploaded-\/prior-\/to\ is\ specified}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00831}00831\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(detail)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00832}00832\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ result\ !=\ LinkType.candidate:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00833}00833\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab8dcd68032495e1cc04072d115cd703a}{\_log\_skipped\_link}}(link,\ result,\ detail)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00834}00834\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00835}00835\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00836}00836\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00837}00837\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1candidate_1_1_installation_candidate}{InstallationCandidate}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00838}00838\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ name=link\_evaluator.project\_name,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00839}00839\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ link=link,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00840}00840\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ version=detail,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00841}00841\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00842}00842\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ InvalidVersion:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00843}00843\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00844}00844\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00845}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ad652141bc219cceaac8e808d812684f6}{00845}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ad652141bc219cceaac8e808d812684f6}{evaluate\_links}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00846}00846\ \ \ \ \ \ \ \ \ self,\ link\_evaluator:\ LinkEvaluator,\ links:\ Iterable[Link]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00847}00847\ \ \ \ \ )\ -\/>\ list[InstallationCandidate]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00848}00848\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00849}00849\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Convert\ links\ that\ are\ candidates\ to\ InstallationCandidate\ objects.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00850}00850\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00851}00851\ \ \ \ \ \ \ \ \ candidates\ =\ []}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00852}00852\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ link\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af9757ea44a1bcec545ae8700ee524461}{\_sort\_links}}(links):}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00853}00853\ \ \ \ \ \ \ \ \ \ \ \ \ candidate\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a7db3a587e7635accd9364655ece77e9f}{get\_install\_candidate}}(link\_evaluator,\ link)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00854}00854\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ candidate\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00855}00855\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ candidates.append(candidate)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00856}00856\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00857}00857\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ candidates}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00858}00858\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00859}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a3e2956ad0d97e592ae91f9ab18b44957}{00859}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a3e2956ad0d97e592ae91f9ab18b44957}{process\_project\_url}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00860}00860\ \ \ \ \ \ \ \ \ self,\ project\_url:\ Link,\ link\_evaluator:\ LinkEvaluator}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00861}00861\ \ \ \ \ )\ -\/>\ list[InstallationCandidate]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00862}00862\ \ \ \ \ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00863}00863\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Fetching\ project\ page\ and\ analyzing\ links:\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00864}00864\ \ \ \ \ \ \ \ \ \ \ \ \ project\_url,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00865}00865\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00866}00866\ \ \ \ \ \ \ \ \ index\_response\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a1a6b34bd4a1895dfa6cbf88b882fbe3c}{\_link\_collector}}.fetch\_response(project\_url)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00867}00867\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ index\_response\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00868}00868\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ []}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00869}00869\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00870}00870\ \ \ \ \ \ \ \ \ page\_links\ =\ list(parse\_links(index\_response))}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00871}00871\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00872}00872\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ indent\_log():}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00873}00873\ \ \ \ \ \ \ \ \ \ \ \ \ package\_links\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ad652141bc219cceaac8e808d812684f6}{evaluate\_links}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00874}00874\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ link\_evaluator,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00875}00875\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ links=page\_links,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00876}00876\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00877}00877\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00878}00878\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ package\_links}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00879}00879\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00880}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af4438433ca7fb6e878fa4e2ad41ded4c}{00880}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af4438433ca7fb6e878fa4e2ad41ded4c}{find\_all\_candidates}}(self,\ project\_name:\ str)\ -\/>\ list[InstallationCandidate]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00881}00881\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Find\ all\ available\ InstallationCandidate\ for\ project\_name}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00882}00882\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00883}00883\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ checks\ index\_urls\ and\ find\_links.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00884}00884\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ All\ versions\ found\ are\ returned\ as\ an\ InstallationCandidate\ list.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00885}00885\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00886}00886\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ See\ LinkEvaluator.evaluate\_link()\ for\ details\ on\ which\ files}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00887}00887\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ are\ accepted.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00888}00888\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00889}00889\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ project\_name\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a8015614888fb1fe57e108c5a26841ef2}{\_all\_candidates}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00890}00890\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a8015614888fb1fe57e108c5a26841ef2}{\_all\_candidates}}[project\_name]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00891}00891\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00892}00892\ \ \ \ \ \ \ \ \ link\_evaluator\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_aa700a69dcbed4485a8c6ca1eb28c0c6e}{make\_link\_evaluator}}(project\_name)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00893}00893\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00894}00894\ \ \ \ \ \ \ \ \ collected\_sources\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a1a6b34bd4a1895dfa6cbf88b882fbe3c}{\_link\_collector}}.collect\_sources(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00895}00895\ \ \ \ \ \ \ \ \ \ \ \ \ project\_name=project\_name,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00896}00896\ \ \ \ \ \ \ \ \ \ \ \ \ candidates\_from\_page=functools.partial(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00897}00897\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a3e2956ad0d97e592ae91f9ab18b44957}{process\_project\_url}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00898}00898\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ link\_evaluator=link\_evaluator,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00899}00899\ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00900}00900\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00901}00901\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00902}00902\ \ \ \ \ \ \ \ \ page\_candidates\_it\ =\ itertools.chain.from\_iterable(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00903}00903\ \ \ \ \ \ \ \ \ \ \ \ \ source.page\_candidates()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00904}00904\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ sources\ \textcolor{keywordflow}{in}\ collected\_sources}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00905}00905\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ source\ \textcolor{keywordflow}{in}\ sources}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00906}00906\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ source\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00907}00907\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00908}00908\ \ \ \ \ \ \ \ \ page\_candidates\ =\ list(page\_candidates\_it)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00909}00909\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00910}00910\ \ \ \ \ \ \ \ \ file\_links\_it\ =\ itertools.chain.from\_iterable(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00911}00911\ \ \ \ \ \ \ \ \ \ \ \ \ source.file\_links()}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00912}00912\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ sources\ \textcolor{keywordflow}{in}\ collected\_sources}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00913}00913\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ source\ \textcolor{keywordflow}{in}\ sources}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00914}00914\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ source\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00915}00915\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00916}00916\ \ \ \ \ \ \ \ \ file\_candidates\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ad652141bc219cceaac8e808d812684f6}{evaluate\_links}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00917}00917\ \ \ \ \ \ \ \ \ \ \ \ \ link\_evaluator,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00918}00918\ \ \ \ \ \ \ \ \ \ \ \ \ sorted(file\_links\_it,\ reverse=\textcolor{keyword}{True}),}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00919}00919\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00920}00920\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00921}00921\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ logger.isEnabledFor(logging.DEBUG)\ \textcolor{keywordflow}{and}\ file\_candidates:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00922}00922\ \ \ \ \ \ \ \ \ \ \ \ \ paths\ =\ []}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00923}00923\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ candidate\ \textcolor{keywordflow}{in}\ file\_candidates:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00924}00924\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ candidate.link.url\ \ \textcolor{comment}{\#\ we\ need\ to\ have\ a\ URL}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00925}00925\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00926}00926\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ paths.append(candidate.link.file\_path)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00927}00927\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ Exception:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00928}00928\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ paths.append(candidate.link.url)\ \ \textcolor{comment}{\#\ it's\ not\ a\ local\ file}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00929}00929\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00930}00930\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Local\ files\ found:\ \%s"{}},\ \textcolor{stringliteral}{"{},\ "{}}.join(paths))}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00931}00931\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00932}00932\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ This\ is\ an\ intentional\ priority\ ordering}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00933}00933\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a8015614888fb1fe57e108c5a26841ef2}{\_all\_candidates}}[project\_name]\ =\ file\_candidates\ +\ page\_candidates}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00934}00934\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00935}00935\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a8015614888fb1fe57e108c5a26841ef2}{\_all\_candidates}}[project\_name]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00936}00936\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00937}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a84041064aa8802f04df9ce90fa1d0a85}{00937}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a84041064aa8802f04df9ce90fa1d0a85}{make\_candidate\_evaluator}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00938}00938\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00939}00939\ \ \ \ \ \ \ \ \ project\_name:\ str,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00940}00940\ \ \ \ \ \ \ \ \ specifier:\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1specifiers_1_1_base_specifier}{specifiers.BaseSpecifier}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00941}00941\ \ \ \ \ \ \ \ \ hashes:\ Hashes\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00942}00942\ \ \ \ \ )\ -\/>\ CandidateEvaluator:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00943}00943\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Create\ a\ CandidateEvaluator\ object\ to\ use."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00944}00944\ \ \ \ \ \ \ \ \ candidate\_prefs\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab18bbef86ef9afb5b5d1224c519228ca}{\_candidate\_prefs}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00945}00945\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ CandidateEvaluator.create(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00946}00946\ \ \ \ \ \ \ \ \ \ \ \ \ project\_name=project\_name,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00947}00947\ \ \ \ \ \ \ \ \ \ \ \ \ target\_python=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ab5870657073cec3c1fde088fa57be7eb}{\_target\_python}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00948}00948\ \ \ \ \ \ \ \ \ \ \ \ \ prefer\_binary=candidate\_prefs.prefer\_binary,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00949}00949\ \ \ \ \ \ \ \ \ \ \ \ \ release\_control=candidate\_prefs.release\_control,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00950}00950\ \ \ \ \ \ \ \ \ \ \ \ \ specifier=specifier,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00951}00951\ \ \ \ \ \ \ \ \ \ \ \ \ hashes=hashes,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00952}00952\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00953}00953\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00954}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a558d59ad4efdfb8a2cceaff9a7250344}{00954}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a558d59ad4efdfb8a2cceaff9a7250344}{find\_best\_candidate}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00955}00955\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00956}00956\ \ \ \ \ \ \ \ \ project\_name:\ str,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00957}00957\ \ \ \ \ \ \ \ \ specifier:\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1specifiers_1_1_base_specifier}{specifiers.BaseSpecifier}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00958}00958\ \ \ \ \ \ \ \ \ hashes:\ Hashes\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00959}00959\ \ \ \ \ )\ -\/>\ BestCandidateResult:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00960}00960\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Find\ matches\ for\ the\ given\ project\ and\ specifier.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00961}00961\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00962}00962\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ specifier:\ An\ optional\ object\ implementing\ \`{}filter\`{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00963}00963\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (e.g.\ \`{}packaging.specifiers.SpecifierSet\`{})\ to\ filter\ applicable}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00964}00964\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ versions.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00965}00965\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00966}00966\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :return:\ A\ \`{}BestCandidateResult\`{}\ instance.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00967}00967\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00968}00968\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (project\_name,\ specifier,\ hashes)\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a29f373da9aaffdc05e18e7e81504fea4}{\_best\_candidates}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00969}00969\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a29f373da9aaffdc05e18e7e81504fea4}{\_best\_candidates}}[project\_name,\ specifier,\ hashes]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00970}00970\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00971}00971\ \ \ \ \ \ \ \ \ candidates\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af4438433ca7fb6e878fa4e2ad41ded4c}{find\_all\_candidates}}(project\_name)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00972}00972\ \ \ \ \ \ \ \ \ candidate\_evaluator\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a84041064aa8802f04df9ce90fa1d0a85}{make\_candidate\_evaluator}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00973}00973\ \ \ \ \ \ \ \ \ \ \ \ \ project\_name=project\_name,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00974}00974\ \ \ \ \ \ \ \ \ \ \ \ \ specifier=specifier,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00975}00975\ \ \ \ \ \ \ \ \ \ \ \ \ hashes=hashes,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00976}00976\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00977}00977\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a29f373da9aaffdc05e18e7e81504fea4}{\_best\_candidates}}[project\_name,\ specifier,\ hashes]\ =\ (}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00978}00978\ \ \ \ \ \ \ \ \ \ \ \ \ candidate\_evaluator.compute\_best\_candidate(candidates)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00979}00979\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00980}00980\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00981}00981\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a29f373da9aaffdc05e18e7e81504fea4}{\_best\_candidates}}[project\_name,\ specifier,\ hashes]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00982}00982\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00983}\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ad490ebb5e5b62faed535d952b641f338}{00983}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_ad490ebb5e5b62faed535d952b641f338}{find\_requirement}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00984}00984\ \ \ \ \ \ \ \ \ self,\ req:\ InstallRequirement,\ upgrade:\ bool}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00985}00985\ \ \ \ \ )\ -\/>\ InstallationCandidate\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00986}00986\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Try\ to\ find\ a\ Link\ matching\ req}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00987}00987\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00988}00988\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Expects\ req,\ an\ InstallRequirement\ and\ upgrade,\ a\ boolean}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00989}00989\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Returns\ a\ InstallationCandidate\ if\ found,}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00990}00990\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Raises\ DistributionNotFound\ or\ BestVersionAlreadyInstalled\ otherwise}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00991}00991\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00992}00992\ \ \ \ \ \ \ \ \ name\ =\ req.name}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00993}00993\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ name\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None},\ \textcolor{stringliteral}{"{}find\_requirement()\ called\ with\ no\ name"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00994}00994\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00995}00995\ \ \ \ \ \ \ \ \ hashes\ =\ req.hashes(trust\_internet=\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00996}00996\ \ \ \ \ \ \ \ \ best\_candidate\_result\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_a558d59ad4efdfb8a2cceaff9a7250344}{find\_best\_candidate}}(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00997}00997\ \ \ \ \ \ \ \ \ \ \ \ \ name,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00998}00998\ \ \ \ \ \ \ \ \ \ \ \ \ specifier=req.specifier,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l00999}00999\ \ \ \ \ \ \ \ \ \ \ \ \ hashes=hashes,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01000}01000\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01001}01001\ \ \ \ \ \ \ \ \ best\_candidate\ =\ best\_candidate\_result.best\_candidate}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01002}01002\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01003}01003\ \ \ \ \ \ \ \ \ installed\_version:\ \_BaseVersion\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01004}01004\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ req.satisfied\_by\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01005}01005\ \ \ \ \ \ \ \ \ \ \ \ \ installed\_version\ =\ req.satisfied\_by.version}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01006}01006\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01007}01007\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }\_format\_versions(cand\_iter:\ Iterable[InstallationCandidate])\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01008}01008\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ This\ repeated\ parse\_version\ and\ str()\ conversion\ is\ needed\ to}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01009}01009\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ handle\ different\ vendoring\ sources\ from\ pip\ and\ pkg\_resources.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01010}01010\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ we\ stop\ using\ the\ pkg\_resources\ provided\ specifier\ and\ start}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01011}01011\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ using\ our\ own,\ we\ can\ drop\ the\ cast\ to\ str().}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01012}01012\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01013}01013\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{},\ "{}}.join(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01014}01014\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ sorted(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01015}01015\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \{str(c.version)\ \textcolor{keywordflow}{for}\ c\ \textcolor{keywordflow}{in}\ cand\_iter\},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01016}01016\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ key=parse\_version,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01017}01017\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01018}01018\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01019}01019\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ \textcolor{stringliteral}{"{}none"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01020}01020\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01021}01021\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01022}01022\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ installed\_version\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ best\_candidate\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01023}01023\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ if\ only\ final\ releases\ are\ allowed\ for\ this\ package}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01024}01024\ \ \ \ \ \ \ \ \ \ \ \ \ version\_type\ =\ \textcolor{stringliteral}{"{}version"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01025}01025\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af07b72804d076bbddeffe5ea22b5ba94}{release\_control}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01026}01026\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ allows\_pre\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1index_1_1package__finder_1_1_package_finder_af07b72804d076bbddeffe5ea22b5ba94}{release\_control}}.allows\_prereleases(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01027}01027\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canonicalize\_name(name)}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01028}01028\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01029}01029\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ allows\_pre\ \textcolor{keywordflow}{is}\ \textcolor{keyword}{False}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01030}01030\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ version\_type\ =\ \textcolor{stringliteral}{"{}final\ version"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01031}01031\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01032}01032\ \ \ \ \ \ \ \ \ \ \ \ \ logger.critical(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01033}01033\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Could\ not\ find\ a\ \%s\ that\ satisfies\ the\ requirement\ \%s\ "{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01034}01034\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}(from\ versions:\ \%s)"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01035}01035\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ version\_type,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01036}01036\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01037}01037\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_format\_versions(best\_candidate\_result.all\_candidates),}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01038}01038\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01039}01039\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01040}01040\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_distribution_not_found}{DistributionNotFound}}(f\textcolor{stringliteral}{"{}No\ matching\ distribution\ found\ for\ \{req\}"{}})}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01041}01041\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01042}01042\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }\_should\_install\_candidate(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01043}01043\ \ \ \ \ \ \ \ \ \ \ \ \ candidate:\ InstallationCandidate\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01044}01044\ \ \ \ \ \ \ \ \ )\ -\/>\ TypeGuard[InstallationCandidate]:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01045}01045\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ installed\_version\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01046}01046\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01047}01047\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ best\_candidate\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01048}01048\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01049}01049\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ best\_candidate.version\ >\ installed\_version}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01050}01050\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01051}01051\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ upgrade\ \textcolor{keywordflow}{and}\ installed\_version\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01052}01052\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \_should\_install\_candidate(best\_candidate):}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01053}01053\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01054}01054\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Existing\ installed\ version\ (\%s)\ satisfies\ requirement\ "{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01055}01055\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}(most\ up-\/to-\/date\ version\ is\ \%s)"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01056}01056\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ installed\_version,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01057}01057\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ best\_candidate.version,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01058}01058\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01059}01059\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01060}01060\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01061}01061\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Existing\ installed\ version\ (\%s)\ is\ most\ up-\/to-\/date\ and\ "{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01062}01062\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}satisfies\ requirement"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01063}01063\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ installed\_version,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01064}01064\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01065}01065\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01066}01066\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01067}01067\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \_should\_install\_candidate(best\_candidate):}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01068}01068\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01069}01069\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Using\ version\ \%s\ (newest\ of\ versions:\ \%s)"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01070}01070\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ best\_candidate.version,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01071}01071\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_format\_versions(best\_candidate\_result.applicable\_candidates),}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01072}01072\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01073}01073\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ best\_candidate}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01074}01074\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01075}01075\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ have\ an\ existing\ version,\ and\ its\ the\ best\ version}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01076}01076\ \ \ \ \ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01077}01077\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Installed\ version\ (\%s)\ is\ most\ up-\/to-\/date\ (past\ versions:\ \%s)"{}},}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01078}01078\ \ \ \ \ \ \ \ \ \ \ \ \ installed\_version,}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01079}01079\ \ \ \ \ \ \ \ \ \ \ \ \ \_format\_versions(best\_candidate\_result.applicable\_candidates),}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01080}01080\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01081}01081\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ BestVersionAlreadyInstalled}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01082}01082\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01083}01083\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01084}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_a9a5e4d6fc63d9853dcac2e44a4596f1b}{01084}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_a9a5e4d6fc63d9853dcac2e44a4596f1b}{\_find\_name\_version\_sep}}(fragment:\ str,\ canonical\_name:\ str)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01085}01085\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Find\ the\ separator's\ index\ based\ on\ the\ package's\ canonical\ name.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01086}01086\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01087}01087\ \textcolor{stringliteral}{\ \ \ \ :param\ fragment:\ A\ <package>+<version>\ filename\ "{}fragment"{}\ (stem)\ or}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01088}01088\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ egg\ fragment.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01089}01089\ \textcolor{stringliteral}{\ \ \ \ :param\ canonical\_name:\ The\ package's\ canonical\ name.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01090}01090\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01091}01091\ \textcolor{stringliteral}{\ \ \ \ This\ function\ is\ needed\ since\ the\ canonicalized\ name\ does\ not\ necessarily}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01092}01092\ \textcolor{stringliteral}{\ \ \ \ have\ the\ same\ length\ as\ the\ egg\ info's\ name\ part.\ An\ example::}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01093}01093\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01094}01094\ \textcolor{stringliteral}{\ \ \ \ >>>\ fragment\ =\ 'foo\_\_bar-\/1.0'}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01095}01095\ \textcolor{stringliteral}{\ \ \ \ >>>\ canonical\_name\ =\ 'foo-\/bar'}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01096}01096\ \textcolor{stringliteral}{\ \ \ \ >>>\ \_find\_name\_version\_sep(fragment,\ canonical\_name)}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01097}01097\ \textcolor{stringliteral}{\ \ \ \ 8}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01098}01098\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01099}01099\ \ \ \ \ \textcolor{comment}{\#\ Project\ name\ and\ version\ must\ be\ separated\ by\ one\ single\ dash.\ Find\ all}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01100}01100\ \ \ \ \ \textcolor{comment}{\#\ occurrences\ of\ dashes;\ if\ the\ string\ in\ front\ of\ it\ matches\ the\ canonical}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01101}01101\ \ \ \ \ \textcolor{comment}{\#\ name,\ this\ is\ the\ one\ separating\ the\ name\ and\ version\ parts.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01102}01102\ \ \ \ \ \textcolor{keywordflow}{for}\ i,\ c\ \textcolor{keywordflow}{in}\ enumerate(fragment):}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01103}01103\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ c\ !=\ \textcolor{stringliteral}{"{}-\/"{}}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01104}01104\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01105}01105\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ canonicalize\_name(fragment[:i])\ ==\ canonical\_name:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01106}01106\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ i}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01107}01107\ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(f\textcolor{stringliteral}{"{}\{fragment\}\ does\ not\ match\ \{canonical\_name\}"{}})}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01108}01108\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01109}01109\ }
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01110}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_a78562be88acaae797151edadfa8980d0}{01110}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_a78562be88acaae797151edadfa8980d0}{\_extract\_version\_from\_fragment}}(fragment:\ str,\ canonical\_name:\ str)\ -\/>\ str\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01111}01111\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Parse\ the\ version\ string\ from\ a\ <package>+<version>\ filename}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01112}01112\ \textcolor{stringliteral}{\ \ \ \ "{}fragment"{}\ (stem)\ or\ egg\ fragment.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01113}01113\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01114}01114\ \textcolor{stringliteral}{\ \ \ \ :param\ fragment:\ The\ string\ to\ parse.\ E.g.\ foo-\/2.1}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01115}01115\ \textcolor{stringliteral}{\ \ \ \ :param\ canonical\_name:\ The\ canonicalized\ name\ of\ the\ package\ this}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01116}01116\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ belongs\ to.}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01117}01117\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01118}01118\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01119}01119\ \ \ \ \ \ \ \ \ version\_start\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder_a9a5e4d6fc63d9853dcac2e44a4596f1b}{\_find\_name\_version\_sep}}(fragment,\ canonical\_name)\ +\ 1}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01120}01120\ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01121}01121\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01122}01122\ \ \ \ \ version\ =\ fragment[version\_start:]}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01123}01123\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ version:}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01124}01124\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{package__finder_8py_source_l01125}01125\ \ \ \ \ \textcolor{keywordflow}{return}\ version}
+
+\end{DoxyCode}

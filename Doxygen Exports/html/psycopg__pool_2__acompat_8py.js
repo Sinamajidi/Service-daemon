@@ -1,0 +1,27 @@
+var psycopg__pool_2__acompat_8py =
+[
+    [ "psycopg_pool._acompat.Queue", "classpsycopg__pool_1_1__acompat_1_1_queue.html", "classpsycopg__pool_1_1__acompat_1_1_queue" ],
+    [ "psycopg_pool._acompat.AEvent", "classpsycopg__pool_1_1__acompat_1_1_a_event.html", "classpsycopg__pool_1_1__acompat_1_1_a_event" ],
+    [ "psycopg_pool._acompat.ACondition", "classpsycopg__pool_1_1__acompat_1_1_a_condition.html", "classpsycopg__pool_1_1__acompat_1_1_a_condition" ],
+    [ "psycopg_pool._acompat.AQueue", "classpsycopg__pool_1_1__acompat_1_1_a_queue.html", null ],
+    [ "psycopg_pool._acompat.agather", "namespacepsycopg__pool_1_1__acompat.html#a88fcc30c863ebb4b2996385c0363fd0c", null ],
+    [ "psycopg_pool._acompat.asleep", "namespacepsycopg__pool_1_1__acompat.html#a83c06558d64e7c489a635b2304926261", null ],
+    [ "psycopg_pool._acompat.aspawn", "namespacepsycopg__pool_1_1__acompat.html#a98e17f7a9b66e0def2d1bacc7c57e728", null ],
+    [ "psycopg_pool._acompat.current_task_name", "namespacepsycopg__pool_1_1__acompat.html#af326e3d0e6ab8531790f73dc3cc885bf", null ],
+    [ "psycopg_pool._acompat.current_thread_name", "namespacepsycopg__pool_1_1__acompat.html#a8082ca01ba89054f7ed4c109bd865b1d", null ],
+    [ "psycopg_pool._acompat.ensure_async", "namespacepsycopg__pool_1_1__acompat.html#ad622cfa1f4f0d37a1e1e78967fb42ada", null ],
+    [ "psycopg_pool._acompat.ensure_async", "namespacepsycopg__pool_1_1__acompat.html#a751b2a3b11135346e4eb2740cdcd121b", null ],
+    [ "psycopg_pool._acompat.ensure_async", "namespacepsycopg__pool_1_1__acompat.html#a4ac25652d1af3cb1890c9bdb3dbc5786", null ],
+    [ "psycopg_pool._acompat.gather", "namespacepsycopg__pool_1_1__acompat.html#aaa1c25d793a10a3140098a71b1a5f47b", null ],
+    [ "psycopg_pool._acompat.spawn", "namespacepsycopg__pool_1_1__acompat.html#a7963abf9a1ef0f62afe9a4544e7d30b6", null ],
+    [ "psycopg_pool._acompat.ALock", "namespacepsycopg__pool_1_1__acompat.html#affcc9ba12edb9fc1fbf229c6fb616d6d", null ],
+    [ "psycopg_pool._acompat.AWorker", "namespacepsycopg__pool_1_1__acompat.html#a286f7179d64eb8761f81252c517c5c6e", null ],
+    [ "psycopg_pool._acompat.Condition", "namespacepsycopg__pool_1_1__acompat.html#a9a8dcb6675d1bc2dad8b14b4eb2c90a5", null ],
+    [ "psycopg_pool._acompat.Event", "namespacepsycopg__pool_1_1__acompat.html#a86bbce4a1dcb1bc3fc6f4ed5c45a9910", null ],
+    [ "psycopg_pool._acompat.Lock", "namespacepsycopg__pool_1_1__acompat.html#a3f2f19cfba68aafe49b813505dfb2ada", null ],
+    [ "psycopg_pool._acompat.logger", "namespacepsycopg__pool_1_1__acompat.html#a2b9216fcf8d205dc07e42c23aadadd2e", null ],
+    [ "psycopg_pool._acompat.P", "namespacepsycopg__pool_1_1__acompat.html#a745406def4ccf9577e66bb0b6bd7b8d8", null ],
+    [ "psycopg_pool._acompat.sleep", "namespacepsycopg__pool_1_1__acompat.html#ae4b4c4ceccbd6acdc0eb4411d14a2f28", null ],
+    [ "psycopg_pool._acompat.T", "namespacepsycopg__pool_1_1__acompat.html#ae674e718c57318d19749a826c789d162", null ],
+    [ "psycopg_pool._acompat.Worker", "namespacepsycopg__pool_1_1__acompat.html#abc1cde3947a57d10eaa171aa69695fdf", null ]
+];

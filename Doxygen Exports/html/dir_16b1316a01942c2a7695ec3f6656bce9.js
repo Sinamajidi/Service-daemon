@@ -1,0 +1,19 @@
+var dir_16b1316a01942c2a7695ec3f6656bce9 =
+[
+    [ "licenses", "dir_6dd17fa4bab81f55ae3f209b15fa6322.html", "dir_6dd17fa4bab81f55ae3f209b15fa6322" ],
+    [ "__init__.py", "venv_2_lib_2site-packages_2pip_2__vendor_2packaging_2____init_____8py.html", null ],
+    [ "_elffile.py", "__elffile_8py.html", "__elffile_8py" ],
+    [ "_manylinux.py", "__manylinux_8py.html", "__manylinux_8py" ],
+    [ "_musllinux.py", "__musllinux_8py.html", "__musllinux_8py" ],
+    [ "_parser.py", "packaging_2__parser_8py.html", "packaging_2__parser_8py" ],
+    [ "_structures.py", "__structures_8py.html", "__structures_8py" ],
+    [ "_tokenizer.py", "__tokenizer_8py.html", "__tokenizer_8py" ],
+    [ "markers.py", "markers_8py.html", "markers_8py" ],
+    [ "metadata.py", "__vendor_2packaging_2metadata_8py.html", "__vendor_2packaging_2metadata_8py" ],
+    [ "pylock.py", "__vendor_2packaging_2pylock_8py.html", "__vendor_2packaging_2pylock_8py" ],
+    [ "requirements.py", "__vendor_2packaging_2requirements_8py.html", "__vendor_2packaging_2requirements_8py" ],
+    [ "specifiers.py", "specifiers_8py.html", "specifiers_8py" ],
+    [ "tags.py", "tags_8py.html", "tags_8py" ],
+    [ "utils.py", "__vendor_2packaging_2utils_8py.html", "__vendor_2packaging_2utils_8py" ],
+    [ "version.py", "pip_2__vendor_2packaging_2version_8py.html", "pip_2__vendor_2packaging_2version_8py" ]
+];

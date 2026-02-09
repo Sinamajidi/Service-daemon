@@ -1,0 +1,138 @@
+\doxysection{wheel.\+py}
+\hypertarget{utils_2wheel_8py_source}{}\label{utils_2wheel_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/utils/wheel.py@{venv/Lib/site-\/packages/pip/\_internal/utils/wheel.py}}
+\doxymbox{\hyperlink{utils_2wheel_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}Support\ functions\ for\ working\ with\ wheel\ files."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00003}00003\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00004}00004\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespaceemail_1_1message}{email.message}}\ \textcolor{keyword}{import}\ Message}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00005}00005\ \textcolor{keyword}{from}\ email.parser\ \textcolor{keyword}{import}\ Parser}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00006}00006\ \textcolor{keyword}{from}\ zipfile\ \textcolor{keyword}{import}\ BadZipFile,\ ZipFile}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00008}00008\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1utils}{pip.\_vendor.packaging.utils}}\ \textcolor{keyword}{import}\ canonicalize\_name}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ UnsupportedWheel}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00012}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a9cded26e7b34c92b96e11e969e2cf301}{00012}}\ VERSION\_COMPATIBLE\ =\ (1,\ 0)}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00015}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a49313abd1b63749673f663b04ef48d20}{00015}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00016}00016\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00018}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a8790967248d7ce2e82b45e608ff81cf8}{00018}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a8790967248d7ce2e82b45e608ff81cf8}{parse\_wheel}}(wheel\_zip:\ ZipFile,\ name:\ str)\ -\/>\ tuple[str,\ Message]:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00019}00019\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Extract\ information\ from\ the\ provided\ wheel,\ ensuring\ it\ meets\ basic}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00020}00020\ \textcolor{stringliteral}{\ \ \ \ standards.}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00021}00021\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00022}00022\ \textcolor{stringliteral}{\ \ \ \ Returns\ the\ name\ of\ the\ .dist-\/info\ directory\ and\ the\ parsed\ WHEEL\ metadata.}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00023}00023\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00024}00024\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00025}00025\ \ \ \ \ \ \ \ \ info\_dir\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a40eb793d49659ebdb513975664dc7b70}{wheel\_dist\_info\_dir}}(wheel\_zip,\ name)}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00026}00026\ \ \ \ \ \ \ \ \ metadata\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a08ede3e6ea9b6ac98256e28a093a9f91}{wheel\_metadata}}(wheel\_zip,\ info\_dir)}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00027}00027\ \ \ \ \ \ \ \ \ version\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_ab2537cc634d0c3b4c37936de8e9f9650}{wheel\_version}}(metadata)}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00028}00028\ \ \ \ \ \textcolor{keywordflow}{except}\ UnsupportedWheel\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00029}00029\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(f\textcolor{stringliteral}{"{}\{name\}\ has\ an\ invalid\ wheel,\ \{e\}"{}})}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00031}00031\ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_af6676861a7bf76bd5bda9843f369ae85}{check\_compatibility}}(version,\ name)}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00033}00033\ \ \ \ \ \textcolor{keywordflow}{return}\ info\_dir,\ metadata}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00036}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a40eb793d49659ebdb513975664dc7b70}{00036}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a40eb793d49659ebdb513975664dc7b70}{wheel\_dist\_info\_dir}}(source:\ ZipFile,\ name:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00037}00037\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Returns\ the\ name\ of\ the\ contained\ .dist-\/info\ directory.}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00038}00038\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00039}00039\ \textcolor{stringliteral}{\ \ \ \ Raises\ AssertionError\ or\ UnsupportedWheel\ if\ not\ found,\ >1\ found,\ or}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00040}00040\ \textcolor{stringliteral}{\ \ \ \ it\ doesn't\ match\ the\ provided\ name.}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00041}00041\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00042}00042\ \ \ \ \ \textcolor{comment}{\#\ Zip\ file\ path\ separators\ must\ be\ /}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00043}00043\ \ \ \ \ subdirs\ =\ \{p.split(\textcolor{stringliteral}{"{}/"{}},\ 1)[0]\ \textcolor{keywordflow}{for}\ p\ \textcolor{keywordflow}{in}\ source.namelist()\}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00045}00045\ \ \ \ \ info\_dirs\ =\ [s\ \textcolor{keywordflow}{for}\ s\ \textcolor{keywordflow}{in}\ subdirs\ \textcolor{keywordflow}{if}\ s.endswith(\textcolor{stringliteral}{"{}.dist-\/info"{}})]}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00046}00046\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00047}00047\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ info\_dirs:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(\textcolor{stringliteral}{"{}.dist-\/info\ directory\ not\ found"{}})}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00050}00050\ \ \ \ \ \textcolor{keywordflow}{if}\ len(info\_dirs)\ >\ 1:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}multiple\ .dist-\/info\ directories\ found:\ \{\}"{}}.format(\textcolor{stringliteral}{"{},\ "{}}.join(info\_dirs))}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00055}00055\ \ \ \ \ info\_dir\ =\ info\_dirs[0]}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00057}00057\ \ \ \ \ info\_dir\_name\ =\ canonicalize\_name(info\_dir)}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00058}00058\ \ \ \ \ canonical\_name\ =\ canonicalize\_name(name)}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00059}00059\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ info\_dir\_name.startswith(canonical\_name):}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}.dist-\/info\ directory\ \{info\_dir!r\}\ does\ not\ start\ with\ \{canonical\_name!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00064}00064\ \ \ \ \ \textcolor{keywordflow}{return}\ info\_dir}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00065}00065\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00066}00066\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00067}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a4bb80611e478968104bf72b93c852807}{00067}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a4bb80611e478968104bf72b93c852807}{read\_wheel\_metadata\_file}}(source:\ ZipFile,\ path:\ str)\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00068}00068\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ source.read(path)}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ BadZipFile\ for\ general\ corruption,\ KeyError\ for\ missing\ entry,}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ and\ RuntimeError\ for\ password-\/protected\ files}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00072}00072\ \ \ \ \ \textcolor{keywordflow}{except}\ (BadZipFile,\ KeyError,\ RuntimeError)\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(f\textcolor{stringliteral}{"{}could\ not\ read\ \{path!r\}\ file:\ \{e!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00075}00075\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00076}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a08ede3e6ea9b6ac98256e28a093a9f91}{00076}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a08ede3e6ea9b6ac98256e28a093a9f91}{wheel\_metadata}}(source:\ ZipFile,\ dist\_info\_dir:\ str)\ -\/>\ Message:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00077}00077\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ the\ WHEEL\ metadata\ of\ an\ extracted\ wheel,\ if\ possible.}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00078}00078\ \textcolor{stringliteral}{\ \ \ \ Otherwise,\ raise\ UnsupportedWheel.}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00080}00080\ \ \ \ \ path\ =\ f\textcolor{stringliteral}{"{}\{dist\_info\_dir\}/WHEEL"{}}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00081}00081\ \ \ \ \ \textcolor{comment}{\#\ Zip\ file\ path\ separators\ must\ be\ /}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00082}00082\ \ \ \ \ wheel\_contents\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_a4bb80611e478968104bf72b93c852807}{read\_wheel\_metadata\_file}}(source,\ path)}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00083}00083\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00084}00084\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ wheel\_text\ =\ wheel\_contents.decode()}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00086}00086\ \ \ \ \ \textcolor{keywordflow}{except}\ UnicodeDecodeError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(f\textcolor{stringliteral}{"{}error\ decoding\ \{path!r\}:\ \{e!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00089}00089\ \ \ \ \ \textcolor{comment}{\#\ FeedParser\ (used\ by\ Parser)\ does\ not\ raise\ any\ exceptions.\ The\ returned}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00090}00090\ \ \ \ \ \textcolor{comment}{\#\ message\ may\ have\ .defects\ populated,\ but\ for\ backwards-\/compatibility\ we}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00091}00091\ \ \ \ \ \textcolor{comment}{\#\ currently\ ignore\ them.}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00092}00092\ \ \ \ \ \textcolor{keywordflow}{return}\ Parser().parsestr(wheel\_text)}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00095}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_ab2537cc634d0c3b4c37936de8e9f9650}{00095}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_ab2537cc634d0c3b4c37936de8e9f9650}{wheel\_version}}(wheel\_data:\ Message)\ -\/>\ tuple[int,\ ...]:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00096}00096\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Given\ WHEEL\ metadata,\ return\ the\ parsed\ Wheel-\/Version.}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00097}00097\ \textcolor{stringliteral}{\ \ \ \ Otherwise,\ raise\ UnsupportedWheel.}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00098}00098\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00099}00099\ \ \ \ \ version\_text\ =\ wheel\_data[\textcolor{stringliteral}{"{}Wheel-\/Version"{}}]}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00100}00100\ \ \ \ \ \textcolor{keywordflow}{if}\ version\_text\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(\textcolor{stringliteral}{"{}WHEEL\ is\ missing\ Wheel-\/Version"{}})}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00103}00103\ \ \ \ \ version\ =\ version\_text.strip()}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00105}00105\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tuple(map(int,\ version.split(\textcolor{stringliteral}{"{}."{}})))}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00107}00107\ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(f\textcolor{stringliteral}{"{}invalid\ Wheel-\/Version:\ \{version!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00109}00109\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00110}00110\ }
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00111}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_af6676861a7bf76bd5bda9843f369ae85}{00111}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1wheel_af6676861a7bf76bd5bda9843f369ae85}{check\_compatibility}}(version:\ tuple[int,\ ...],\ name:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00112}00112\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Raises\ errors\ or\ warns\ if\ called\ with\ an\ incompatible\ Wheel-\/Version.}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00113}00113\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00114}00114\ \textcolor{stringliteral}{\ \ \ \ pip\ should\ refuse\ to\ install\ a\ Wheel-\/Version\ that's\ a\ major\ series}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00115}00115\ \textcolor{stringliteral}{\ \ \ \ ahead\ of\ what\ it's\ compatible\ with\ (e.g\ 2.0\ >\ 1.1);\ and\ warn\ when}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00116}00116\ \textcolor{stringliteral}{\ \ \ \ installing\ a\ version\ only\ minor\ version\ ahead\ (e.g\ 1.2\ >\ 1.1).}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00117}00117\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00118}00118\ \textcolor{stringliteral}{\ \ \ \ version:\ a\ 2-\/tuple\ representing\ a\ Wheel-\/Version\ (Major,\ Minor)}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00119}00119\ \textcolor{stringliteral}{\ \ \ \ name:\ name\ of\ wheel\ or\ package\ to\ raise\ exception\ about}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00120}00120\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00121}00121\ \textcolor{stringliteral}{\ \ \ \ :raises\ UnsupportedWheel:\ when\ an\ incompatible\ Wheel-\/Version\ is\ given}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00122}00122\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00123}00123\ \ \ \ \ \textcolor{keywordflow}{if}\ version[0]\ >\ VERSION\_COMPATIBLE[0]:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\{\}'s\ Wheel-\/Version\ (\{\})\ is\ not\ compatible\ with\ this\ version\ "{}}}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}of\ pip"{}}.format(name,\ \textcolor{stringliteral}{"{}."{}}.join(map(str,\ version)))}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00128}00128\ \ \ \ \ \textcolor{keywordflow}{elif}\ version\ >\ VERSION\_COMPATIBLE:}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Installing\ from\ a\ newer\ Wheel-\/Version\ (\%s)"{}},}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}."{}}.join(map(str,\ version)),}
+\DoxyCodeLine{\Hypertarget{utils_2wheel_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ )}
+
+\end{DoxyCode}

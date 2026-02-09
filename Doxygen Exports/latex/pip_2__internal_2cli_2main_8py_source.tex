@@ -1,0 +1,91 @@
+\doxysection{main.\+py}
+\hypertarget{pip_2__internal_2cli_2main_8py_source}{}\label{pip_2__internal_2cli_2main_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/cli/main.py@{venv/Lib/site-\/packages/pip/\_internal/cli/main.py}}
+\doxymbox{\hyperlink{pip_2__internal_2cli_2main_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1main}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}Primary\ application\ entrypoint."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00003}00003\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00005}00005\ \textcolor{keyword}{import}\ locale}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00006}00006\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00007}00007\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00008}00008\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00009}00009\ \textcolor{keyword}{import}\ warnings}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00011}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1main_accc2ab24d4c62547f38ca6a5ff32dfc6}{00011}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00014}00014\ \textcolor{comment}{\#\ Do\ not\ import\ and\ use\ main()\ directly!\ Using\ it\ directly\ is\ actively}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00015}00015\ \textcolor{comment}{\#\ discouraged\ by\ pip's\ maintainers.\ The\ name,\ location\ and\ behavior\ of}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00016}00016\ \textcolor{comment}{\#\ this\ function\ is\ subject\ to\ change,\ so\ calling\ it\ directly\ is\ not}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00017}00017\ \textcolor{comment}{\#\ portable\ across\ different\ pip\ versions.}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00018}00018\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00019}00019\ \textcolor{comment}{\#\ In\ addition,\ running\ pip\ in-\/process\ is\ unsupported\ and\ unsafe.\ This\ is}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00020}00020\ \textcolor{comment}{\#\ elaborated\ in\ detail\ at}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00021}00021\ \textcolor{comment}{\#\ https://pip.pypa.io/en/stable/user\_guide/\#using-\/pip-\/from-\/your-\/program.}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00022}00022\ \textcolor{comment}{\#\ That\ document\ also\ provides\ suggestions\ that\ should\ work\ for\ nearly}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00023}00023\ \textcolor{comment}{\#\ all\ users\ that\ are\ considering\ importing\ and\ using\ main()\ directly.}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00025}00025\ \textcolor{comment}{\#\ However,\ we\ know\ that\ certain\ users\ will\ still\ want\ to\ invoke\ pip}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00026}00026\ \textcolor{comment}{\#\ in-\/process.\ If\ you\ understand\ and\ accept\ the\ implications\ of\ using\ pip}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00027}00027\ \textcolor{comment}{\#\ in\ an\ unsupported\ manner,\ the\ best\ approach\ is\ to\ use\ runpy\ to\ avoid}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00028}00028\ \textcolor{comment}{\#\ depending\ on\ the\ exact\ location\ of\ this\ entry\ point.}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00030}00030\ \textcolor{comment}{\#\ The\ following\ example\ shows\ how\ to\ use\ runpy\ to\ invoke\ pip\ in\ that}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00031}00031\ \textcolor{comment}{\#\ case:}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00032}00032\ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00033}00033\ \textcolor{comment}{\#\ \ \ \ \ sys.argv\ =\ ["{}pip"{},\ your,\ args,\ here]}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00034}00034\ \textcolor{comment}{\#\ \ \ \ \ runpy.run\_module("{}pip"{},\ run\_name="{}\_\_main\_\_"{})}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00035}00035\ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00036}00036\ \textcolor{comment}{\#\ Note\ that\ this\ will\ exit\ the\ process\ after\ running,\ unlike\ a\ direct}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00037}00037\ \textcolor{comment}{\#\ call\ to\ main.\ As\ it\ is\ not\ safe\ to\ do\ any\ processing\ after\ calling}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00038}00038\ \textcolor{comment}{\#\ main,\ this\ should\ not\ be\ an\ issue\ in\ practice.}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00041}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1main_a04fa90848673b605f537496869eecc5b}{00041}}\ \textcolor{keyword}{def\ }main(args:\ list[str]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00042}00042\ \ \ \ \ \textcolor{comment}{\#\ NOTE:\ Lazy\ imports\ to\ speed\ up\ import\ of\ this\ module,}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00043}00043\ \ \ \ \ \textcolor{comment}{\#\ which\ is\ imported\ from\ the\ pip\ console\ script.\ This\ doesn't}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00044}00044\ \ \ \ \ \textcolor{comment}{\#\ speed\ up\ normal\ pip\ execution,\ but\ might\ be\ important\ in\ the\ future}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00045}00045\ \ \ \ \ \textcolor{comment}{\#\ if\ we\ use\ \`{}\`{}multiprocessing``\ module,}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00046}00046\ \ \ \ \ \textcolor{comment}{\#\ which\ imports\ \_\_main\_\_\ for\ each\ spawned\ subprocess.}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00047}00047\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1autocompletion}{pip.\_internal.cli.autocompletion}}\ \textcolor{keyword}{import}\ autocomplete}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00048}00048\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1main__parser}{pip.\_internal.cli.main\_parser}}\ \textcolor{keyword}{import}\ parse\_command}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00049}00049\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1commands}{pip.\_internal.commands}}\ \textcolor{keyword}{import}\ create\_command}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00050}00050\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ PipError}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00051}00051\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils}{pip.\_internal.utils}}\ \textcolor{keyword}{import}\ deprecation}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00053}00053\ \ \ \ \ \textcolor{keywordflow}{if}\ args\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ args\ =\ sys.argv[1:]}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00056}00056\ \ \ \ \ \textcolor{comment}{\#\ Suppress\ the\ pkg\_resources\ deprecation\ warning}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00057}00057\ \ \ \ \ \textcolor{comment}{\#\ Note\ -\/\ we\ use\ a\ module\ of\ .*pkg\_resources\ to\ cover}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00058}00058\ \ \ \ \ \textcolor{comment}{\#\ the\ normal\ case\ (pip.\_vendor.pkg\_resources)\ and\ the}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00059}00059\ \ \ \ \ \textcolor{comment}{\#\ devendored\ case\ (a\ bare\ pkg\_resources)}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00060}00060\ \ \ \ \ warnings.filterwarnings(}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}ignore"{}},\ category=DeprecationWarning,\ module=\textcolor{stringliteral}{"{}.*pkg\_resources"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00062}00062\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00064}00064\ \ \ \ \ \textcolor{comment}{\#\ Configure\ our\ deprecation\ warnings\ to\ be\ sent\ through\ loggers}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00065}00065\ \ \ \ \ deprecation.install\_warning\_logger()}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00066}00066\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00067}00067\ \ \ \ \ autocomplete()}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00069}00069\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ cmd\_name,\ cmd\_args\ =\ parse\_command(args)}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00071}00071\ \ \ \ \ \textcolor{keywordflow}{except}\ PipError\ \textcolor{keyword}{as}\ exc:}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ sys.stderr.write(f\textcolor{stringliteral}{"{}ERROR:\ \{exc\}"{}})}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ sys.stderr.write(os.linesep)}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ sys.exit(1)}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00075}00075\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00076}00076\ \ \ \ \ \textcolor{comment}{\#\ Needed\ for\ locale.getpreferredencoding(False)\ to\ work}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00077}00077\ \ \ \ \ \textcolor{comment}{\#\ in\ pip.\_internal.utils.encoding.auto\_decode}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00078}00078\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ locale.setlocale(locale.LC\_ALL,\ \textcolor{stringliteral}{"{}"{}})}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00080}00080\ \ \ \ \ \textcolor{keywordflow}{except}\ locale.Error\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ setlocale\ can\ apparently\ crash\ if\ locale\ are\ uninitialized}}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Ignoring\ error\ \%s\ when\ setting\ locale"{}},\ e)}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00083}00083\ \ \ \ \ command\ =\ create\_command(cmd\_name,\ isolated=(\textcolor{stringliteral}{"{}-\/-\/isolated"{}}\ \textcolor{keywordflow}{in}\ cmd\_args))}
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{pip_2__internal_2cli_2main_8py_source_l00085}00085\ \ \ \ \ \textcolor{keywordflow}{return}\ command.main(cmd\_args)}
+
+\end{DoxyCode}

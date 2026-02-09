@@ -1,0 +1,300 @@
+\doxysection{temp\+\_\+dir.\+py}
+\hypertarget{temp__dir_8py_source}{}\label{temp__dir_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/utils/temp\_dir.py@{venv/Lib/site-\/packages/pip/\_internal/utils/temp\_dir.py}}
+\doxymbox{\hyperlink{temp__dir_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00003}00003\ \textcolor{keyword}{import}\ errno}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00004}00004\ \textcolor{keyword}{import}\ itertools}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00005}00005\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00006}00006\ \textcolor{keyword}{import}\ os.path}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00007}00007\ \textcolor{keyword}{import}\ tempfile}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00008}00008\ \textcolor{keyword}{import}\ traceback}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00009}00009\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Generator}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00010}00010\ \textcolor{keyword}{from}\ contextlib\ \textcolor{keyword}{import}\ ExitStack,\ contextmanager}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00011}00011\ \textcolor{keyword}{from}\ pathlib\ \textcolor{keyword}{import}\ Path}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00012}00012\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00013}00013\ \ \ \ \ Any,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00014}00014\ \ \ \ \ Callable,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00015}00015\ \ \ \ \ TypeVar,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00016}00016\ )}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00018}00018\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1misc}{pip.\_internal.utils.misc}}\ \textcolor{keyword}{import}\ enum,\ rmtree}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00020}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir_ae5e9343700fa201e82f11953cab02fc3}{00020}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00022}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir_a3af8e7e93458e448727f0f6b00dc2c31}{00022}}\ \_T\ =\ TypeVar(\textcolor{stringliteral}{"{}\_T"{}},\ bound=\textcolor{stringliteral}{"{}TempDirectory"{}})}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00025}00025\ \textcolor{comment}{\#\ Kinds\ of\ temporary\ directories.\ Only\ needed\ for\ ones\ that\ are}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00026}00026\ \textcolor{comment}{\#\ globally-\/managed.}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00027}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir_a6bb0e633defbe61bb60c1ce63a1c9afd}{00027}}\ tempdir\_kinds\ =\ \doxymbox{\hyperlink{namespaceenum}{enum}}(}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00028}00028\ \ \ \ \ BUILD\_ENV=\textcolor{stringliteral}{"{}build-\/env"{}},}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00029}00029\ \ \ \ \ EPHEM\_WHEEL\_CACHE=\textcolor{stringliteral}{"{}ephem-\/wheel-\/cache"{}},}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00030}00030\ \ \ \ \ REQ\_BUILD=\textcolor{stringliteral}{"{}req-\/build"{}},}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00031}00031\ )}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00034}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir_a0edaf80472cc787cc8aad86073674702}{00034}}\ \_tempdir\_manager:\ ExitStack\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00037}00037\ \textcolor{preprocessor}{@contextmanager}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00038}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir_a8a6e6960a40d06e9a19adb94aa793591}{00038}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir_a8a6e6960a40d06e9a19adb94aa793591}{global\_tempdir\_manager}}()\ -\/>\ Generator[None,\ None,\ None]:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00039}00039\ \ \ \ \ \textcolor{keyword}{global}\ \_tempdir\_manager}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00040}00040\ \ \ \ \ \textcolor{keyword}{with}\ ExitStack()\ \textcolor{keyword}{as}\ stack:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ old\_tempdir\_manager,\ \_tempdir\_manager\ =\ \_tempdir\_manager,\ stack}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \ \ \ \ \_tempdir\_manager\ =\ old\_tempdir\_manager}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00046}00046\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00047}00047\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00048}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_type_registry}{00048}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_type_registry}{TempDirectoryTypeRegistry}}:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00049}00049\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Manages\ temp\ directory\ behavior"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00050}00050\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00051}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_type_registry_ae77cda5bdcae48b07ecf6d2bd124b635}{00051}}\ \textcolor{stringliteral}{\ \ \ \ def\ \_\_init\_\_(self)\ -\/>\ None:}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00052}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_type_registry_a83e2f9fe93a7bb31a582839d47f5e6c9}{00052}}\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ self.\_should\_delete:\ dict[str,\ bool]\ =\ \{\}}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00053}00053\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00054}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_type_registry_a050bf181cda4c65daf6480bac0b7b39e}{00054}}\ \textcolor{stringliteral}{\ \ \ \ def\ set\_delete(self,\ kind:\ str,\ value:\ bool)\ -\/>\ None:}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00055}00055\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}Indicate\ whether\ a\ TempDirectory\ of\ the\ given\ kind\ should\ be}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ auto-\/deleted.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ self.\_should\_delete[kind]\ =\ value}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00060}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_type_registry_a955fc566e2895fb7edc10a79ae876cb7}{00060}}\ \ \ \ \ def\ get\_delete(self,\ kind:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ "{}"{}"{}Get\ configured\ auto-\/delete\ flag\ for\ a\ given\ TempDirectory\ type,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ default\ True.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ return\ self.\_should\_delete.get(kind,\ True)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00065}00065\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00066}00066\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00067}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_type_registry_a50e3f9bba47b8cda863b8694caded959}{00067}}\ \_tempdir\_registry:\ TempDirectoryTypeRegistry\ |\ None\ =\ None}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00070}00070\ @contextmanager}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00071}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir_ac691528f63df1990cdcc7e9a6df7f3d6}{00071}}\ def\ tempdir\_registry()\ -\/>\ Generator[TempDirectoryTypeRegistry,\ None,\ None]:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00072}00072\ \ \ \ \ "{}"{}"{}Provides\ a\ scoped\ global\ tempdir\ registry\ that\ can\ be\ used\ to\ dictate}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00073}00073\ \ \ \ \ whether\ directories\ should\ be\ deleted.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00074}00074\ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00075}00075\ \ \ \ \ global\ \_tempdir\_registry}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00076}00076\ \ \ \ \ old\_tempdir\_registry\ =\ \_tempdir\_registry}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00077}00077\ \ \ \ \ \_tempdir\_registry\ =\ TempDirectoryTypeRegistry()}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00078}00078\ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ yield\ \_tempdir\_registry}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00080}00080\ \ \ \ \ finally:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \_tempdir\_registry\ =\ old\_tempdir\_registry}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00083}00083\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00084}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1___default}{00084}}\ class\ \_Default:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00085}00085\ \ \ \ \ pass}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00087}00087\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00088}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir_a7a9025a77a1fa9e82487d891c069c5ee}{00088}}\ \_default\ =\ \_Default()}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00089}00089\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00090}00090\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00091}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory}{00091}}\ class\ TempDirectory:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00092}00092\ \ \ \ \ "{}"{}"{}Helper\ class\ that\ owns\ and\ cleans\ up\ a\ temporary\ directory.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00094}00094\ \ \ \ \ This\ class\ can\ be\ used\ as\ a\ context\ manager\ or\ as\ an\ OO\ representation\ of\ a}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00095}00095\ \ \ \ \ temporary\ directory.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00097}00097\ \ \ \ \ Attributes:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ path}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ Location\ to\ the\ created\ temporary\ directory}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ delete}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ Whether\ the\ directory\ should\ be\ deleted\ when\ exiting}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ (when\ used\ as\ a\ contextmanager)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00104}00104\ \ \ \ \ Methods:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ cleanup()}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ Deletes\ the\ temporary\ directory}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00108}00108\ \ \ \ \ When\ used\ as\ a\ context\ manager,\ if\ the\ delete\ attribute\ is\ True,\ on}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00109}00109\ \ \ \ \ exiting\ the\ context\ the\ temporary\ directory\ is\ deleted.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00110}00110\ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00111}00111\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00112}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_a11580e403660095b4e71e52f9e71055d}{00112}}\ \ \ \ \ def\ \_\_init\_\_(}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ path:\ str\ |\ None\ =\ None,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ delete:\ bool\ |\ None\ |\ \_Default\ =\ \_default,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ kind:\ str\ =\ "{}temp"{},}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ globally\_managed:\ bool\ =\ False,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ ignore\_cleanup\_errors:\ bool\ =\ True,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00119}00119\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ super().\_\_init\_\_()}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ if\ delete\ is\ \_default:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \ \ \ \ if\ path\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ If\ we\ were\ given\ an\ explicit\ directory,\ resolve\ delete\ option}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ now.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ delete\ =\ False}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Otherwise,\ we\ wait\ until\ cleanup\ and\ see\ what}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ tempdir\_registry\ says.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ delete\ =\ None}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \#\ The\ only\ time\ we\ specify\ path\ is\ in\ for\ editables\ where\ it}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \#\ is\ the\ value\ of\ the\ -\/-\/src\ option.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ if\ path\ is\ None:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \ \ \ \ path\ =\ self.\_create(kind)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00136}00136\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00137}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_af47e76c152ecb54a70da237cd3c0a209}{00137}}\ \ \ \ \ \ \ \ \ self.\_path\ =\ path}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00138}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_a6753d44a5c8990cc609bfd52980a08fa}{00138}}\ \ \ \ \ \ \ \ \ self.\_deleted\ =\ False}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00139}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_a951c8f73bc5a1641a0114be38296e19a}{00139}}\ \ \ \ \ \ \ \ \ self.delete\ =\ delete}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00140}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_afd9502a9ce40c538fd406e7f80562fde}{00140}}\ \ \ \ \ \ \ \ \ self.kind\ =\ kind}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00141}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_af01fe68db13edebaf70f5768f6571b9e}{00141}}\ \ \ \ \ \ \ \ \ self.ignore\_cleanup\_errors\ =\ ignore\_cleanup\_errors}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00142}00142\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ if\ globally\_managed:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \ \ \ \ assert\ \_tempdir\_manager\ is\ not\ None}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \ \ \ \ \_tempdir\_manager.enter\_context(self)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00147}00147\ \ \ \ \ @property}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00148}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_afe6b2d95c070c6570957de5696ff3a6e}{00148}}\ \ \ \ \ def\ path(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ assert\ not\ self.\_deleted,\ f"{}Attempted\ to\ access\ deleted\ path:\ \{self.\_path\}"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ return\ self.\_path}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00151}00151\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00152}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_ab6001217e79bc1b1c569b4383fbd1251}{00152}}\ \ \ \ \ def\ \_\_repr\_\_(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ return\ f"{}<\{self.\_\_class\_\_.\_\_name\_\_\}\ \{self.path!r\}>"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00155}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_a91223c0aea87dee142597a53fd6fe4b2}{00155}}\ \ \ \ \ def\ \_\_enter\_\_(self:\ \_T)\ -\/>\ \_T:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ return\ self}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00157}00157\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00158}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_af1593580ba369230e933483740e167b6}{00158}}\ \ \ \ \ def\ \_\_exit\_\_(self,\ exc:\ Any,\ value:\ Any,\ tb:\ Any)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ if\ self.delete\ is\ not\ None:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \ \ \ \ delete\ =\ self.delete}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ elif\ \_tempdir\_registry:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \ \ \ \ delete\ =\ \_tempdir\_registry.get\_delete(self.kind)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \ \ \ \ delete\ =\ True}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00165}00165\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ if\ delete:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ self.cleanup()}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00168}00168\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00169}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_a1fd37ecb0a9ac0b50ac7417acaca45a8}{00169}}\ \ \ \ \ def\ \_create(self,\ kind:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ "{}"{}"{}Create\ a\ temporary\ directory\ and\ store\ its\ path\ in\ self.path"{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \#\ We\ realpath\ here\ because\ some\ systems\ have\ their\ default\ tmpdir}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \#\ symlinked\ to\ another\ directory.\ \ This\ tends\ to\ confuse\ build}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \#\ scripts,\ so\ we\ canonicalize\ the\ path\ by\ traversing\ potential}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \#\ symlinks\ here.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ path\ =\ os.path.realpath(tempfile.mkdtemp(prefix=f"{}pip-\/\{kind\}-\/"{}))}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ logger.debug("{}Created\ temporary\ directory:\ \%s"{},\ path)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ return\ path}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00178}00178\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00179}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory_a0b5c2f5d00e1a02d89e9231960bb1598}{00179}}\ \ \ \ \ def\ cleanup(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ "{}"{}"{}Remove\ the\ temporary\ directory\ created\ and\ reset\ state"{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ self.\_deleted\ =\ True}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ if\ not\ os.path.exists(self.\_path):}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ return}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00184}00184\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ errors:\ list[BaseException]\ =\ []}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00186}00186\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ def\ onerror(}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \ \ \ \ func:\ Callable[...,\ Any],}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \ \ \ \ path:\ Path,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \ \ \ \ exc\_val:\ BaseException,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ )\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \ \ \ \ "{}"{}"{}Log\ a\ warning\ for\ a\ \`{}rmtree\`{}\ error\ and\ continue"{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \ \ \ \ formatted\_exc\ =\ "{}\(\backslash\)n"{}.join(}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ traceback.format\_exception\_only(type(exc\_val),\ exc\_val)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ formatted\_exc\ =\ formatted\_exc.rstrip()\ \ \#\ remove\ trailing\ new\ line}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ if\ func\ in\ (os.unlink,\ os.remove,\ os.rmdir):}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}Failed\ to\ remove\ a\ temporary\ file\ '\%s'\ due\ to\ \%s.\(\backslash\)n"{},}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ path,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ formatted\_exc,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug("{}\%s\ failed\ with\ \%s."{},\ func.\_\_qualname\_\_,\ formatted\_exc)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ errors.append(exc\_val)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00206}00206\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ if\ self.ignore\_cleanup\_errors:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ first\ try\ with\ @retry;\ retrying\ to\ handle\ ephemeral\ errors}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rmtree(self.\_path,\ ignore\_errors=False)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \ \ \ \ except\ OSError:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ last\ pass\ ignore/log\ all\ errors}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rmtree(self.\_path,\ onexc=onerror)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \ \ \ \ if\ errors:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}Failed\ to\ remove\ contents\ in\ a\ temporary\ directory\ '\%s'.\(\backslash\)n"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}You\ can\ safely\ remove\ it\ manually."{},}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\_path,}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ rmtree(self.\_path)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00222}00222\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00223}00223\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00224}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_adjacent_temp_directory}{00224}}\ class\ AdjacentTempDirectory(TempDirectory):}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00225}00225\ \ \ \ \ "{}"{}"{}Helper\ class\ that\ creates\ a\ temporary\ directory\ adjacent\ to\ a\ real\ one.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00226}00226\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00227}00227\ \ \ \ \ Attributes:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ original}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \ \ \ \ The\ original\ directory\ to\ create\ a\ temp\ directory\ for.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ path}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \ \ \ \ After\ calling\ create()\ or\ entering,\ contains\ the\ full}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \ \ \ \ path\ to\ the\ temporary\ directory.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ delete}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \ \ \ \ Whether\ the\ directory\ should\ be\ deleted\ when\ exiting}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \ \ \ \ (when\ used\ as\ a\ contextmanager)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00236}00236\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00237}00237\ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00238}00238\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00239}00239\ \ \ \ \ \#\ The\ characters\ that\ may\ be\ used\ to\ name\ the\ temp\ directory}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00240}00240\ \ \ \ \ \#\ We\ always\ prepend\ a\ \string~\ and\ then\ rotate\ through\ these\ until}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00241}00241\ \ \ \ \ \#\ a\ usable\ name\ is\ found.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00242}00242\ \ \ \ \ \#\ pkg\_resources\ raises\ a\ different\ error\ for\ .dist-\/info\ folder}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00243}00243\ \ \ \ \ \#\ with\ leading\ '-\/'\ and\ invalid\ metadata}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00244}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_adjacent_temp_directory_a7e8d25f15903fb8d220465e1f7b2f137}{00244}}\ \ \ \ \ LEADING\_CHARS\ =\ "{}-\/\string~.=\%0123456789"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00245}00245\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00246}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_adjacent_temp_directory_a22ee75dbd9120bd6bd147c7e3fc439b5}{00246}}\ \ \ \ \ def\ \_\_init\_\_(self,\ original:\ str,\ delete:\ bool\ |\ None\ =\ None)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00247}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_adjacent_temp_directory_afec831e8f80d0162660d0e8a8509080f}{00247}}\ \ \ \ \ \ \ \ \ self.original\ =\ original.rstrip("{}/\(\backslash\)\(\backslash\)"{})}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ super().\_\_init\_\_(delete=delete)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00249}00249\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00250}00250\ \ \ \ \ @classmethod}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00251}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_adjacent_temp_directory_a2589ef04c1e00294ca029890a036c638}{00251}}\ \ \ \ \ def\ \_generate\_names(cls,\ name:\ str)\ -\/>\ Generator[str,\ None,\ None]:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ "{}"{}"{}Generates\ a\ series\ of\ temporary\ names.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00253}00253\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ The\ algorithm\ replaces\ the\ leading\ characters\ in\ the\ name}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ with\ ones\ that\ are\ valid\ filesystem\ characters,\ but\ are\ not}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ valid\ package\ names\ (for\ both\ Python\ and\ pip\ definitions\ of}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ package).}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ "{}"{}"{}}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ for\ i\ in\ range(1,\ len(name)):}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ for\ candidate\ in\ itertools.combinations\_with\_replacement(}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cls.LEADING\_CHARS,\ i\ -\/\ 1}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ new\_name\ =\ "{}\string~"{}\ +\ "{}"{}.join(candidate)\ +\ name[i:]}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ new\_name\ !=\ name:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ yield\ new\_name}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00266}00266\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \#\ If\ we\ make\ it\ this\ far,\ we\ will\ have\ to\ make\ a\ longer\ name}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ for\ i\ in\ range(len(cls.LEADING\_CHARS)):}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \ \ \ \ for\ candidate\ in\ itertools.combinations\_with\_replacement(}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cls.LEADING\_CHARS,\ i}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ new\_name\ =\ "{}\string~"{}\ +\ "{}"{}.join(candidate)\ +\ name}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ new\_name\ !=\ name:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ yield\ new\_name}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00275}00275\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00276}\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_adjacent_temp_directory_ae6b339ec2dd45257d8aebe3559ef14f4}{00276}}\ \ \ \ \ def\ \_create(self,\ kind:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ root,\ name\ =\ os.path.split(self.original)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ for\ candidate\ in\ self.\_generate\_names(name):}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \ \ \ \ path\ =\ os.path.join(root,\ candidate)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \ \ \ \ try:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ os.mkdir(path)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ except\ OSError\ as\ ex:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Continue\ if\ the\ name\ exists\ already}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ ex.errno\ !=\ errno.EEXIST:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ raise}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ path\ =\ os.path.realpath(path)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ break}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ else:}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Final\ fallback\ on\ the\ default\ behavior.}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ \ \ \ \ path\ =\ os.path.realpath(tempfile.mkdtemp(prefix=f"{}pip-\/\{kind\}-\/"{}))}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00292}00292\ }
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ logger.debug("{}Created\ temporary\ directory:\ \%s"{},\ path)}
+\DoxyCodeLine{\Hypertarget{temp__dir_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ return\ path}
+
+\end{DoxyCode}

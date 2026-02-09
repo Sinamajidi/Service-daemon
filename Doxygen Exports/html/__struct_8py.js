@@ -1,0 +1,26 @@
+var __struct_8py =
+[
+    [ "psycopg._struct.UnpackLen", "classpsycopg_1_1__struct_1_1_unpack_len.html", "classpsycopg_1_1__struct_1_1_unpack_len" ],
+    [ "psycopg._struct.pack_float4_bug_304", "namespacepsycopg_1_1__struct.html#a7250e36465b2fe61f567fca492496443", null ],
+    [ "psycopg._struct._struct_len", "namespacepsycopg_1_1__struct.html#ac4c7a979d272c4ab9d588f894b4954b0", null ],
+    [ "psycopg._struct.pack_float4", "namespacepsycopg_1_1__struct.html#a9ec6fe3400e7ccb83d2dc8f215d70bb7", null ],
+    [ "psycopg._struct.pack_float8", "namespacepsycopg_1_1__struct.html#ae5338abd1efeb4352ecf98911be264bc", null ],
+    [ "psycopg._struct.pack_int2", "namespacepsycopg_1_1__struct.html#ac67c8c48a70d82ff8e3fd66016ac77c4", null ],
+    [ "psycopg._struct.pack_int4", "namespacepsycopg_1_1__struct.html#a62c1149690407be545fdefc0034944f3", null ],
+    [ "psycopg._struct.pack_int8", "namespacepsycopg_1_1__struct.html#a8ffdf11658d6fca2f50461013a15307f", null ],
+    [ "psycopg._struct.pack_len", "namespacepsycopg_1_1__struct.html#a1bb316b7e2995f8d45607ff7f2318482", null ],
+    [ "psycopg._struct.pack_uint2", "namespacepsycopg_1_1__struct.html#aa0b6dce0a83836a5b28fba1e98dadebd", null ],
+    [ "psycopg._struct.pack_uint4", "namespacepsycopg_1_1__struct.html#a0c3ab4cacde6a06c2c2455e75d19822b", null ],
+    [ "psycopg._struct.PackFloat", "namespacepsycopg_1_1__struct.html#a13198df8307ecff50fe07d1ea78f0e44", null ],
+    [ "psycopg._struct.PackInt", "namespacepsycopg_1_1__struct.html#aa8a9c165988f4ae31cb782f011e8dea8", null ],
+    [ "psycopg._struct.unpack_float4", "namespacepsycopg_1_1__struct.html#ac43d1564c660780fc7aa1e849bc3ed23", null ],
+    [ "psycopg._struct.unpack_float8", "namespacepsycopg_1_1__struct.html#a07a0c32cd3af71dbb1f8c60ee0ab7d42", null ],
+    [ "psycopg._struct.unpack_int2", "namespacepsycopg_1_1__struct.html#a927c50937e2e6a72c56c3aa11d180209", null ],
+    [ "psycopg._struct.unpack_int4", "namespacepsycopg_1_1__struct.html#a374d65858275be975ea71c181292cd07", null ],
+    [ "psycopg._struct.unpack_int8", "namespacepsycopg_1_1__struct.html#a27e0db9070207024f1986c19596de4a2", null ],
+    [ "psycopg._struct.unpack_len", "namespacepsycopg_1_1__struct.html#a40b8b5f467b6b4ffb2762dc746f24fc0", null ],
+    [ "psycopg._struct.unpack_uint2", "namespacepsycopg_1_1__struct.html#ab577266bc14cd53c1d8eaaf4853772de", null ],
+    [ "psycopg._struct.unpack_uint4", "namespacepsycopg_1_1__struct.html#a726ca637de7a9c5a5ace636f5503cfa4", null ],
+    [ "psycopg._struct.UnpackFloat", "namespacepsycopg_1_1__struct.html#ad5c1ac73bb630d5f38cb7adfc65eff5b", null ],
+    [ "psycopg._struct.UnpackInt", "namespacepsycopg_1_1__struct.html#a3c70769cce229b1a85a3b1bbd8890c52", null ]
+];

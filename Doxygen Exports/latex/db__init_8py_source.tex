@@ -1,0 +1,163 @@
+\doxysection{db\+\_\+init.\+py}
+\hypertarget{db__init_8py_source}{}\label{db__init_8py_source}\index{database/db\_init.py@{database/db\_init.py}}
+\doxymbox{\hyperlink{db__init_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00001}\doxymbox{\hyperlink{namespacedatabase_1_1db__init}{00001}}\ \textcolor{comment}{\#!/usr/bin/env\ python3}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00002}00002\ \textcolor{stringliteral}{"{}"{}"{}!\ @file\ db\_init.py}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00003}00003\ \textcolor{stringliteral}{@brief\ Database\ initialization\ entry\ point.}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00004}00004\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00005}00005\ \textcolor{stringliteral}{Run\ this\ script\ to\ initialize\ the\ database.}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00006}00006\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00007}00007\ \textcolor{stringliteral}{Usage:}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00008}00008\ \textcolor{stringliteral}{\ \ \ \ python\ database/db\_init.py}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00009}00009\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00010}00010\ \textcolor{stringliteral}{Or\ from\ anywhere:}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00011}00011\ \textcolor{stringliteral}{\ \ \ \ python\ -\/m\ database.db\_init}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00012}00012\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00014}00014\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00015}00015\ \textcolor{keyword}{from}\ pathlib\ \textcolor{keyword}{import}\ Path}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00016}00016\ \textcolor{keyword}{import}\ psycopg}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00017}00017\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00018}00018\ \textcolor{keyword}{from}\ dotenv\ \textcolor{keyword}{import}\ load\_dotenv}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00020}00020\ \textcolor{comment}{\#\ Add\ project\ root\ to\ path\ so\ imports\ work}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00021}00021\ \textcolor{comment}{\#\ This\ script\ is\ in\ database/,\ so\ parent\ is\ the\ project\ root}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00022}00022\ sys.path.insert(0,\ str(Path(\_\_file\_\_).parent.parent))}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00023}00023\ load\_dotenv()}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00025}\doxymbox{\hyperlink{namespacedatabase_1_1db__init_ad97317b96ceebab348b8cf0e76d63d4d}{00025}}\ DB\_CONFIG\ =\ \{}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00026}00026\ \ \ \ \ \textcolor{stringliteral}{"{}DB\_HOST"{}}:\ os.getenv(\textcolor{stringliteral}{"{}DB\_HOST"{}}),}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00027}00027\ \ \ \ \ \textcolor{stringliteral}{"{}DB\_PORT"{}}:\ os.getenv(\textcolor{stringliteral}{"{}DB\_PORT"{}}),}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00028}00028\ \ \ \ \ \textcolor{stringliteral}{"{}DB\_NAME"{}}:\ os.getenv(\textcolor{stringliteral}{"{}DB\_NAME"{}}),}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00029}00029\ \ \ \ \ \textcolor{stringliteral}{"{}DB\_USER"{}}:\ os.getenv(\textcolor{stringliteral}{"{}DB\_USER"{}}),}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00030}00030\ \ \ \ \ \textcolor{stringliteral}{"{}DB\_PASSWORD"{}}:\ os.getenv(\textcolor{stringliteral}{"{}DB\_PASSWORD"{}}),}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00031}00031\ \}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00034}\doxymbox{\hyperlink{namespacedatabase_1_1db__init_a78dce347adce87a6ce91331f1527d406}{00034}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedatabase_1_1db__init_a78dce347adce87a6ce91331f1527d406}{run\_sql\_file}}(sql\_file\_path:\ str,\ db\_conf)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00035}00035\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Execute\ SQL\ commands\ from\ a\ file."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00036}00036\ \ \ \ \ \textcolor{comment}{\#\ Read\ SQL\ file}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00037}00037\ \ \ \ \ \textcolor{keyword}{with}\ open(sql\_file\_path,\ \textcolor{stringliteral}{"{}r"{}},\ encoding=\textcolor{stringliteral}{"{}utf-\/8"{}})\ \textcolor{keyword}{as}\ f:}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ sql\ =\ f.read()}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00040}00040\ \ \ \ \ \textcolor{comment}{\#\ Connect\ and\ execute}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00041}00041\ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{namespacepsycopg_a32db880f86f07207c4f2220c56061dd1}{psycopg.connect}}(**db\_conf)\ \textcolor{keyword}{as}\ conn:}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ conn.cursor()\ \textcolor{keyword}{as}\ cur:}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ \ \ \ \ cur.execute(sql)}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ conn.commit()}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00045}00045\ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00046}00046\ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00047}\doxymbox{\hyperlink{namespacedatabase_1_1db__init_aea0f3436d7a6d5bc24e808460faab7c0}{00047}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedatabase_1_1db__init_aea0f3436d7a6d5bc24e808460faab7c0}{drop\_all\_tables}}(db\_conf)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00048}00048\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Drop\ all\ tables\ in\ the\ database\ (CASCADE\ to\ handle\ dependencies)."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00049}00049\ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{namespacepsycopg_a32db880f86f07207c4f2220c56061dd1}{psycopg.connect}}(**db\_conf)\ \textcolor{keyword}{as}\ conn:}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ conn.cursor()\ \textcolor{keyword}{as}\ cur:}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Drop\ all\ tables\ in\ the\ public\ schema}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ cur.execute(\textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00053}00053\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ DO\ \$\$\ DECLARE}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00054}00054\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ r\ RECORD;}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00055}00055\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ BEGIN}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00056}00056\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ Drop\ all\ tables}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00057}00057\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ FOR\ r\ IN\ (SELECT\ tablename\ FROM\ pg\_tables\ WHERE\ schemaname\ =\ 'public')\ LOOP}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00058}00058\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ EXECUTE\ 'DROP\ TABLE\ IF\ EXISTS\ '\ ||\ quote\_ident(r.tablename)\ ||\ '\ CASCADE';}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00059}00059\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ END\ LOOP;}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00060}00060\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00061}00061\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ Drop\ all\ sequences}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00062}00062\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ FOR\ r\ IN\ (SELECT\ sequence\_name\ FROM\ information\_schema.sequences\ WHERE\ sequence\_schema\ =\ 'public')\ LOOP}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00063}00063\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ EXECUTE\ 'DROP\ SEQUENCE\ IF\ EXISTS\ '\ ||\ quote\_ident(r.sequence\_name)\ ||\ '\ CASCADE';}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00064}00064\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ END\ LOOP;}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00065}00065\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00066}00066\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ Drop\ all\ types}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00067}00067\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ FOR\ r\ IN\ (SELECT\ typname\ FROM\ pg\_type\ WHERE\ typnamespace\ =\ (SELECT\ oid\ FROM\ pg\_namespace\ WHERE\ nspname\ =\ 'public')\ AND\ typtype\ =\ 'e')\ LOOP}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00068}00068\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ EXECUTE\ 'DROP\ TYPE\ IF\ EXISTS\ '\ ||\ quote\_ident(r.typname)\ ||\ '\ CASCADE';}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00069}00069\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ END\ LOOP;}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00070}00070\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ END\ \$\$;}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00071}00071\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ "{}"{}"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ conn.commit()}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}✓\ All\ existing\ tables\ dropped"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00075}00075\ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00076}\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer}{00076}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer}{DatabaseInitializer}}:}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00077}00077\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Initializes\ the\ database\ schema\ and\ optional\ reset."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00078}\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a2226cafed8c33e1fbc684039add133ef}{00078}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a2226cafed8c33e1fbc684039add133ef}{\_\_init\_\_}}(self,\ db\_config:\ dict):}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Store\ database\ configuration\ for\ initialization."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00080}\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a47bf8b73a0ac941345527e3306594cec}{00080}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a47bf8b73a0ac941345527e3306594cec}{db\_host}}\ =\ db\_config[\textcolor{stringliteral}{"{}DB\_HOST"{}}]}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00081}\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a81fb1af2876cdbf7153ceac0623621ae}{00081}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a81fb1af2876cdbf7153ceac0623621ae}{db\_port}}\ =\ db\_config[\textcolor{stringliteral}{"{}DB\_PORT"{}}]}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00082}\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_ac979fcc72b31dc163446f5f5c8235702}{00082}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_ac979fcc72b31dc163446f5f5c8235702}{db\_name}}\ =\ db\_config[\textcolor{stringliteral}{"{}DB\_NAME"{}}]}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00083}\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a03422d7168a27f7cf9184d58cfc7262d}{00083}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a03422d7168a27f7cf9184d58cfc7262d}{db\_user}}\ =\ db\_config[\textcolor{stringliteral}{"{}DB\_USER"{}}]}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00084}\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_ad100b933f093f9540942ced2bff6e29f}{00084}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_ad100b933f093f9540942ced2bff6e29f}{db\_password}}\ =\ db\_config[\textcolor{stringliteral}{"{}DB\_PASSWORD"{}}]}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00085}\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a95cb2587a76563f91d1926e378ea680e}{00085}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a95cb2587a76563f91d1926e378ea680e}{db\_config}}\ =\ \{}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}host"{}}:\ self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a47bf8b73a0ac941345527e3306594cec}{db\_host}},}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}port"{}}:\ self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a81fb1af2876cdbf7153ceac0623621ae}{db\_port}},}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}dbname"{}}:\ self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_ac979fcc72b31dc163446f5f5c8235702}{db\_name}},}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}user"{}}:\ self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a03422d7168a27f7cf9184d58cfc7262d}{db\_user}},}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}password"{}}:\ self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_ad100b933f093f9540942ced2bff6e29f}{db\_password}}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00092}00092\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00093}\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_ae69faa61f9f981f7104121cfcad9afa9}{00093}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_ae69faa61f9f981f7104121cfcad9afa9}{initialize}}(self,\ schema\_file\_path:\ str,\ drop\_if\_exists:\ bool\ =\ \textcolor{keyword}{True}):}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Initialize\ the\ database\ schema.}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00095}00095\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00096}00096\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00097}00097\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ schema\_file\_path:\ Path\ to\ the\ SQL\ schema\ file.}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00098}00098\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ drop\_if\_exists:\ If\ True,\ drop\ all\ existing\ tables\ before\ creating\ new\ ones.}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00099}00099\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ drop\_if\_exists:}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}Dropping\ existing\ tables..."{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacedatabase_1_1db__init_aea0f3436d7a6d5bc24e808460faab7c0}{drop\_all\_tables}}(self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a95cb2587a76563f91d1926e378ea680e}{db\_config}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}Creating\ tables\ from\ schema..."{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacedatabase_1_1db__init_a78dce347adce87a6ce91331f1527d406}{run\_sql\_file}}(schema\_file\_path,\ self.\doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer_a95cb2587a76563f91d1926e378ea680e}{db\_config}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}✓\ Schema\ created\ successfully"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00109}\doxymbox{\hyperlink{namespacedatabase_1_1db__init_a2b5b1ffa98b2d567773d3e696e40ab63}{00109}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedatabase_1_1db__init_a2b5b1ffa98b2d567773d3e696e40ab63}{main}}():}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00110}00110\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Initialize\ the\ database\ from\ the\ default\ schema\ file."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00111}00111\ \ \ \ \ \textcolor{comment}{\#\ Get\ the\ schema\ file\ path\ (relative\ to\ project\ root)}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00112}00112\ \ \ \ \ project\_root\ =\ Path(\_\_file\_\_).parent.parent}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00113}00113\ \ \ \ \ schema\_file\ =\ project\_root\ /\ \textcolor{stringliteral}{'database'}\ /\ \textcolor{stringliteral}{'schema.sql'}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00114}00114\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00115}00115\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ schema\_file.exists():}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ print(f\textcolor{stringliteral}{"{}Error:\ Schema\ file\ not\ found\ at\ \{schema\_file\}"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}Expected\ location:\ database/schema.sql"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 1}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00119}00119\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00120}00120\ \ \ \ \ \textcolor{comment}{\#\ Initialize\ database}}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00121}00121\ \ \ \ \ print(\textcolor{stringliteral}{"{}Initializing\ database..."{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00122}00122\ \ \ \ \ print(f\textcolor{stringliteral}{"{}Using\ schema:\ \{schema\_file\}"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00123}00123\ \ \ \ \ print(f\textcolor{stringliteral}{"{}Database:\ \{DB\_CONFIG['DB\_NAME']\}@\{DB\_CONFIG['DB\_HOST']\}:\{DB\_CONFIG['DB\_PORT']\}"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00124}00124\ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00125}00125\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00126}00126\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ db\_init\ =\ \doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer}{DatabaseInitializer}}(DB\_CONFIG)}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ db\_init.initialize(str(schema\_file),\ drop\_if\_exists=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}✓\ Database\ initialized\ successfully!"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}Next\ steps:"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}\ \ python\ examples/example\_usage.py"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 0}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00140}00140\ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}✗\ Database\ initialization\ failed!"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ print(f\textcolor{stringliteral}{"{}Error:\ \{e\}"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}Troubleshooting:"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}1.\ Make\ sure\ PostgreSQL\ is\ running:"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}\ \ \ sudo\ service\ postgresql\ status"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}2.\ Check\ your\ .env\ file\ has\ correct\ credentials"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}3.\ Test\ connection\ manually:"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ print(f\textcolor{stringliteral}{"{}\ \ \ psql\ -\/h\ \{DB\_CONFIG['DB\_HOST']\}\ -\/U\ \{DB\_CONFIG['DB\_USER']\}\ -\/d\ \{DB\_CONFIG['DB\_NAME']\}"{}})}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 1}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00156}00156\ \textcolor{keywordflow}{if}\ \_\_name\_\_\ ==\ \textcolor{stringliteral}{'\_\_main\_\_'}:}
+\DoxyCodeLine{\Hypertarget{db__init_8py_source_l00157}00157\ \ \ \ \ sys.exit(\doxymbox{\hyperlink{namespacedatabase_1_1db__init_a2b5b1ffa98b2d567773d3e696e40ab63}{main}}())}
+
+\end{DoxyCode}

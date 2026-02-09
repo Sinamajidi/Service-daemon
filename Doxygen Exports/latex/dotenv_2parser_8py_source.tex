@@ -1,0 +1,188 @@
+\doxysection{parser.\+py}
+\hypertarget{dotenv_2parser_8py_source}{}\label{dotenv_2parser_8py_source}\index{venv/Lib/site-\/packages/dotenv/parser.py@{venv/Lib/site-\/packages/dotenv/parser.py}}
+\doxymbox{\hyperlink{dotenv_2parser_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00001}\doxymbox{\hyperlink{namespacedotenv_1_1parser}{00001}}\ \textcolor{keyword}{import}\ codecs}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00002}00002\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00003}00003\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00004}00004\ \ \ \ \ IO,}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00005}00005\ \ \ \ \ Iterator,}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00006}00006\ \ \ \ \ Match,}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00007}00007\ \ \ \ \ NamedTuple,}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00008}00008\ \ \ \ \ Optional,}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00009}00009\ \ \ \ \ Pattern,}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00010}00010\ \ \ \ \ Sequence,}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00011}00011\ )}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00014}\doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{00014}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(string:\ str,\ extra\_flags:\ int\ =\ 0)\ -\/>\ Pattern[str]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00015}00015\ \ \ \ \ \textcolor{keywordflow}{return}\ re.compile(string,\ re.UNICODE\ |\ extra\_flags)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00016}00016\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00018}\doxymbox{\hyperlink{namespacedotenv_1_1parser_a16eb9ac7470fc533a03200470da1c730}{00018}}\ \_newline\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}(\(\backslash\)r\(\backslash\)n|\(\backslash\)n|\(\backslash\)r)"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00019}\doxymbox{\hyperlink{namespacedotenv_1_1parser_a9acba1d7cfec3f4105c22606e3634c1b}{00019}}\ \_multiline\_whitespace\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}\(\backslash\)s*"{}},\ extra\_flags=re.MULTILINE)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00020}\doxymbox{\hyperlink{namespacedotenv_1_1parser_af5cf72352b194799c047dac9fff9b5d9}{00020}}\ \_whitespace\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}[\string^\(\backslash\)S\(\backslash\)r\(\backslash\)n]*"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00021}\doxymbox{\hyperlink{namespacedotenv_1_1parser_adcd7138d80d7ff3313f611da8c5c43dd}{00021}}\ \_export\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}(?:export[\string^\(\backslash\)S\(\backslash\)r\(\backslash\)n]+)?"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00022}\doxymbox{\hyperlink{namespacedotenv_1_1parser_a8c1471ea1bb596db7a1701ea04395ffa}{00022}}\ \_single\_quoted\_key\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}'([\string^']+)'"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00023}\doxymbox{\hyperlink{namespacedotenv_1_1parser_afb0ff3633e295e37e1c6b77ce1027945}{00023}}\ \_unquoted\_key\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}([\string^=\(\backslash\)\#\(\backslash\)s]+)"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00024}\doxymbox{\hyperlink{namespacedotenv_1_1parser_aca97a6d68ab8fabbc995681212198a73}{00024}}\ \_equal\_sign\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}(=[\string^\(\backslash\)S\(\backslash\)r\(\backslash\)n]*)"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00025}\doxymbox{\hyperlink{namespacedotenv_1_1parser_afe6376a31b9b72cc3c8327dac2dab539}{00025}}\ \_single\_quoted\_value\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}'((?:\(\backslash\)\(\backslash\)'|[\string^'])*)'"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00026}\doxymbox{\hyperlink{namespacedotenv_1_1parser_ab4ea2a78cb548b9f49af90ca87ef850a}{00026}}\ \_double\_quoted\_value\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r'"{}((?:\(\backslash\)\(\backslash\)"{}|[\string^"{}])*)"{}'})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00027}\doxymbox{\hyperlink{namespacedotenv_1_1parser_a7fe3fc7f878269d946117ef995da2efc}{00027}}\ \_unquoted\_value\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}([\string^\(\backslash\)r\(\backslash\)n]*)"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00028}\doxymbox{\hyperlink{namespacedotenv_1_1parser_ad6e87fd6c8c7c2993598b0ee1b95ea5c}{00028}}\ \_comment\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}(?:[\string^\(\backslash\)S\(\backslash\)r\(\backslash\)n]*\#[\string^\(\backslash\)r\(\backslash\)n]*)?"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00029}\doxymbox{\hyperlink{namespacedotenv_1_1parser_a950221f9c658132147ce755b782e1b51}{00029}}\ \_end\_of\_line\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}[\string^\(\backslash\)S\(\backslash\)r\(\backslash\)n]*(?:\(\backslash\)r\(\backslash\)n|\(\backslash\)n|\(\backslash\)r|\$)"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00030}\doxymbox{\hyperlink{namespacedotenv_1_1parser_aedf346c3750bbfffc23eb404eb1f6245}{00030}}\ \_rest\_of\_line\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}[\string^\(\backslash\)r\(\backslash\)n]*(?:\(\backslash\)r|\(\backslash\)n|\(\backslash\)r\(\backslash\)n)?"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00031}\doxymbox{\hyperlink{namespacedotenv_1_1parser_a6093d55ed36a9fdd2d706fb025a0fbb1}{00031}}\ \_double\_quote\_escapes\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}\(\backslash\)\(\backslash\)[\(\backslash\)\(\backslash\)'\(\backslash\)"{}abfnrtv]"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00032}\doxymbox{\hyperlink{namespacedotenv_1_1parser_ab2848d41ea399b61a017b68eacbbcdc5}{00032}}\ \_single\_quote\_escapes\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_a26cda71a115fe067fdc6d910812da926}{make\_regex}}(\textcolor{stringliteral}{r"{}\(\backslash\)\(\backslash\)[\(\backslash\)\(\backslash\)']"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00035}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_original}{00035}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_original}{Original}}(NamedTuple):}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00036}00036\ \ \ \ \ string:\ str}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00037}00037\ \ \ \ \ line:\ int}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00040}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_binding}{00040}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_binding}{Binding}}(NamedTuple):}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00041}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_binding_abc920ff0fcd6b66e2b84fe7312883a6a}{00041}}\ \ \ \ \ key:\ Optional[str]}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00042}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_binding_a6adc9bba726d532234d54f03a53d2279}{00042}}\ \ \ \ \ value:\ Optional[str]}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00043}00043\ \ \ \ \ original:\ Original}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00044}00044\ \ \ \ \ error:\ bool}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00045}00045\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00046}00046\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00047}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position}{00047}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position}{Position}}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00048}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_a82d1d3eac4efa121ef39e167057995af}{00048}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_a82d1d3eac4efa121ef39e167057995af}{\_\_init\_\_}}(self,\ chars:\ int,\ line:\ int)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00049}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_ac065449909d3c403151ecef2f3ebaae5}{00049}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_ac065449909d3c403151ecef2f3ebaae5}{chars}}\ =\ chars}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00050}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_a76ebcadcc1070e39ae1b8bfcd165753a}{00050}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_a76ebcadcc1070e39ae1b8bfcd165753a}{line}}\ =\ line}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00052}00052\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00053}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_a1897e2741999a7d60f76f612aa491beb}{00053}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_a1897e2741999a7d60f76f612aa491beb}{start}}(cls)\ -\/>\ "{}Position"{}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls(chars=0,\ line=1)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00056}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_a83bbce65decfc38101ee4817adb8a160}{00056}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_a83bbce65decfc38101ee4817adb8a160}{set}}(self,\ other:\ \textcolor{stringliteral}{"{}Position"{}})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_ac065449909d3c403151ecef2f3ebaae5}{chars}}\ =\ other.chars}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_a76ebcadcc1070e39ae1b8bfcd165753a}{line}}\ =\ other.line}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00060}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_a203d1b7c7467b61076f1b9b95c3c4f44}{00060}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_a203d1b7c7467b61076f1b9b95c3c4f44}{advance}}(self,\ string:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_ac065449909d3c403151ecef2f3ebaae5}{chars}}\ +=\ len(string)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_position_a76ebcadcc1070e39ae1b8bfcd165753a}{line}}\ +=\ len(re.findall(\_newline,\ string))}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00065}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_error}{00065}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_error}{Error}}(Exception):}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00066}00066\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00069}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader}{00069}}\ \textcolor{keyword}{class\ }Reader:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00070}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_aedffb482fa215b0f131c0c0e83649d56}{00070}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_aedffb482fa215b0f131c0c0e83649d56}{\_\_init\_\_}}(self,\ stream:\ IO[str])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00071}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a2229ead03918117d060bc44ae6098c9e}{00071}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a2229ead03918117d060bc44ae6098c9e}{string}}\ =\ stream.read()}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00072}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a7628b630285e51fab2a08c6c04199e29}{00072}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a7628b630285e51fab2a08c6c04199e29}{position}}\ =\ Position.start()}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00073}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a1cf859365cdaa0340339354142462f64}{00073}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a1cf859365cdaa0340339354142462f64}{mark}}\ =\ Position.start()}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00075}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_ab77eedf2f1a1038c258e05011282110a}{00075}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_ab77eedf2f1a1038c258e05011282110a}{has\_next}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a7628b630285e51fab2a08c6c04199e29}{position}}.chars\ <\ len(self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a2229ead03918117d060bc44ae6098c9e}{string}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00078}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a9514ae9fec045bec8ea1994957ad578b}{00078}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a9514ae9fec045bec8ea1994957ad578b}{set\_mark}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a1cf859365cdaa0340339354142462f64}{mark}}.set(self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a7628b630285e51fab2a08c6c04199e29}{position}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00081}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a55a32b3a27f363abc3bcf5078e669d44}{00081}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a55a32b3a27f363abc3bcf5078e669d44}{get\_marked}}(self)\ -\/>\ Original:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classdotenv_1_1parser_1_1_original}{Original}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \ \ \ \ string=self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a2229ead03918117d060bc44ae6098c9e}{string}}[self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a1cf859365cdaa0340339354142462f64}{mark}}.chars\ :\ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a7628b630285e51fab2a08c6c04199e29}{position}}.chars],}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \ \ \ \ line=self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a1cf859365cdaa0340339354142462f64}{mark}}.line,}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00087}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a74015e3d8cf57592406cbcce3dfdc56c}{00087}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a74015e3d8cf57592406cbcce3dfdc56c}{peek}}(self,\ count:\ int)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a2229ead03918117d060bc44ae6098c9e}{string}}[self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a7628b630285e51fab2a08c6c04199e29}{position}}.chars\ :\ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a7628b630285e51fab2a08c6c04199e29}{position}}.chars\ +\ count]}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00089}00089\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00090}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a3ffda3152660857d80b59cff6240fa47}{00090}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a3ffda3152660857d80b59cff6240fa47}{read}}(self,\ count:\ int)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ result\ =\ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a2229ead03918117d060bc44ae6098c9e}{string}}[self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a7628b630285e51fab2a08c6c04199e29}{position}}.chars\ :\ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a7628b630285e51fab2a08c6c04199e29}{position}}.chars\ +\ count]}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(result)\ <\ count:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classdotenv_1_1parser_1_1_error}{Error}}(\textcolor{stringliteral}{"{}read:\ End\ of\ string"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a7628b630285e51fab2a08c6c04199e29}{position}}.advance(result)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ result}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00097}\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a28c6ac388aec6920a8eb7f546647722b}{00097}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a28c6ac388aec6920a8eb7f546647722b}{read\_regex}}(self,\ regex:\ Pattern[str])\ -\/>\ Sequence[str]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ match\ =\ regex.match(self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a2229ead03918117d060bc44ae6098c9e}{string}},\ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a7628b630285e51fab2a08c6c04199e29}{position}}.chars)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ match\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classdotenv_1_1parser_1_1_error}{Error}}(\textcolor{stringliteral}{"{}read\_regex:\ Pattern\ not\ found"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a7628b630285e51fab2a08c6c04199e29}{position}}.advance(self.\doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader_a2229ead03918117d060bc44ae6098c9e}{string}}[match.start()\ :\ match.end()])}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ match.groups()}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00105}\doxymbox{\hyperlink{namespacedotenv_1_1parser_ab09968f028bb8b796c012722c3f4550c}{00105}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1parser_ab09968f028bb8b796c012722c3f4550c}{decode\_escapes}}(regex:\ Pattern[str],\ string:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00106}00106\ \ \ \ \ \textcolor{keyword}{def\ }decode\_match(match:\ Match[str])\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ codecs.decode(match.group(0),\ \textcolor{stringliteral}{"{}unicode-\/escape"{}})\ \ \textcolor{comment}{\#\ type:\ ignore}}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00109}00109\ \ \ \ \ \textcolor{keywordflow}{return}\ regex.sub(decode\_match,\ string)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00110}00110\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00111}00111\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00112}\doxymbox{\hyperlink{namespacedotenv_1_1parser_ab760abd42d503aa300a5a40016b0aad0}{00112}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1parser_ab760abd42d503aa300a5a40016b0aad0}{parse\_key}}(reader:\ Reader)\ -\/>\ Optional[str]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00113}00113\ \ \ \ \ char\ =\ reader.peek(1)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00114}00114\ \ \ \ \ \textcolor{keywordflow}{if}\ char\ ==\ \textcolor{stringliteral}{"{}\#"{}}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00116}00116\ \ \ \ \ \textcolor{keywordflow}{elif}\ char\ ==\ \textcolor{stringliteral}{"{}'"{}}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ (key,)\ =\ reader.read\_regex(\_single\_quoted\_key)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00118}00118\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ (key,)\ =\ reader.read\_regex(\_unquoted\_key)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00120}00120\ \ \ \ \ \textcolor{keywordflow}{return}\ key}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00122}00122\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00123}\doxymbox{\hyperlink{namespacedotenv_1_1parser_ad3a1b7b1d4bb6afabc8fa2eadea3acdd}{00123}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1parser_ad3a1b7b1d4bb6afabc8fa2eadea3acdd}{parse\_unquoted\_value}}(reader:\ Reader)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00124}00124\ \ \ \ \ (part,)\ =\ reader.read\_regex(\_unquoted\_value)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00125}00125\ \ \ \ \ \textcolor{keywordflow}{return}\ re.sub(\textcolor{stringliteral}{r"{}\(\backslash\)s+\#.*"{}},\ \textcolor{stringliteral}{"{}"{}},\ part).rstrip()}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00126}00126\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00128}\doxymbox{\hyperlink{namespacedotenv_1_1parser_ad1f9324c9c552ebdc3979d1675a19afc}{00128}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1parser_ad1f9324c9c552ebdc3979d1675a19afc}{parse\_value}}(reader:\ Reader)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00129}00129\ \ \ \ \ char\ =\ reader.peek(1)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00130}00130\ \ \ \ \ \textcolor{keywordflow}{if}\ char\ ==\ \textcolor{stringliteral}{"{}'"{}}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ (value,)\ =\ reader.read\_regex(\_single\_quoted\_value)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_ab09968f028bb8b796c012722c3f4550c}{decode\_escapes}}(\_single\_quote\_escapes,\ value)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00133}00133\ \ \ \ \ \textcolor{keywordflow}{elif}\ char\ ==\ \textcolor{stringliteral}{'"{}'}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ (value,)\ =\ reader.read\_regex(\_double\_quoted\_value)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_ab09968f028bb8b796c012722c3f4550c}{decode\_escapes}}(\_double\_quote\_escapes,\ value)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00136}00136\ \ \ \ \ \textcolor{keywordflow}{elif}\ char\ \textcolor{keywordflow}{in}\ (\textcolor{stringliteral}{"{}"{}},\ \textcolor{stringliteral}{"{}\(\backslash\)n"{}},\ \textcolor{stringliteral}{"{}\(\backslash\)r"{}}):}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00138}00138\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_ad3a1b7b1d4bb6afabc8fa2eadea3acdd}{parse\_unquoted\_value}}(reader)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00140}00140\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00142}\doxymbox{\hyperlink{namespacedotenv_1_1parser_ae130088e8c8e39d371760f3595b1824b}{00142}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1parser_ae130088e8c8e39d371760f3595b1824b}{parse\_binding}}(reader:\ Reader)\ -\/>\ Binding:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00143}00143\ \ \ \ \ reader.set\_mark()}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00144}00144\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ reader.read\_regex(\_multiline\_whitespace)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ reader.has\_next():}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classdotenv_1_1parser_1_1_binding}{Binding}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ key=\textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ value=\textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ original=reader.get\_marked(),}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ error=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ reader.read\_regex(\_export)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ key\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_ab760abd42d503aa300a5a40016b0aad0}{parse\_key}}(reader)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ reader.read\_regex(\_whitespace)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ reader.peek(1)\ ==\ \textcolor{stringliteral}{"{}="{}}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \ \ \ \ reader.read\_regex(\_equal\_sign)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \ \ \ \ value:\ Optional[str]\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_ad1f9324c9c552ebdc3979d1675a19afc}{parse\_value}}(reader)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \ \ \ \ value\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ reader.read\_regex(\_comment)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ reader.read\_regex(\_end\_of\_line)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classdotenv_1_1parser_1_1_binding}{Binding}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \ \ \ \ key=key,}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ value=value,}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \ \ \ \ original=reader.get\_marked(),}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ error=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00169}00169\ \ \ \ \ \textcolor{keywordflow}{except}\ Error:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ reader.read\_regex(\_rest\_of\_line)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classdotenv_1_1parser_1_1_binding}{Binding}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ key=\textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \ \ \ \ value=\textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \ \ \ \ original=reader.get\_marked(),}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \ \ \ \ error=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00177}00177\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00178}00178\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00179}\doxymbox{\hyperlink{namespacedotenv_1_1parser_aeefb2b324fdfb42a4072e2519c4daca9}{00179}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1parser_aeefb2b324fdfb42a4072e2519c4daca9}{parse\_stream}}(stream:\ IO[str])\ -\/>\ Iterator[Binding]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00180}00180\ \ \ \ \ reader\ =\ \doxymbox{\hyperlink{classdotenv_1_1parser_1_1_reader}{Reader}}(stream)}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00181}00181\ \ \ \ \ \textcolor{keywordflow}{while}\ reader.has\_next():}
+\DoxyCodeLine{\Hypertarget{dotenv_2parser_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \doxymbox{\hyperlink{namespacedotenv_1_1parser_ae130088e8c8e39d371760f3595b1824b}{parse\_binding}}(reader)}
+
+\end{DoxyCode}

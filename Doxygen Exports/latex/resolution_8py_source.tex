@@ -1,0 +1,633 @@
+\doxysection{resolution.\+py}
+\hypertarget{resolution_8py_source}{}\label{resolution_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/resolvelib/resolvers/resolution.py@{venv/Lib/site-\/packages/pip/\_vendor/resolvelib/resolvers/resolution.py}}
+\doxymbox{\hyperlink{resolution_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00003}00003\ \textcolor{keyword}{import}\ collections}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00004}00004\ \textcolor{keyword}{import}\ itertools}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00005}00005\ \textcolor{keyword}{import}\ operator}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00006}00006\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Generic}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00008}00008\ \textcolor{keyword}{from}\ ..structs\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00009}00009\ \ \ \ \ CT,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00010}00010\ \ \ \ \ KT,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00011}00011\ \ \ \ \ RT,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00012}00012\ \ \ \ \ DirectedGraph,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00013}00013\ \ \ \ \ IterableView,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00014}00014\ \ \ \ \ IteratorMapping,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00015}00015\ \ \ \ \ RequirementInformation,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00016}00016\ \ \ \ \ State,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00017}00017\ \ \ \ \ build\_iter\_view,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00018}00018\ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00019}00019\ \textcolor{keyword}{from}\ .abstract\ \textcolor{keyword}{import}\ AbstractResolver,\ Result}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00020}00020\ \textcolor{keyword}{from}\ .criterion\ \textcolor{keyword}{import}\ Criterion}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00021}00021\ \textcolor{keyword}{from}\ .exceptions\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00022}00022\ \ \ \ \ InconsistentCandidate,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00023}00023\ \ \ \ \ RequirementsConflicted,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00024}00024\ \ \ \ \ ResolutionImpossible,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00025}00025\ \ \ \ \ ResolutionTooDeep,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00026}00026\ \ \ \ \ ResolverException,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00027}00027\ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00029}00029\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00030}00030\ \ \ \ \ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Collection,\ Iterable,\ Mapping}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00031}00031\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00032}00032\ \ \ \ \ \textcolor{keyword}{from}\ ..providers\ \textcolor{keyword}{import}\ AbstractProvider,\ Preference}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00033}00033\ \ \ \ \ \textcolor{keyword}{from}\ ..reporters\ \textcolor{keyword}{import}\ BaseReporter}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00035}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_a8485c57a77a11b431de23be0d157b7a8}{00035}}\ \_OPTIMISTIC\_BACKJUMPING\_RATIO:\ float\ =\ 0.1}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00038}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_a1a95262781ccb4a57fde67ed6c84355f}{00038}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_a1a95262781ccb4a57fde67ed6c84355f}{\_build\_result}}(state:\ State[RT,\ CT,\ KT])\ -\/>\ Result[RT,\ CT,\ KT]:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00039}00039\ \ \ \ \ mapping\ =\ state.mapping}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00040}00040\ \ \ \ \ all\_keys:\ dict[int,\ KT\ |\ \textcolor{keywordtype}{None}]\ =\ \{id(v):\ k\ \textcolor{keywordflow}{for}\ k,\ v\ \textcolor{keywordflow}{in}\ mapping.items()\}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00041}00041\ \ \ \ \ all\_keys[id(\textcolor{keywordtype}{None})]\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00043}00043\ \ \ \ \ graph:\ DirectedGraph[KT\ |\ \textcolor{keywordtype}{None}]\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_directed_graph}{DirectedGraph}}()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00044}00044\ \ \ \ \ graph.add(\textcolor{keywordtype}{None})\ \ \textcolor{comment}{\#\ Sentinel\ as\ root\ dependencies'\ parent.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00045}00045\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00046}00046\ \ \ \ \ connected:\ set[KT\ |\ \textcolor{keywordtype}{None}]\ =\ \{\textcolor{keywordtype}{None}\}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00047}00047\ \ \ \ \ \textcolor{keywordflow}{for}\ key,\ criterion\ \textcolor{keywordflow}{in}\ state.criteria.items():}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_a7c6f57832a8c6fe239e6d62acd40d7b0}{\_has\_route\_to\_root}}(state.criteria,\ key,\ all\_keys,\ connected):}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ key\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ graph:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \ \ \ \ graph.add(key)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ p\ \textcolor{keywordflow}{in}\ criterion.iter\_parent():}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pkey\ =\ all\_keys[id(p)]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ pkey\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ graph:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ graph.add(pkey)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \ \ \ \ graph.connect(pkey,\ key)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00061}00061\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1abstract_1_1_result}{Result}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ mapping=\{k:\ v\ \textcolor{keywordflow}{for}\ k,\ v\ \textcolor{keywordflow}{in}\ mapping.items()\ \textcolor{keywordflow}{if}\ k\ \textcolor{keywordflow}{in}\ connected\},}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ graph=graph,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ criteria=state.criteria,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00065}00065\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00066}00066\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00068}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution}{00068}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution}{Resolution}}(Generic[RT,\ CT,\ KT]):}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00069}00069\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Stateful\ resolution\ object.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00070}00070\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00071}00071\ \textcolor{stringliteral}{\ \ \ \ This\ is\ designed\ as\ a\ one-\/off\ object\ that\ holds\ information\ to\ kick\ start}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ the\ resolution\ process,\ and\ holds\ the\ results\ afterwards.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00073}00073\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00075}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_af8dfba2421eb1b236cad5b9dd5a4a728}{00075}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_af8dfba2421eb1b236cad5b9dd5a4a728}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ provider:\ AbstractProvider[RT,\ CT,\ KT],}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ reporter:\ BaseReporter[RT,\ CT,\ KT],}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00079}00079\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00080}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{00080}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}\ =\ provider}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00081}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a0617bb81878745371dcd64a7043a8e37}{00081}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a0617bb81878745371dcd64a7043a8e37}{\_r}}\ =\ reporter}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00082}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{00082}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{\_states}}:\ list[State[RT,\ CT,\ KT]]\ =\ []}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00083}00083\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Optimistic\ backjumping\ variables}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00085}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_aa8aa7e73910320cc11c18b60306c246a}{00085}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_aa8aa7e73910320cc11c18b60306c246a}{\_optimistic\_backjumping\_ratio}}\ =\ \_OPTIMISTIC\_BACKJUMPING\_RATIO}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00086}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a3c8e4702f738fbfaa6e802b12e44e955}{00086}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a3c8e4702f738fbfaa6e802b12e44e955}{\_save\_states}}:\ list[State[RT,\ CT,\ KT]]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00087}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_af2447ca100f58df39edcb3876f576d65}{00087}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_af2447ca100f58df39edcb3876f576d65}{\_optimistic\_start\_round}}:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00089}00089\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00090}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{00090}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}(self)\ -\/>\ State[RT,\ CT,\ KT]:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{\_states}}[-\/1]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ IndexError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ AttributeError(\textcolor{stringliteral}{"{}state"{}})\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00095}00095\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00096}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a5f3584b87191ab21e844db574b16e5fb}{00096}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a5f3584b87191ab21e844db574b16e5fb}{\_push\_new\_state}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Push\ a\ new\ state\ into\ history.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00098}00098\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00099}00099\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ new\ state\ will\ be\ used\ to\ hold\ resolution\ results\ of\ the\ next}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00100}00100\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ coming\ round.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00101}00101\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ base\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{\_states}}[-\/1]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ state\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_state}{State}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ mapping=base.mapping.copy(),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ criteria=base.criteria.copy(),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ backtrack\_causes=base.backtrack\_causes[:],}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{\_states}}.append(state)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00109}00109\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00110}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a7e7d63df453dffa60d3f7b3f50246824}{00110}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a7e7d63df453dffa60d3f7b3f50246824}{\_add\_to\_criteria}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ criteria:\ dict[KT,\ Criterion[RT,\ CT]],}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ requirement:\ RT,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ parent:\ CT\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00115}00115\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a0617bb81878745371dcd64a7043a8e37}{\_r}}.adding\_requirement(requirement=requirement,\ parent=parent)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00117}00117\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ identifier\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}.identify(requirement\_or\_candidate=requirement)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ criterion\ =\ criteria.get(identifier)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ criterion:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \ \ \ \ incompatibilities\ =\ list(criterion.incompatibilities)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \ \ \ \ incompatibilities\ =\ []}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00124}00124\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ matches\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}.find\_matches(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ identifier=identifier,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ requirements=\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_iterator_mapping}{IteratorMapping}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ criteria,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ operator.methodcaller(\textcolor{stringliteral}{"{}iter\_requirement"{}}),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \{identifier:\ [requirement]\},}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \ \ \ \ incompatibilities=\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_iterator_mapping}{IteratorMapping}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ criteria,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ operator.attrgetter(\textcolor{stringliteral}{"{}incompatibilities"{}}),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \{identifier:\ incompatibilities\},}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00138}00138\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ criterion:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \ \ \ \ information\ =\ list(criterion.information)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \ \ \ \ information.append(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_requirement_information}{RequirementInformation}}(requirement,\ parent))}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ information\ =\ [\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_requirement_information}{RequirementInformation}}(requirement,\ parent)]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ criterion\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1criterion_1_1_criterion}{Criterion}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \ \ \ \ candidates=build\_iter\_view(matches),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \ \ \ \ information=information,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ incompatibilities=incompatibilities,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ criterion.candidates:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1exceptions_1_1_requirements_conflicted}{RequirementsConflicted}}(criterion)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ criteria[identifier]\ =\ criterion}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00153}00153\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00154}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a2a3eea298851fca419f12d7008d458f6}{00154}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a2a3eea298851fca419f12d7008d458f6}{\_remove\_information\_from\_criteria}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ self,\ criteria:\ dict[KT,\ Criterion[RT,\ CT]],\ parents:\ Collection[KT]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00156}00156\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Remove\ information\ from\ parents\ of\ criteria.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00158}00158\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00159}00159\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Concretely,\ removes\ all\ values\ from\ each\ criterion's\ \`{}\`{}information\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00160}00160\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ field\ that\ have\ one\ of\ \`{}\`{}parents\`{}\`{}\ as\ provider\ of\ the\ requirement.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00161}00161\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00162}00162\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ criteria:\ The\ criteria\ to\ update.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00163}00163\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ parents:\ Identifiers\ for\ which\ to\ remove\ information\ from\ all\ criteria.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00164}00164\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ parents:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ key,\ criterion\ \textcolor{keywordflow}{in}\ criteria.items():}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \ \ \ \ criteria[key]\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1criterion_1_1_criterion}{Criterion}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ criterion.candidates,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ [}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ information}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ information\ \textcolor{keywordflow}{in}\ criterion.information}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ information.parent\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}.identify(information.parent)\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ parents}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ],}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ criterion.incompatibilities,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00180}00180\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00181}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_af7ed063f386cb7f895d5044ec608231e}{00181}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_af7ed063f386cb7f895d5044ec608231e}{\_get\_preference}}(self,\ name:\ KT)\ -\/>\ Preference:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}.get\_preference(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ identifier=name,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \ \ \ \ resolutions=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.mapping,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ candidates=\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_iterator_mapping}{IteratorMapping}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ operator.attrgetter(\textcolor{stringliteral}{"{}candidates"{}}),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \ \ \ \ information=\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_iterator_mapping}{IteratorMapping}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ operator.attrgetter(\textcolor{stringliteral}{"{}information"{}}),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \ \ \ \ backtrack\_causes=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.backtrack\_causes,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00195}00195\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00196}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_ad04ba955d3766137b14fc03244cb3935}{00196}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_ad04ba955d3766137b14fc03244cb3935}{\_is\_current\_pin\_satisfying}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ self,\ name:\ KT,\ criterion:\ Criterion[RT,\ CT]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00198}00198\ \ \ \ \ )\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ current\_pin\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.mapping[name]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ all(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}.is\_satisfied\_by(requirement=r,\ candidate=current\_pin)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ r\ \textcolor{keywordflow}{in}\ criterion.iter\_requirement()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00207}00207\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00208}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a985b09b70f8e1b7ca3aa8d4a1db4cd88}{00208}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a985b09b70f8e1b7ca3aa8d4a1db4cd88}{\_get\_updated\_criteria}}(self,\ candidate:\ CT)\ -\/>\ dict[KT,\ Criterion[RT,\ CT]]:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ criteria\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria.copy()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ requirement\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}.get\_dependencies(candidate=candidate):}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a7e7d63df453dffa60d3f7b3f50246824}{\_add\_to\_criteria}}(criteria,\ requirement,\ parent=candidate)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ criteria}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00213}00213\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00214}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_ab7d7958a0d56ae4ad4067f626e2f973b}{00214}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_ab7d7958a0d56ae4ad4067f626e2f973b}{\_attempt\_to\_pin\_criterion}}(self,\ name:\ KT)\ -\/>\ list[Criterion[RT,\ CT]]:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ criterion\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria[name]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00216}00216\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ causes:\ list[Criterion[RT,\ CT]]\ =\ []}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ candidate\ \textcolor{keywordflow}{in}\ criterion.candidates:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ criteria\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a985b09b70f8e1b7ca3aa8d4a1db4cd88}{\_get\_updated\_criteria}}(candidate)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ RequirementsConflicted\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a0617bb81878745371dcd64a7043a8e37}{\_r}}.rejecting\_candidate(e.criterion,\ candidate)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ causes.append(e.criterion)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00225}00225\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ the\ newly-\/pinned\ candidate\ actually\ works.\ This\ should}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ always\ pass\ under\ normal\ circumstances,\ but\ in\ the\ case\ of\ a}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ faulty\ provider,\ we\ will\ raise\ an\ error\ to\ notify\ the\ implementer}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ to\ fix\ find\_matches()\ and/or\ is\_satisfied\_by().}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \ \ \ \ satisfied\ =\ all(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}.is\_satisfied\_by(requirement=r,\ candidate=candidate)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ r\ \textcolor{keywordflow}{in}\ criterion.iter\_requirement()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ satisfied:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1exceptions_1_1_inconsistent_candidate}{InconsistentCandidate}}(candidate,\ criterion)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00236}00236\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a0617bb81878745371dcd64a7043a8e37}{\_r}}.pinning(candidate=candidate)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria.update(criteria)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00239}00239\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Put\ newly-\/pinned\ candidate\ at\ the\ end.\ This\ is\ essential\ because}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ backtracking\ looks\ at\ this\ mapping\ to\ get\ the\ last\ pin.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.mapping.pop(name,\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.mapping[name]\ =\ candidate}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00244}00244\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ []}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00246}00246\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ All\ candidates\ tried,\ nothing\ works.\ This\ criterion\ is\ a\ dead}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ end,\ signal\ for\ backtracking.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ causes}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00250}00250\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00251}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a89cfc376c5e09520664483cca3cac85e}{00251}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a89cfc376c5e09520664483cca3cac85e}{\_patch\_criteria}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ self,\ incompatibilities\_from\_broken:\ list[tuple[KT,\ list[CT]]]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00253}00253\ \ \ \ \ )\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Create\ a\ new\ state\ from\ the\ last\ known-\/to-\/work\ one,\ and\ apply}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ previously\ gathered\ incompatibility\ information.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ k,\ incompatibilities\ \textcolor{keywordflow}{in}\ incompatibilities\_from\_broken:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ incompatibilities:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ criterion\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria[k]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ matches\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}.find\_matches(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ identifier=k,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ requirements=\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_iterator_mapping}{IteratorMapping}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ operator.methodcaller(\textcolor{stringliteral}{"{}iter\_requirement"{}}),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ incompatibilities=\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_iterator_mapping}{IteratorMapping}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ operator.attrgetter(\textcolor{stringliteral}{"{}incompatibilities"{}}),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \{k:\ incompatibilities\},}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \ \ \ \ candidates:\ IterableView[CT]\ =\ build\_iter\_view(matches)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ candidates:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ \ \ \ \ incompatibilities.extend(criterion.incompatibilities)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria[k]\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1criterion_1_1_criterion}{Criterion}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ candidates=candidates,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ information=list(criterion.information),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ incompatibilities=incompatibilities,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00285}00285\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00286}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a49e4c283f44ed87e9b4db65fdd7b3a13}{00286}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a49e4c283f44ed87e9b4db65fdd7b3a13}{\_save\_state}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Save\ states\ for\ potential\ rollback\ if\ optimistic\ backjumping\ fails."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a3c8e4702f738fbfaa6e802b12e44e955}{\_save\_states}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a3c8e4702f738fbfaa6e802b12e44e955}{\_save\_states}}\ =\ [}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_state}{State}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ mapping=s.mapping.copy(),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ criteria=s.criteria.copy(),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ backtrack\_causes=s.backtrack\_causes[:],}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ s\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{\_states}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00297}00297\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00298}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a067dff629d8045a3edd5513b0c800d28}{00298}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a067dff629d8045a3edd5513b0c800d28}{\_rollback\_states}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Rollback\ states\ and\ disable\ optimistic\ backjumping."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_aa8aa7e73910320cc11c18b60306c246a}{\_optimistic\_backjumping\_ratio}}\ =\ 0.0}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a3c8e4702f738fbfaa6e802b12e44e955}{\_save\_states}}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{\_states}}\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a3c8e4702f738fbfaa6e802b12e44e955}{\_save\_states}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a3c8e4702f738fbfaa6e802b12e44e955}{\_save\_states}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00304}00304\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00305}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_aec00b01069b4ecc0d699f1437980f99d}{00305}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_aec00b01069b4ecc0d699f1437980f99d}{\_backjump}}(self,\ causes:\ list[RequirementInformation[RT,\ CT]])\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Perform\ backjumping.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00307}00307\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00308}00308\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ When\ we\ enter\ here,\ the\ stack\ is\ like\ this::}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00309}00309\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00310}00310\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ [\ state\ Z\ ]}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00311}00311\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ [\ state\ Y\ ]}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00312}00312\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ [\ state\ X\ ]}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00313}00313\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ ....\ earlier\ states\ are\ irrelevant.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00314}00314\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00315}00315\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 1.\ No\ pins\ worked\ for\ Z,\ so\ it\ does\ not\ have\ a\ pin.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00316}00316\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 2.\ We\ want\ to\ reset\ state\ Y\ to\ unpinned,\ and\ pin\ another\ candidate.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00317}00317\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 3.\ State\ X\ holds\ what\ state\ Y\ was\ before\ the\ pin,\ but\ does\ not}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00318}00318\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ have\ the\ incompatibility\ information\ gathered\ in\ state\ Y.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00319}00319\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00320}00320\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Each\ iteration\ of\ the\ loop\ will:}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00321}00321\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00322}00322\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 1.\ \ Identify\ Z.\ The\ incompatibility\ is\ not\ always\ caused\ by\ the\ latest}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00323}00323\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ state.\ For\ example,\ given\ three\ requirements\ A,\ B\ and\ C,\ with}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00324}00324\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ dependencies\ A1,\ B1\ and\ C1,\ where\ A1\ and\ B1\ are\ incompatible:\ the}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00325}00325\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ last\ state\ might\ be\ related\ to\ C,\ so\ we\ want\ to\ discard\ the}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00326}00326\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ previous\ state.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00327}00327\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 2.\ \ Discard\ Z.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00328}00328\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 3.\ \ Discard\ Y\ but\ remember\ its\ incompatibility\ information\ gathered}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00329}00329\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ previously,\ and\ the\ failure\ we're\ dealing\ with\ right\ now.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00330}00330\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 4.\ \ Push\ a\ new\ state\ Y'\ based\ on\ X,\ and\ apply\ the\ incompatibility}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00331}00331\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ information\ from\ Y\ to\ Y'.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00332}00332\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 5a.\ If\ this\ causes\ Y'\ to\ conflict,\ we\ need\ to\ backtrack\ again.\ Make\ Y'}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00333}00333\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ the\ new\ Z\ and\ go\ back\ to\ step\ 2.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00334}00334\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 5b.\ If\ the\ incompatibilities\ apply\ cleanly,\ end\ backtracking.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00335}00335\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00336}00336\ \ \ \ \ \ \ \ \ incompatible\_reqs:\ Iterable[CT\ |\ RT]\ =\ itertools.chain(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ \ \ \ \ (c.parent\ \textcolor{keywordflow}{for}\ c\ \textcolor{keywordflow}{in}\ causes\ \textcolor{keywordflow}{if}\ c.parent\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ \ \ \ \ (c.requirement\ \textcolor{keywordflow}{for}\ c\ \textcolor{keywordflow}{in}\ causes),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ incompatible\_deps\ =\ \{self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}.identify(r)\ \textcolor{keywordflow}{for}\ r\ \textcolor{keywordflow}{in}\ incompatible\_reqs\}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00341}00341\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ len(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{\_states}})\ >=\ 3:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Remove\ the\ state\ that\ triggered\ backtracking.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ \ \ \ \ del\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{\_states}}[-\/1]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00344}00344\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Optimistically\ backtrack\ to\ a\ state\ that\ caused\ the\ incompatibility}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ \ \ \ \ broken\_state\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ \textcolor{keyword}{True}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Retrieve\ the\ last\ candidate\ pin\ and\ known\ incompatibilities.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ broken\_state\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{\_states}}.pop()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ name,\ candidate\ =\ broken\_state.mapping.popitem()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ (IndexError,\ KeyError):}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1exceptions_1_1_resolution_impossible}{ResolutionImpossible}}(causes)\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00354}00354\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_aa8aa7e73910320cc11c18b60306c246a}{\_optimistic\_backjumping\_ratio}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ name\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ incompatible\_deps}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00358}00358\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ For\ safe\ backjumping\ only\ backjump\ if\ the\ current\ dependency}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ is\ not\ the\ same\ as\ the\ incompatible\ dependency}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00362}00362\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ On\ the\ first\ time\ a\ non-\/safe\ backjump\ is\ done\ the\ state}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ is\ saved\ so\ we\ can\ restore\ it\ later\ if\ the\ resolution\ fails}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00366}00366\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_aa8aa7e73910320cc11c18b60306c246a}{\_optimistic\_backjumping\_ratio}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00367}00367\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a3c8e4702f738fbfaa6e802b12e44e955}{\_save\_states}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00368}00368\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ name\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ incompatible\_deps}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a49e4c283f44ed87e9b4db65fdd7b3a13}{\_save\_state}}()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00371}00371\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00372}00372\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ current\ dependencies\ and\ the\ incompatible\ dependencies}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00373}00373\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ are\ overlapping\ then\ we\ have\ likely\ found\ a\ cause\ of\ the}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ incompatibility}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ current\_dependencies\ =\ \{}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}.identify(d)\ \textcolor{keywordflow}{for}\ d\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}.get\_dependencies(candidate)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ current\_dependencies.isdisjoint(incompatible\_deps):}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00379}00379\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00380}00380\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Fallback:\ We\ should\ not\ backtrack\ to\ the\ point\ where}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ broken\_state.mapping\ is\ empty,\ so\ stop\ backtracking\ for}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ a\ chance\ for\ the\ resolution\ to\ recover}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ broken\_state.mapping:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00385}00385\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00386}00386\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Guard:\ We\ need\ at\ least\ two\ state\ to\ remain\ to\ both}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ backtrack\ and\ push\ a\ new\ state}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{\_states}})\ <=\ 1:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00390}00390\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1exceptions_1_1_resolution_impossible}{ResolutionImpossible}}(causes)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00391}00391\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ \ \ \ \ incompatibilities\_from\_broken\ =\ [}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (k,\ list(v.incompatibilities))\ \textcolor{keywordflow}{for}\ k,\ v\ \textcolor{keywordflow}{in}\ broken\_state.criteria.items()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00395}00395\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Also\ mark\ the\ newly\ known\ incompatibility.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ \ \ \ \ incompatibilities\_from\_broken.append((name,\ [candidate]))}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00398}00398\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00399}00399\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a5f3584b87191ab21e844db574b16e5fb}{\_push\_new\_state}}()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ \ \ \ \ success\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a89cfc376c5e09520664483cca3cac85e}{\_patch\_criteria}}(incompatibilities\_from\_broken)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00401}00401\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ It\ works!\ Let's\ work\ on\ this\ new\ state.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ success:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00405}00405\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00406}00406\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ State\ does\ not\ work\ after\ applying\ known\ incompatibilities.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Try\ the\ still\ previous\ state.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00408}00408\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00409}00409\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ No\ way\ to\ backtrack\ anymore.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00411}00411\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00412}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a4179fe90859969cd46e587dfe5603975}{00412}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a4179fe90859969cd46e587dfe5603975}{\_extract\_causes}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00413}00413\ \ \ \ \ \ \ \ \ self,\ criteron:\ list[Criterion[RT,\ CT]]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00414}00414\ \ \ \ \ )\ -\/>\ list[RequirementInformation[RT,\ CT]]:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00415}00415\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Extract\ causes\ from\ list\ of\ criterion\ and\ deduplicate"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00416}00416\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ list(\{id(i):\ i\ \textcolor{keywordflow}{for}\ c\ \textcolor{keywordflow}{in}\ criteron\ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ c.information\}.values())}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00417}00417\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00418}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6bb44cd74263b8f1966570ab9e0a4874}{00418}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6bb44cd74263b8f1966570ab9e0a4874}{resolve}}(self,\ requirements:\ Iterable[RT],\ max\_rounds:\ int)\ -\/>\ State[RT,\ CT,\ KT]:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{\_states}}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00420}00420\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ RuntimeError(\textcolor{stringliteral}{"{}already\ resolved"{}})}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00421}00421\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a0617bb81878745371dcd64a7043a8e37}{\_r}}.starting()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00423}00423\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00424}00424\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Initialize\ the\ root\ state.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a6809740cd66d50c9a127fe247c29b138}{\_states}}\ =\ [}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00426}00426\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_state}{State}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00427}00427\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ mapping=collections.OrderedDict(),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00428}00428\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ criteria=\{\},}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00429}00429\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ backtrack\_causes=[],}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00430}00430\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00431}00431\ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00432}00432\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ r\ \textcolor{keywordflow}{in}\ requirements:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00433}00433\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00434}00434\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a7e7d63df453dffa60d3f7b3f50246824}{\_add\_to\_criteria}}(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria,\ r,\ parent=\textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00435}00435\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ RequirementsConflicted\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00436}00436\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1exceptions_1_1_resolution_impossible}{ResolutionImpossible}}(e.criterion.information)\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00437}00437\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ root\ state\ is\ saved\ as\ a\ sentinel\ so\ the\ first\ ever\ pin\ can\ have}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ something\ to\ backtrack\ to\ if\ it\ fails.\ The\ root\ state\ is\ basically}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ pinning\ the\ virtual\ "{}root"{}\ package\ in\ the\ graph.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a5f3584b87191ab21e844db574b16e5fb}{\_push\_new\_state}}()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00442}00442\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00443}00443\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Variables\ for\ optimistic\ backjumping}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ optimistic\_rounds\_cutoff:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ optimistic\_backjumping\_start\_round:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00446}00446\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00447}00447\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ round\_index\ \textcolor{keywordflow}{in}\ range(max\_rounds):}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00448}00448\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a0617bb81878745371dcd64a7043a8e37}{\_r}}.starting\_round(index=round\_index)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00449}00449\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00450}00450\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Handle\ if\ optimistic\ backjumping\ has\ been\ running\ for\ too\ long}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00451}00451\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_aa8aa7e73910320cc11c18b60306c246a}{\_optimistic\_backjumping\_ratio}}\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a3c8e4702f738fbfaa6e802b12e44e955}{\_save\_states}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ optimistic\_backjumping\_start\_round\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00453}00453\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ optimistic\_backjumping\_start\_round\ =\ round\_index}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00454}00454\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ optimistic\_rounds\_cutoff\ =\ int(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00455}00455\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (max\_rounds\ -\/\ round\_index)\ *\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_aa8aa7e73910320cc11c18b60306c246a}{\_optimistic\_backjumping\_ratio}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00457}00457\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00458}00458\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ optimistic\_rounds\_cutoff\ <=\ 0:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a067dff629d8045a3edd5513b0c800d28}{\_rollback\_states}}()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00460}00460\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ optimistic\_rounds\_cutoff\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00462}00462\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00463}00463\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ round\_index\ -\/\ optimistic\_backjumping\_start\_round}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00464}00464\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ >=\ optimistic\_rounds\_cutoff}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00465}00465\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00466}00466\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a067dff629d8045a3edd5513b0c800d28}{\_rollback\_states}}()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00467}00467\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00468}00468\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00469}00469\ \ \ \ \ \ \ \ \ \ \ \ \ unsatisfied\_names\ =\ [}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00470}00470\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ key}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00471}00471\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ key,\ criterion\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria.items()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00472}00472\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_ad04ba955d3766137b14fc03244cb3935}{\_is\_current\_pin\_satisfying}}(key,\ criterion)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00473}00473\ \ \ \ \ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00474}00474\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00475}00475\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ All\ criteria\ are\ accounted\ for.\ Nothing\ more\ to\ pin,\ we\ are\ done!}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00476}00476\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ unsatisfied\_names:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00477}00477\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a0617bb81878745371dcd64a7043a8e37}{\_r}}.ending(state=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}})}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00478}00478\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00479}00479\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00480}00480\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ keep\ track\ of\ satisfied\ names\ to\ calculate\ diff\ after\ pinning}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00481}00481\ \ \ \ \ \ \ \ \ \ \ \ \ satisfied\_names\ =\ set(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria.keys())\ -\/\ set(unsatisfied\_names)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00482}00482\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00483}00483\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(unsatisfied\_names)\ >\ 1:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ narrowed\_unstatisfied\_names\ =\ list(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00485}00485\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a36bcc62af0977a27a2136873027c8111}{\_p}}.narrow\_requirement\_selection(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00486}00486\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ identifiers=unsatisfied\_names,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00487}00487\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ resolutions=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.mapping,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00488}00488\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ candidates=\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_iterator_mapping}{IteratorMapping}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00489}00489\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00490}00490\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ operator.attrgetter(\textcolor{stringliteral}{"{}candidates"{}}),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00491}00491\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00492}00492\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ information=\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1structs_1_1_iterator_mapping}{IteratorMapping}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00493}00493\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00494}00494\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ operator.attrgetter(\textcolor{stringliteral}{"{}information"{}}),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00495}00495\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00496}00496\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ backtrack\_causes=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.backtrack\_causes,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00497}00497\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00498}00498\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00499}00499\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ narrowed\_unstatisfied\_names\ =\ unsatisfied\_names}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00501}00501\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00502}00502\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ there\ are\ no\ unsatisfied\ names\ use\ unsatisfied\ names}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00503}00503\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ narrowed\_unstatisfied\_names:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00504}00504\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ RuntimeError(\textcolor{stringliteral}{"{}narrow\_requirement\_selection\ returned\ 0\ names"{}})}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00505}00505\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00506}00506\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ there\ is\ only\ 1\ unsatisfied\ name\ skip\ calling\ self.\_get\_preference}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(narrowed\_unstatisfied\_names)\ >\ 1:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00508}00508\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Choose\ the\ most\ preferred\ unpinned\ criterion\ to\ try.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00509}00509\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ name\ =\ min(narrowed\_unstatisfied\_names,\ key=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_af7ed063f386cb7f895d5044ec608231e}{\_get\_preference}})}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00510}00510\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00511}00511\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ name\ =\ narrowed\_unstatisfied\_names[0]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00512}00512\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00513}00513\ \ \ \ \ \ \ \ \ \ \ \ \ failure\_criterion\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_ab7d7958a0d56ae4ad4067f626e2f973b}{\_attempt\_to\_pin\_criterion}}(name)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00514}00514\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ failure\_criterion:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00516}00516\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ causes\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a4179fe90859969cd46e587dfe5603975}{\_extract\_causes}}(failure\_criterion)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00517}00517\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Backjump\ if\ pinning\ fails.\ The\ backjump\ process\ puts\ us\ in}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00518}00518\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ an\ unpinned\ state,\ so\ we\ can\ work\ on\ it\ in\ the\ next\ round.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a0617bb81878745371dcd64a7043a8e37}{\_r}}.resolving\_conflicts(causes=causes)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00520}00520\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ success\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_aec00b01069b4ecc0d699f1437980f99d}{\_backjump}}(causes)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00523}00523\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ResolutionImpossible:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_aa8aa7e73910320cc11c18b60306c246a}{\_optimistic\_backjumping\_ratio}}\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a3c8e4702f738fbfaa6e802b12e44e955}{\_save\_states}}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00525}00525\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ failed\_optimistic\_backjumping\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00526}00526\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00528}00528\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00529}00529\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ failed\_optimistic\_backjumping\ =\ bool(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00530}00530\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{not}\ success}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00531}00531\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_aa8aa7e73910320cc11c18b60306c246a}{\_optimistic\_backjumping\_ratio}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00532}00532\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a3c8e4702f738fbfaa6e802b12e44e955}{\_save\_states}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00533}00533\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00534}00534\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00535}00535\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ failed\_optimistic\_backjumping\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a3c8e4702f738fbfaa6e802b12e44e955}{\_save\_states}}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00536}00536\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a067dff629d8045a3edd5513b0c800d28}{\_rollback\_states}}()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00537}00537\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00538}00538\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.backtrack\_causes[:]\ =\ causes}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00539}00539\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00540}00540\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Dead\ ends\ everywhere.\ Give\ up.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00541}00541\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ success:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00542}00542\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1exceptions_1_1_resolution_impossible}{ResolutionImpossible}}(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.backtrack\_causes)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00543}00543\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00544}00544\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ discard\ as\ information\ sources\ any\ invalidated\ names}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00545}00545\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ (unsatisfied\ names\ that\ were\ previously\ satisfied)}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00546}00546\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ newly\_unsatisfied\_names\ =\ \{}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00547}00547\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ key}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ key,\ criterion\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria.items()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00549}00549\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ key\ \textcolor{keywordflow}{in}\ satisfied\_names}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00550}00550\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_ad04ba955d3766137b14fc03244cb3935}{\_is\_current\_pin\_satisfying}}(key,\ criterion)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00551}00551\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00552}00552\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a2a3eea298851fca419f12d7008d458f6}{\_remove\_information\_from\_criteria}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00553}00553\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}}.criteria,\ newly\_unsatisfied\_names}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00554}00554\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00555}00555\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Pinning\ was\ successful.\ Push\ a\ new\ state\ to\ do\ another\ pin.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00556}00556\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a5f3584b87191ab21e844db574b16e5fb}{\_push\_new\_state}}()}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00557}00557\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00558}00558\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a0617bb81878745371dcd64a7043a8e37}{\_r}}.ending\_round(index=round\_index,\ state=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution_a1372c830b29b758fa4f8cca69f128f6d}{state}})}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00559}00559\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00560}00560\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1exceptions_1_1_resolution_too_deep}{ResolutionTooDeep}}(max\_rounds)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00561}00561\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00562}00562\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00563}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolver}{00563}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolver}{Resolver}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1abstract_1_1_abstract_resolver}{AbstractResolver}}[RT,\ CT,\ KT]):}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00564}00564\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ thing\ that\ performs\ the\ actual\ resolution\ work."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00565}00565\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00566}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolver}{00566}}\ \ \ \ \ base\_exception\ =\ ResolverException}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00567}00567\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00568}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolver_a10f309704285658859a71216ca677b9f}{00568}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolver_a10f309704285658859a71216ca677b9f}{resolve}}(\ \ \textcolor{comment}{\#\ type:\ ignore[override]}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00569}00569\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00570}00570\ \ \ \ \ \ \ \ \ requirements:\ Iterable[RT],}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00571}00571\ \ \ \ \ \ \ \ \ max\_rounds:\ int\ =\ 100,}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00572}00572\ \ \ \ \ )\ -\/>\ Result[RT,\ CT,\ KT]:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00573}00573\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Take\ a\ collection\ of\ constraints,\ spit\ out\ the\ resolution\ result.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00574}00574\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00575}00575\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ return\ value\ is\ a\ representation\ to\ the\ final\ resolution\ result.\ It}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00576}00576\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ is\ a\ tuple\ subclass\ with\ three\ public\ members:}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00577}00577\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00578}00578\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ \`{}mapping\`{}:\ A\ dict\ of\ resolved\ candidates.\ Each\ key\ is\ an\ identifier}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00579}00579\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ of\ a\ requirement\ (as\ returned\ by\ the\ provider's\ \`{}identify\`{}\ method),}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00580}00580\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ and\ the\ value\ is\ the\ resolved\ candidate.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00581}00581\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ \`{}graph\`{}:\ A\ \`{}DirectedGraph\`{}\ instance\ representing\ the\ dependency\ tree.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00582}00582\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ The\ vertices\ are\ keys\ of\ \`{}mapping\`{},\ and\ each\ edge\ represents\ *why*}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00583}00583\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ a\ particular\ package\ is\ included.\ A\ special\ vertex\ \`{}None\`{}\ is}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00584}00584\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ included\ to\ represent\ parents\ of\ user-\/supplied\ requirements.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00585}00585\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ \`{}criteria\`{}:\ A\ dict\ of\ "{}criteria"{}\ that\ hold\ detailed\ information\ on}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00586}00586\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ how\ edges\ in\ the\ graph\ are\ derived.\ Each\ key\ is\ an\ identifier\ of\ a}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00587}00587\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ requirement,\ and\ the\ value\ is\ a\ \`{}Criterion\`{}\ instance.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00588}00588\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00589}00589\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ following\ exceptions\ may\ be\ raised\ if\ a\ resolution\ cannot\ be\ found:}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00590}00590\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00591}00591\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ \`{}ResolutionImpossible\`{}:\ A\ resolution\ cannot\ be\ found\ for\ the\ given}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00592}00592\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ combination\ of\ requirements.\ The\ \`{}causes\`{}\ attribute\ of\ the}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00593}00593\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ exception\ is\ a\ list\ of\ (requirement,\ parent),\ giving\ the}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00594}00594\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ requirements\ that\ could\ not\ be\ satisfied.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00595}00595\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ \`{}ResolutionTooDeep\`{}:\ The\ dependency\ tree\ is\ too\ deeply\ nested\ and}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00596}00596\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ the\ resolver\ gave\ up.\ This\ is\ usually\ caused\ by\ a\ circular}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00597}00597\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ dependency,\ but\ you\ can\ try\ to\ resolve\ this\ by\ increasing\ the}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00598}00598\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \`{}max\_rounds\`{}\ argument.}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00599}00599\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00600}00600\ \ \ \ \ \ \ \ \ resolution\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_1_1_resolution}{Resolution}}(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1abstract_1_1_abstract_resolver_a145ec11afb156517445fe4e823ef3104}{provider}},\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1abstract_1_1_abstract_resolver_ac910842e79ed35829192da12fbf4daf8}{reporter}})}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00601}00601\ \ \ \ \ \ \ \ \ state\ =\ resolution.resolve(requirements,\ max\_rounds=max\_rounds)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00602}00602\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_a1a95262781ccb4a57fde67ed6c84355f}{\_build\_result}}(state)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00603}00603\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00604}00604\ }
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00605}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_a7c6f57832a8c6fe239e6d62acd40d7b0}{00605}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_a7c6f57832a8c6fe239e6d62acd40d7b0}{\_has\_route\_to\_root}}(}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00606}00606\ \ \ \ \ criteria:\ Mapping[KT,\ Criterion[RT,\ CT]],}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00607}00607\ \ \ \ \ key:\ KT\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00608}00608\ \ \ \ \ all\_keys:\ dict[int,\ KT\ |\ \textcolor{keywordtype}{None}],}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00609}00609\ \ \ \ \ connected:\ set[KT\ |\ \textcolor{keywordtype}{None}],}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00610}00610\ )\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00611}00611\ \ \ \ \ \textcolor{keywordflow}{if}\ key\ \textcolor{keywordflow}{in}\ connected:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00612}00612\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00613}00613\ \ \ \ \ \textcolor{keywordflow}{if}\ key\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ criteria:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00614}00614\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00615}00615\ \ \ \ \ \textcolor{keyword}{assert}\ key\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00616}00616\ \ \ \ \ \textcolor{keywordflow}{for}\ p\ \textcolor{keywordflow}{in}\ criteria[key].iter\_parent():}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00617}00617\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00618}00618\ \ \ \ \ \ \ \ \ \ \ \ \ pkey\ =\ all\_keys[id(p)]}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00619}00619\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00620}00620\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00621}00621\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ pkey\ \textcolor{keywordflow}{in}\ connected:}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00622}00622\ \ \ \ \ \ \ \ \ \ \ \ \ connected.add(key)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00623}00623\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00624}00624\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1resolvelib_1_1resolvers_1_1resolution_a7c6f57832a8c6fe239e6d62acd40d7b0}{\_has\_route\_to\_root}}(criteria,\ pkey,\ all\_keys,\ connected):}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00625}00625\ \ \ \ \ \ \ \ \ \ \ \ \ connected.add(key)}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00626}00626\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{resolution_8py_source_l00627}00627\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+
+\end{DoxyCode}

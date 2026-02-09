@@ -1,0 +1,27 @@
+var array_8py =
+[
+    [ "psycopg.types.array.BaseListDumper", "classpsycopg_1_1types_1_1array_1_1_base_list_dumper.html", "classpsycopg_1_1types_1_1array_1_1_base_list_dumper" ],
+    [ "psycopg.types.array.ListDumper", "classpsycopg_1_1types_1_1array_1_1_list_dumper.html", "classpsycopg_1_1types_1_1array_1_1_list_dumper" ],
+    [ "psycopg.types.array.ListBinaryDumper", "classpsycopg_1_1types_1_1array_1_1_list_binary_dumper.html", "classpsycopg_1_1types_1_1array_1_1_list_binary_dumper" ],
+    [ "psycopg.types.array.ArrayLoader", "classpsycopg_1_1types_1_1array_1_1_array_loader.html", "classpsycopg_1_1types_1_1array_1_1_array_loader" ],
+    [ "psycopg.types.array.ArrayBinaryLoader", "classpsycopg_1_1types_1_1array_1_1_array_binary_loader.html", "classpsycopg_1_1types_1_1array_1_1_array_binary_loader" ],
+    [ "psycopg.types.array._get_array_parse_regexp", "namespacepsycopg_1_1types_1_1array.html#aa778050971ead8a858151c13787cb402", null ],
+    [ "psycopg.types.array._get_needs_quotes_regexp", "namespacepsycopg_1_1types_1_1array.html#a3e144528da5aea564fa442b3934195cc", null ],
+    [ "psycopg.types.array._load_binary", "namespacepsycopg_1_1types_1_1array.html#af1b809d26478ff1f26ba76006cfc49ee", null ],
+    [ "psycopg.types.array._load_text", "namespacepsycopg_1_1types_1_1array.html#a6546f5852cedd755abb9ca2d670d686b", null ],
+    [ "psycopg.types.array._make_binary_dumper", "namespacepsycopg_1_1types_1_1array.html#ab2ab417196b1abe1586ec7919fec61ea", null ],
+    [ "psycopg.types.array._make_dumper", "namespacepsycopg_1_1types_1_1array.html#a224eeb59f604702cbf409d93c8c06c24", null ],
+    [ "psycopg.types.array._make_loader", "namespacepsycopg_1_1types_1_1array.html#ad4d3029aa6939abaa3a890d4478f63fc", null ],
+    [ "psycopg.types.array.register_all_arrays", "namespacepsycopg_1_1types_1_1array.html#a291af93f8044d4a89d2a58a5457c348b", null ],
+    [ "psycopg.types.array.register_array", "namespacepsycopg_1_1types_1_1array.html#aba31d6728a5b43810eeb840d2d28dfe4", null ],
+    [ "psycopg.types.array.register_default_adapters", "namespacepsycopg_1_1types_1_1array.html#a4b5f544f8974e1642abbb0b5f47eae33", null ],
+    [ "psycopg.types.array._pack_dim", "namespacepsycopg_1_1types_1_1array.html#aa26f9bb40cb501106061383e3a006a5b", null ],
+    [ "psycopg.types.array._pack_head", "namespacepsycopg_1_1types_1_1array.html#a67892d05aa24a5049249dfe06e4547ae", null ],
+    [ "psycopg.types.array._struct_dim", "namespacepsycopg_1_1types_1_1array.html#a1731e015c49962e55aaf79f428686442", null ],
+    [ "psycopg.types.array._struct_head", "namespacepsycopg_1_1types_1_1array.html#ae7b084b92aebc3c0003b29c72d96b8c0", null ],
+    [ "psycopg.types.array._unpack_dim", "namespacepsycopg_1_1types_1_1array.html#a66476d5d731f6d312f2ba9490ca1d748", null ],
+    [ "psycopg.types.array._unpack_head", "namespacepsycopg_1_1types_1_1array.html#aa33a6eeb4b347d09902d9c723656bacf", null ],
+    [ "psycopg.types.array.ARRAY_NULL", "namespacepsycopg_1_1types_1_1array.html#a6aba2e8dd11d0acfff79e061cc8e219f", null ],
+    [ "psycopg.types.array.PQ_BINARY", "namespacepsycopg_1_1types_1_1array.html#a204849cb3607e436c2f937ef088c7c0d", null ],
+    [ "psycopg.types.array.PY_TEXT", "namespacepsycopg_1_1types_1_1array.html#a57c00d05fe93339f828e8fb9e2da2f75", null ]
+];

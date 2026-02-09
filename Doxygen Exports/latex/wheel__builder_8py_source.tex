@@ -1,0 +1,267 @@
+\doxysection{wheel\+\_\+builder.\+py}
+\hypertarget{wheel__builder_8py_source}{}\label{wheel__builder_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/wheel\_builder.py@{venv/Lib/site-\/packages/pip/\_internal/wheel\_builder.py}}
+\doxymbox{\hyperlink{wheel__builder_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}Orchestrator\ for\ building\ wheels\ from\ InstallRequirements."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00003}00003\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00005}00005\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00006}00006\ \textcolor{keyword}{import}\ os.path}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00007}00007\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00008}00008\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterable}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00009}00009\ \textcolor{keyword}{from}\ tempfile\ \textcolor{keyword}{import}\ TemporaryDirectory}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00011}00011\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1utils}{pip.\_vendor.packaging.utils}}\ \textcolor{keyword}{import}\ canonicalize\_name,\ canonicalize\_version}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00012}00012\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version}{pip.\_vendor.packaging.version}}\ \textcolor{keyword}{import}\ InvalidVersion,\ Version}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00014}00014\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cache}{pip.\_internal.cache}}\ \textcolor{keyword}{import}\ WheelCache}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00015}00015\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ InvalidWheelFilename,\ UnsupportedWheel}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00016}00016\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1metadata}{pip.\_internal.metadata}}\ \textcolor{keyword}{import}\ FilesystemWheel,\ get\_wheel\_distribution}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00017}00017\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1link}{pip.\_internal.models.link}}\ \textcolor{keyword}{import}\ Link}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00018}00018\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1wheel}{pip.\_internal.models.wheel}}\ \textcolor{keyword}{import}\ Wheel}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00019}00019\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1wheel}{pip.\_internal.operations.build.wheel}}\ \textcolor{keyword}{import}\ build\_wheel\_pep517}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00020}00020\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1wheel__editable}{pip.\_internal.operations.build.wheel\_editable}}\ \textcolor{keyword}{import}\ build\_wheel\_editable}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00021}00021\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__install}{pip.\_internal.req.req\_install}}\ \textcolor{keyword}{import}\ InstallRequirement}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00022}00022\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1logging}{pip.\_internal.utils.logging}}\ \textcolor{keyword}{import}\ indent\_log}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00023}00023\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1misc}{pip.\_internal.utils.misc}}\ \textcolor{keyword}{import}\ ensure\_dir,\ hash\_file}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00024}00024\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1urls}{pip.\_internal.utils.urls}}\ \textcolor{keyword}{import}\ path\_to\_url}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00025}00025\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs}{pip.\_internal.vcs}}\ \textcolor{keyword}{import}\ vcs}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00027}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a84898e3516b9c46fa75845a249fc5200}{00027}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00029}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a6eda6c4baed2364813bdf9c3e7317720}{00029}}\ \_egg\_info\_re\ =\ re.compile(\textcolor{stringliteral}{r"{}([a-\/z0-\/9\_.]+)-\/([a-\/z0-\/9\_.!+-\/]+)"{}},\ re.IGNORECASE)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00031}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_ad8206fa8e5856a00e6283c148f53bfa6}{00031}}\ BuildResult\ =\ tuple[list[InstallRequirement],\ list[InstallRequirement]]}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00034}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a03d581fc354ea08afb996767ed353596}{00034}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a03d581fc354ea08afb996767ed353596}{\_contains\_egg\_info}}(s:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00035}00035\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Determine\ whether\ the\ string\ looks\ like\ an\ egg\_info.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00036}00036\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00037}00037\ \textcolor{stringliteral}{\ \ \ \ :param\ s:\ The\ string\ to\ parse.\ E.g.\ foo-\/2.1}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00038}00038\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00039}00039\ \ \ \ \ \textcolor{keywordflow}{return}\ bool(\_egg\_info\_re.search(s))}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00042}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a0c0a95c4587e6a91cfeb038ffc3013c5}{00042}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a0c0a95c4587e6a91cfeb038ffc3013c5}{\_should\_cache}}(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00043}00043\ \ \ \ \ req:\ InstallRequirement,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00044}00044\ )\ -\/>\ bool\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00045}00045\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00046}00046\ \textcolor{stringliteral}{\ \ \ \ Return\ whether\ a\ built\ InstallRequirement\ can\ be\ stored\ in\ the\ persistent}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00047}00047\ \textcolor{stringliteral}{\ \ \ \ wheel\ cache,\ assuming\ the\ wheel\ cache\ is\ available.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00048}00048\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00049}00049\ \ \ \ \ \textcolor{keywordflow}{if}\ req.editable\ \textcolor{keywordflow}{or}\ \textcolor{keywordflow}{not}\ req.source\_dir:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ never\ cache\ editable\ requirements}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00053}00053\ \ \ \ \ \textcolor{keywordflow}{if}\ req.link\ \textcolor{keywordflow}{and}\ req.link.is\_vcs:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ VCS\ checkout.\ Do\ not\ cache}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ unless\ it\ points\ to\ an\ immutable\ commit\ hash.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ req.editable}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ req.source\_dir}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ vcs\_backend\ =\ vcs.get\_backend\_for\_scheme(req.link.scheme)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ vcs\_backend}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ vcs\_backend.is\_immutable\_rev\_checkout(req.link.url,\ req.source\_dir):}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00064}00064\ \ \ \ \ \textcolor{keyword}{assert}\ req.link}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00065}00065\ \ \ \ \ base,\ ext\ =\ req.link.splitext()}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00066}00066\ \ \ \ \ \textcolor{keywordflow}{if}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a03d581fc354ea08afb996767ed353596}{\_contains\_egg\_info}}(base):}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00069}00069\ \ \ \ \ \textcolor{comment}{\#\ Otherwise,\ do\ not\ cache.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00070}00070\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00071}00071\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00072}00072\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00073}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a66d62259ed740db675fed686c54e316b}{00073}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a66d62259ed740db675fed686c54e316b}{\_get\_cache\_dir}}(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00074}00074\ \ \ \ \ req:\ InstallRequirement,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00075}00075\ \ \ \ \ wheel\_cache:\ WheelCache,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00076}00076\ )\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00077}00077\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ the\ persistent\ or\ temporary\ cache\ directory\ where\ the\ built}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00078}00078\ \textcolor{stringliteral}{\ \ \ \ wheel\ need\ to\ be\ stored.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00080}00080\ \ \ \ \ cache\_available\ =\ bool(wheel\_cache.cache\_dir)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00081}00081\ \ \ \ \ \textcolor{keyword}{assert}\ req.link}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00082}00082\ \ \ \ \ \textcolor{keywordflow}{if}\ cache\_available\ \textcolor{keywordflow}{and}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a0c0a95c4587e6a91cfeb038ffc3013c5}{\_should\_cache}}(req):}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ cache\_dir\ =\ wheel\_cache.get\_path\_for\_link(req.link)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00084}00084\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ cache\_dir\ =\ wheel\_cache.get\_ephem\_path\_for\_link(req.link)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00086}00086\ \ \ \ \ \textcolor{keywordflow}{return}\ cache\_dir}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00087}00087\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00089}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_abaf7c93a749dbb7ec059c99dd4a9f933}{00089}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_abaf7c93a749dbb7ec059c99dd4a9f933}{\_verify\_one}}(req:\ InstallRequirement,\ wheel\_path:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00090}00090\ \ \ \ \ canonical\_name\ =\ canonicalize\_name(req.name\ \textcolor{keywordflow}{or}\ \textcolor{stringliteral}{"{}"{}})}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00091}00091\ \ \ \ \ w\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1wheel_1_1_wheel}{Wheel}}(os.path.basename(wheel\_path))}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00092}00092\ \ \ \ \ \textcolor{keywordflow}{if}\ w.name\ !=\ canonical\_name:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_invalid_wheel_filename}{InvalidWheelFilename}}(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Wheel\ has\ unexpected\ file\ name:\ expected\ \{canonical\_name!r\},\ "{}}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}got\ \{w.name!r\}"{}},}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00097}00097\ \ \ \ \ dist\ =\ get\_wheel\_distribution(\doxymbox{\hyperlink{classpip_1_1__internal_1_1metadata_1_1base_1_1_filesystem_wheel}{FilesystemWheel}}(wheel\_path),\ canonical\_name)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00098}00098\ \ \ \ \ dist\_verstr\ =\ str(dist.version)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00099}00099\ \ \ \ \ \textcolor{keywordflow}{if}\ canonicalize\_version(dist\_verstr)\ !=\ canonicalize\_version(w.version):}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_invalid_wheel_filename}{InvalidWheelFilename}}(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Wheel\ has\ unexpected\ file\ name:\ expected\ \{dist\_verstr!r\},\ "{}}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}got\ \{w.version!r\}"{}},}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00104}00104\ \ \ \ \ metadata\_version\_value\ =\ dist.metadata\_version}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00105}00105\ \ \ \ \ \textcolor{keywordflow}{if}\ metadata\_version\_value\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(\textcolor{stringliteral}{"{}Missing\ Metadata-\/Version"{}})}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00107}00107\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ metadata\_version\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version}{Version}}(metadata\_version\_value)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00109}00109\ \ \ \ \ \textcolor{keywordflow}{except}\ InvalidVersion:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}Invalid\ Metadata-\/Version:\ \{metadata\_version\_value\}"{}}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(msg)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00112}00112\ \ \ \ \ \textcolor{keywordflow}{if}\ metadata\_version\ >=\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version}{Version}}(\textcolor{stringliteral}{"{}1.2"{}})\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ isinstance(dist.version,\ Version):}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_wheel}{UnsupportedWheel}}(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Metadata\ 1.2\ mandates\ PEP\ 440\ version,\ but\ \{dist\_verstr!r\}\ is\ not"{}}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00116}00116\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00117}00117\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00118}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a8641843e214f237373267cea2c974430}{00118}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a8641843e214f237373267cea2c974430}{\_build\_one}}(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00119}00119\ \ \ \ \ req:\ InstallRequirement,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00120}00120\ \ \ \ \ output\_dir:\ str,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00121}00121\ \ \ \ \ verify:\ bool,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00122}00122\ \ \ \ \ editable:\ bool,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00123}00123\ )\ -\/>\ str\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00124}00124\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Build\ one\ wheel.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00125}00125\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00126}00126\ \textcolor{stringliteral}{\ \ \ \ :return:\ The\ filename\ of\ the\ built\ wheel,\ or\ None\ if\ the\ build\ failed.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00127}00127\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00128}00128\ \ \ \ \ artifact\ =\ \textcolor{stringliteral}{"{}editable"{}}\ \textcolor{keywordflow}{if}\ editable\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}wheel"{}}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00129}00129\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ ensure\_dir(output\_dir)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00131}00131\ \ \ \ \ \textcolor{keywordflow}{except}\ OSError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Building\ \%s\ for\ \%s\ failed:\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \ \ \ \ artifact,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \ \ \ \ req.name,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \ \ \ \ e,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00139}00139\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00140}00140\ \ \ \ \ \textcolor{comment}{\#\ Install\ build\ deps\ into\ temporary\ directory\ (PEP\ 518)}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00141}00141\ \ \ \ \ \textcolor{keyword}{with}\ req.build\_env:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ wheel\_path\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a3e86cbf089dded15aca8ab9b9a389bcd}{\_build\_one\_inside\_env}}(req,\ output\_dir,\ editable)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00143}00143\ \ \ \ \ \textcolor{keywordflow}{if}\ wheel\_path\ \textcolor{keywordflow}{and}\ verify:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_abaf7c93a749dbb7ec059c99dd4a9f933}{\_verify\_one}}(req,\ wheel\_path)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ (InvalidWheelFilename,\ UnsupportedWheel)\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}Built\ \%s\ for\ \%s\ is\ invalid:\ \%s"{}},\ artifact,\ req.name,\ e)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00149}00149\ \ \ \ \ \textcolor{keywordflow}{return}\ wheel\_path}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00150}00150\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00151}00151\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00152}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a3e86cbf089dded15aca8ab9b9a389bcd}{00152}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a3e86cbf089dded15aca8ab9b9a389bcd}{\_build\_one\_inside\_env}}(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00153}00153\ \ \ \ \ req:\ InstallRequirement,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00154}00154\ \ \ \ \ output\_dir:\ str,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00155}00155\ \ \ \ \ editable:\ bool,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00156}00156\ )\ -\/>\ str\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00157}00157\ \ \ \ \ \textcolor{keyword}{with}\ TemporaryDirectory(dir=output\_dir)\ \textcolor{keyword}{as}\ wheel\_directory:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ req.name}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ req.metadata\_directory}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ req.pep517\_backend}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ editable:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_path\ =\ build\_wheel\_editable(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ name=req.name,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ backend=req.pep517\_backend,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ metadata\_directory=req.metadata\_directory,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_directory=wheel\_directory,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_path\ =\ build\_wheel\_pep517(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ name=req.name,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ backend=req.pep517\_backend,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ metadata\_directory=req.metadata\_directory,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_directory=wheel\_directory,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00175}00175\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ wheel\_path\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_name\ =\ os.path.basename(wheel\_path)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \ \ \ \ dest\_path\ =\ os.path.join(output\_dir,\ wheel\_name)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_hash,\ length\ =\ hash\_file(wheel\_path)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ can\ do\ a\ replace\ here\ because\ wheel\_path\ is\ guaranteed\ to}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ be\ in\ the\ same\ filesystem\ as\ output\_dir.\ This\ will\ perform\ an}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ atomic\ rename,\ which\ is\ necessary\ to\ avoid\ concurrency\ issues}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ when\ populating\ the\ cache.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ os.replace(wheel\_path,\ dest\_path)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Created\ wheel\ for\ \%s:\ filename=\%s\ size=\%d\ sha256=\%s"{}},}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req.name,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_name,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ length,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_hash.hexdigest(),}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}Stored\ in\ directory:\ \%s"{}},\ output\_dir)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dest\_path}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Building\ wheel\ for\ \%s\ failed:\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req.name,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ e,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00202}00202\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00203}00203\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00204}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_aa839f41978b8f371bc024ed155a157cc}{00204}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_aa839f41978b8f371bc024ed155a157cc}{build}}(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00205}00205\ \ \ \ \ requirements:\ Iterable[InstallRequirement],}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00206}00206\ \ \ \ \ wheel\_cache:\ WheelCache,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00207}00207\ \ \ \ \ verify:\ bool,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00208}00208\ )\ -\/>\ BuildResult:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00209}00209\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Build\ wheels.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00210}00210\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00211}00211\ \textcolor{stringliteral}{\ \ \ \ :return:\ The\ list\ of\ InstallRequirement\ that\ succeeded\ to\ build\ and}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00212}00212\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ the\ list\ of\ InstallRequirement\ that\ failed\ to\ build.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00213}00213\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00214}00214\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ requirements:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ [],\ []}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00216}00216\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00217}00217\ \ \ \ \ \textcolor{comment}{\#\ Build\ the\ wheels.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00218}00218\ \ \ \ \ logger.info(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Building\ wheels\ for\ collected\ packages:\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{},\ "{}}.join(req.name\ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ requirements),\ \ \textcolor{comment}{\#\ type:\ ignore}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00221}00221\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00222}00222\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00223}00223\ \ \ \ \ \textcolor{keyword}{with}\ indent\_log():}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ build\_successes,\ build\_failures\ =\ [],\ []}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ requirements:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ req.name}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \ \ \ \ cache\_dir\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a66d62259ed740db675fed686c54e316b}{\_get\_cache\_dir}}(req,\ wheel\_cache)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_file\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1wheel__builder_a8641843e214f237373267cea2c974430}{\_build\_one}}(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cache\_dir,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ verify,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req.editable\ \textcolor{keywordflow}{and}\ req.permit\_editable\_wheels,}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ wheel\_file:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Record\ the\ download\ origin\ in\ the\ cache}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ req.download\_info\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ download\_info\ is\ guaranteed\ to\ be\ set\ because\ when\ we\ build\ an}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ InstallRequirement\ it\ has\ been\ through\ the\ preparer\ before,\ but}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ let's\ be\ cautious.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_cache.record\_download\_origin(cache\_dir,\ req.download\_info)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Update\ the\ link\ for\ this.}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req.link\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1link_1_1_link}{Link}}(path\_to\_url(wheel\_file))}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req.local\_file\_path\ =\ req.link.file\_path}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ req.link.is\_wheel}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ build\_successes.append(req)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ build\_failures.append(req)}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00248}00248\ }
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00249}00249\ \ \ \ \ \textcolor{comment}{\#\ notify\ success/failure}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00250}00250\ \ \ \ \ \textcolor{keywordflow}{if}\ build\_successes:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ logger.info(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Successfully\ built\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ "{}}.join([req.name\ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ build\_successes]),\ \ \textcolor{comment}{\#\ type:\ ignore}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00255}00255\ \ \ \ \ \textcolor{keywordflow}{if}\ build\_failures:}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ logger.info(}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Failed\ to\ build\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ "{}}.join([req.name\ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ build\_failures]),\ \ \textcolor{comment}{\#\ type:\ ignore}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00260}00260\ \ \ \ \ \textcolor{comment}{\#\ Return\ a\ list\ of\ requirements\ that\ failed\ to\ build}}
+\DoxyCodeLine{\Hypertarget{wheel__builder_8py_source_l00261}00261\ \ \ \ \ \textcolor{keywordflow}{return}\ build\_successes,\ build\_failures}
+
+\end{DoxyCode}

@@ -1,0 +1,159 @@
+\doxysection{\+\_\+encodings.\+py}
+\hypertarget{__encodings_8py_source}{}\label{__encodings_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_encodings.py@{venv/Lib/site-\/packages/psycopg/\_encodings.py}}
+\doxymbox{\hyperlink{__encodings_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00002}00002\ \textcolor{stringliteral}{Mappings\ between\ PostgreSQL\ and\ Python\ encodings.}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00009}00009\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00010}00010\ \textcolor{keyword}{import}\ codecs}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00011}00011\ \textcolor{keyword}{import}\ string}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00012}00012\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00013}00013\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ cache}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00015}00015\ \textcolor{keyword}{from}\ .errors\ \textcolor{keyword}{import}\ NotSupportedError}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00016}00016\ \textcolor{keyword}{from}\ .pq.\_enums\ \textcolor{keyword}{import}\ ConnStatus}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00018}00018\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00019}00019\ \ \ \ \ \textcolor{keyword}{from}\ .\_connection\_base\ \textcolor{keyword}{import}\ BaseConnection}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00020}00020\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00021}\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_a1b6ad621ab05c6d0b26662e5cafab955}{00021}}\ OK\ =\ ConnStatus.OK}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00024}\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_a87062b6f20e5b02e51691e81ad112455}{00024}}\ \_py\_codecs\ =\ \{}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00025}00025\ \ \ \ \ \textcolor{stringliteral}{"{}BIG5"{}}:\ \textcolor{stringliteral}{"{}big5"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00026}00026\ \ \ \ \ \textcolor{stringliteral}{"{}EUC\_CN"{}}:\ \textcolor{stringliteral}{"{}gb2312"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00027}00027\ \ \ \ \ \textcolor{stringliteral}{"{}EUC\_JIS\_2004"{}}:\ \textcolor{stringliteral}{"{}euc\_jis\_2004"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00028}00028\ \ \ \ \ \textcolor{stringliteral}{"{}EUC\_JP"{}}:\ \textcolor{stringliteral}{"{}euc\_jp"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00029}00029\ \ \ \ \ \textcolor{stringliteral}{"{}EUC\_KR"{}}:\ \textcolor{stringliteral}{"{}euc\_kr"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00030}00030\ \ \ \ \ \textcolor{comment}{\#\ "{}EUC\_TW"{}:\ not\ available\ in\ Python}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00031}00031\ \ \ \ \ \textcolor{stringliteral}{"{}GB18030"{}}:\ \textcolor{stringliteral}{"{}gb18030"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00032}00032\ \ \ \ \ \textcolor{stringliteral}{"{}GBK"{}}:\ \textcolor{stringliteral}{"{}gbk"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00033}00033\ \ \ \ \ \textcolor{stringliteral}{"{}ISO\_8859\_5"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/5"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00034}00034\ \ \ \ \ \textcolor{stringliteral}{"{}ISO\_8859\_6"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/6"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00035}00035\ \ \ \ \ \textcolor{stringliteral}{"{}ISO\_8859\_7"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/7"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00036}00036\ \ \ \ \ \textcolor{stringliteral}{"{}ISO\_8859\_8"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/8"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00037}00037\ \ \ \ \ \textcolor{stringliteral}{"{}JOHAB"{}}:\ \textcolor{stringliteral}{"{}johab"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00038}00038\ \ \ \ \ \textcolor{stringliteral}{"{}KOI8R"{}}:\ \textcolor{stringliteral}{"{}koi8-\/r"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00039}00039\ \ \ \ \ \textcolor{stringliteral}{"{}KOI8U"{}}:\ \textcolor{stringliteral}{"{}koi8-\/u"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00040}00040\ \ \ \ \ \textcolor{stringliteral}{"{}LATIN1"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/1"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00041}00041\ \ \ \ \ \textcolor{stringliteral}{"{}LATIN10"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/16"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00042}00042\ \ \ \ \ \textcolor{stringliteral}{"{}LATIN2"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/2"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00043}00043\ \ \ \ \ \textcolor{stringliteral}{"{}LATIN3"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/3"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00044}00044\ \ \ \ \ \textcolor{stringliteral}{"{}LATIN4"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/4"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00045}00045\ \ \ \ \ \textcolor{stringliteral}{"{}LATIN5"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/9"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00046}00046\ \ \ \ \ \textcolor{stringliteral}{"{}LATIN6"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/10"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00047}00047\ \ \ \ \ \textcolor{stringliteral}{"{}LATIN7"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/13"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00048}00048\ \ \ \ \ \textcolor{stringliteral}{"{}LATIN8"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/14"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00049}00049\ \ \ \ \ \textcolor{stringliteral}{"{}LATIN9"{}}:\ \textcolor{stringliteral}{"{}iso8859-\/15"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00050}00050\ \ \ \ \ \textcolor{comment}{\#\ "{}MULE\_INTERNAL"{}:\ not\ available\ in\ Python}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00051}00051\ \ \ \ \ \textcolor{stringliteral}{"{}SHIFT\_JIS\_2004"{}}:\ \textcolor{stringliteral}{"{}shift\_jis\_2004"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00052}00052\ \ \ \ \ \textcolor{stringliteral}{"{}SJIS"{}}:\ \textcolor{stringliteral}{"{}shift\_jis"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00053}00053\ \ \ \ \ \textcolor{comment}{\#\ this\ actually\ means\ no\ encoding,\ see\ PostgreSQL\ docs}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00054}00054\ \ \ \ \ \textcolor{comment}{\#\ it\ is\ special-\/cased\ by\ the\ text\ loader.}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00055}00055\ \ \ \ \ \textcolor{stringliteral}{"{}SQL\_ASCII"{}}:\ \textcolor{stringliteral}{"{}ascii"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00056}00056\ \ \ \ \ \textcolor{stringliteral}{"{}UHC"{}}:\ \textcolor{stringliteral}{"{}cp949"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00057}00057\ \ \ \ \ \textcolor{stringliteral}{"{}UTF8"{}}:\ \textcolor{stringliteral}{"{}utf-\/8"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00058}00058\ \ \ \ \ \textcolor{stringliteral}{"{}WIN1250"{}}:\ \textcolor{stringliteral}{"{}cp1250"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00059}00059\ \ \ \ \ \textcolor{stringliteral}{"{}WIN1251"{}}:\ \textcolor{stringliteral}{"{}cp1251"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00060}00060\ \ \ \ \ \textcolor{stringliteral}{"{}WIN1252"{}}:\ \textcolor{stringliteral}{"{}cp1252"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00061}00061\ \ \ \ \ \textcolor{stringliteral}{"{}WIN1253"{}}:\ \textcolor{stringliteral}{"{}cp1253"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00062}00062\ \ \ \ \ \textcolor{stringliteral}{"{}WIN1254"{}}:\ \textcolor{stringliteral}{"{}cp1254"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00063}00063\ \ \ \ \ \textcolor{stringliteral}{"{}WIN1255"{}}:\ \textcolor{stringliteral}{"{}cp1255"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00064}00064\ \ \ \ \ \textcolor{stringliteral}{"{}WIN1256"{}}:\ \textcolor{stringliteral}{"{}cp1256"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00065}00065\ \ \ \ \ \textcolor{stringliteral}{"{}WIN1257"{}}:\ \textcolor{stringliteral}{"{}cp1257"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00066}00066\ \ \ \ \ \textcolor{stringliteral}{"{}WIN1258"{}}:\ \textcolor{stringliteral}{"{}cp1258"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00067}00067\ \ \ \ \ \textcolor{stringliteral}{"{}WIN866"{}}:\ \textcolor{stringliteral}{"{}cp866"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00068}00068\ \ \ \ \ \textcolor{stringliteral}{"{}WIN874"{}}:\ \textcolor{stringliteral}{"{}cp874"{}},}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00069}00069\ \}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00071}\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_ad8fb7ae393b76bf684028f342b27cfc7}{00071}}\ py\_codecs:\ dict[bytes,\ str]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00072}00072\ py\_codecs.update((k.encode(),\ v)\ \textcolor{keywordflow}{for}\ k,\ v\ \textcolor{keywordflow}{in}\ \_py\_codecs.items())}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00073}00073\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00074}00074\ \textcolor{comment}{\#\ Add\ an\ alias\ without\ underscore,\ for\ lenient\ lookups}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00075}00075\ py\_codecs.update(}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00076}00076\ \ \ \ \ (k.replace(\textcolor{stringliteral}{"{}\_"{}},\ \textcolor{stringliteral}{"{}"{}}).encode(),\ v)\ \textcolor{keywordflow}{for}\ k,\ v\ \textcolor{keywordflow}{in}\ \_py\_codecs.items()\ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}\_"{}}\ \textcolor{keywordflow}{in}\ k}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00077}00077\ )}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00078}00078\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00079}\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_a8411e7867d5fb40d5b5013ba73a46c2a}{00079}}\ pg\_codecs\ =\ \{v:\ k.encode()\ \textcolor{keywordflow}{for}\ k,\ v\ \textcolor{keywordflow}{in}\ \_py\_codecs.items()\}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00082}\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_ad3a890db2b344034aa87cd434f0d1fe9}{00082}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_ad3a890db2b344034aa87cd434f0d1fe9}{conn\_encoding}}(conn:\ BaseConnection[Any]\ |\ \textcolor{keywordtype}{None})\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00083}00083\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00084}00084\ \textcolor{stringliteral}{\ \ \ \ Return\ the\ Python\ encoding\ name\ of\ a\ psycopg\ connection.}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00085}00085\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00086}00086\ \textcolor{stringliteral}{\ \ \ \ Default\ to\ utf8\ if\ the\ connection\ has\ no\ encoding\ info.}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00087}00087\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00088}00088\ \ \ \ \ \textcolor{keywordflow}{return}\ conn.pgconn.\_encoding\ \textcolor{keywordflow}{if}\ conn\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}utf-\/8"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00089}00089\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00090}00090\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00091}\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_a2a046f58a7858271ba683be13db02598}{00091}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_a2a046f58a7858271ba683be13db02598}{conninfo\_encoding}}(conninfo:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00092}00092\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00093}00093\ \textcolor{stringliteral}{\ \ \ \ Return\ the\ Python\ encoding\ name\ passed\ in\ a\ conninfo\ string.\ Default\ to\ utf8.}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00094}00094\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00095}00095\ \textcolor{stringliteral}{\ \ \ \ Because\ the\ input\ is\ likely\ to\ come\ from\ the\ user\ and\ not\ normalised\ by\ the}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00096}00096\ \textcolor{stringliteral}{\ \ \ \ server,\ be\ somewhat\ lenient\ (non-\/case-\/sensitive\ lookup,\ ignore\ noise\ chars).}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00097}00097\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00098}00098\ \ \ \ \ \textcolor{keyword}{from}\ .conninfo\ \textcolor{keyword}{import}\ conninfo\_to\_dict}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00099}00099\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00100}00100\ \ \ \ \ params\ =\ conninfo\_to\_dict(conninfo)}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00101}00101\ \ \ \ \ \textcolor{keywordflow}{if}\ pgenc\ :=\ params.get(\textcolor{stringliteral}{"{}client\_encoding"{}}):}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_a57bfb199b832b4adffcad220f2423e6f}{pg2pyenc}}(str(pgenc).encode())}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ NotSupportedError:}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00107}00107\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}utf-\/8"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00109}00109\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00110}00110\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00111}\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_af6977ec6d1df88c27bbc9beb222539e7}{00111}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_af6977ec6d1df88c27bbc9beb222539e7}{py2pgenc}}(name:\ str)\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00112}00112\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Convert\ a\ Python\ encoding\ name\ to\ PostgreSQL\ encoding\ name.}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00113}00113\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00114}00114\ \textcolor{stringliteral}{\ \ \ \ Raise\ LookupError\ if\ the\ Python\ encoding\ is\ unknown.}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00115}00115\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00116}00116\ \ \ \ \ \textcolor{keywordflow}{return}\ pg\_codecs[codecs.lookup(name).name]}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00117}00117\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00118}00118\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00119}00119\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00120}\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_a57bfb199b832b4adffcad220f2423e6f}{00120}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_a57bfb199b832b4adffcad220f2423e6f}{pg2pyenc}}(name:\ bytes)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00121}00121\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Convert\ a\ PostgreSQL\ encoding\ name\ to\ Python\ encoding\ name.}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00122}00122\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00123}00123\ \textcolor{stringliteral}{\ \ \ \ Raise\ NotSupportedError\ if\ the\ PostgreSQL\ encoding\ is\ not\ supported\ by}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00124}00124\ \textcolor{stringliteral}{\ \ \ \ Python.}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00125}00125\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00126}00126\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ py\_codecs[name.replace(b\textcolor{stringliteral}{"{}-\/"{}},\ b\textcolor{stringliteral}{"{}"{}}).replace(b\textcolor{stringliteral}{"{}\_"{}},\ b\textcolor{stringliteral}{"{}"{}}).upper()]}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00128}00128\ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ sname\ =\ name.decode(\textcolor{stringliteral}{"{}utf8"{}},\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_not_supported_error}{NotSupportedError}}(f\textcolor{stringliteral}{"{}codec\ not\ available\ in\ Python:\ \{sname!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00132}00132\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00133}\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_ac7f5f62a3adc71529a3a2d3ed33861a8}{00133}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_ac7f5f62a3adc71529a3a2d3ed33861a8}{\_as\_python\_identifier}}(s:\ str,\ prefix:\ str\ =\ \textcolor{stringliteral}{"{}f"{}})\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00134}00134\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00135}00135\ \textcolor{stringliteral}{\ \ \ \ Reduce\ a\ string\ to\ a\ valid\ Python\ identifier.}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00136}00136\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00137}00137\ \textcolor{stringliteral}{\ \ \ \ Replace\ all\ non-\/valid\ chars\ with\ '\_'\ and\ prefix\ the\ value\ with\ \`{}!prefix\`{}\ if}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00138}00138\ \textcolor{stringliteral}{\ \ \ \ the\ first\ letter\ is\ an\ '\_'.}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00139}00139\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00140}00140\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ s.isidentifier():}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ s[0]\ \textcolor{keywordflow}{in}\ \textcolor{stringliteral}{"{}1234567890"{}}:}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ s\ =\ prefix\ +\ s}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ s.isidentifier():}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \ \ \ \ s\ =\ \_re\_clean.sub(\textcolor{stringliteral}{"{}\_"{}},\ s)}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00145}00145\ \ \ \ \ \textcolor{comment}{\#\ namedtuple\ fields\ cannot\ start\ with\ underscore.\ So...}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00146}00146\ \ \ \ \ \textcolor{keywordflow}{if}\ s[0]\ ==\ \textcolor{stringliteral}{"{}\_"{}}:}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ s\ =\ prefix\ +\ s}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00148}00148\ \ \ \ \ \textcolor{keywordflow}{return}\ s}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00149}00149\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00150}00150\ }
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00151}\doxymbox{\hyperlink{namespacepsycopg_1_1__encodings_a32581941072563cc5605b7f7521e486e}{00151}}\ \_re\_clean\ =\ re.compile(}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00152}00152\ \ \ \ \ f\textcolor{stringliteral}{"{}[\string^\{string.ascii\_lowercase\}\{string.ascii\_uppercase\}\{string.digits\}\_]"{}}}
+\DoxyCodeLine{\Hypertarget{__encodings_8py_source_l00153}00153\ )}
+
+\end{DoxyCode}

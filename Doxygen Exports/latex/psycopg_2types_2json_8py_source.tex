@@ -1,0 +1,321 @@
+\doxysection{json.\+py}
+\hypertarget{psycopg_2types_2json_8py_source}{}\label{psycopg_2types_2json_8py_source}\index{venv/Lib/site-\/packages/psycopg/types/json.py@{venv/Lib/site-\/packages/psycopg/types/json.py}}
+\doxymbox{\hyperlink{psycopg_2types_2json_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00002}00002\ \textcolor{stringliteral}{Adapters\ for\ JSON\ types.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00009}00009\ \textcolor{keyword}{import}\ json}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00010}00010\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00011}00011\ \textcolor{keyword}{from}\ types\ \textcolor{keyword}{import}\ CodeType}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00012}00012\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Any,\ TypeAlias}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00013}00013\ \textcolor{keyword}{from}\ threading\ \textcolor{keyword}{import}\ Lock}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00014}00014\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Callable}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00015}00015\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00016}00016\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ \_oids,\ abc}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00017}00017\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00018}00018\ \textcolor{keyword}{from}\ ..pq\ \textcolor{keyword}{import}\ Format}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00019}00019\ \textcolor{keyword}{from}\ ..adapt\ \textcolor{keyword}{import}\ AdaptersMap,\ Buffer,\ Dumper,\ Loader,\ PyFormat}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00020}00020\ \textcolor{keyword}{from}\ ..errors\ \textcolor{keyword}{import}\ DataError}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00022}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_aefed21df016da5107c1919d777041377}{00022}}\ JsonDumpsFunction:\ TypeAlias\ =\ Callable[[Any],\ str\ |\ bytes]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00023}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a038c5ac27381b81df40f1ff4074af015}{00023}}\ JsonLoadsFunction:\ TypeAlias\ =\ Callable[[str\ |\ bytes],\ Any]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00024}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a0080abf3578c15fc7f58b5ba49c27648}{00024}}\ \_AdapterKey:\ TypeAlias\ =\ tuple[type,\ Callable[...,\ Any]\ |\ CodeType]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00026}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_ac06b6bccc41d51234f81cd61b309e152}{00026}}\ logger\ =\ logging.getLogger(\textcolor{stringliteral}{"{}psycopg"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00029}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_ab4d3fdaedbf9e71e6e7dbb5ff9271d4f}{00029}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_ab4d3fdaedbf9e71e6e7dbb5ff9271d4f}{set\_json\_dumps}}(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00030}00030\ \ \ \ \ dumps:\ JsonDumpsFunction,\ context:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_adapt_context}{abc.AdaptContext}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00031}00031\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00032}00032\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00033}00033\ \textcolor{stringliteral}{\ \ \ \ Set\ the\ JSON\ serialisation\ function\ to\ store\ JSON\ objects\ in\ the\ database.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00034}00034\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00035}00035\ \textcolor{stringliteral}{\ \ \ \ :param\ dumps:\ The\ dump\ function\ to\ use.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00036}00036\ \textcolor{stringliteral}{\ \ \ \ :type\ dumps:\ \`{}!Callable[[Any],\ str]\`{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00037}00037\ \textcolor{stringliteral}{\ \ \ \ :param\ context:\ Where\ to\ use\ the\ \`{}!dumps\`{}\ function.\ If\ not\ specified,\ use\ it}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00038}00038\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ globally.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00039}00039\ \textcolor{stringliteral}{\ \ \ \ :type\ context:\ \`{}\string~psycopg.Connection\`{}\ or\ \`{}\string~psycopg.Cursor\`{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00040}00040\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00041}00041\ \textcolor{stringliteral}{\ \ \ \ By\ default\ dumping\ JSON\ uses\ the\ builtin\ \`{}json.dumps\`{}.\ You\ can\ override}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00042}00042\ \textcolor{stringliteral}{\ \ \ \ it\ to\ use\ a\ different\ JSON\ library\ or\ to\ use\ customised\ arguments.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00043}00043\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00044}00044\ \textcolor{stringliteral}{\ \ \ \ If\ the\ \`{}Json\`{}\ wrapper\ specified\ a\ \`{}!dumps\`{}\ function,\ use\ it\ in\ precedence}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00045}00045\ \textcolor{stringliteral}{\ \ \ \ of\ the\ one\ set\ by\ this\ function.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00046}00046\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00047}00047\ \ \ \ \ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ changing\ load\ function\ globally,\ just\ change\ the\ default\ on\ the}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ global\ class}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \_JsonDumper.\_dumps\ =\ dumps}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00051}00051\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ adapters\ =\ context.adapters}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ scope\ is\ smaller\ than\ global,\ create\ subclassess\ and\ register}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ them\ in\ the\ appropriate\ scope.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ grid\ =\ [}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ \ \ \ \ (Json,\ PyFormat.BINARY),}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \ \ \ \ (Json,\ PyFormat.TEXT),}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \ \ \ \ (Jsonb,\ PyFormat.BINARY),}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \ \ \ \ (Jsonb,\ PyFormat.TEXT),}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ wrapper,\ format\ \textcolor{keywordflow}{in}\ grid:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ \ \ \ \ base\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a1c7825d688b8c59eb617c4155b50a142}{\_get\_current\_dumper}}(adapters,\ wrapper,\ format)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \ \ \ \ dumper\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a951c1c5d341b294a48624d1dcfa09aa4}{\_make\_dumper}}(base,\ dumps)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \ \ \ \ adapters.register\_dumper(wrapper,\ dumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00066}00066\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00068}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a4219a2914231fd2dc82f4bd097993dfe}{00068}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a4219a2914231fd2dc82f4bd097993dfe}{set\_json\_loads}}(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00069}00069\ \ \ \ \ loads:\ JsonLoadsFunction,\ context:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_adapt_context}{abc.AdaptContext}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00070}00070\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00071}00071\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ Set\ the\ JSON\ parsing\ function\ to\ fetch\ JSON\ objects\ from\ the\ database.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00073}00073\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00074}00074\ \textcolor{stringliteral}{\ \ \ \ :param\ loads:\ The\ load\ function\ to\ use.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00075}00075\ \textcolor{stringliteral}{\ \ \ \ :type\ loads:\ \`{}!Callable[[bytes],\ Any]\`{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00076}00076\ \textcolor{stringliteral}{\ \ \ \ :param\ context:\ Where\ to\ use\ the\ \`{}!loads\`{}\ function.\ If\ not\ specified,\ use}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00077}00077\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ it\ globally.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00078}00078\ \textcolor{stringliteral}{\ \ \ \ :type\ context:\ \`{}\string~psycopg.Connection\`{}\ or\ \`{}\string~psycopg.Cursor\`{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00079}00079\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00080}00080\ \textcolor{stringliteral}{\ \ \ \ By\ default\ loading\ JSON\ uses\ the\ builtin\ \`{}json.loads\`{}.\ You\ can\ override}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00081}00081\ \textcolor{stringliteral}{\ \ \ \ it\ to\ use\ a\ different\ JSON\ library\ or\ to\ use\ customised\ arguments.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00082}00082\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00083}00083\ \ \ \ \ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ changing\ load\ function\ globally,\ just\ change\ the\ default\ on\ the}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ global\ class}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \_JsonLoader.\_loads\ =\ loads}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00087}00087\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ scope\ is\ smaller\ than\ global,\ create\ subclassess\ and\ register}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ them\ in\ the\ appropriate\ scope.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ grid\ =\ [}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ (\textcolor{stringliteral}{"{}json"{}},\ JsonLoader),}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ (\textcolor{stringliteral}{"{}json"{}},\ JsonBinaryLoader),}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ (\textcolor{stringliteral}{"{}jsonb"{}},\ JsonbLoader),}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ (\textcolor{stringliteral}{"{}jsonb"{}},\ JsonbBinaryLoader),}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ tname,\ base\ \textcolor{keywordflow}{in}\ grid:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \ \ \ \ loader\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_ab27b7bbfe409105a3e23a7ec8df7f10d}{\_make\_loader}}(base,\ loads)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \ \ \ \ context.adapters.register\_loader(tname,\ loader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00099}00099\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00100}00100\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00101}00101\ \textcolor{comment}{\#\ Cache\ all\ dynamically-\/generated\ types\ to\ avoid\ leaks\ in\ case\ the\ types}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00102}00102\ \textcolor{comment}{\#\ cannot\ be\ GC'd.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00104}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a495990e06d00c240faaf1e8ef1466fa1}{00104}}\ \_dumpers\_cache:\ dict[\_AdapterKey,\ type[\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_dumper}{abc.Dumper}}]]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00105}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_ac968d6225e204cbd1585f90cb68ead3e}{00105}}\ \_loaders\_cache:\ dict[\_AdapterKey,\ type[\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_loader}{abc.Loader}}]]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00108}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a951c1c5d341b294a48624d1dcfa09aa4}{00108}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a951c1c5d341b294a48624d1dcfa09aa4}{\_make\_dumper}}(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00109}00109\ \ \ \ \ base:\ type[\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_dumper}{abc.Dumper}}],\ dumps:\ JsonDumpsFunction,\ \_\_lock:\ Lock\ =\ Lock()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00110}00110\ )\ -\/>\ type[\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_dumper}{abc.Dumper}}]:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00111}00111\ \ \ \ \ \textcolor{keyword}{with}\ \_\_lock:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ key\ :=\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a42c686cf6821559395edf1e6a3549650}{\_get\_adapter\_key}}(base,\ dumps):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \_dumpers\_cache[key]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00117}00117\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (name\ :=\ base.\_\_name\_\_).startswith(\textcolor{stringliteral}{"{}Custom"{}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \ \ \ \ name\ =\ f\textcolor{stringliteral}{"{}Custom\{name\}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ rv\ =\ type(name,\ (base,),\ \{\textcolor{stringliteral}{"{}\_dumps"{}}:\ dumps\})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ key:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \ \ \ \ \_dumpers\_cache[key]\ =\ rv}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00124}00124\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ rv}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00126}00126\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00128}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_ab27b7bbfe409105a3e23a7ec8df7f10d}{00128}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_ab27b7bbfe409105a3e23a7ec8df7f10d}{\_make\_loader}}(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00129}00129\ \ \ \ \ base:\ type[Loader],\ loads:\ JsonLoadsFunction,\ \_\_lock:\ Lock\ =\ Lock()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00130}00130\ )\ -\/>\ type[\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_loader}{abc.Loader}}]:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00131}00131\ \ \ \ \ \textcolor{keyword}{with}\ \_\_lock:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ key\ :=\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a42c686cf6821559395edf1e6a3549650}{\_get\_adapter\_key}}(base,\ loads):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \_loaders\_cache[key]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00137}00137\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (name\ :=\ base.\_\_name\_\_).startswith(\textcolor{stringliteral}{"{}Custom"{}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \ \ \ \ name\ =\ f\textcolor{stringliteral}{"{}Custom\{name\}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ rv\ =\ type(name,\ (base,),\ \{\textcolor{stringliteral}{"{}\_loads"{}}:\ loads\})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ key:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ \_loaders\_cache[key]\ =\ rv}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ rv}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00147}00147\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00148}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a42c686cf6821559395edf1e6a3549650}{00148}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a42c686cf6821559395edf1e6a3549650}{\_get\_adapter\_key}}(t:\ type,\ f:\ Callable[...,\ Any])\ -\/>\ \_AdapterKey\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00149}00149\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00150}00150\ \textcolor{stringliteral}{\ \ \ \ Return\ an\ adequate\ caching\ key\ for\ a\ dumps/loads\ function\ and\ a\ base\ type.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00151}00151\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00152}00152\ \textcolor{stringliteral}{\ \ \ \ We\ can't\ use\ just\ the\ function,\ even\ if\ it\ is\ hashable,\ because\ different}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00153}00153\ \textcolor{stringliteral}{\ \ \ \ lambda\ expression\ will\ have\ a\ different\ hash.\ The\ code,\ instead,\ will\ be}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00154}00154\ \textcolor{stringliteral}{\ \ \ \ the\ same\ if\ a\ lambda\ if\ defined\ in\ a\ function,\ so\ we\ can\ use\ it\ as\ a\ more}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00155}00155\ \textcolor{stringliteral}{\ \ \ \ stable\ hash\ key.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00156}00156\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00157}00157\ \ \ \ \ \textcolor{comment}{\#\ If\ this\ function\ has\ no\ code\ or\ closure,\ optimistically\ assume\ that\ it's}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00158}00158\ \ \ \ \ \textcolor{comment}{\#\ an\ ok\ object\ and\ stable\ enough\ that\ will\ not\ cause\ a\ leak.\ for\ example\ it}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00159}00159\ \ \ \ \ \textcolor{comment}{\#\ might\ be\ a\ C\ function\ (such\ as\ \`{}orjson.loads()`).}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00160}00160\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ f.\_\_code\_\_}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ f.\_\_closure\_\_}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00163}00163\ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (t,\ f)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00165}00165\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00166}00166\ \ \ \ \ \textcolor{comment}{\#\ If\ there\ is\ a\ closure,\ the\ same\ code\ might\ have\ different\ effects}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00167}00167\ \ \ \ \ \textcolor{comment}{\#\ according\ to\ the\ closure\ arguments.\ We\ could\ do\ something\ funny\ like}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00168}00168\ \ \ \ \ \textcolor{comment}{\#\ using\ the\ closure\ values\ to\ build\ a\ cache\ key,\ but\ I\ am\ not\ 100\%\ sure}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00169}00169\ \ \ \ \ \textcolor{comment}{\#\ about\ whether\ the\ closure\ objects\ are\ always\ \`{}cell`\ (the\ type\ says\ it's}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00170}00170\ \ \ \ \ \textcolor{comment}{\#\ \`{}cell\ |\ Any`)\ and\ the\ solution\ would\ be\ partial\ anyway\ because\ of}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00171}00171\ \ \ \ \ \textcolor{comment}{\#\ non-\/hashable\ closure\ objects,\ therefore\ let's\ just\ give\ a\ warning\ (which}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00172}00172\ \ \ \ \ \textcolor{comment}{\#\ can\ be\ detected\ via\ logging)\ and\ avoid\ to\ create\ a\ leak.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00173}00173\ \ \ \ \ \textcolor{keywordflow}{if}\ f.\_\_closure\_\_:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}using\ a\ closure\ in\ a\ dumps/loads\ function\ may\ cause\ a\ resource\ leak"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00178}00178\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00179}00179\ \ \ \ \ \textcolor{keywordflow}{return}\ (t,\ f.\_\_code\_\_)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00180}00180\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00181}00181\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00182}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper}{00182}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper}{\_JsonWrapper}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00183}00183\ \ \ \ \ \_\_slots\_\_\ =\ (\textcolor{stringliteral}{"{}obj"{}},\ \textcolor{stringliteral}{"{}dumps"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00184}00184\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00185}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper_a4327aa90531ab503e559080f899b3357}{00185}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper_a4327aa90531ab503e559080f899b3357}{\_\_init\_\_}}(self,\ obj:\ Any,\ dumps:\ JsonDumpsFunction\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00186}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper_a4e440f69f88dd1db5575be0258fbe984}{00186}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper_a4e440f69f88dd1db5575be0258fbe984}{obj}}\ =\ obj}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00187}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper_ae4f78502c440cc068c1dcb96207be6a7}{00187}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper_ae4f78502c440cc068c1dcb96207be6a7}{dumps}}\ =\ dumps}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00188}00188\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00189}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper_a67528103d860a98001cf00ffd5c9d401}{00189}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper_a67528103d860a98001cf00ffd5c9d401}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(sobj\ :=\ repr(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper_a4e440f69f88dd1db5575be0258fbe984}{obj}}))\ >\ 40:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \ \ \ \ sobj\ =\ f\textcolor{stringliteral}{"{}\{sobj[:35]\}\ ...\ (\{len(sobj)\}\ chars)"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_name\_\_\}(\{sobj\})"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00193}00193\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00194}00194\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00195}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json}{00195}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json}{Json}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper}{\_JsonWrapper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00196}00196\ \ \ \ \ \_\_slots\_\_\ =\ ()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00197}00197\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00198}00198\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00199}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb}{00199}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb}{Jsonb}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_wrapper}{\_JsonWrapper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00200}00200\ \ \ \ \ \_\_slots\_\_\ =\ ()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00201}00201\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00202}00202\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00203}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper}{00203}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper}{\_JsonDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00204}00204\ \ \ \ \ \textcolor{comment}{\#\ The\ globally\ used\ JSON\ dumps()\ function.\ It\ can\ be\ changed\ globally\ (by}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00205}00205\ \ \ \ \ \textcolor{comment}{\#\ set\_json\_dumps)\ or\ by\ a\ subclass.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00206}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper_a704ff353a011fbec2bf47ef7968f520b}{00206}}\ \ \ \ \ \_dumps:\ JsonDumpsFunction\ =\ json.dumps}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00207}00207\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00208}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper_a05094d925870c66a4d1eacae3dc5dca5}{00208}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper_a05094d925870c66a4d1eacae3dc5dca5}{\_\_init\_\_}}(self,\ cls:\ type,\ context:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_adapt_context}{abc.AdaptContext}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper_a05094d925870c66a4d1eacae3dc5dca5}{\_\_init\_\_}}(cls,\ context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00210}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper_ac99355e214b78bf2cde1d584e96f6bdb}{00210}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper_ac99355e214b78bf2cde1d584e96f6bdb}{dumps}}\ =\ self.\_\_class\_\_.\_dumps}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00211}00211\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00212}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper_a74ae12af19a0238b106cfce3d9caf8d4}{00212}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper_a74ae12af19a0238b106cfce3d9caf8d4}{dump}}(self,\ obj:\ Any)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(obj,\ \_JsonWrapper):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \ \ \ \ dumps\ =\ obj.dumps\ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper_ac99355e214b78bf2cde1d584e96f6bdb}{dumps}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ obj\ =\ obj.obj}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \ \ \ \ dumps\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper_ac99355e214b78bf2cde1d584e96f6bdb}{dumps}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance((data\ :=\ \doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper_ac99355e214b78bf2cde1d584e96f6bdb}{dumps}}(obj)),\ str):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ data.encode()}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ data}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00221}00221\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00222}00222\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00223}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json_dumper}{00223}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json_dumper}{JsonDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper}{\_JsonDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00224}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json_dumper}{00224}}\ \ \ \ \ oid\ =\ \_oids.JSON\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00225}00225\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00226}00226\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00227}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json_binary_dumper}{00227}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json_binary_dumper}{JsonBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper}{\_JsonDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00228}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json_binary_dumper}{00228}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00229}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json_binary_dumper}{00229}}\ \ \ \ \ oid\ =\ \_oids.JSON\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00230}00230\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00231}00231\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00232}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_dumper}{00232}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_dumper}{JsonbDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper}{\_JsonDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00233}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_dumper}{00233}}\ \ \ \ \ oid\ =\ \_oids.JSONB\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00234}00234\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00235}00235\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00236}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_binary_dumper}{00236}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_binary_dumper}{JsonbBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_dumper}{\_JsonDumper}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00237}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_binary_dumper}{00237}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00238}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_binary_dumper}{00238}}\ \ \ \ \ oid\ =\ \_oids.JSONB\_OID}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00239}00239\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00240}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_binary_dumper_a3565d9b53c97cd559ab2ef4ea734a406}{00240}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_binary_dumper_a3565d9b53c97cd559ab2ef4ea734a406}{dump}}(self,\ obj:\ Any)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (obj\_bytes\ :=\ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_binary_dumper_a3565d9b53c97cd559ab2ef4ea734a406}{dump}}(obj))\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}\(\backslash\)x01"{}}\ +\ obj\_bytes}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00245}00245\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00246}00246\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00247}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader}{00247}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader}{\_JsonLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00248}00248\ \ \ \ \ \textcolor{comment}{\#\ The\ globally\ used\ JSON\ loads()\ function.\ It\ can\ be\ changed\ globally\ (by}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00249}00249\ \ \ \ \ \textcolor{comment}{\#\ set\_json\_loads)\ or\ by\ a\ subclass.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00250}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader_ab79652444e34f61a470072f2ea59a5d3}{00250}}\ \ \ \ \ \_loads:\ JsonLoadsFunction\ =\ json.loads}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00251}00251\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00252}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader_ac130f1adabe8be5774413bba0447ed09}{00252}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader_ac130f1adabe8be5774413bba0447ed09}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_adapt_context}{abc.AdaptContext}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader_ac130f1adabe8be5774413bba0447ed09}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00254}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader_ad6810e4166a3b6a8405d3b8c3b585be3}{00254}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader_ad6810e4166a3b6a8405d3b8c3b585be3}{loads}}\ =\ self.\_\_class\_\_.\_loads}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00255}00255\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00256}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader_aa15674a29b294cec1dab36cf0b9c6ad7}{00256}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader_aa15674a29b294cec1dab36cf0b9c6ad7}{load}}(self,\ data:\ Buffer)\ -\/>\ Any:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ json.loads()\ cannot\ work\ on\ memoryview.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(data,\ bytes):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ data\ =\ bytes(data)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader_ad6810e4166a3b6a8405d3b8c3b585be3}{loads}}(data)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00261}00261\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00262}00262\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00263}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json_loader}{00263}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json_loader}{JsonLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader}{\_JsonLoader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00264}00264\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00265}00265\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00266}00266\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00267}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_loader}{00267}}\ \textcolor{keyword}{class\ }JsonbLoader(\_JsonLoader):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00268}00268\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00269}00269\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00270}00270\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00271}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json_binary_loader}{00271}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json_binary_loader}{JsonBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader}{\_JsonLoader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00272}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_json_binary_loader}{00272}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00273}00273\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00274}00274\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00275}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_binary_loader}{00275}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_binary_loader}{JsonbBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader}{\_JsonLoader}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00276}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_binary_loader}{00276}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00277}00277\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00278}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_binary_loader_af8ffca2b5428de4a908f9aba9c1c45d6}{00278}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1_jsonb_binary_loader_af8ffca2b5428de4a908f9aba9c1c45d6}{load}}(self,\ data:\ Buffer)\ -\/>\ Any:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ data\ \textcolor{keywordflow}{and}\ data[0]\ !=\ 1:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(\textcolor{stringliteral}{"{}unknown\ jsonb\ binary\ format:\ \{data[0]\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance((data\ :=\ data[1:]),\ bytes):}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ data\ =\ bytes(data)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1json_1_1___json_loader_ad6810e4166a3b6a8405d3b8c3b585be3}{loads}}(data)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00284}00284\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00285}00285\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00286}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a1c7825d688b8c59eb617c4155b50a142}{00286}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a1c7825d688b8c59eb617c4155b50a142}{\_get\_current\_dumper}}(}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00287}00287\ \ \ \ \ adapters:\ AdaptersMap,\ cls:\ type,\ format:\ PyFormat}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00288}00288\ )\ -\/>\ type[\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_dumper}{abc.Dumper}}]:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00289}00289\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ adapters.get\_dumper(cls,\ format)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00291}00291\ \ \ \ \ \textcolor{keywordflow}{except}\ e.ProgrammingError:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \_default\_dumpers[cls,\ format]}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00293}00293\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00294}00294\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00295}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a8e1c80e004136944885645ebb94f5f02}{00295}}\ \_default\_dumpers:\ dict[tuple[type[\_JsonWrapper],\ PyFormat],\ type[Dumper]]\ =\ \{}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00296}00296\ \ \ \ \ (Json,\ PyFormat.BINARY):\ JsonBinaryDumper,}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00297}00297\ \ \ \ \ (Json,\ PyFormat.TEXT):\ JsonDumper,}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00298}00298\ \ \ \ \ (Jsonb,\ PyFormat.BINARY):\ JsonbBinaryDumper,}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00299}00299\ \ \ \ \ (Jsonb,\ PyFormat.TEXT):\ JsonDumper,}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00300}00300\ \}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00301}00301\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00302}00302\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00303}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a5dc03e67b3a4b05324439c7a0cb54bc9}{00303}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1json_a5dc03e67b3a4b05324439c7a0cb54bc9}{register\_default\_adapters}}(context:\ abc.AdaptContext)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00304}00304\ \ \ \ \ adapters\ =\ context.adapters}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00305}00305\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00306}00306\ \ \ \ \ \textcolor{comment}{\#\ Currently\ json\ binary\ format\ is\ nothing\ different\ than\ text,\ maybe\ with}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00307}00307\ \ \ \ \ \textcolor{comment}{\#\ an\ extra\ memcopy\ we\ can\ avoid.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00308}00308\ \ \ \ \ adapters.register\_dumper(Json,\ JsonBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00309}00309\ \ \ \ \ adapters.register\_dumper(Json,\ JsonDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00310}00310\ \ \ \ \ adapters.register\_dumper(Jsonb,\ JsonbBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00311}00311\ \ \ \ \ adapters.register\_dumper(Jsonb,\ JsonbDumper)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00312}00312\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}json"{}},\ JsonLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00313}00313\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}jsonb"{}},\ JsonbLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00314}00314\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}json"{}},\ JsonBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{psycopg_2types_2json_8py_source_l00315}00315\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}jsonb"{}},\ JsonbBinaryLoader)}
+
+\end{DoxyCode}

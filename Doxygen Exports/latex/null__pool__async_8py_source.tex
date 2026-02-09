@@ -1,0 +1,183 @@
+\doxysection{null\+\_\+pool\+\_\+async.\+py}
+\hypertarget{null__pool__async_8py_source}{}\label{null__pool__async_8py_source}\index{venv/Lib/site-\/packages/psycopg\_pool/null\_pool\_async.py@{venv/Lib/site-\/packages/psycopg\_pool/null\_pool\_async.py}}
+\doxymbox{\hyperlink{null__pool__async_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg__pool_1_1null__pool__async}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00002}00002\ \textcolor{stringliteral}{Psycopg\ null\ connection\ pool\ module\ (async\ version).}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2022\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00009}00009\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00010}00010\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ cast}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00012}00012\ \textcolor{keyword}{from}\ psycopg\ \textcolor{keyword}{import}\ AsyncConnection}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00013}00013\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepsycopg_1_1pq}{psycopg.pq}}\ \textcolor{keyword}{import}\ TransactionStatus}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00015}00015\ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ ACT,\ AsyncConnectFailedCB,\ AsyncConnectionCB,\ AsyncConninfoParam}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00016}00016\ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ AsyncKwargsParam}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00017}00017\ \textcolor{keyword}{from}\ .errors\ \textcolor{keyword}{import}\ PoolTimeout,\ TooManyRequests}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00018}00018\ \textcolor{keyword}{from}\ .\_compat\ \textcolor{keyword}{import}\ ConnectionTimeout}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00019}00019\ \textcolor{keyword}{from}\ .\_acompat\ \textcolor{keyword}{import}\ AEvent}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00020}00020\ \textcolor{keyword}{from}\ .pool\_async\ \textcolor{keyword}{import}\ AddConnection,\ AsyncConnectionPool}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00021}00021\ \textcolor{keyword}{from}\ .base\_null\_pool\ \textcolor{keyword}{import}\ \_BaseNullConnectionPool}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00023}\doxymbox{\hyperlink{namespacepsycopg__pool_1_1null__pool__async_a9e97b2cf52c3f3a755a404b4ac440c26}{00023}}\ logger\ =\ logging.getLogger(\textcolor{stringliteral}{"{}psycopg.pool"{}})}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00026}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{00026}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{AsyncNullConnectionPool}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1base__null__pool_1_1___base_null_connection_pool}{\_BaseNullConnectionPool}},\ \doxymbox{\hyperlink{classpsycopg__pool_1_1pool__async_1_1_async_connection_pool}{AsyncConnectionPool}}[ACT]):}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00028}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_af7a135a9fac4d580712b434645d2a6e7}{00028}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_af7a135a9fac4d580712b434645d2a6e7}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00029}00029\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00030}00030\ \ \ \ \ \ \ \ \ conninfo:\ AsyncConninfoParam\ =\ \textcolor{stringliteral}{"{}"{}},}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00031}00031\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00032}00032\ \ \ \ \ \ \ \ \ connection\_class:\ type[ACT]\ =\ cast(type[ACT],\ AsyncConnection),}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00033}00033\ \ \ \ \ \ \ \ \ kwargs:\ AsyncKwargsParam\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ min\_size:\ int\ =\ 0,\ \ \textcolor{comment}{\#\ Note:\ min\_size\ default\ value\ changed\ to\ 0.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ max\_size:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ open:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ configure:\ AsyncConnectionCB[ACT]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ check:\ AsyncConnectionCB[ACT]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ reset:\ AsyncConnectionCB[ACT]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ name:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ close\_returns:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ timeout:\ float\ =\ 30.0,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ max\_waiting:\ int\ =\ 0,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ max\_lifetime:\ float\ =\ 60\ *\ 60.0,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ max\_idle:\ float\ =\ 10\ *\ 60.0,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ reconnect\_timeout:\ float\ =\ 5\ *\ 60.0,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ reconnect\_failed:\ AsyncConnectFailedCB\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ num\_workers:\ int\ =\ 3,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00049}00049\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_af7a135a9fac4d580712b434645d2a6e7}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \ \ \ \ conninfo,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ open=open,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \ \ \ \ connection\_class=connection\_class,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \ \ \ \ check=check,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \ \ \ \ configure=configure,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \ \ \ \ reset=reset,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ \ \ \ \ kwargs=kwargs,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \ \ \ \ min\_size=min\_size,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \ \ \ \ max\_size=max\_size,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \ \ \ \ name=name,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \ \ \ \ close\_returns=\textcolor{keyword}{False},\ \ \textcolor{comment}{\#\ close\_returns=True\ makes\ no\ sense}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \ \ \ \ timeout=timeout,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ \ \ \ \ max\_waiting=max\_waiting,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \ \ \ \ max\_lifetime=max\_lifetime,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \ \ \ \ max\_idle=max\_idle,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ reconnect\_timeout=reconnect\_timeout,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \ \ \ \ num\_workers=num\_workers,}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00070}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_a62148e467a4692700390a200428f3760}{00070}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_a62148e467a4692700390a200428f3760}{wait}}(self,\ timeout:\ float\ =\ 30.0)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Create\ a\ connection\ for\ test.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00073}00073\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00074}00074\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Calling\ this\ function\ will\ verify\ that\ the\ connectivity\ with\ the}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00075}00075\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ database\ works\ as\ expected.\ However\ the\ connection\ will\ not\ be\ stored}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00076}00076\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ in\ the\ pool.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00077}00077\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00078}00078\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Close\ the\ pool,\ and\ raise\ \`{}PoolTimeout\`{},\ if\ not\ ready\ within\ *timeout*}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ sec.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00080}00080\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a40385389cac498a0748eabb73a8c665c}{\_check\_open\_getconn}}()}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00083}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{00083}}\ \ \ \ \ \ \ \ \ \textcolor{keyword}{async}\ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{\_pool\_full\_event}}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00085}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{00085}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{\_pool\_full\_event}}\ =\ \doxymbox{\hyperlink{classpsycopg__pool_1_1__acompat_1_1_a_event}{AEvent}}()}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00087}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{00087}}\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}waiting\ for\ pool\ \%r\ initialization"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}})}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool__async_1_1_async_connection_pool_a27d304364bd1acb04beceb2a695fdb07}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool__async_1_1_add_connection}{AddConnection}}(self))}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ await\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{\_pool\_full\_event}}.wait\_timeout(timeout):}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ await\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool__async_1_1_async_connection_pool_a9d2a179a44689be59e1dd79e93c60e06}{close}}()\ \ \textcolor{comment}{\#\ stop\ all\ the\ tasks}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg__pool_1_1errors_1_1_pool_timeout}{PoolTimeout}}(f\textcolor{stringliteral}{"{}pool\ initialization\ incomplete\ after\ \{timeout\}\ sec"{}})}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \textcolor{keyword}{async}\ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{\_pool\_full\_event}}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{\_pool\_full\_event}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}pool\ \%r\ is\ ready\ to\ use"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}})}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00098}00098\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00099}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_a2dca391298755795c707d981f8991544}{00099}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_a2dca391298755795c707d981f8991544}{\_get\_ready\_connection}}(self,\ timeout:\ float\ |\ \textcolor{keywordtype}{None})\ -\/>\ ACT\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ timeout\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ timeout\ <=\ 0.0:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg__pool_1_1errors_1_1_pool_timeout}{PoolTimeout}}()}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ conn:\ ACT\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00104}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{00104}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{max\_size}}\ ==\ 0\ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}\ <\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{max\_size}}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Create\ a\ new\ connection\ for\ the\ client}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ await\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool__async_1_1_async_connection_pool_a8b92ff30a49a0050ec005d95f243cc36}{\_connect}}(timeout=timeout)}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ConnectionTimeout\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg__pool_1_1errors_1_1_pool_timeout}{PoolTimeout}}(str(ex))\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00111}00111\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00112}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{00112}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a32e0726362c3f93297c592679974c283}{max\_waiting}}\ \textcolor{keywordflow}{and}\ len(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{\_waiting}})\ >=\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a32e0726362c3f93297c592679974c283}{max\_waiting}}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a600041e89f960180d49d17b489397d48}{\_REQUESTS\_ERRORS}}]\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg__pool_1_1errors_1_1_too_many_requests}{TooManyRequests}}(}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}the\ pool\ \{self.name!r\}\ has\ already"{}}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ +\ f\textcolor{stringliteral}{"{}\ \{len(self.\_waiting)\}\ requests\ waiting"{}}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ conn}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00120}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_a3674d0868072a967773ae4dee188d45a}{00120}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_a3674d0868072a967773ae4dee188d45a}{\_maybe\_close\_connection}}(self,\ conn:\ ACT)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Close\ the\ connection\ if\ no\ client\ is\ waiting\ for\ it,\ or\ if\ the\ pool}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ is\ closed.\ For\ extra\ refcare\ remove\ the\ pool\ reference\ from\ it.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Maintain\ the\ stats.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \textcolor{keyword}{async}\ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ad56edf9c93eca65a1784fd5a1deb1e03}{\_closed}}\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{\_waiting}}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ conn.\_pool\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ conn.pgconn.transaction\_status\ ==\ TransactionStatus.UNKNOWN:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ae32c1bb2517573abf29ec878663b5b5a}{\_RETURNS\_BAD}}]\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ await\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool__async_1_1_async_connection_pool_a3f1510cdd87faa6e432a2132ff297c9d}{\_close\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}\ -\/=\ 1}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00134}00134\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00135}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_a771ab4e6527de35206bf678e72002cec}{00135}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_a771ab4e6527de35206bf678e72002cec}{resize}}(self,\ min\_size:\ int,\ max\_size:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Change\ the\ size\ of\ the\ pool\ during\ runtime.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00137}00137\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00138}00138\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Only\ *max\_size*\ can\ be\ changed;\ *min\_size*\ must\ remain\ 0.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00139}00139\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ min\_size,\ max\_size\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_abb789c605caacc031fc22d39ab19572f}{\_check\_size}}(min\_size,\ max\_size)}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ logger.info(}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}resizing\ \%r\ to\ min\_size=\%s\ max\_size=\%s"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}},\ min\_size,\ max\_size}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{keyword}{async}\ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00146}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{00146}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab10a06231dd530addb3a32313fdce590}{\_min\_size}}\ =\ min\_size}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00147}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool}{00147}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_abf4ff63941d7f7814f22255c1a33702d}{\_max\_size}}\ =\ max\_size}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00148}00148\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00149}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_a4aee637222ad2bba5aafaae2a42f4aa1}{00149}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_a4aee637222ad2bba5aafaae2a42f4aa1}{check}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}No-\/op,\ as\ the\ pool\ doesn't\ have\ connections\ in\ its\ state."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00152}00152\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00153}\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_ad9c4adaf57f22bab77141fb82761dcd9}{00153}}\ \ \ \ \ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1null__pool__async_1_1_async_null_connection_pool_ad9c4adaf57f22bab77141fb82761dcd9}{\_add\_to\_pool}}(self,\ conn:\ ACT)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Remove\ the\ pool\ reference\ from\ the\ connection\ before\ returning\ it}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ to\ the\ state,\ to\ avoid\ to\ create\ a\ reference\ loop.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Also\ disable\ the\ warning\ for\ open\ connection\ in\ conn.\_\_del\_\_}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ conn.\_pool\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00158}00158\ }
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Critical\ section:\ if\ there\ is\ a\ client\ waiting\ give\ it\ the\ connection}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ otherwise\ put\ it\ back\ into\ the\ pool.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \textcolor{keyword}{async}\ \textcolor{keyword}{with}\ self.\_lock:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ self.\_waiting:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ there\ is\ a\ client\ waiting\ (which\ is\ still\ waiting\ and}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ hasn't\ timed\ out),\ give\ it\ the\ connection\ and\ notify\ it.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ await\ self.\_waiting.popleft().set(conn):}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ No\ client\ waiting\ for\ a\ connection:\ close\ the\ connection}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ await\ self.\_close\_connection(conn)}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ we\ have\ been\ asked\ to\ wait\ for\ pool\ init,\ notify\ the}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ waiter\ if\ the\ pool\ is\ ready.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\_pool\_full\_event:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\_pool\_full\_event.set()}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ connection\ created\ by\ wait\ shouldn't\ decrease\ the}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ count\ of\ the\ number\ of\ connection\ used.}}
+\DoxyCodeLine{\Hypertarget{null__pool__async_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\_nconns\ -\/=\ 1}
+
+\end{DoxyCode}

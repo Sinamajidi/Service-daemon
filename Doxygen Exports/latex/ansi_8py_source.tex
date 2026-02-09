@@ -1,0 +1,247 @@
+\doxysection{ansi.\+py}
+\hypertarget{ansi_8py_source}{}\label{ansi_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/rich/ansi.py@{venv/Lib/site-\/packages/pip/\_vendor/rich/ansi.py}}
+\doxymbox{\hyperlink{ansi_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1ansi}{00001}}\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00002}00002\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00003}00003\ \textcolor{keyword}{from}\ contextlib\ \textcolor{keyword}{import}\ suppress}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00004}00004\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Iterable,\ NamedTuple,\ Optional}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00005}00005\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00006}00006\ \textcolor{keyword}{from}\ .color\ \textcolor{keyword}{import}\ Color}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00007}00007\ \textcolor{keyword}{from}\ .style\ \textcolor{keyword}{import}\ Style}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00008}00008\ \textcolor{keyword}{from}\ .text\ \textcolor{keyword}{import}\ Text}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00010}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1ansi_a6ee91dc0044fb3e5f2fb2c1d6eb6e133}{00010}}\ re\_ansi\ =\ re.compile(}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00011}00011\ \ \ \ \ \textcolor{stringliteral}{r"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00012}00012\ \textcolor{stringliteral}{(?:\(\backslash\)x1b[0-\/?])|}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00013}00013\ \textcolor{stringliteral}{(?:\(\backslash\)x1b\(\backslash\)](.*?)\(\backslash\)x1b\(\backslash\)\(\backslash\))|}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00014}00014\ \textcolor{stringliteral}{(?:\(\backslash\)x1b([(@-\/Z\(\backslash\)\(\backslash\)-\/\_]|\(\backslash\)[[0-\/?]*[\ -\//]*[@-\/\string~]))}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00015}00015\ \textcolor{stringliteral}{"{}"{}"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00016}00016\ \ \ \ \ re.VERBOSE,}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00017}00017\ )}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00018}00018\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00020}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1___ansi_token}{00020}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1___ansi_token}{\_AnsiToken}}(NamedTuple):}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00021}00021\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Result\ of\ ansi\ tokenized\ string."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00023}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1___ansi_token_a7042738b45e7c5a523959b4e3ef19e7e}{00023}}\ \ \ \ \ plain:\ str\ =\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00024}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1___ansi_token_ab75c02ef90055ae2393ea7c12194de53}{00024}}\ \ \ \ \ sgr:\ Optional[str]\ =\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00025}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1___ansi_token_a20c06b9723edc707cfbb6a87e38388bd}{00025}}\ \ \ \ \ osc:\ Optional[str]\ =\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00028}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1ansi_a69b7666c9a30e0da8eb062e25e4c3e35}{00028}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1ansi_a69b7666c9a30e0da8eb062e25e4c3e35}{\_ansi\_tokenize}}(ansi\_text:\ str)\ -\/>\ Iterable[\_AnsiToken]:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00029}00029\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Tokenize\ a\ string\ in\ to\ plain\ text\ and\ ANSI\ codes.}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00030}00030\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00031}00031\ \textcolor{stringliteral}{\ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00032}00032\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ansi\_text\ (str):\ A\ String\ containing\ ANSI\ codes.}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00033}00033\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00034}00034\ \textcolor{stringliteral}{\ \ \ \ Yields:}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00035}00035\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ AnsiToken:\ A\ named\ tuple\ of\ (plain,\ sgr,\ osc)}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00036}00036\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00038}00038\ \ \ \ \ position\ =\ 0}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00039}00039\ \ \ \ \ sgr:\ Optional[str]}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00040}00040\ \ \ \ \ osc:\ Optional[str]}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00041}00041\ \ \ \ \ \textcolor{keywordflow}{for}\ match\ \textcolor{keywordflow}{in}\ re\_ansi.finditer(ansi\_text):}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ start,\ end\ =\ match.span(0)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ osc,\ sgr\ =\ match.groups()}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ start\ >\ position:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1___ansi_token}{\_AnsiToken}}(ansi\_text[position:start])}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ sgr:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ sgr\ ==\ \textcolor{stringliteral}{"{}("{}}:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ position\ =\ end\ +\ 1}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ sgr.endswith(\textcolor{stringliteral}{"{}m"{}}):}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1___ansi_token}{\_AnsiToken}}(\textcolor{stringliteral}{"{}"{}},\ sgr[1:-\/1],\ osc)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1___ansi_token}{\_AnsiToken}}(\textcolor{stringliteral}{"{}"{}},\ sgr,\ osc)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ position\ =\ end}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00055}00055\ \ \ \ \ \textcolor{keywordflow}{if}\ position\ <\ len(ansi\_text):}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1___ansi_token}{\_AnsiToken}}(ansi\_text[position:])}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00057}00057\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00059}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1ansi_a224611ccfc5ab4e57a7f21522f0b7b51}{00059}}\ SGR\_STYLE\_MAP\ =\ \{}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00060}00060\ \ \ \ \ 1:\ \textcolor{stringliteral}{"{}bold"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00061}00061\ \ \ \ \ 2:\ \textcolor{stringliteral}{"{}dim"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00062}00062\ \ \ \ \ 3:\ \textcolor{stringliteral}{"{}italic"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00063}00063\ \ \ \ \ 4:\ \textcolor{stringliteral}{"{}underline"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00064}00064\ \ \ \ \ 5:\ \textcolor{stringliteral}{"{}blink"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00065}00065\ \ \ \ \ 6:\ \textcolor{stringliteral}{"{}blink2"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00066}00066\ \ \ \ \ 7:\ \textcolor{stringliteral}{"{}reverse"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00067}00067\ \ \ \ \ 8:\ \textcolor{stringliteral}{"{}conceal"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00068}00068\ \ \ \ \ 9:\ \textcolor{stringliteral}{"{}strike"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00069}00069\ \ \ \ \ 21:\ \textcolor{stringliteral}{"{}underline2"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00070}00070\ \ \ \ \ 22:\ \textcolor{stringliteral}{"{}not\ dim\ not\ bold"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00071}00071\ \ \ \ \ 23:\ \textcolor{stringliteral}{"{}not\ italic"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00072}00072\ \ \ \ \ 24:\ \textcolor{stringliteral}{"{}not\ underline"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00073}00073\ \ \ \ \ 25:\ \textcolor{stringliteral}{"{}not\ blink"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00074}00074\ \ \ \ \ 26:\ \textcolor{stringliteral}{"{}not\ blink2"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00075}00075\ \ \ \ \ 27:\ \textcolor{stringliteral}{"{}not\ reverse"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00076}00076\ \ \ \ \ 28:\ \textcolor{stringliteral}{"{}not\ conceal"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00077}00077\ \ \ \ \ 29:\ \textcolor{stringliteral}{"{}not\ strike"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00078}00078\ \ \ \ \ 30:\ \textcolor{stringliteral}{"{}color(0)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00079}00079\ \ \ \ \ 31:\ \textcolor{stringliteral}{"{}color(1)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00080}00080\ \ \ \ \ 32:\ \textcolor{stringliteral}{"{}color(2)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00081}00081\ \ \ \ \ 33:\ \textcolor{stringliteral}{"{}color(3)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00082}00082\ \ \ \ \ 34:\ \textcolor{stringliteral}{"{}color(4)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00083}00083\ \ \ \ \ 35:\ \textcolor{stringliteral}{"{}color(5)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00084}00084\ \ \ \ \ 36:\ \textcolor{stringliteral}{"{}color(6)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00085}00085\ \ \ \ \ 37:\ \textcolor{stringliteral}{"{}color(7)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00086}00086\ \ \ \ \ 39:\ \textcolor{stringliteral}{"{}default"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00087}00087\ \ \ \ \ 40:\ \textcolor{stringliteral}{"{}on\ color(0)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00088}00088\ \ \ \ \ 41:\ \textcolor{stringliteral}{"{}on\ color(1)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00089}00089\ \ \ \ \ 42:\ \textcolor{stringliteral}{"{}on\ color(2)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00090}00090\ \ \ \ \ 43:\ \textcolor{stringliteral}{"{}on\ color(3)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00091}00091\ \ \ \ \ 44:\ \textcolor{stringliteral}{"{}on\ color(4)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00092}00092\ \ \ \ \ 45:\ \textcolor{stringliteral}{"{}on\ color(5)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00093}00093\ \ \ \ \ 46:\ \textcolor{stringliteral}{"{}on\ color(6)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00094}00094\ \ \ \ \ 47:\ \textcolor{stringliteral}{"{}on\ color(7)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00095}00095\ \ \ \ \ 49:\ \textcolor{stringliteral}{"{}on\ default"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00096}00096\ \ \ \ \ 51:\ \textcolor{stringliteral}{"{}frame"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00097}00097\ \ \ \ \ 52:\ \textcolor{stringliteral}{"{}encircle"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00098}00098\ \ \ \ \ 53:\ \textcolor{stringliteral}{"{}overline"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00099}00099\ \ \ \ \ 54:\ \textcolor{stringliteral}{"{}not\ frame\ not\ encircle"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00100}00100\ \ \ \ \ 55:\ \textcolor{stringliteral}{"{}not\ overline"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00101}00101\ \ \ \ \ 90:\ \textcolor{stringliteral}{"{}color(8)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00102}00102\ \ \ \ \ 91:\ \textcolor{stringliteral}{"{}color(9)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00103}00103\ \ \ \ \ 92:\ \textcolor{stringliteral}{"{}color(10)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00104}00104\ \ \ \ \ 93:\ \textcolor{stringliteral}{"{}color(11)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00105}00105\ \ \ \ \ 94:\ \textcolor{stringliteral}{"{}color(12)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00106}00106\ \ \ \ \ 95:\ \textcolor{stringliteral}{"{}color(13)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00107}00107\ \ \ \ \ 96:\ \textcolor{stringliteral}{"{}color(14)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00108}00108\ \ \ \ \ 97:\ \textcolor{stringliteral}{"{}color(15)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00109}00109\ \ \ \ \ 100:\ \textcolor{stringliteral}{"{}on\ color(8)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00110}00110\ \ \ \ \ 101:\ \textcolor{stringliteral}{"{}on\ color(9)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00111}00111\ \ \ \ \ 102:\ \textcolor{stringliteral}{"{}on\ color(10)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00112}00112\ \ \ \ \ 103:\ \textcolor{stringliteral}{"{}on\ color(11)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00113}00113\ \ \ \ \ 104:\ \textcolor{stringliteral}{"{}on\ color(12)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00114}00114\ \ \ \ \ 105:\ \textcolor{stringliteral}{"{}on\ color(13)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00115}00115\ \ \ \ \ 106:\ \textcolor{stringliteral}{"{}on\ color(14)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00116}00116\ \ \ \ \ 107:\ \textcolor{stringliteral}{"{}on\ color(15)"{}},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00117}00117\ \}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00118}00118\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00120}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder}{00120}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder}{AnsiDecoder}}:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00121}00121\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Translate\ ANSI\ code\ in\ to\ styled\ Text."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00122}00122\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00123}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a55f2232227e218573ecbc42990fb713f}{00123}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a55f2232227e218573ecbc42990fb713f}{\_\_init\_\_}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00124}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a240e12dde952f7de6e2c3d4cd4ef7272}{00124}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a240e12dde952f7de6e2c3d4cd4ef7272}{style}}\ =\ Style.null()}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00125}00125\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00126}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_aef7b5a668aa002de1bdaee6ddfbb783b}{00126}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_aef7b5a668aa002de1bdaee6ddfbb783b}{decode}}(self,\ terminal\_text:\ str)\ -\/>\ Iterable[Text]:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Decode\ ANSI\ codes\ in\ an\ iterable\ of\ lines.}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00128}00128\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00129}00129\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00130}00130\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ lines\ (Iterable[str]):\ An\ iterable\ of\ lines\ of\ terminal\ output.}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00131}00131\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00132}00132\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Yields:}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00133}00133\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ Text:\ Marked\ up\ Text.}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00134}00134\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ line\ \textcolor{keywordflow}{in}\ terminal\_text.splitlines():}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_aa4e54ff71e06979da6e1a254f3a3c3e5}{decode\_line}}(line)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00137}00137\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00138}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_aa4e54ff71e06979da6e1a254f3a3c3e5}{00138}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_aa4e54ff71e06979da6e1a254f3a3c3e5}{decode\_line}}(self,\ line:\ str)\ -\/>\ Text:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Decode\ a\ line\ containing\ ansi\ codes.}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00140}00140\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00141}00141\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00142}00142\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ line\ (str):\ A\ line\ of\ terminal\ output.}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00143}00143\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00144}00144\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Returns:}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00145}00145\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ Text:\ A\ Text\ instance\ marked\ up\ according\ to\ ansi\ codes.}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00146}00146\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ from\_ansi\ =\ Color.from\_ansi}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ from\_rgb\ =\ Color.from\_rgb}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \_Style\ =\ Style}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ text\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1text_1_1_text}{Text}}()}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ append\ =\ text.append}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ line\ =\ line.rsplit(\textcolor{stringliteral}{"{}\(\backslash\)r"{}},\ 1)[-\/1]}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ plain\_text,\ sgr,\ osc\ \textcolor{keywordflow}{in}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1ansi_a69b7666c9a30e0da8eb062e25e4c3e35}{\_ansi\_tokenize}}(line):}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ plain\_text:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ append(plain\_text,\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a240e12dde952f7de6e2c3d4cd4ef7272}{style}}\ \textcolor{keywordflow}{or}\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ osc\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ osc.startswith(\textcolor{stringliteral}{"{}8;"{}}):}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_params,\ semicolon,\ link\ =\ osc[2:].partition(\textcolor{stringliteral}{"{};"{}})}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ semicolon:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a240e12dde952f7de6e2c3d4cd4ef7272}{style}}\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a240e12dde952f7de6e2c3d4cd4ef7272}{style}}.update\_link(link\ \textcolor{keywordflow}{or}\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ sgr\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Translate\ in\ to\ semi-\/colon\ separated\ codes}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Ignore\ invalid\ codes,\ because\ we\ want\ to\ be\ lenient}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ codes\ =\ [}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ min(255,\ int(\_code)\ \textcolor{keywordflow}{if}\ \_code\ \textcolor{keywordflow}{else}\ 0)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ \_code\ \textcolor{keywordflow}{in}\ sgr.split(\textcolor{stringliteral}{"{};"{}})}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \_code.isdigit()\ \textcolor{keywordflow}{or}\ \_code\ ==\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ iter\_codes\ =\ iter(codes)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ code\ \textcolor{keywordflow}{in}\ iter\_codes:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ code\ ==\ 0:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ reset}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a240e12dde952f7de6e2c3d4cd4ef7272}{style}}\ =\ \_Style.null()}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ code\ \textcolor{keywordflow}{in}\ SGR\_STYLE\_MAP:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ styles}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a240e12dde952f7de6e2c3d4cd4ef7272}{style}}\ +=\ \_Style.parse(SGR\_STYLE\_MAP[code])}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ code\ ==\ 38:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\  Foreground}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ suppress(StopIteration):}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ color\_type\ =\ next(iter\_codes)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ color\_type\ ==\ 5:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a240e12dde952f7de6e2c3d4cd4ef7272}{style}}\ +=\ \_Style.from\_color(}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ from\_ansi(next(iter\_codes))}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ color\_type\ ==\ 2:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a240e12dde952f7de6e2c3d4cd4ef7272}{style}}\ +=\ \_Style.from\_color(}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ from\_rgb(}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ next(iter\_codes),}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ next(iter\_codes),}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ next(iter\_codes),}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ code\ ==\ 48:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Background}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ suppress(StopIteration):}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ color\_type\ =\ next(iter\_codes)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ color\_type\ ==\ 5:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a240e12dde952f7de6e2c3d4cd4ef7272}{style}}\ +=\ \_Style.from\_color(}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{None},\ from\_ansi(next(iter\_codes))}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ color\_type\ ==\ 2:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder_a240e12dde952f7de6e2c3d4cd4ef7272}{style}}\ +=\ \_Style.from\_color(}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ from\_rgb(}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ next(iter\_codes),}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ next(iter\_codes),}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ next(iter\_codes),}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00210}00210\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ text}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00212}00212\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00213}00213\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00214}00214\ \textcolor{keywordflow}{if}\ sys.platform\ !=\ \textcolor{stringliteral}{"{}win32"{}}\ \textcolor{keywordflow}{and}\ \_\_name\_\_\ ==\ \textcolor{stringliteral}{"{}\_\_main\_\_"{}}:\ \ \textcolor{comment}{\#\ pragma:\ no\ cover}}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00215}00215\ \ \ \ \ \textcolor{keyword}{import}\ io}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00216}00216\ \ \ \ \ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00217}00217\ \ \ \ \ \textcolor{keyword}{import}\ pty}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00218}00218\ \ \ \ \ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00219}00219\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00220}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1ansi_afc619be5ed22cc17ef67ac9bc164dc88}{00220}}\ \ \ \ \ decoder\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1ansi_1_1_ansi_decoder}{AnsiDecoder}}()}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00221}00221\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00222}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1ansi_a6844030cb9fa1040b5736bef8a402544}{00222}}\ \ \ \ \ stdout\ =\ io.BytesIO()}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00223}00223\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00224}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1ansi_a1c571ea10dbae6a6d2af87b23507516d}{00224}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1ansi_a1c571ea10dbae6a6d2af87b23507516d}{read}}(fd:\ int)\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ data\ =\ os.read(fd,\ 1024)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ stdout.write(data)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ data}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00228}00228\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00229}00229\ \ \ \ \ pty.spawn(sys.argv[1:],\ read)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00230}00230\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00231}00231\ \ \ \ \ \textcolor{keyword}{from}\ .console\ \textcolor{keyword}{import}\ Console}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00232}00232\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00233}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1ansi_a6cc505031697fda0bb4d519da78bcc4b}{00233}}\ \ \ \ \ console\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1console_1_1_console}{Console}}(record=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00234}00234\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00235}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1ansi_a04f77fffde97c18a08f5c66efd472e24}{00235}}\ \ \ \ \ stdout\_result\ =\ stdout.getvalue().decode(\textcolor{stringliteral}{"{}utf-\/8"{}})}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00236}00236\ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_ae273494f6ebaa4c523f8d83d552a0633}{print}}(stdout\_result)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00237}00237\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00238}00238\ \ \ \ \ \textcolor{keywordflow}{for}\ line\ \textcolor{keywordflow}{in}\ decoder.decode(stdout\_result):}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ console.print(line)}
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00240}00240\ }
+\DoxyCodeLine{\Hypertarget{ansi_8py_source_l00241}00241\ \ \ \ \ console.save\_html(\textcolor{stringliteral}{"{}stdout.html"{}})}
+
+\end{DoxyCode}

@@ -1,0 +1,26 @@
+var waiting_8py =
+[
+    [ "psycopg.waiting._check_fd_closed", "namespacepsycopg_1_1waiting.html#a3bfc6d834df3338f7a1b441fc0533c18", null ],
+    [ "psycopg.waiting._is_select_patched", "namespacepsycopg_1_1waiting.html#adcce06323d37d705e301453687c8fb8b", null ],
+    [ "psycopg.waiting.wait_async", "namespacepsycopg_1_1waiting.html#a591c65d34064510011ca687f725c6d45", null ],
+    [ "psycopg.waiting.wait_conn", "namespacepsycopg_1_1waiting.html#ac652c5c21440408408d6bcf3bb5a1f46", null ],
+    [ "psycopg.waiting.wait_conn_async", "namespacepsycopg_1_1waiting.html#a96180f84bf5a46005b58527bb36401f9", null ],
+    [ "psycopg.waiting.wait_epoll", "namespacepsycopg_1_1waiting.html#a55baf45971c928fdddc5f37d5c453e21", null ],
+    [ "psycopg.waiting.wait_poll", "namespacepsycopg_1_1waiting.html#a37951048ac103f3062698f8cee3cd80d", null ],
+    [ "psycopg.waiting.wait_select", "namespacepsycopg_1_1waiting.html#abbcd056faece356b6797d9768ba52ae2", null ],
+    [ "psycopg.waiting.wait_selector", "namespacepsycopg_1_1waiting.html#ade02db35a290b177d02e2f127e78c07d", null ],
+    [ "psycopg.waiting._epoll_evmasks", "namespacepsycopg_1_1waiting.html#ace9b95772cd86c9eb9dc833e0e06b2c7", null ],
+    [ "psycopg.waiting._poll_evmasks", "namespacepsycopg_1_1waiting.html#aa3d249a77fb198a2b44d5a6a5c16066d", null ],
+    [ "psycopg.waiting.fname", "namespacepsycopg_1_1waiting.html#a11338cf574e5d2f057431ea49230a460", null ],
+    [ "psycopg.waiting.logger", "namespacepsycopg_1_1waiting.html#ab21a5d368883bdc590e46253f0d5958f", null ],
+    [ "psycopg.waiting.POLL_BAD", "namespacepsycopg_1_1waiting.html#a8e1960b1c662aadb1404acb964b87efa", null ],
+    [ "psycopg.waiting.READY_NONE", "namespacepsycopg_1_1waiting.html#a8947503f6eee4d0ab570bec398ef4c4f", null ],
+    [ "psycopg.waiting.READY_R", "namespacepsycopg_1_1waiting.html#a4529d1af78cf7a10b5641a9c0bb70dae", null ],
+    [ "psycopg.waiting.READY_RW", "namespacepsycopg_1_1waiting.html#aeefe145f8e35e35a5cf832d05bc2db94", null ],
+    [ "psycopg.waiting.READY_W", "namespacepsycopg_1_1waiting.html#a46ce7c66eb1e7ed50407dad095f5fce9", null ],
+    [ "psycopg.waiting.wait", "namespacepsycopg_1_1waiting.html#a10bdd8a6cadf894f46cfeb2eb820581f", null ],
+    [ "psycopg.waiting.wait_c", "namespacepsycopg_1_1waiting.html#ab13d32e6f1f0ee0a9dcbf11a52051448", null ],
+    [ "psycopg.waiting.WAIT_R", "namespacepsycopg_1_1waiting.html#a3ed9f2998b0e03ea4d55560550e1d3b2", null ],
+    [ "psycopg.waiting.WAIT_RW", "namespacepsycopg_1_1waiting.html#af4f548975850e79668afcfdfb4316571", null ],
+    [ "psycopg.waiting.WAIT_W", "namespacepsycopg_1_1waiting.html#a8b8ffc488fa9f6a048ac0b83885f901f", null ]
+];

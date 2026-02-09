@@ -1,0 +1,453 @@
+\doxysection{req\+\_\+command.\+py}
+\hypertarget{req__command_8py_source}{}\label{req__command_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/cli/req\_command.py@{venv/Lib/site-\/packages/pip/\_internal/cli/req\_command.py}}
+\doxymbox{\hyperlink{req__command_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}Contains\ the\ RequirementCommand\ base\ class.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00002}00002\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00003}00003\ \textcolor{stringliteral}{This\ class\ is\ in\ a\ separate\ module\ so\ the\ commands\ that\ do\ not\ always}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00004}00004\ \textcolor{stringliteral}{need\ PackageFinder\ capability\ don't\ unnecessarily\ import\ the}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00005}00005\ \textcolor{stringliteral}{PackageFinder\ machinery\ and\ all\ its\ vendored\ dependencies,\ etc.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00006}00006\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00008}00008\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00010}00010\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00011}00011\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00012}00012\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ partial}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00013}00013\ \textcolor{keyword}{from}\ optparse\ \textcolor{keyword}{import}\ Values}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00014}00014\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Any,\ Callable,\ TypeVar}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00015}00015\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00016}00016\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1build__env}{pip.\_internal.build\_env}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00017}00017\ \ \ \ \ BuildEnvironmentInstaller,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00018}00018\ \ \ \ \ InprocessBuildEnvironmentInstaller,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00019}00019\ \ \ \ \ SubprocessBuildEnvironmentInstaller,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00020}00020\ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00021}00021\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cache}{pip.\_internal.cache}}\ \textcolor{keyword}{import}\ WheelCache}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00022}00022\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli}{pip.\_internal.cli}}\ \textcolor{keyword}{import}\ cmdoptions}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00023}00023\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1cmdoptions}{pip.\_internal.cli.cmdoptions}}\ \textcolor{keyword}{import}\ make\_target\_python}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00024}00024\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1index__command}{pip.\_internal.cli.index\_command}}\ \textcolor{keyword}{import}\ IndexGroupCommand}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00025}00025\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1index__command}{pip.\_internal.cli.index\_command}}\ \textcolor{keyword}{import}\ SessionCommandMixin\ \textcolor{keyword}{as}\ SessionCommandMixin}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00026}00026\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00027}00027\ \ \ \ \ CommandError,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00028}00028\ \ \ \ \ PreviousBuildDirError,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00029}00029\ \ \ \ \ UnsupportedPythonVersion,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00030}00030\ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00031}00031\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1collector}{pip.\_internal.index.collector}}\ \textcolor{keyword}{import}\ LinkCollector}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00032}00032\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1index_1_1package__finder}{pip.\_internal.index.package\_finder}}\ \textcolor{keyword}{import}\ PackageFinder}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00033}00033\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1selection__prefs}{pip.\_internal.models.selection\_prefs}}\ \textcolor{keyword}{import}\ SelectionPreferences}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00034}00034\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1target__python}{pip.\_internal.models.target\_python}}\ \textcolor{keyword}{import}\ TargetPython}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00035}00035\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1session}{pip.\_internal.network.session}}\ \textcolor{keyword}{import}\ PipSession}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00036}00036\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1build__tracker}{pip.\_internal.operations.build.build\_tracker}}\ \textcolor{keyword}{import}\ BuildTracker}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00037}00037\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1prepare}{pip.\_internal.operations.prepare}}\ \textcolor{keyword}{import}\ RequirementPreparer}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00038}00038\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1constructors}{pip.\_internal.req.constructors}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00039}00039\ \ \ \ \ install\_req\_from\_editable,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00040}00040\ \ \ \ \ install\_req\_from\_line,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00041}00041\ \ \ \ \ install\_req\_from\_parsed\_requirement,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00042}00042\ \ \ \ \ install\_req\_from\_req\_string,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00043}00043\ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00044}00044\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1pep723}{pip.\_internal.req.pep723}}\ \textcolor{keyword}{import}\ PEP723Exception,\ pep723\_metadata}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00045}00045\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group}{pip.\_internal.req.req\_dependency\_group}}\ \textcolor{keyword}{import}\ parse\_dependency\_groups}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00046}00046\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file}{pip.\_internal.req.req\_file}}\ \textcolor{keyword}{import}\ parse\_requirements}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00047}00047\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__install}{pip.\_internal.req.req\_install}}\ \textcolor{keyword}{import}\ InstallRequirement}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00048}00048\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1base}{pip.\_internal.resolution.base}}\ \textcolor{keyword}{import}\ BaseResolver}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00049}00049\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1packaging}{pip.\_internal.utils.packaging}}\ \textcolor{keyword}{import}\ check\_requires\_python}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00050}00050\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir}{pip.\_internal.utils.temp\_dir}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00051}00051\ \ \ \ \ TempDirectory,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00052}00052\ \ \ \ \ TempDirectoryTypeRegistry,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00053}00053\ \ \ \ \ tempdir\_kinds,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00054}00054\ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00056}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_ab18cc0612f20d821fa933b64f3a1b605}{00056}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00057}00057\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00059}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_a023d28dcb9669f4c6cd94fb63e3903be}{00059}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_a023d28dcb9669f4c6cd94fb63e3903be}{should\_ignore\_regular\_constraints}}(options:\ Values)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00060}00060\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00061}00061\ \textcolor{stringliteral}{\ \ \ \ Check\ if\ regular\ constraints\ should\ be\ ignored\ because}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00062}00062\ \textcolor{stringliteral}{\ \ \ \ we\ are\ in\ a\ isolated\ build\ process\ and\ build\ constraints}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00063}00063\ \textcolor{stringliteral}{\ \ \ \ feature\ is\ enabled\ but\ no\ build\ constraints\ were\ passed.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00064}00064\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00065}00065\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00066}00066\ \ \ \ \ \textcolor{keywordflow}{return}\ os.environ.get(\textcolor{stringliteral}{"{}\_PIP\_IN\_BUILD\_IGNORE\_CONSTRAINTS"{}})\ ==\ \textcolor{stringliteral}{"{}1"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00069}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_a47e81bdfa7bae2de3748cfa7f57a748d}{00069}}\ KEEPABLE\_TEMPDIR\_TYPES\ =\ [}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00070}00070\ \ \ \ \ tempdir\_kinds.BUILD\_ENV,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00071}00071\ \ \ \ \ tempdir\_kinds.EPHEM\_WHEEL\_CACHE,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00072}00072\ \ \ \ \ tempdir\_kinds.REQ\_BUILD,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00073}00073\ ]}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00075}00075\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00076}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_a78acbbd9df6d03ccb0c13c07b571830c}{00076}}\ \_CommandT\ =\ TypeVar(\textcolor{stringliteral}{"{}\_CommandT"{}},\ bound=\textcolor{stringliteral}{"{}RequirementCommand"{}})}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00078}00078\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00079}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_ac65f1e3259aa59e54f26fde144b881c0}{00079}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_ac65f1e3259aa59e54f26fde144b881c0}{with\_cleanup}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00080}00080\ \ \ \ \ func:\ Callable[[\_CommandT,\ Values,\ list[str]],\ int],}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00081}00081\ )\ -\/>\ Callable[[\_CommandT,\ Values,\ list[str]],\ int]:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00082}00082\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Decorator\ for\ common\ logic\ related\ to\ managing\ temporary}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00083}00083\ \textcolor{stringliteral}{\ \ \ \ directories.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00084}00084\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00085}00085\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00086}00086\ \ \ \ \ \textcolor{keyword}{def\ }configure\_tempdir\_registry(registry:\ TempDirectoryTypeRegistry)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ t\ \textcolor{keywordflow}{in}\ KEEPABLE\_TEMPDIR\_TYPES:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ registry.set\_delete(t,\ \textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00089}00089\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00090}00090\ \ \ \ \ \textcolor{keyword}{def\ }wrapper(self:\ \_CommandT,\ options:\ Values,\ args:\ list[str])\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ self.tempdir\_registry\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.no\_clean:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00093}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_a603c7d6de73dceb1951bf859b4b7e254}{00093}}\ \ \ \ \ \ \ \ \ \ \ \ \ configure\_tempdir\_registry(self.tempdir\_registry)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ func(self,\ options,\ args)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ PreviousBuildDirError:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ This\ kind\ of\ conflict\ can\ occur\ when\ the\ user\ passes\ an\ explicit}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ build\ directory\ with\ a\ pre-\/existing\ folder.\ In\ that\ case\ we\ do}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ not\ want\ to\ accidentally\ remove\ it.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ configure\_tempdir\_registry(self.tempdir\_registry)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00104}00104\ \ \ \ \ \textcolor{keywordflow}{return}\ wrapper}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00107}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_a284c1139cede1cf4037d101fea038162}{00107}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_a284c1139cede1cf4037d101fea038162}{parse\_constraint\_files}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00108}00108\ \ \ \ \ constraint\_files:\ list[str],}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00109}00109\ \ \ \ \ finder:\ PackageFinder,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00110}00110\ \ \ \ \ options:\ Values,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00111}00111\ \ \ \ \ session:\ PipSession,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00112}00112\ )\ -\/>\ list[InstallRequirement]:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00113}00113\ \ \ \ \ requirements\ =\ []}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00114}00114\ \ \ \ \ \textcolor{keywordflow}{for}\ filename\ \textcolor{keywordflow}{in}\ constraint\_files:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ parsed\_req\ \textcolor{keywordflow}{in}\ parse\_requirements(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ filename,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \ \ \ \ constraint=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \ \ \ \ finder=finder,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \ \ \ \ options=options,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \ \ \ \ session=session,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \ \ \ \ req\_to\_add\ =\ install\_req\_from\_parsed\_requirement(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ parsed\_req,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ isolated=options.isolated\_mode,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ user\_supplied=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ requirements.append(req\_to\_add)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00128}00128\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00129}00129\ \ \ \ \ \textcolor{keywordflow}{return}\ requirements}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00130}00130\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00132}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command}{00132}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command}{RequirementCommand}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_index_group_command}{IndexGroupCommand}}):}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00133}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a089338b2d4b4c63ced3e4bb1cb94ce31}{00133}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a089338b2d4b4c63ced3e4bb1cb94ce31}{\_\_init\_\_}}(self,\ *args:\ Any,\ **kw:\ Any)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a089338b2d4b4c63ced3e4bb1cb94ce31}{\_\_init\_\_}}(*args,\ **kw)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00135}00135\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.dependency\_groups())}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.no\_clean())}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00138}00138\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00139}00139\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00140}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a75339aaf17acf8564c926f7484507a74}{00140}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a75339aaf17acf8564c926f7484507a74}{determine\_resolver\_variant}}(options:\ Values)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Determines\ which\ resolver\ should\ be\ used,\ based\ on\ the\ given\ options."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}legacy-\/resolver"{}}\ \textcolor{keywordflow}{in}\ options.deprecated\_features\_enabled:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}legacy"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}resolvelib"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00147}00147\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00148}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a0831590f8f79612bdacefcf3ce64a675}{00148}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a0831590f8f79612bdacefcf3ce64a675}{make\_requirement\_preparer}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ cls,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ temp\_build\_dir:\ TempDirectory,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ options:\ Values,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ build\_tracker:\ BuildTracker,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ session:\ PipSession,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ finder:\ PackageFinder,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ use\_user\_site:\ bool,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ download\_dir:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ verbosity:\ int\ =\ 0,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00158}00158\ \ \ \ \ )\ -\/>\ RequirementPreparer:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00160}00160\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Create\ a\ RequirementPreparer\ instance\ for\ the\ given\ parameters.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00161}00161\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ temp\_build\_dir\_path\ =\ temp\_build\_dir.path}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ temp\_build\_dir\_path\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ legacy\_resolver\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00165}00165\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ resolver\_variant\ =\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a75339aaf17acf8564c926f7484507a74}{determine\_resolver\_variant}}(options)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ resolver\_variant\ ==\ \textcolor{stringliteral}{"{}resolvelib"{}}:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \ \ \ \ lazy\_wheel\ =\ \textcolor{stringliteral}{"{}fast-\/deps"{}}\ \textcolor{keywordflow}{in}\ options.features\_enabled}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ lazy\_wheel:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}pip\ is\ using\ lazily\ downloaded\ wheels\ using\ HTTP\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}range\ requests\ to\ obtain\ dependency\ information.\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}This\ experimental\ feature\ is\ enabled\ through\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/use-\/feature=fast-\/deps\ and\ it\ is\ not\ ready\ for\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}production."{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \ \ \ \ legacy\_resolver\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \ \ \ \ lazy\_wheel\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}fast-\/deps"{}}\ \textcolor{keywordflow}{in}\ options.features\_enabled:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}fast-\/deps\ has\ no\ effect\ when\ used\ with\ the\ legacy\ resolver."{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00184}00184\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Handle\ build\ constraints}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ build\_constraints\ =\ getattr(options,\ \textcolor{stringliteral}{"{}build\_constraints"{}},\ [])}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ build\_constraint\_feature\_enabled\ =\ (}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}build-\/constraint"{}}\ \textcolor{keywordflow}{in}\ options.features\_enabled}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00190}00190\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ env\_installer:\ BuildEnvironmentInstaller}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}inprocess-\/build-\/deps"{}}\ \textcolor{keywordflow}{in}\ options.features\_enabled:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \ \ \ \ build\_constraint\_reqs\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_a284c1139cede1cf4037d101fea038162}{parse\_constraint\_files}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ build\_constraints,\ finder,\ options,\ session}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ env\_installer\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1build__env_1_1_inprocess_build_environment_installer}{InprocessBuildEnvironmentInstaller}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ finder=finder,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ build\_tracker=build\_tracker,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ build\_constraints=build\_constraint\_reqs,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ verbosity=verbosity,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_cache=\doxymbox{\hyperlink{classpip_1_1__internal_1_1cache_1_1_wheel_cache}{WheelCache}}(options.cache\_dir),}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ env\_installer\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1build__env_1_1_subprocess_build_environment_installer}{SubprocessBuildEnvironmentInstaller}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ finder,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ build\_constraints=build\_constraints,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ build\_constraint\_feature\_enabled=build\_constraint\_feature\_enabled,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00209}00209\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1prepare_1_1_requirement_preparer}{RequirementPreparer}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \ \ \ \ build\_dir=temp\_build\_dir\_path,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \ \ \ \ src\_dir=options.src\_dir,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \ \ \ \ download\_dir=download\_dir,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \ \ \ \ build\_isolation=options.build\_isolation,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ build\_isolation\_installer=env\_installer,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \ \ \ \ check\_build\_deps=options.check\_build\_deps,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \ \ \ \ build\_tracker=build\_tracker,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \ \ \ \ session=session,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ progress\_bar=options.progress\_bar,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ finder=finder,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ require\_hashes=options.require\_hashes,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \ \ \ \ use\_user\_site=use\_user\_site,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \ \ \ \ lazy\_wheel=lazy\_wheel,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \ \ \ \ verbosity=verbosity,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \ \ \ \ legacy\_resolver=legacy\_resolver,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00227}00227\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00228}00228\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00229}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a878b6e0ad66884df4ced45b3e6eb859c}{00229}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a878b6e0ad66884df4ced45b3e6eb859c}{make\_resolver}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ cls,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ preparer:\ RequirementPreparer,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ finder:\ PackageFinder,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ options:\ Values,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ wheel\_cache:\ WheelCache\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ use\_user\_site:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ ignore\_installed:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ ignore\_requires\_python:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ force\_reinstall:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ upgrade\_strategy:\ str\ =\ \textcolor{stringliteral}{"{}to-\/satisfy-\/only"{}},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ py\_version\_info:\ tuple[int,\ ...]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00241}00241\ \ \ \ \ )\ -\/>\ BaseResolver:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00243}00243\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Create\ a\ Resolver\ instance\ for\ the\ given\ parameters.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00244}00244\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ make\_install\_req\ =\ partial(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \ \ \ \ install\_req\_from\_req\_string,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \ \ \ \ isolated=options.isolated\_mode,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ resolver\_variant\ =\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a75339aaf17acf8564c926f7484507a74}{determine\_resolver\_variant}}(options)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ long\ import\ name\ and\ duplicated\ invocation\ is\ needed\ to\ convince}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Mypy\ into\ correctly\ typechecking.\ Otherwise\ it\ would\ complain\ the}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ "{}Resolver"{}\ class\ being\ redefined.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ resolver\_variant\ ==\ \textcolor{stringliteral}{"{}resolvelib"{}}:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{import}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1resolver}{pip.\_internal.resolution.resolvelib.resolver}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00255}00255\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1resolver_1_1_resolver}{pip.\_internal.resolution.resolvelib.resolver.Resolver}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ preparer=preparer,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ finder=finder,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_cache=wheel\_cache,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ make\_install\_req=make\_install\_req,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ use\_user\_site=use\_user\_site,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_dependencies=options.ignore\_dependencies,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_installed=ignore\_installed,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_requires\_python=ignore\_requires\_python,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ force\_reinstall=force\_reinstall,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ upgrade\_strategy=upgrade\_strategy,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ py\_version\_info=py\_version\_info,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \textcolor{keyword}{import}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1legacy_1_1resolver}{pip.\_internal.resolution.legacy.resolver}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00270}00270\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1legacy_1_1resolver_1_1_resolver}{pip.\_internal.resolution.legacy.resolver.Resolver}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ preparer=preparer,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \ \ \ \ finder=finder,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_cache=wheel\_cache,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \ \ \ \ make\_install\_req=make\_install\_req,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ \ \ \ \ use\_user\_site=use\_user\_site,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_dependencies=options.ignore\_dependencies,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_installed=ignore\_installed,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_requires\_python=ignore\_requires\_python,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \ \ \ \ force\_reinstall=force\_reinstall,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \ \ \ \ upgrade\_strategy=upgrade\_strategy,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ py\_version\_info=py\_version\_info,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00284}00284\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00285}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a87566fcc1b61b9ea5f4f7335243345e4}{00285}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a87566fcc1b61b9ea5f4f7335243345e4}{get\_requirements}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ args:\ list[str],}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ options:\ Values,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ finder:\ PackageFinder,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ session:\ PipSession,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00291}00291\ \ \ \ \ )\ -\/>\ list[InstallRequirement]:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00293}00293\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Parse\ command-\/line\ arguments\ into\ the\ corresponding\ requirements.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00294}00294\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ requirements:\ list[InstallRequirement]\ =\ []}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00296}00296\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00297}00297\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_a023d28dcb9669f4c6cd94fb63e3903be}{should\_ignore\_regular\_constraints}}(options):}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00298}00298\ \ \ \ \ \ \ \ \ \ \ \ \ constraints\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command_a284c1139cede1cf4037d101fea038162}{parse\_constraint\_files}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ options.constraints,\ finder,\ options,\ session}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ \ \ \ \ requirements.extend(constraints)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00302}00302\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ args:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ req.strip():}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00305}00305\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \ \ \ \ req\_to\_add\ =\ install\_req\_from\_line(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ comes\_from=\textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ isolated=options.isolated\_mode,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ user\_supplied=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ config\_settings=getattr(options,\ \textcolor{stringliteral}{"{}config\_settings"{}},\ \textcolor{keywordtype}{None}),}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00312}00312\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ \ \ \ \ requirements.append(req\_to\_add)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00314}00314\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00315}00315\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.dependency\_groups:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00316}00316\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ parse\_dependency\_groups(options.dependency\_groups):}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_to\_add\ =\ install\_req\_from\_req\_string(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00318}00318\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00319}00319\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ isolated=options.isolated\_mode,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ user\_supplied=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ requirements.append(req\_to\_add)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00323}00323\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ options.editables:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00325}00325\ \ \ \ \ \ \ \ \ \ \ \ \ req\_to\_add\ =\ install\_req\_from\_editable(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00326}00326\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00327}00327\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ user\_supplied=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ isolated=options.isolated\_mode,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ config\_settings=getattr(options,\ \textcolor{stringliteral}{"{}config\_settings"{}},\ \textcolor{keywordtype}{None}),}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00331}00331\ \ \ \ \ \ \ \ \ \ \ \ \ requirements.append(req\_to\_add)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00332}00332\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ NOTE:\ options.require\_hashes\ may\ be\ set\ if\ -\/-\/require-\/hashes\ is\ True}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00334}00334\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ filename\ \textcolor{keywordflow}{in}\ options.requirements:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00335}00335\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ parsed\_req\ \textcolor{keywordflow}{in}\ parse\_requirements(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00336}00336\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ filename,\ finder=finder,\ options=options,\ session=session}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_to\_add\ =\ install\_req\_from\_parsed\_requirement(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ parsed\_req,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ isolated=options.isolated\_mode,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00341}00341\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ user\_supplied=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ config\_settings=(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ parsed\_req.options.get(\textcolor{stringliteral}{"{}config\_settings"{}})}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ parsed\_req.options}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ requirements.append(req\_to\_add)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00349}00349\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.requirements\_from\_scripts:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(options.requirements\_from\_scripts)\ >\ 1:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(\textcolor{stringliteral}{"{}-\/-\/requirements-\/from-\/script\ can\ only\ be\ given\ once"{}})}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00353}00353\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ \ \ \ \ script\ =\ options.requirements\_from\_scripts[0]}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ script\_metadata\ =\ pep723\_metadata(script)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ PEP723Exception\ \textcolor{keyword}{as}\ exc:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00358}00358\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(exc.msg)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00359}00359\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \ \ \ \ script\_requires\_python\ =\ script\_metadata.get(\textcolor{stringliteral}{"{}requires-\/python"{}},\ \textcolor{stringliteral}{"{}"{}})}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00361}00361\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ script\_requires\_python\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ options.ignore\_requires\_python:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ target\_python\ =\ make\_target\_python(options)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00364}00364\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ check\_requires\_python(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00366}00366\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ requires\_python=script\_requires\_python,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00367}00367\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ version\_info=target\_python.py\_version\_info,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00368}00368\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_unsupported_python_version}{UnsupportedPythonVersion}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Script\ \{script!r\}\ requires\ a\ different\ Python:\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{target\_python.py\_version\}\ not\ in\ \{script\_requires\_python!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00372}00372\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00373}00373\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ script\_metadata.get(\textcolor{stringliteral}{"{}dependencies"{}},\ []):}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_to\_add\ =\ install\_req\_from\_req\_string(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ isolated=options.isolated\_mode,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ user\_supplied=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00379}00379\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ requirements.append(req\_to\_add)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00381}00381\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ any\ requirement\ has\ hash\ options,\ enable\ hash\ checking.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ any(req.has\_hash\_options\ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ requirements):}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ \ \ \ \ options.require\_hashes\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00385}00385\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ \ \ \ \ args}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ options.editables}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ options.requirements}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00390}00390\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ options.dependency\_groups}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ options.requirements\_from\_scripts}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ \ \ \ \ opts\ =\ \{\textcolor{stringliteral}{"{}name"{}}:\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_a0da6dc821b6ea82a287734d22bf13b36}{name}}\}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.find\_links:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}You\ must\ give\ at\ least\ one\ requirement\ to\ \{name\}\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'(maybe\ you\ meant\ "{}pip\ \{name\}\ \{links\}"{}?)'}.format(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ **dict(opts,\ links=\textcolor{stringliteral}{"{}\ "{}}.join(options.find\_links))}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00399}00399\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}You\ must\ give\ at\ least\ one\ requirement\ to\ \{name\}\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'(see\ "{}pip\ help\ \{name\}"{})'}.format(**opts)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00405}00405\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00406}00406\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ requirements}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00408}00408\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00409}00409\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00410}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_af1f8c63d1fb9670a7594ce1d28d7f114}{00410}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_af1f8c63d1fb9670a7594ce1d28d7f114}{trace\_basic\_info}}(finder:\ PackageFinder)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00411}00411\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00412}00412\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Trace\ basic\ information\ about\ the\ provided\ objects.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00413}00413\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00414}00414\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Display\ where\ finder\ is\ looking\ for\ packages}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00415}00415\ \ \ \ \ \ \ \ \ search\_scope\ =\ finder.search\_scope}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00416}00416\ \ \ \ \ \ \ \ \ locations\ =\ search\_scope.get\_formatted\_locations()}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ locations:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(locations)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00419}00419\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00420}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a57cf07699422fcd4b37e03b8da48ce32}{00420}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a57cf07699422fcd4b37e03b8da48ce32}{\_build\_package\_finder}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00421}00421\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ options:\ Values,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ session:\ PipSession,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00424}00424\ \ \ \ \ \ \ \ \ target\_python:\ TargetPython\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ ignore\_requires\_python:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00426}00426\ \ \ \ \ )\ -\/>\ PackageFinder:}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00427}00427\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00428}00428\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Create\ a\ package\ finder\ appropriate\ to\ this\ requirement\ command.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00429}00429\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00430}00430\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ ignore\_requires\_python:\ Whether\ to\ ignore\ incompatible}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00431}00431\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ "{}Requires-\/Python"{}\ values\ in\ links.\ Defaults\ to\ False.}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00432}00432\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00433}00433\ \ \ \ \ \ \ \ \ link\_collector\ =\ LinkCollector.create(session,\ options=options)}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00434}00434\ \ \ \ \ \ \ \ \ selection\_prefs\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1selection__prefs_1_1_selection_preferences}{SelectionPreferences}}(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00435}00435\ \ \ \ \ \ \ \ \ \ \ \ \ allow\_yanked=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00436}00436\ \ \ \ \ \ \ \ \ \ \ \ \ format\_control=options.format\_control,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00437}00437\ \ \ \ \ \ \ \ \ \ \ \ \ release\_control=options.release\_control,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ \ \ \ \ prefer\_binary=options.prefer\_binary,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_requires\_python=ignore\_requires\_python,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00441}00441\ }
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00442}00442\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ PackageFinder.create(}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00443}00443\ \ \ \ \ \ \ \ \ \ \ \ \ link\_collector=link\_collector,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ \ \ \ \ selection\_prefs=selection\_prefs,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ \ \ \ \ target\_python=target\_python,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00446}00446\ \ \ \ \ \ \ \ \ \ \ \ \ uploaded\_prior\_to=options.uploaded\_prior\_to,}
+\DoxyCodeLine{\Hypertarget{req__command_8py_source_l00447}00447\ \ \ \ \ \ \ \ \ )}
+
+\end{DoxyCode}

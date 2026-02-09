@@ -1,0 +1,157 @@
+\doxysection{conninfo.\+py}
+\hypertarget{conninfo_8py_source}{}\label{conninfo_8py_source}\index{venv/Lib/site-\/packages/psycopg/conninfo.py@{venv/Lib/site-\/packages/psycopg/conninfo.py}}
+\doxymbox{\hyperlink{conninfo_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00002}00002\ \textcolor{stringliteral}{Functions\ to\ manipulate\ conninfo\ strings}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00009}00009\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00011}00011\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ \_conninfo\_attempts,\ \_conninfo\_attempts\_async,\ \_conninfo\_utils}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00012}00012\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00013}00013\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ pq}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00014}00014\ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ ConnDict,\ ConnParam}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00015}00015\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00016}00016\ \textcolor{comment}{\#\ re-\/exoprts}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00017}\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a3c610ba6c1ba00d4d209d3041131869b}{00017}}\ conninfo\_attempts\ =\ \_conninfo\_attempts.conninfo\_attempts}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00018}\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_adb5c64d54cdcad891b9d0e89a4902755}{00018}}\ conninfo\_attempts\_async\ =\ \_conninfo\_attempts\_async.conninfo\_attempts\_async}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00020}00020\ \textcolor{comment}{\#\ Default\ timeout\ for\ connection\ a\ attempt.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00021}00021\ \textcolor{comment}{\#\ Arbitrary\ timeout,\ what\ applied\ by\ the\ libpq\ on\ my\ computer.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00022}00022\ \textcolor{comment}{\#\ Your\ mileage\ won't\ vary.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00023}\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a74e32288382cc5ef383347a0cf56ee09}{00023}}\ \_DEFAULT\_CONNECT\_TIMEOUT\ =\ 130}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00026}\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_aae3a09d1d54d8b4a582bc2e489dc8b33}{00026}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_aae3a09d1d54d8b4a582bc2e489dc8b33}{make\_conninfo}}(conninfo:\ str\ =\ \textcolor{stringliteral}{"{}"{}},\ **kwargs:\ ConnParam)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00027}00027\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00028}00028\ \textcolor{stringliteral}{\ \ \ \ Merge\ a\ string\ and\ keyword\ params\ into\ a\ single\ conninfo\ string.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00029}00029\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00030}00030\ \textcolor{stringliteral}{\ \ \ \ :param\ conninfo:\ A\ \`{}connection\ string\`{}\_\_\ as\ accepted\ by\ PostgreSQL.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00031}00031\ \textcolor{stringliteral}{\ \ \ \ :param\ kwargs:\ Parameters\ overriding\ the\ ones\ specified\ in\ \`{}!conninfo\`{}.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00032}00032\ \textcolor{stringliteral}{\ \ \ \ :return:\ A\ connection\ string\ valid\ for\ PostgreSQL,\ with\ the\ \`{}!kwargs\`{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00033}00033\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ parameters\ merged.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00034}00034\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00035}00035\ \textcolor{stringliteral}{\ \ \ \ Raise\ \`{}\string~psycopg.ProgrammingError\`{}\ if\ the\ input\ doesn't\ make\ a\ valid}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00036}00036\ \textcolor{stringliteral}{\ \ \ \ conninfo\ string.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00037}00037\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00038}00038\ \textcolor{stringliteral}{\ \ \ \ ..\ \_\_:\ https://www.postgresql.org/docs/current/libpq-\/connect.html}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00039}00039\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \#LIBPQ-\/CONNSTRING}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00040}00040\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00041}00041\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ conninfo\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ kwargs:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00044}00044\ \ \ \ \ \textcolor{comment}{\#\ If\ no\ kwarg\ specified\ don't\ mung\ the\ conninfo\ but\ check\ if\ it's\ correct.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00045}00045\ \ \ \ \ \textcolor{comment}{\#\ Make\ sure\ to\ return\ a\ string,\ not\ a\ subtype,\ to\ avoid\ making\ Liskov\ sad.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00046}00046\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ kwargs:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a7dcda0d170a31e4177377efc9f3e85d8}{\_parse\_conninfo}}(conninfo)}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ str(conninfo)}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00050}00050\ \ \ \ \ \textcolor{comment}{\#\ Override\ the\ conninfo\ with\ the\ parameters}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00051}00051\ \ \ \ \ \textcolor{comment}{\#\ Drop\ the\ None\ arguments}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00052}00052\ \ \ \ \ kwargs\ =\ \{k:\ v\ \textcolor{keywordflow}{for}\ (k,\ v)\ \textcolor{keywordflow}{in}\ kwargs.items()\ \textcolor{keywordflow}{if}\ v\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00054}00054\ \ \ \ \ \textcolor{keywordflow}{if}\ conninfo:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ tmp\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a629c23a465ee4b0e089162ec5380d361}{conninfo\_to\_dict}}(conninfo)}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ tmp.update(kwargs)}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ kwargs\ =\ tmp}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00059}00059\ \ \ \ \ conninfo\ =\ \textcolor{stringliteral}{"{}\ "{}}.join(f\textcolor{stringliteral}{"{}\{k\}=\{\_param\_escape(str(v))\}"{}}\ \textcolor{keywordflow}{for}\ (k,\ v)\ \textcolor{keywordflow}{in}\ kwargs.items())}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00061}00061\ \ \ \ \ \textcolor{comment}{\#\ Verify\ the\ result\ is\ valid}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00062}00062\ \ \ \ \ \doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a7dcda0d170a31e4177377efc9f3e85d8}{\_parse\_conninfo}}(conninfo)}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00064}00064\ \ \ \ \ \textcolor{keywordflow}{return}\ conninfo}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00065}00065\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00066}00066\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00067}\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a629c23a465ee4b0e089162ec5380d361}{00067}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a629c23a465ee4b0e089162ec5380d361}{conninfo\_to\_dict}}(conninfo:\ str\ =\ \textcolor{stringliteral}{"{}"{}},\ **kwargs:\ ConnParam)\ -\/>\ ConnDict:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00068}00068\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00069}00069\ \textcolor{stringliteral}{\ \ \ \ Convert\ the\ \`{}!conninfo\`{}\ string\ into\ a\ dictionary\ of\ parameters.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00070}00070\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00071}00071\ \textcolor{stringliteral}{\ \ \ \ :param\ conninfo:\ A\ \`{}connection\ string\`{}\_\_\ as\ accepted\ by\ PostgreSQL.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ :param\ kwargs:\ Parameters\ overriding\ the\ ones\ specified\ in\ \`{}!conninfo\`{}.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00073}00073\ \textcolor{stringliteral}{\ \ \ \ :return:\ Dictionary\ with\ the\ parameters\ parsed\ from\ \`{}!conninfo\`{}\ and}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00074}00074\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}!kwargs\`{}.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00075}00075\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00076}00076\ \textcolor{stringliteral}{\ \ \ \ Raise\ \`{}\string~psycopg.ProgrammingError\`{}\ if\ \`{}!conninfo\`{}\ is\ not\ a\ a\ valid\ connection}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00077}00077\ \textcolor{stringliteral}{\ \ \ \ string.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00078}00078\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ ..\ \_\_:\ https://www.postgresql.org/docs/current/libpq-\/connect.html}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00080}00080\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \#LIBPQ-\/CONNSTRING}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00081}00081\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00082}00082\ \ \ \ \ opts\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a7dcda0d170a31e4177377efc9f3e85d8}{\_parse\_conninfo}}(conninfo)}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00083}00083\ \ \ \ \ rv:\ ConnDict\ =\ \{}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ opt.keyword.decode():\ opt.val.decode()\ \textcolor{keywordflow}{for}\ opt\ \textcolor{keywordflow}{in}\ opts\ \textcolor{keywordflow}{if}\ opt.val\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00085}00085\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00086}00086\ \ \ \ \ \textcolor{keywordflow}{for}\ k,\ v\ \textcolor{keywordflow}{in}\ kwargs.items():}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ v\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ rv[k]\ =\ v}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00089}00089\ \ \ \ \ \textcolor{keywordflow}{return}\ rv}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00090}00090\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00091}00091\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00092}\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a7dcda0d170a31e4177377efc9f3e85d8}{00092}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a7dcda0d170a31e4177377efc9f3e85d8}{\_parse\_conninfo}}(conninfo:\ str)\ -\/>\ list[\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1misc_1_1_conninfo_option}{pq.ConninfoOption}}]:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00093}00093\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00094}00094\ \textcolor{stringliteral}{\ \ \ \ Verify\ that\ \`{}!conninfo\`{}\ is\ a\ valid\ connection\ string.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00095}00095\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00096}00096\ \textcolor{stringliteral}{\ \ \ \ Raise\ ProgrammingError\ if\ the\ string\ is\ not\ valid.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00097}00097\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00098}00098\ \textcolor{stringliteral}{\ \ \ \ Return\ the\ result\ of\ pq.Conninfo.parse()\ on\ success.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00099}00099\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00100}00100\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ pq.Conninfo.parse(conninfo.encode())}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00102}00102\ \ \ \ \ \textcolor{keywordflow}{except}\ e.OperationalError\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(str(ex))\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00106}\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a56a6b111e514eea756cd4c417bab249c}{00106}}\ re\_escape\ =\ re.compile(\textcolor{stringliteral}{r"{}([\(\backslash\)\(\backslash\)'])"{}})}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00107}\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a40c62e9858b603d2634ebca6c74dc220}{00107}}\ re\_space\ =\ re.compile(\textcolor{stringliteral}{r"{}\(\backslash\)s"{}})}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00109}00109\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00110}\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a905ffe63375f45542fdd1a733b51bb10}{00110}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a905ffe63375f45542fdd1a733b51bb10}{\_param\_escape}}(s:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00111}00111\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00112}00112\ \textcolor{stringliteral}{\ \ \ \ Apply\ the\ escaping\ rule\ required\ by\ PQconnectdb}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00113}00113\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00114}00114\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ s:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}''"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00116}00116\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00117}00117\ \ \ \ \ \textcolor{keywordflow}{if}\ re\_space.search(s\ :=\ re\_escape.sub(\textcolor{stringliteral}{r"{}\(\backslash\)\(\backslash\)\(\backslash\)1"{}},\ s)):}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ s\ =\ \textcolor{stringliteral}{"{}'"{}}\ +\ s\ +\ \textcolor{stringliteral}{"{}'"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00120}00120\ \ \ \ \ \textcolor{keywordflow}{return}\ s}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00122}00122\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00123}\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a36499484e1d4b3254c54707020ab691e}{00123}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1conninfo_a36499484e1d4b3254c54707020ab691e}{timeout\_from\_conninfo}}(params:\ ConnDict)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00124}00124\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00125}00125\ \textcolor{stringliteral}{\ \ \ \ Return\ the\ timeout\ in\ seconds\ from\ the\ connection\ parameters.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00126}00126\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00127}00127\ \ \ \ \ \textcolor{comment}{\#\ Follow\ the\ libpq\ convention:}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00128}00128\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00129}00129\ \ \ \ \ \textcolor{comment}{\#\ -\/\ 0\ or\ less\ means\ no\ timeout\ (but\ we\ will\ use\ a\ default\ to\ simulate}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00130}00130\ \ \ \ \ \textcolor{comment}{\#\ \ \ the\ socket\ timeout)}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00131}00131\ \ \ \ \ \textcolor{comment}{\#\ -\/\ at\ least\ 2\ seconds.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00132}00132\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00133}00133\ \ \ \ \ \textcolor{comment}{\#\ See\ connectDBComplete\ in\ fe-\/connect.c}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00134}00134\ \ \ \ \ value:\ str\ |\ int\ |\ \textcolor{keywordtype}{None}\ =\ \_conninfo\_utils.get\_param(params,\ \textcolor{stringliteral}{"{}connect\_timeout"{}})}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00135}00135\ \ \ \ \ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ value\ =\ \_DEFAULT\_CONNECT\_TIMEOUT}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00137}00137\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ timeout\ =\ int(float(value))}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00139}00139\ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(f\textcolor{stringliteral}{"{}bad\ value\ for\ connect\_timeout:\ \{value!r\}"{}})\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00142}00142\ \ \ \ \ \textcolor{keywordflow}{if}\ timeout\ <=\ 0:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ sync\ connect\ function\ will\ stop\ on\ the\ default\ socket\ timeout}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Because\ in\ async\ connection\ mode\ we\ need\ to\ enforce\ the\ timeout}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ ourselves,\ we\ need\ a\ finite\ value.}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ timeout\ =\ \_DEFAULT\_CONNECT\_TIMEOUT}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00147}00147\ \ \ \ \ \textcolor{keywordflow}{elif}\ timeout\ <\ 2:}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Enforce\ a\ 2s\ min}}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ timeout\ =\ 2}
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00150}00150\ }
+\DoxyCodeLine{\Hypertarget{conninfo_8py_source_l00151}00151\ \ \ \ \ \textcolor{keywordflow}{return}\ timeout}
+
+\end{DoxyCode}

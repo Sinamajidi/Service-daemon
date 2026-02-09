@@ -1,0 +1,250 @@
+\doxysection{hstore.\+py}
+\hypertarget{hstore_8py_source}{}\label{hstore_8py_source}\index{venv/Lib/site-\/packages/psycopg/types/hstore.py@{venv/Lib/site-\/packages/psycopg/types/hstore.py}}
+\doxymbox{\hyperlink{hstore_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00002}00002\ \textcolor{stringliteral}{dict\ to\ hstore\ adaptation}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2021\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00009}00009\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00010}00010\ \textcolor{keyword}{from}\ struct\ \textcolor{keyword}{import}\ Struct}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00011}00011\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TypeAlias}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00012}00012\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ cache}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00014}00014\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00015}00015\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ postgres}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00016}00016\ \textcolor{keyword}{from}\ ..pq\ \textcolor{keyword}{import}\ Format}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00017}00017\ \textcolor{keyword}{from}\ ..abc\ \textcolor{keyword}{import}\ AdaptContext,\ Buffer}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00018}00018\ \textcolor{keyword}{from}\ ..\_oids\ \textcolor{keyword}{import}\ TEXT\_OID}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00019}00019\ \textcolor{keyword}{from}\ ..adapt\ \textcolor{keyword}{import}\ Loader,\ PyFormat,\ RecursiveDumper,\ RecursiveLoader}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00020}00020\ \textcolor{keyword}{from}\ ..\_typeinfo\ \textcolor{keyword}{import}\ TypeInfo}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00021}00021\ \textcolor{keyword}{from}\ ..\_encodings\ \textcolor{keyword}{import}\ conn\_encoding}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00023}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_ae5a84dd047de4aceb0daebf5e9ca250f}{00023}}\ \_re\_escape\ =\ re.compile(\textcolor{stringliteral}{r'(["{}\(\backslash\)\(\backslash\)])'})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00024}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_a85e01e235be5f039cfc00213a15d83d9}{00024}}\ \_re\_unescape\ =\ re.compile(\textcolor{stringliteral}{r"{}\(\backslash\)\(\backslash\)(.)"{}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00026}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_ad38f0e3c051880dae29acb87157bc2cd}{00026}}\ \_re\_hstore\ =\ re.compile(}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00027}00027\ \ \ \ \ \textcolor{stringliteral}{r"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00028}00028\ \textcolor{stringliteral}{\ \ \ \ \#\ hstore\ key:}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00029}00029\ \textcolor{stringliteral}{\ \ \ \ \#\ a\ string\ of\ normal\ or\ escaped\ chars}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00030}00030\ \textcolor{stringliteral}{\ \ \ \ "{}((?:\ [\string^"{}\(\backslash\)\(\backslash\)]\ |\ \(\backslash\)\(\backslash\).\ )*)"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00031}00031\ \textcolor{stringliteral}{\ \ \ \ \(\backslash\)s*=>\(\backslash\)s*\ \#\ hstore\ value}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00032}00032\ \textcolor{stringliteral}{\ \ \ \ (?:}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00033}00033\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ NULL\ \#\ the\ value\ can\ be\ null\ -\/\ not\ caught}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00034}00034\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \#\ or\ a\ quoted\ string\ like\ the\ key}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00035}00035\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ |\ "{}((?:\ [\string^"{}\(\backslash\)\(\backslash\)]\ |\ \(\backslash\)\(\backslash\).\ )*)"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00036}00036\ \textcolor{stringliteral}{\ \ \ \ )}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00037}00037\ \textcolor{stringliteral}{\ \ \ \ (?:\(\backslash\)s*,\(\backslash\)s*|\$)\ \#\ pairs\ separated\ by\ comma\ or\ end\ of\ string.}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00038}00038\ \textcolor{stringliteral}{"{}"{}"{}},}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00039}00039\ \ \ \ \ re.VERBOSE,}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00040}00040\ )}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00042}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_aa7d8bc5d4030cff40b81683799da7f10}{00042}}\ \_U32\_STRUCT\ =\ Struct(\textcolor{stringliteral}{"{}!I"{}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00043}00043\ \textcolor{stringliteral}{"{}"{}"{}Simple\ struct\ representing\ an\ unsigned\ 32-\/bit\ big-\/endian\ integer."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00045}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_ad3fed0d1df3a204c8b482a5554b5b094}{00045}}\ \_I2B\ =\ [i.to\_bytes(4,\ \textcolor{stringliteral}{"{}big"{}})\ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(64)]}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00046}00046\ \textcolor{stringliteral}{"{}"{}"{}Lookup\ list\ for\ small\ ints\ to\ bytes\ conversions."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00047}00047\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00048}00048\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00049}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_a9415d1aa3fa8b18807c697d50ad3a892}{00049}}\ Hstore:\ TypeAlias\ =\ dict[str,\ str\ |\ \textcolor{keywordtype}{None}]}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00052}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_dumper}{00052}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_dumper}{BaseHstoreDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper}{RecursiveDumper}}):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00053}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_dumper_a50ea80fe0ab6b5230baaf061915da60a}{00053}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_dumper_a50ea80fe0ab6b5230baaf061915da60a}{dump}}(self,\ obj:\ Hstore)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ obj:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ tokens:\ list[str]\ =\ []}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }add\_token(s:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \ \ \ \ tokens.append(\textcolor{stringliteral}{'"{}'})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \ \ \ \ tokens.append(\_re\_escape.sub(\textcolor{stringliteral}{r"{}\(\backslash\)\(\backslash\)\(\backslash\)1"{}},\ s))}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \ \ \ \ tokens.append(\textcolor{stringliteral}{'"{}'})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ k,\ v\ \textcolor{keywordflow}{in}\ obj.items():}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(k,\ str):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.DataError(\textcolor{stringliteral}{"{}hstore\ keys\ can\ only\ be\ strings"{}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \ \ \ \ add\_token(k)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \ \ \ \ tokens.append(\textcolor{stringliteral}{"{}=>"{}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ v\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ tokens.append(\textcolor{stringliteral}{"{}NULL"{}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ \textcolor{keywordflow}{not}\ isinstance(v,\ str):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.DataError(\textcolor{stringliteral}{"{}hstore\ keys\ can\ only\ be\ strings"{}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ add\_token(v)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \ \ \ \ tokens.append(\textcolor{stringliteral}{"{},"{}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ del\ tokens[-\/1]}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ data\ =\ \textcolor{stringliteral}{"{}"{}}.join(tokens)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ dumper\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper_a021855189cbb42b31f1d11fb00ea07bb}{\_tx}}.get\_dumper(data,\ PyFormat.TEXT)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dumper.dump(data)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00085}00085\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00086}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_binary_dumper}{00086}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_binary_dumper}{BaseHstoreBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper}{RecursiveDumper}}):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00087}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_binary_dumper}{00087}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00089}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_binary_dumper_a1801a335a7e9490cbb5bdce5c50f202c}{00089}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_binary_dumper_a1801a335a7e9490cbb5bdce5c50f202c}{\_\_init\_\_}}(self,\ cls:\ type,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_binary_dumper_a1801a335a7e9490cbb5bdce5c50f202c}{\_\_init\_\_}}(cls,\ context)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ enc\ =\ conn\_encoding(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac19516f509822a8161669804c73ca263}{connection}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00092}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_binary_dumper_a139b9c40a8fc04b47048ba2b6d97203a}{00092}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_binary_dumper_a139b9c40a8fc04b47048ba2b6d97203a}{encoding}}\ =\ enc\ \textcolor{keywordflow}{if}\ enc\ !=\ \textcolor{stringliteral}{"{}ascii"{}}\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}utf-\/8"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00094}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_binary_dumper_a8b13be74217d5695912ab72806429679}{00094}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_binary_dumper_a8b13be74217d5695912ab72806429679}{dump}}(self,\ obj:\ Hstore)\ -\/>\ Buffer:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ obj:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ hstore\_empty\ =\ b\textcolor{stringliteral}{"{}\(\backslash\)x00\(\backslash\)x00\(\backslash\)x00\(\backslash\)x00"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hstore\_empty}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00098}00098\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ hstore\_null\_marker\ =\ b\textcolor{stringliteral}{"{}\(\backslash\)xff\(\backslash\)xff\(\backslash\)xff\(\backslash\)xff"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ i2b\ =\ \_I2B}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ encoding\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_binary_dumper_a139b9c40a8fc04b47048ba2b6d97203a}{encoding}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ buffer:\ list[bytes]\ =\ [i2b[i]\ \textcolor{keywordflow}{if}\ (i\ :=\ len(obj))\ <\ 64\ \textcolor{keywordflow}{else}\ i.to\_bytes(4,\ \textcolor{stringliteral}{"{}big"{}})]}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ key,\ value\ \textcolor{keywordflow}{in}\ obj.items():}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ key\_bytes\ =\ key.encode(encoding)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ buffer.append(}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ i2b[i]\ \textcolor{keywordflow}{if}\ (i\ :=\ len(key\_bytes))\ <\ 64\ \textcolor{keywordflow}{else}\ i.to\_bytes(4,\ \textcolor{stringliteral}{"{}big"{}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \ \ \ \ buffer.append(key\_bytes)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00110}00110\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ buffer.append(hstore\_null\_marker)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ value\_bytes\ =\ value.encode(encoding)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ buffer.append(}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ i2b[i]\ \textcolor{keywordflow}{if}\ (i\ :=\ len(value\_bytes))\ <\ 64\ \textcolor{keywordflow}{else}\ i.to\_bytes(4,\ \textcolor{stringliteral}{"{}big"{}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ buffer.append(value\_bytes)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}"{}}.join(buffer)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00122}00122\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00123}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_loader}{00123}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_loader}{HstoreLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_loader}{RecursiveLoader}}):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00124}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_loader_a4618a7e2b9585d727fbc9e1d718c6592}{00124}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_loader_a4618a7e2b9585d727fbc9e1d718c6592}{load}}(self,\ data:\ Buffer)\ -\/>\ Hstore:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ loader\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_loader_a4dcd8c5ee39af9c60dcf6191321992f0}{\_tx}}.get\_loader(TEXT\_OID,\ self.\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_loader_a553af3dff71f160dafaa4265aabd0e40}{format}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ s:\ str\ =\ loader.load(data)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ rv:\ Hstore\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ start\ =\ 0}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ m\ \textcolor{keywordflow}{in}\ \_re\_hstore.finditer(s):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ m\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{or}\ m.start()\ !=\ start:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.DataError(f\textcolor{stringliteral}{"{}error\ parsing\ hstore\ pair\ at\ char\ \{start\}"{}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ k\ =\ \_re\_unescape.sub(\textcolor{stringliteral}{r"{}\(\backslash\)1"{}},\ m.group(1))}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (v\ :=\ m.group(2))\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ v\ =\ \_re\_unescape.sub(\textcolor{stringliteral}{r"{}\(\backslash\)1"{}},\ v)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00136}00136\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \ \ \ \ rv[k]\ =\ v}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \ \ \ \ start\ =\ m.end()}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00139}00139\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ start\ <\ len(s):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.DataError(f\textcolor{stringliteral}{"{}error\ parsing\ hstore:\ unparsed\ data\ after\ char\ \{start\}"{}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00142}00142\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ rv}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00145}00145\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00146}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_binary_loader}{00146}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_binary_loader}{HstoreBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00147}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_binary_loader}{00147}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00148}00148\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00149}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_binary_loader_af819cc2aca067b522218211231251ae4}{00149}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_binary_loader_af819cc2aca067b522218211231251ae4}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_binary_loader_af819cc2aca067b522218211231251ae4}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ enc\ =\ conn\_encoding(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00152}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_binary_loader_a0503c7dc43e5c7ce14e8a272cb708995}{00152}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_binary_loader_a0503c7dc43e5c7ce14e8a272cb708995}{encoding}}\ =\ enc\ \textcolor{keywordflow}{if}\ enc\ !=\ \textcolor{stringliteral}{"{}ascii"{}}\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}utf-\/8"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00153}00153\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00154}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_binary_loader_af4f16fa3eb89d0090439b7a8e660f0ad}{00154}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_binary_loader_af4f16fa3eb89d0090439b7a8e660f0ad}{load}}(self,\ data:\ Buffer)\ -\/>\ Hstore:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(data)\ <\ 12:\ \ \textcolor{comment}{\#\ Fast-\/path\ if\ too\ small\ to\ contain\ any\ data.}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \{\}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00157}00157\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ hstore\_null\_marker\ =\ 0xFFFFFFFF}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ unpack\_from\ =\ \_U32\_STRUCT.unpack\_from}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ encoding\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_hstore_binary_loader_a0503c7dc43e5c7ce14e8a272cb708995}{encoding}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ result\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00162}00162\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ view\ =\ bytes(data)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ (size,)\ =\ unpack\_from(view)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ pos\ =\ 4}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ \_\ \textcolor{keywordflow}{in}\ range(size):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \ \ \ \ (key\_size,)\ =\ unpack\_from(view,\ pos)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ pos\ +=\ 4}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00170}00170\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ key\ =\ view[pos\ :\ pos\ +\ key\_size].decode(encoding)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ pos\ +=\ key\_size}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \ \ \ \ (value\_size,)\ =\ unpack\_from(view,\ pos)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \ \ \ \ pos\ +=\ 4}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00176}00176\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ value\_size\ ==\ hstore\_null\_marker:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ value\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ value\ =\ view[pos\ :\ pos\ +\ value\_size].decode(encoding)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pos\ +=\ value\_size}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00182}00182\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ result[key]\ =\ value}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00184}00184\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ result}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00186}00186\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00187}00187\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00188}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_a7e5eacbee19929d439b51a399871741b}{00188}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_a7e5eacbee19929d439b51a399871741b}{register\_hstore}}(info:\ TypeInfo,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00189}00189\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Register\ the\ adapters\ to\ load\ and\ dump\ hstore.}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00190}00190\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00191}00191\ \textcolor{stringliteral}{\ \ \ \ :param\ info:\ The\ object\ with\ the\ information\ about\ the\ hstore\ type.}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00192}00192\ \textcolor{stringliteral}{\ \ \ \ :param\ context:\ The\ context\ where\ to\ register\ the\ adapters.\ If\ \`{}!None\`{},}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00193}00193\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ register\ it\ globally.}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00194}00194\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00195}00195\ \textcolor{stringliteral}{\ \ \ \ ..\ note::}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00196}00196\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00197}00197\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Registering\ the\ adapters\ doesn't\ affect\ objects\ already\ created,\ even}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00198}00198\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ if\ they\ are\ children\ of\ the\ registered\ context.\ For\ instance,}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00199}00199\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ registering\ the\ adapter\ globally\ doesn't\ affect\ already\ existing}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00200}00200\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ connections.}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00201}00201\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00202}00202\ \ \ \ \ \textcolor{comment}{\#\ A\ friendly\ error\ warning\ instead\ of\ an\ AttributeError\ in\ case\ fetch()}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00203}00203\ \ \ \ \ \textcolor{comment}{\#\ failed\ and\ it\ wasn't\ noticed.}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00204}00204\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ info:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(\textcolor{stringliteral}{"{}no\ info\ passed.\ Is\ the\ 'hstore'\ extension\ loaded?"{}})}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00206}00206\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00207}00207\ \ \ \ \ \textcolor{comment}{\#\ Register\ arrays\ and\ type\ info}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00208}00208\ \ \ \ \ info.register(context)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00209}00209\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00210}00210\ \ \ \ \ adapters\ =\ context.adapters\ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{else}\ postgres.adapters}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00211}00211\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00212}00212\ \ \ \ \ \textcolor{comment}{\#\ Generate\ and\ register\ customized\ dumpers}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00213}00213\ \ \ \ \ adapters.register\_dumper(dict,\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_aeb82211e5133f753b79fc7f23d84adbe}{\_make\_hstore\_dumper}}(info.oid))}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00214}00214\ \ \ \ \ adapters.register\_dumper(dict,\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_a51d42c0d10d385c6c5a269db1865cead}{\_make\_hstore\_binary\_dumper}}(info.oid))}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00215}00215\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00216}00216\ \ \ \ \ \textcolor{comment}{\#\ Register\ the\ loaders\ on\ the\ oid}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00217}00217\ \ \ \ \ adapters.register\_loader(info.oid,\ HstoreLoader)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00218}00218\ \ \ \ \ adapters.register\_loader(info.oid,\ HstoreBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00219}00219\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00220}00220\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00221}00221\ \textcolor{comment}{\#\ Cache\ all\ dynamically-\/generated\ types\ to\ avoid\ leaks\ in\ case\ the\ types}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00222}00222\ \textcolor{comment}{\#\ cannot\ be\ GC'd.}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00223}00223\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00224}00224\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00225}00225\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00226}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_aeb82211e5133f753b79fc7f23d84adbe}{00226}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_aeb82211e5133f753b79fc7f23d84adbe}{\_make\_hstore\_dumper}}(oid\_in:\ int)\ -\/>\ type[BaseHstoreDumper]:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00227}00227\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00228}00228\ \textcolor{stringliteral}{\ \ \ \ Return\ an\ hstore\ dumper\ class\ configured\ using\ \`{}oid\_in\`{}.}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00229}00229\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00230}00230\ \textcolor{stringliteral}{\ \ \ \ Avoid\ to\ create\ new\ classes\ if\ the\ oid\ configured\ is\ the\ same.}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00231}00231\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00232}00232\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00233}00233\ \ \ \ \ \textcolor{keyword}{class\ }HstoreDumper(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_dumper}{BaseHstoreDumper}}):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ oid\ =\ oid\_in}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00235}00235\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00236}00236\ \ \ \ \ \textcolor{keywordflow}{return}\ HstoreDumper}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00237}00237\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00238}00238\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00239}00239\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00240}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_a51d42c0d10d385c6c5a269db1865cead}{00240}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1hstore_a51d42c0d10d385c6c5a269db1865cead}{\_make\_hstore\_binary\_dumper}}(oid\_in:\ int)\ -\/>\ type[BaseHstoreBinaryDumper]:}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00241}00241\ \ \ \ \ \textcolor{keyword}{class\ }HstoreBinaryDumper(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1hstore_1_1_base_hstore_binary_dumper}{BaseHstoreBinaryDumper}}):}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ oid\ =\ oid\_in}
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00243}00243\ }
+\DoxyCodeLine{\Hypertarget{hstore_8py_source_l00244}00244\ \ \ \ \ \textcolor{keywordflow}{return}\ HstoreBinaryDumper}
+
+\end{DoxyCode}

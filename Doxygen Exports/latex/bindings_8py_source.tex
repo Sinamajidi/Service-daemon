@@ -1,0 +1,525 @@
+\doxysection{bindings.\+py}
+\hypertarget{bindings_8py_source}{}\label{bindings_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/urllib3/contrib/\_securetransport/bindings.py@{venv/Lib/site-\/packages/pip/\_vendor/urllib3/contrib/\_securetransport/bindings.py}}
+\doxymbox{\hyperlink{bindings_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00002}00002\ \textcolor{stringliteral}{This\ module\ uses\ ctypes\ to\ bind\ a\ whole\ bunch\ of\ functions\ and\ constants\ from}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00003}00003\ \textcolor{stringliteral}{SecureTransport.\ The\ goal\ here\ is\ to\ provide\ the\ low-\/level\ API\ to}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00004}00004\ \textcolor{stringliteral}{SecureTransport.\ These\ are\ essentially\ the\ C-\/level\ functions\ and\ constants,\ and}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00005}00005\ \textcolor{stringliteral}{they're\ pretty\ gross\ to\ work\ with.}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00006}00006\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00007}00007\ \textcolor{stringliteral}{This\ code\ is\ a\ bastardised\ version\ of\ the\ code\ found\ in\ Will\ Bond's\ oscrypto}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00008}00008\ \textcolor{stringliteral}{library.\ An\ enormous\ debt\ is\ owed\ to\ him\ for\ blazing\ this\ trail\ for\ us.\ For}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00009}00009\ \textcolor{stringliteral}{that\ reason,\ this\ code\ should\ be\ considered\ to\ be\ covered\ both\ by\ urllib3's}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00010}00010\ \textcolor{stringliteral}{license\ and\ by\ oscrypto's:}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00011}00011\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00012}00012\ \textcolor{stringliteral}{\ \ \ \ Copyright\ (c)\ 2015-\/2016\ Will\ Bond\ <will@wbond.net>}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00013}00013\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00014}00014\ \textcolor{stringliteral}{\ \ \ \ Permission\ is\ hereby\ granted,\ free\ of\ charge,\ to\ any\ person\ obtaining\ a}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00015}00015\ \textcolor{stringliteral}{\ \ \ \ copy\ of\ this\ software\ and\ associated\ documentation\ files\ (the\ "{}Software"{}),}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00016}00016\ \textcolor{stringliteral}{\ \ \ \ to\ deal\ in\ the\ Software\ without\ restriction,\ including\ without\ limitation}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00017}00017\ \textcolor{stringliteral}{\ \ \ \ the\ rights\ to\ use,\ copy,\ modify,\ merge,\ publish,\ distribute,\ sublicense,}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00018}00018\ \textcolor{stringliteral}{\ \ \ \ and/or\ sell\ copies\ of\ the\ Software,\ and\ to\ permit\ persons\ to\ whom\ the}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00019}00019\ \textcolor{stringliteral}{\ \ \ \ Software\ is\ furnished\ to\ do\ so,\ subject\ to\ the\ following\ conditions:}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00020}00020\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00021}00021\ \textcolor{stringliteral}{\ \ \ \ The\ above\ copyright\ notice\ and\ this\ permission\ notice\ shall\ be\ included\ in}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00022}00022\ \textcolor{stringliteral}{\ \ \ \ all\ copies\ or\ substantial\ portions\ of\ the\ Software.}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00023}00023\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00024}00024\ \textcolor{stringliteral}{\ \ \ \ THE\ SOFTWARE\ IS\ PROVIDED\ "{}AS\ IS"{},\ WITHOUT\ WARRANTY\ OF\ ANY\ KIND,\ EXPRESS\ OR}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00025}00025\ \textcolor{stringliteral}{\ \ \ \ IMPLIED,\ INCLUDING\ BUT\ NOT\ LIMITED\ TO\ THE\ WARRANTIES\ OF\ MERCHANTABILITY,}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00026}00026\ \textcolor{stringliteral}{\ \ \ \ FITNESS\ FOR\ A\ PARTICULAR\ PURPOSE\ AND\ NONINFRINGEMENT.\ IN\ NO\ EVENT\ SHALL\ THE}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00027}00027\ \textcolor{stringliteral}{\ \ \ \ AUTHORS\ OR\ COPYRIGHT\ HOLDERS\ BE\ LIABLE\ FOR\ ANY\ CLAIM,\ DAMAGES\ OR\ OTHER}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00028}00028\ \textcolor{stringliteral}{\ \ \ \ LIABILITY,\ WHETHER\ IN\ AN\ ACTION\ OF\ CONTRACT,\ TORT\ OR\ OTHERWISE,\ ARISING}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00029}00029\ \textcolor{stringliteral}{\ \ \ \ FROM,\ OUT\ OF\ OR\ IN\ CONNECTION\ WITH\ THE\ SOFTWARE\ OR\ THE\ USE\ OR\ OTHER}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00030}00030\ \textcolor{stringliteral}{\ \ \ \ DEALINGS\ IN\ THE\ SOFTWARE.}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00031}00031\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00032}00032\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ absolute\_import}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00034}00034\ \textcolor{keyword}{import}\ platform}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00035}00035\ \textcolor{keyword}{from}\ ctypes\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00036}00036\ \ \ \ \ CDLL,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00037}00037\ \ \ \ \ CFUNCTYPE,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00038}00038\ \ \ \ \ POINTER,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00039}00039\ \ \ \ \ c\_bool,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00040}00040\ \ \ \ \ c\_byte,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00041}00041\ \ \ \ \ c\_char\_p,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00042}00042\ \ \ \ \ c\_int32,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00043}00043\ \ \ \ \ c\_long,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00044}00044\ \ \ \ \ c\_size\_t,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00045}00045\ \ \ \ \ c\_uint32,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00046}00046\ \ \ \ \ c\_ulong,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00047}00047\ \ \ \ \ c\_void\_p,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00048}00048\ )}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00049}00049\ \textcolor{keyword}{from}\ ctypes.util\ \textcolor{keyword}{import}\ find\_library}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00051}00051\ \textcolor{keyword}{from}\ ...packages.six\ \textcolor{keyword}{import}\ raise\_from}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00053}00053\ \textcolor{keywordflow}{if}\ platform.system()\ !=\ \textcolor{stringliteral}{"{}Darwin"{}}:}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00054}00054\ \ \ \ \ \textcolor{keywordflow}{raise}\ ImportError(\textcolor{stringliteral}{"{}Only\ macOS\ is\ supported"{}})}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00056}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a18c4927a2dc050f51958f51e9c475878}{00056}}\ version\ =\ platform.mac\_ver()[0]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00057}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a2ff9bc959ad5d211163f406ced71dc0f}{00057}}\ version\_info\ =\ tuple(map(int,\ version.split(\textcolor{stringliteral}{"{}."{}})))}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00058}00058\ \textcolor{keywordflow}{if}\ version\_info\ <\ (10,\ 8):}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00059}00059\ \ \ \ \ \textcolor{keywordflow}{raise}\ OSError(}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Only\ OS\ X\ 10.8\ and\ newer\ are\ supported,\ not\ \%s.\%s"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \%\ (version\_info[0],\ version\_info[1])}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00062}00062\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00065}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_ac08ee670a63f2f4fdc8195a78602e5b3}{00065}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_ac08ee670a63f2f4fdc8195a78602e5b3}{load\_cdll}}(name,\ macos10\_16\_path):}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00066}00066\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Loads\ a\ CDLL\ by\ name,\ falling\ back\ to\ known\ path\ on\ 10.16+"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00067}00067\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Big\ Sur\ is\ technically\ 11\ but\ we\ use\ 10.16\ due\ to\ the\ Big\ Sur}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ beta\ being\ labeled\ as\ 10.16.}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ version\_info\ >=\ (10,\ 16):}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \ \ \ \ path\ =\ macos10\_16\_path}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ path\ =\ find\_library(name)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ path:}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ OSError\ \ \textcolor{comment}{\#\ Caught\ and\ reraised\ as\ 'ImportError'}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ CDLL(path,\ use\_errno=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00077}00077\ \ \ \ \ \textcolor{keywordflow}{except}\ OSError:}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ raise\_from(ImportError(\textcolor{stringliteral}{"{}The\ library\ \%s\ failed\ to\ load"{}}\ \%\ name),\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00081}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a99de68dffaec67297ee17dfbcbd056d2}{00081}}\ Security\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_ac08ee670a63f2f4fdc8195a78602e5b3}{load\_cdll}}(}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00082}00082\ \ \ \ \ \textcolor{stringliteral}{"{}Security"{}},\ \textcolor{stringliteral}{"{}/System/Library/Frameworks/Security.framework/Security"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00083}00083\ )}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00084}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_acd7d91ac7741f7937c9b954e43d7a505}{00084}}\ CoreFoundation\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_ac08ee670a63f2f4fdc8195a78602e5b3}{load\_cdll}}(}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00085}00085\ \ \ \ \ \textcolor{stringliteral}{"{}CoreFoundation"{}},}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00086}00086\ \ \ \ \ \textcolor{stringliteral}{"{}/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"{}},}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00087}00087\ )}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00089}00089\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00090}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a6d01949adf3e76256c4ef59c7e848958}{00090}}\ Boolean\ =\ c\_bool}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00091}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a0d1b566373b9185a6dc9a3f10d3b44ce}{00091}}\ CFIndex\ =\ c\_long}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00092}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_af2ce7b905a32bf04e612709463d89e8a}{00092}}\ CFStringEncoding\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00093}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a336501c2320f0a2e2517b07a539b7a61}{00093}}\ CFData\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00094}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_ad7abc8b1005584c4e497cd5e27ce298d}{00094}}\ CFString\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00095}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a059384944bee2ebf37270084d0ae12ec}{00095}}\ CFArray\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00096}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a7703d1e9c4a9741202d654f0e1b219b1}{00096}}\ CFMutableArray\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00097}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_aadbf6b7f5cc2fb38f03c284368e40448}{00097}}\ CFDictionary\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00098}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_ad451a9820e43d5d2c51ccca6af0d2ed8}{00098}}\ CFError\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00099}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a2765f6c58b628dabf6dc1cee3aa7f0af}{00099}}\ CFType\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00100}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a5ec20b98f7b0eb547ba5a150aa42ba49}{00100}}\ CFTypeID\ =\ c\_ulong}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00101}00101\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00102}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a071e67f49aa9630359060b89c8225069}{00102}}\ CFTypeRef\ =\ POINTER(CFType)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00103}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a85d68484b695fa55870e054681bd8409}{00103}}\ CFAllocatorRef\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00105}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a88233adde7ed68a866060a2428afdaab}{00105}}\ OSStatus\ =\ c\_int32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00107}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_aea720f5a4dca318d0d2d078ef202a521}{00107}}\ CFDataRef\ =\ POINTER(CFData)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00108}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a9884de6b9332ae4e1fc7c383d835eb80}{00108}}\ CFStringRef\ =\ POINTER(CFString)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00109}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a4bfc703c217ca506c8981260b5ceb43b}{00109}}\ CFArrayRef\ =\ POINTER(CFArray)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00110}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a1d70e62834db20f64e5d8eb040b7697b}{00110}}\ CFMutableArrayRef\ =\ POINTER(CFMutableArray)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00111}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a4b8d169ae77bf1557d27ca21c7a0c7b8}{00111}}\ CFDictionaryRef\ =\ POINTER(CFDictionary)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00112}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_ab4a5a9e5e8fe40707975219fcbb4938a}{00112}}\ CFArrayCallBacks\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00113}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a403627f5b92a76f9b8410045201e43ea}{00113}}\ CFDictionaryKeyCallBacks\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00114}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a97c15dfd952ec281b96abac6d104825b}{00114}}\ CFDictionaryValueCallBacks\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00115}00115\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00116}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a5f7b75dd017279ec8ef86affaf18f996}{00116}}\ SecCertificateRef\ =\ POINTER(c\_void\_p)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00117}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a5caada761e2eb23aefdc1f1855bf647a}{00117}}\ SecExternalFormat\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00118}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_ac3142195754ecaac3edf987339addb2c}{00118}}\ SecExternalItemType\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00119}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_ab735ed1a679122d3ce6f5fa21e00592e}{00119}}\ SecIdentityRef\ =\ POINTER(c\_void\_p)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00120}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a87720ef8efed3965a670c59828b89678}{00120}}\ SecItemImportExportFlags\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00121}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a06ab7528bed077a5b458f8650ba9f348}{00121}}\ SecItemImportExportKeyParameters\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00122}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a1c1900570ae88e3da3b81370ae0a001d}{00122}}\ SecKeychainRef\ =\ POINTER(c\_void\_p)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00123}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_abb04b2a838d988d8870f5b8bb0fe942c}{00123}}\ SSLProtocol\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00124}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_acc0f255faa69843bc7f8a3c4535b702a}{00124}}\ SSLCipherSuite\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00125}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a1dadaa6033451fee6b20d765e73f4aca}{00125}}\ SSLContextRef\ =\ POINTER(c\_void\_p)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00126}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a70c4f3437f797e53d0dd02928567949c}{00126}}\ SecTrustRef\ =\ POINTER(c\_void\_p)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00127}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_afe68f81df86f84e6b39b9754f905d61b}{00127}}\ SSLConnectionRef\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00128}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a31505d0a46457fbbffa27c8ad73af0bc}{00128}}\ SecTrustResultType\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00129}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a93b40259fcbcaddc30a29628d65c1301}{00129}}\ SecTrustOptionFlags\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00130}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_aed1a5f0f51c69f974d9252da9e7bea29}{00130}}\ SSLProtocolSide\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00131}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a02a41aa820f8e5feea3bcd88cfa2da8e}{00131}}\ SSLConnectionType\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00132}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a20efa33d756cc30f66cd091e4287ce5a}{00132}}\ SSLSessionOption\ =\ c\_uint32}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00133}00133\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00134}00134\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00135}00135\ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00136}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a5f4f650e54a9e75ea0902a41b120569f}{00136}}\ \ \ \ \ Security.SecItemImport.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ CFDataRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ CFStringRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ POINTER(SecExternalFormat),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ POINTER(SecExternalItemType),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ SecItemImportExportFlags,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ POINTER(SecItemImportExportKeyParameters),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ SecKeychainRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ POINTER(CFArrayRef),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00145}00145\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00146}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a9b7260510dafc37543a9ddefa9038ca9}{00146}}\ \ \ \ \ Security.SecItemImport.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00147}00147\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00148}00148\ \ \ \ \ Security.SecCertificateGetTypeID.argtypes\ =\ []}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00149}00149\ \ \ \ \ Security.SecCertificateGetTypeID.restype\ =\ CFTypeID}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00150}00150\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00151}00151\ \ \ \ \ Security.SecIdentityGetTypeID.argtypes\ =\ []}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00152}00152\ \ \ \ \ Security.SecIdentityGetTypeID.restype\ =\ CFTypeID}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00153}00153\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00154}00154\ \ \ \ \ Security.SecKeyGetTypeID.argtypes\ =\ []}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00155}00155\ \ \ \ \ Security.SecKeyGetTypeID.restype\ =\ CFTypeID}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00156}00156\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00157}00157\ \ \ \ \ Security.SecCertificateCreateWithData.argtypes\ =\ [CFAllocatorRef,\ CFDataRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00158}00158\ \ \ \ \ Security.SecCertificateCreateWithData.restype\ =\ SecCertificateRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00159}00159\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00160}00160\ \ \ \ \ Security.SecCertificateCopyData.argtypes\ =\ [SecCertificateRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00161}00161\ \ \ \ \ Security.SecCertificateCopyData.restype\ =\ CFDataRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00162}00162\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00163}00163\ \ \ \ \ Security.SecCopyErrorMessageString.argtypes\ =\ [OSStatus,\ c\_void\_p]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00164}00164\ \ \ \ \ Security.SecCopyErrorMessageString.restype\ =\ CFStringRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00165}00165\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00166}00166\ \ \ \ \ Security.SecIdentityCreateWithCertificate.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ CFTypeRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ SecCertificateRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ POINTER(SecIdentityRef),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00170}00170\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00171}00171\ \ \ \ \ Security.SecIdentityCreateWithCertificate.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00172}00172\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00173}00173\ \ \ \ \ Security.SecKeychainCreate.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ c\_char\_p,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ c\_uint32,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ c\_void\_p,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ Boolean,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ c\_void\_p,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ POINTER(SecKeychainRef),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00180}00180\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00181}00181\ \ \ \ \ Security.SecKeychainCreate.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00182}00182\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00183}00183\ \ \ \ \ Security.SecKeychainDelete.argtypes\ =\ [SecKeychainRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00184}00184\ \ \ \ \ Security.SecKeychainDelete.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00185}00185\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00186}00186\ \ \ \ \ Security.SecPKCS12Import.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ CFDataRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ CFDictionaryRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ POINTER(CFArrayRef),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00190}00190\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00191}00191\ \ \ \ \ Security.SecPKCS12Import.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00193}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_ae4641db305ed006fa866c83c216e9dbf}{00193}}\ \ \ \ \ SSLReadFunc\ =\ CFUNCTYPE(OSStatus,\ SSLConnectionRef,\ c\_void\_p,\ POINTER(c\_size\_t))}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00194}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a9bc30809e6858be5e086e7e40baab322}{00194}}\ \ \ \ \ SSLWriteFunc\ =\ CFUNCTYPE(}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ OSStatus,\ SSLConnectionRef,\ POINTER(c\_byte),\ POINTER(c\_size\_t)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00196}00196\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00197}00197\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00198}00198\ \ \ \ \ Security.SSLSetIOFuncs.argtypes\ =\ [SSLContextRef,\ SSLReadFunc,\ SSLWriteFunc]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00199}00199\ \ \ \ \ Security.SSLSetIOFuncs.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00200}00200\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00201}00201\ \ \ \ \ Security.SSLSetPeerID.argtypes\ =\ [SSLContextRef,\ c\_char\_p,\ c\_size\_t]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00202}00202\ \ \ \ \ Security.SSLSetPeerID.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00203}00203\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00204}00204\ \ \ \ \ Security.SSLSetCertificate.argtypes\ =\ [SSLContextRef,\ CFArrayRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00205}00205\ \ \ \ \ Security.SSLSetCertificate.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00206}00206\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00207}00207\ \ \ \ \ Security.SSLSetCertificateAuthorities.argtypes\ =\ [SSLContextRef,\ CFTypeRef,\ Boolean]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00208}00208\ \ \ \ \ Security.SSLSetCertificateAuthorities.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00209}00209\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00210}00210\ \ \ \ \ Security.SSLSetConnection.argtypes\ =\ [SSLContextRef,\ SSLConnectionRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00211}00211\ \ \ \ \ Security.SSLSetConnection.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00212}00212\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00213}00213\ \ \ \ \ Security.SSLSetPeerDomainName.argtypes\ =\ [SSLContextRef,\ c\_char\_p,\ c\_size\_t]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00214}00214\ \ \ \ \ Security.SSLSetPeerDomainName.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00215}00215\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00216}00216\ \ \ \ \ Security.SSLHandshake.argtypes\ =\ [SSLContextRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00217}00217\ \ \ \ \ Security.SSLHandshake.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00218}00218\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00219}00219\ \ \ \ \ Security.SSLRead.argtypes\ =\ [SSLContextRef,\ c\_char\_p,\ c\_size\_t,\ POINTER(c\_size\_t)]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00220}00220\ \ \ \ \ Security.SSLRead.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00221}00221\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00222}00222\ \ \ \ \ Security.SSLWrite.argtypes\ =\ [SSLContextRef,\ c\_char\_p,\ c\_size\_t,\ POINTER(c\_size\_t)]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00223}00223\ \ \ \ \ Security.SSLWrite.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00224}00224\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00225}00225\ \ \ \ \ Security.SSLClose.argtypes\ =\ [SSLContextRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00226}00226\ \ \ \ \ Security.SSLClose.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00227}00227\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00228}00228\ \ \ \ \ Security.SSLGetNumberSupportedCiphers.argtypes\ =\ [SSLContextRef,\ POINTER(c\_size\_t)]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00229}00229\ \ \ \ \ Security.SSLGetNumberSupportedCiphers.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00230}00230\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00231}00231\ \ \ \ \ Security.SSLGetSupportedCiphers.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ SSLContextRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ POINTER(SSLCipherSuite),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ POINTER(c\_size\_t),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00235}00235\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00236}00236\ \ \ \ \ Security.SSLGetSupportedCiphers.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00237}00237\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00238}00238\ \ \ \ \ Security.SSLSetEnabledCiphers.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ SSLContextRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ POINTER(SSLCipherSuite),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ c\_size\_t,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00242}00242\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00243}00243\ \ \ \ \ Security.SSLSetEnabledCiphers.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00244}00244\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00245}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a23319664bbbdcd7a042e5e8bac295c21}{00245}}\ \ \ \ \ Security.SSLGetNumberEnabledCiphers.argtype\ =\ [SSLContextRef,\ POINTER(c\_size\_t)]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00246}00246\ \ \ \ \ Security.SSLGetNumberEnabledCiphers.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00247}00247\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00248}00248\ \ \ \ \ Security.SSLGetEnabledCiphers.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ SSLContextRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ POINTER(SSLCipherSuite),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ POINTER(c\_size\_t),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00252}00252\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00253}00253\ \ \ \ \ Security.SSLGetEnabledCiphers.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00254}00254\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00255}00255\ \ \ \ \ Security.SSLGetNegotiatedCipher.argtypes\ =\ [SSLContextRef,\ POINTER(SSLCipherSuite)]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00256}00256\ \ \ \ \ Security.SSLGetNegotiatedCipher.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00257}00257\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00258}00258\ \ \ \ \ Security.SSLGetNegotiatedProtocolVersion.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ SSLContextRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ POINTER(SSLProtocol),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00261}00261\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00262}00262\ \ \ \ \ Security.SSLGetNegotiatedProtocolVersion.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00263}00263\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00264}00264\ \ \ \ \ Security.SSLCopyPeerTrust.argtypes\ =\ [SSLContextRef,\ POINTER(SecTrustRef)]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00265}00265\ \ \ \ \ Security.SSLCopyPeerTrust.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00266}00266\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00267}00267\ \ \ \ \ Security.SecTrustSetAnchorCertificates.argtypes\ =\ [SecTrustRef,\ CFArrayRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00268}00268\ \ \ \ \ Security.SecTrustSetAnchorCertificates.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00269}00269\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00270}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a7027f98ff04f3992935a9173c33ce208}{00270}}\ \ \ \ \ Security.SecTrustSetAnchorCertificatesOnly.argstypes\ =\ [SecTrustRef,\ Boolean]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00271}00271\ \ \ \ \ Security.SecTrustSetAnchorCertificatesOnly.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00272}00272\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00273}00273\ \ \ \ \ Security.SecTrustEvaluate.argtypes\ =\ [SecTrustRef,\ POINTER(SecTrustResultType)]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00274}00274\ \ \ \ \ Security.SecTrustEvaluate.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00275}00275\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00276}00276\ \ \ \ \ Security.SecTrustGetCertificateCount.argtypes\ =\ [SecTrustRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00277}00277\ \ \ \ \ Security.SecTrustGetCertificateCount.restype\ =\ CFIndex}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00278}00278\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00279}00279\ \ \ \ \ Security.SecTrustGetCertificateAtIndex.argtypes\ =\ [SecTrustRef,\ CFIndex]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00280}00280\ \ \ \ \ Security.SecTrustGetCertificateAtIndex.restype\ =\ SecCertificateRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00281}00281\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00282}00282\ \ \ \ \ Security.SSLCreateContext.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ CFAllocatorRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ SSLProtocolSide,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ SSLConnectionType,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00286}00286\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00287}00287\ \ \ \ \ Security.SSLCreateContext.restype\ =\ SSLContextRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00288}00288\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00289}00289\ \ \ \ \ Security.SSLSetSessionOption.argtypes\ =\ [SSLContextRef,\ SSLSessionOption,\ Boolean]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00290}00290\ \ \ \ \ Security.SSLSetSessionOption.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00291}00291\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00292}00292\ \ \ \ \ Security.SSLSetProtocolVersionMin.argtypes\ =\ [SSLContextRef,\ SSLProtocol]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00293}00293\ \ \ \ \ Security.SSLSetProtocolVersionMin.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00294}00294\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00295}00295\ \ \ \ \ Security.SSLSetProtocolVersionMax.argtypes\ =\ [SSLContextRef,\ SSLProtocol]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00296}00296\ \ \ \ \ Security.SSLSetProtocolVersionMax.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00297}00297\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00298}00298\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ Security.SSLSetALPNProtocols.argtypes\ =\ [SSLContextRef,\ CFArrayRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ Security.SSLSetALPNProtocols.restype\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00301}00301\ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError:}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Supported\ only\ in\ 10.12+}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00304}00304\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00305}00305\ \ \ \ \ Security.SecCopyErrorMessageString.argtypes\ =\ [OSStatus,\ c\_void\_p]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00306}00306\ \ \ \ \ Security.SecCopyErrorMessageString.restype\ =\ CFStringRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00307}00307\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00308}00308\ \ \ \ \ Security.SSLReadFunc\ =\ SSLReadFunc}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00309}00309\ \ \ \ \ Security.SSLWriteFunc\ =\ SSLWriteFunc}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00310}00310\ \ \ \ \ Security.SSLContextRef\ =\ SSLContextRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00311}00311\ \ \ \ \ Security.SSLProtocol\ =\ SSLProtocol}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00312}00312\ \ \ \ \ Security.SSLCipherSuite\ =\ SSLCipherSuite}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00313}00313\ \ \ \ \ Security.SecIdentityRef\ =\ SecIdentityRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00314}00314\ \ \ \ \ Security.SecKeychainRef\ =\ SecKeychainRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00315}00315\ \ \ \ \ Security.SecTrustRef\ =\ SecTrustRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00316}00316\ \ \ \ \ Security.SecTrustResultType\ =\ SecTrustResultType}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00317}00317\ \ \ \ \ Security.SecExternalFormat\ =\ SecExternalFormat}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00318}00318\ \ \ \ \ Security.OSStatus\ =\ OSStatus}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00319}00319\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00320}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a854143deeedaab2b4da02831e3d8925e}{00320}}\ \ \ \ \ Security.kSecImportExportPassphrase\ =\ CFStringRef.in\_dll(}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ Security,\ \textcolor{stringliteral}{"{}kSecImportExportPassphrase"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00322}00322\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00323}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a210e4aedd2c6a824157b903e47cfc1df}{00323}}\ \ \ \ \ Security.kSecImportItemIdentity\ =\ CFStringRef.in\_dll(}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ Security,\ \textcolor{stringliteral}{"{}kSecImportItemIdentity"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00325}00325\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00326}00326\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00327}00327\ \ \ \ \ \textcolor{comment}{\#\ CoreFoundation\ time!}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00328}00328\ \ \ \ \ CoreFoundation.CFRetain.argtypes\ =\ [CFTypeRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00329}00329\ \ \ \ \ CoreFoundation.CFRetain.restype\ =\ CFTypeRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00330}00330\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00331}00331\ \ \ \ \ CoreFoundation.CFRelease.argtypes\ =\ [CFTypeRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00332}00332\ \ \ \ \ CoreFoundation.CFRelease.restype\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00333}00333\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00334}00334\ \ \ \ \ CoreFoundation.CFGetTypeID.argtypes\ =\ [CFTypeRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00335}00335\ \ \ \ \ CoreFoundation.CFGetTypeID.restype\ =\ CFTypeID}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00336}00336\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00337}00337\ \ \ \ \ CoreFoundation.CFStringCreateWithCString.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ CFAllocatorRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ c\_char\_p,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ CFStringEncoding,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00341}00341\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00342}00342\ \ \ \ \ CoreFoundation.CFStringCreateWithCString.restype\ =\ CFStringRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00343}00343\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00344}00344\ \ \ \ \ CoreFoundation.CFStringGetCStringPtr.argtypes\ =\ [CFStringRef,\ CFStringEncoding]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00345}00345\ \ \ \ \ CoreFoundation.CFStringGetCStringPtr.restype\ =\ c\_char\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00346}00346\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00347}00347\ \ \ \ \ CoreFoundation.CFStringGetCString.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ CFStringRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ c\_char\_p,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ CFIndex,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ CFStringEncoding,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00352}00352\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00353}00353\ \ \ \ \ CoreFoundation.CFStringGetCString.restype\ =\ c\_bool}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00354}00354\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00355}00355\ \ \ \ \ CoreFoundation.CFDataCreate.argtypes\ =\ [CFAllocatorRef,\ c\_char\_p,\ CFIndex]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00356}00356\ \ \ \ \ CoreFoundation.CFDataCreate.restype\ =\ CFDataRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00357}00357\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00358}00358\ \ \ \ \ CoreFoundation.CFDataGetLength.argtypes\ =\ [CFDataRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00359}00359\ \ \ \ \ CoreFoundation.CFDataGetLength.restype\ =\ CFIndex}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00360}00360\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00361}00361\ \ \ \ \ CoreFoundation.CFDataGetBytePtr.argtypes\ =\ [CFDataRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00362}00362\ \ \ \ \ CoreFoundation.CFDataGetBytePtr.restype\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00363}00363\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00364}00364\ \ \ \ \ CoreFoundation.CFDictionaryCreate.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ CFAllocatorRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00366}00366\ \ \ \ \ \ \ \ \ POINTER(CFTypeRef),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00367}00367\ \ \ \ \ \ \ \ \ POINTER(CFTypeRef),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00368}00368\ \ \ \ \ \ \ \ \ CFIndex,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ CFDictionaryKeyCallBacks,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ CFDictionaryValueCallBacks,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00371}00371\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00372}00372\ \ \ \ \ CoreFoundation.CFDictionaryCreate.restype\ =\ CFDictionaryRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00373}00373\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00374}00374\ \ \ \ \ CoreFoundation.CFDictionaryGetValue.argtypes\ =\ [CFDictionaryRef,\ CFTypeRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00375}00375\ \ \ \ \ CoreFoundation.CFDictionaryGetValue.restype\ =\ CFTypeRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00376}00376\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00377}00377\ \ \ \ \ CoreFoundation.CFArrayCreate.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ CFAllocatorRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00379}00379\ \ \ \ \ \ \ \ \ POINTER(CFTypeRef),}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ CFIndex,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ CFArrayCallBacks,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00382}00382\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00383}00383\ \ \ \ \ CoreFoundation.CFArrayCreate.restype\ =\ CFArrayRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00384}00384\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00385}00385\ \ \ \ \ CoreFoundation.CFArrayCreateMutable.argtypes\ =\ [}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ CFAllocatorRef,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ CFIndex,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ CFArrayCallBacks,}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00389}00389\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00390}00390\ \ \ \ \ CoreFoundation.CFArrayCreateMutable.restype\ =\ CFMutableArrayRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00391}00391\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00392}00392\ \ \ \ \ CoreFoundation.CFArrayAppendValue.argtypes\ =\ [CFMutableArrayRef,\ c\_void\_p]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00393}00393\ \ \ \ \ CoreFoundation.CFArrayAppendValue.restype\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00394}00394\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00395}00395\ \ \ \ \ CoreFoundation.CFArrayGetCount.argtypes\ =\ [CFArrayRef]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00396}00396\ \ \ \ \ CoreFoundation.CFArrayGetCount.restype\ =\ CFIndex}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00397}00397\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00398}00398\ \ \ \ \ CoreFoundation.CFArrayGetValueAtIndex.argtypes\ =\ [CFArrayRef,\ CFIndex]}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00399}00399\ \ \ \ \ CoreFoundation.CFArrayGetValueAtIndex.restype\ =\ c\_void\_p}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00400}00400\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00401}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a1f0730339616aa6894c1088900f0caf5}{00401}}\ \ \ \ \ CoreFoundation.kCFAllocatorDefault\ =\ CFAllocatorRef.in\_dll(}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ CoreFoundation,\ \textcolor{stringliteral}{"{}kCFAllocatorDefault"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00403}00403\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00404}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a6de374a8f7348fac89c49057a81ba502}{00404}}\ \ \ \ \ CoreFoundation.kCFTypeArrayCallBacks\ =\ c\_void\_p.in\_dll(}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00405}00405\ \ \ \ \ \ \ \ \ CoreFoundation,\ \textcolor{stringliteral}{"{}kCFTypeArrayCallBacks"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00406}00406\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00407}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a64569725c583e04297200e8adb2ce22c}{00407}}\ \ \ \ \ CoreFoundation.kCFTypeDictionaryKeyCallBacks\ =\ c\_void\_p.in\_dll(}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00408}00408\ \ \ \ \ \ \ \ \ CoreFoundation,\ \textcolor{stringliteral}{"{}kCFTypeDictionaryKeyCallBacks"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00409}00409\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00410}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_a88539e9a420cf2b706cd684d2b7c1fa7}{00410}}\ \ \ \ \ CoreFoundation.kCFTypeDictionaryValueCallBacks\ =\ c\_void\_p.in\_dll(}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00411}00411\ \ \ \ \ \ \ \ \ CoreFoundation,\ \textcolor{stringliteral}{"{}kCFTypeDictionaryValueCallBacks"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00412}00412\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00413}00413\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00414}00414\ \ \ \ \ CoreFoundation.CFTypeRef\ =\ CFTypeRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00415}00415\ \ \ \ \ CoreFoundation.CFArrayRef\ =\ CFArrayRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00416}00416\ \ \ \ \ CoreFoundation.CFStringRef\ =\ CFStringRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00417}00417\ \ \ \ \ CoreFoundation.CFDictionaryRef\ =\ CFDictionaryRef}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00418}00418\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00419}00419\ \textcolor{keywordflow}{except}\ (AttributeError):}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00420}00420\ \ \ \ \ \textcolor{keywordflow}{raise}\ ImportError(\textcolor{stringliteral}{"{}Error\ initializing\ ctypes"{}})}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00421}00421\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00422}00422\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00423}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_c_f_const}{00423}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_c_f_const}{CFConst}}(object):}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00424}00424\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00425}00425\ \textcolor{stringliteral}{\ \ \ \ A\ class\ object\ that\ acts\ as\ essentially\ a\ namespace\ for\ CoreFoundation}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00426}00426\ \textcolor{stringliteral}{\ \ \ \ constants.}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00427}00427\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00428}00428\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00429}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_c_f_const_a0bd3090d175133eaac7e6eaf1f5bb24a}{00429}}\ \ \ \ \ kCFStringEncodingUTF8\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_af2ce7b905a32bf04e612709463d89e8a}{CFStringEncoding}}(0x08000100)}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00430}00430\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00431}00431\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00432}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const}{00432}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const}{SecurityConst}}(object):}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00433}00433\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00434}00434\ \textcolor{stringliteral}{\ \ \ \ A\ class\ object\ that\ acts\ as\ essentially\ a\ namespace\ for\ Security\ constants.}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00435}00435\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00436}00436\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00437}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a250a39b93457beb26ef220eeda4c99cb}{00437}}\ \ \ \ \ kSSLSessionOptionBreakOnServerAuth\ =\ 0}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00438}00438\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00439}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a181a9c93f1665e123ce81ec95da7d2cb}{00439}}\ \ \ \ \ kSSLProtocol2\ =\ 1}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00440}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a6aff6dd4d8c11f55d5723cbd5c9d9c2f}{00440}}\ \ \ \ \ kSSLProtocol3\ =\ 2}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00441}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_abf3fd4b0d048c0742fe782ad83b38db5}{00441}}\ \ \ \ \ kTLSProtocol1\ =\ 4}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00442}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a89f3383b0f3e617a314465728ca6a931}{00442}}\ \ \ \ \ kTLSProtocol11\ =\ 7}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00443}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_aff994ce4f578cca5bc548a12d5a96459}{00443}}\ \ \ \ \ kTLSProtocol12\ =\ 8}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00444}00444\ \ \ \ \ \textcolor{comment}{\#\ SecureTransport\ does\ not\ support\ TLS\ 1.3\ even\ if\ there's\ a\ constant\ for\ it}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00445}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a53a709052af06774eb151523a3c463b3}{00445}}\ \ \ \ \ kTLSProtocol13\ =\ 10}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00446}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a0f139fc8eefd2e5672598734cf5ae044}{00446}}\ \ \ \ \ kTLSProtocolMaxSupported\ =\ 999}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00447}00447\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00448}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a6237162124de72d807aaa17639b9dc90}{00448}}\ \ \ \ \ kSSLClientSide\ =\ 1}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00449}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a49cc3218f61ddf16bfbc59d8f0e8b123}{00449}}\ \ \ \ \ kSSLStreamType\ =\ 0}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00450}00450\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00451}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a8209c48cfcb98e841340b27710cdf0a7}{00451}}\ \ \ \ \ kSecFormatPEMSequence\ =\ 10}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00452}00452\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00453}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_af882f2629199a22430f681f62ae93775}{00453}}\ \ \ \ \ kSecTrustResultInvalid\ =\ 0}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00454}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a9539a2043bbb421d0c392b7aedf6d148}{00454}}\ \ \ \ \ kSecTrustResultProceed\ =\ 1}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00455}00455\ \ \ \ \ \textcolor{comment}{\#\ This\ gap\ is\ present\ on\ purpose:\ this\ was\ kSecTrustResultConfirm,\ which}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00456}00456\ \ \ \ \ \textcolor{comment}{\#\ is\ deprecated.}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00457}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a060832d9ea3fd740c358ef559d32a0ec}{00457}}\ \ \ \ \ kSecTrustResultDeny\ =\ 3}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00458}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_afbd266e83ea9ae27970327186f4b34eb}{00458}}\ \ \ \ \ kSecTrustResultUnspecified\ =\ 4}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00459}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a819cf7280dad571131687f8adc575d13}{00459}}\ \ \ \ \ kSecTrustResultRecoverableTrustFailure\ =\ 5}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00460}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a2ac04f4307d6db25abcd7a375aff0f67}{00460}}\ \ \ \ \ kSecTrustResultFatalTrustFailure\ =\ 6}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00461}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_ab30c4b3e38bbef82b2a83284eecf4bdf}{00461}}\ \ \ \ \ kSecTrustResultOtherError\ =\ 7}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00462}00462\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00463}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_aaa2bde7eaa38a5541f82208ff61572fc}{00463}}\ \ \ \ \ errSSLProtocol\ =\ -\/9800}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00464}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a4350366987626f2f021413a765d497cb}{00464}}\ \ \ \ \ errSSLWouldBlock\ =\ -\/9803}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00465}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a38a5deff5765a526a60e25560e94dc03}{00465}}\ \ \ \ \ errSSLClosedGraceful\ =\ -\/9805}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00466}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a143c10883740ffed8c1d14b45558f5ed}{00466}}\ \ \ \ \ errSSLClosedNoNotify\ =\ -\/9816}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00467}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a6a9243fe40f1ba91174052989d1a24b0}{00467}}\ \ \ \ \ errSSLClosedAbort\ =\ -\/9806}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00468}00468\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00469}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a2d9325372a0442ff4961eca3fb5fc172}{00469}}\ \ \ \ \ errSSLXCertChainInvalid\ =\ -\/9807}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00470}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a85e4d8e5ee5a464dc84ee4064b8e9d13}{00470}}\ \ \ \ \ errSSLCrypto\ =\ -\/9809}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00471}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_af97c2833673ddb650f6db72c4e51cc1a}{00471}}\ \ \ \ \ errSSLInternal\ =\ -\/9810}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00472}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a1468dd9142f64991217397b90a2633fc}{00472}}\ \ \ \ \ errSSLCertExpired\ =\ -\/9814}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00473}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a9205c14944ef7e2a17384d09e8008f56}{00473}}\ \ \ \ \ errSSLCertNotYetValid\ =\ -\/9815}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00474}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_af4179ebfb757d049226cde4c11dae83f}{00474}}\ \ \ \ \ errSSLUnknownRootCert\ =\ -\/9812}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00475}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a5ed697a679700b955edf75c64c91d81b}{00475}}\ \ \ \ \ errSSLNoRootCert\ =\ -\/9813}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00476}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a84c718f59c269063c85a87b9cdf18835}{00476}}\ \ \ \ \ errSSLHostNameMismatch\ =\ -\/9843}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00477}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_aaf78b74e62efd7e3bc0bed19fa669078}{00477}}\ \ \ \ \ errSSLPeerHandshakeFail\ =\ -\/9824}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00478}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a05b3f4b0111d4cef25f4170267a69a52}{00478}}\ \ \ \ \ errSSLPeerUserCancelled\ =\ -\/9839}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00479}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a669494990ec25ebf969b2e4cfae0fd13}{00479}}\ \ \ \ \ errSSLWeakPeerEphemeralDHKey\ =\ -\/9850}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00480}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a42ec155cd16ab6d2da9f44efcd27098d}{00480}}\ \ \ \ \ errSSLServerAuthCompleted\ =\ -\/9841}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00481}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a0b0677c1a59bfdf4512ce3785a1b36d6}{00481}}\ \ \ \ \ errSSLRecordOverflow\ =\ -\/9847}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00482}00482\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00483}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a50f4d75e12afc1b10fed42c0e04a087a}{00483}}\ \ \ \ \ errSecVerifyFailed\ =\ -\/67808}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00484}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_ab29619409fdb365567702276536b094f}{00484}}\ \ \ \ \ errSecNoTrustSettings\ =\ -\/25263}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00485}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a2e5c5870e9fdab45dcb61845aba9a466}{00485}}\ \ \ \ \ errSecItemNotFound\ =\ -\/25300}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00486}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a314f516190bca3ff5fd1a984f16eca27}{00486}}\ \ \ \ \ errSecInvalidTrustSettings\ =\ -\/25262}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00487}00487\ }
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00488}00488\ \ \ \ \ \textcolor{comment}{\#\ Cipher\ suites.\ We\ only\ pick\ the\ ones\ our\ default\ cipher\ string\ allows.}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00489}00489\ \ \ \ \ \textcolor{comment}{\#\ Source:\ https://developer.apple.com/documentation/security/1550981-\/ssl\_cipher\_suite\_values}}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00490}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a9c20a654a4776e943c8b99ccef4720ae}{00490}}\ \ \ \ \ TLS\_ECDHE\_ECDSA\_WITH\_AES\_256\_GCM\_SHA384\ =\ 0xC02C}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00491}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_aecb0e6012c5a7e30ac29ec5b54a849a7}{00491}}\ \ \ \ \ TLS\_ECDHE\_RSA\_WITH\_AES\_256\_GCM\_SHA384\ =\ 0xC030}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00492}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_ad0e8dd663cdcd52f3dcaf6021ea67090}{00492}}\ \ \ \ \ TLS\_ECDHE\_ECDSA\_WITH\_AES\_128\_GCM\_SHA256\ =\ 0xC02B}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00493}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a1220299433908cbb8910fd143fa2f938}{00493}}\ \ \ \ \ TLS\_ECDHE\_RSA\_WITH\_AES\_128\_GCM\_SHA256\ =\ 0xC02F}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00494}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a056cf25e9b376d44b5cab4d81195b924}{00494}}\ \ \ \ \ TLS\_ECDHE\_ECDSA\_WITH\_CHACHA20\_POLY1305\_SHA256\ =\ 0xCCA9}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00495}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_aa44767c5a1a934463d7c72bec461897b}{00495}}\ \ \ \ \ TLS\_ECDHE\_RSA\_WITH\_CHACHA20\_POLY1305\_SHA256\ =\ 0xCCA8}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00496}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a072bfacfa949bf7861747fe5e25909fa}{00496}}\ \ \ \ \ TLS\_DHE\_RSA\_WITH\_AES\_256\_GCM\_SHA384\ =\ 0x009F}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00497}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_ab12fb1335534c13cdb4b0b5d9f0ee9ef}{00497}}\ \ \ \ \ TLS\_DHE\_RSA\_WITH\_AES\_128\_GCM\_SHA256\ =\ 0x009E}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00498}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_af0d32dbcdff0558fc317ba6056a67ded}{00498}}\ \ \ \ \ TLS\_ECDHE\_ECDSA\_WITH\_AES\_256\_CBC\_SHA384\ =\ 0xC024}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00499}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a64ce7cee9b432edd86d1ea745c14e664}{00499}}\ \ \ \ \ TLS\_ECDHE\_RSA\_WITH\_AES\_256\_CBC\_SHA384\ =\ 0xC028}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00500}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_afa46e74b45ec237f0824c559c20af89a}{00500}}\ \ \ \ \ TLS\_ECDHE\_ECDSA\_WITH\_AES\_256\_CBC\_SHA\ =\ 0xC00A}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00501}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a715da06f8d81e9d22acd3d5cd717b8bf}{00501}}\ \ \ \ \ TLS\_ECDHE\_RSA\_WITH\_AES\_256\_CBC\_SHA\ =\ 0xC014}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00502}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a1856324ba01b570701a5fb4072ebb2ec}{00502}}\ \ \ \ \ TLS\_DHE\_RSA\_WITH\_AES\_256\_CBC\_SHA256\ =\ 0x006B}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00503}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a920f4fd7be6bcfc4da9a6d3c4f66d6e7}{00503}}\ \ \ \ \ TLS\_DHE\_RSA\_WITH\_AES\_256\_CBC\_SHA\ =\ 0x0039}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00504}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a1ca6e3c2413e99d4daff9f80456c3269}{00504}}\ \ \ \ \ TLS\_ECDHE\_ECDSA\_WITH\_AES\_128\_CBC\_SHA256\ =\ 0xC023}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00505}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_ad9df5e24800db77aedbebc775d9c231a}{00505}}\ \ \ \ \ TLS\_ECDHE\_RSA\_WITH\_AES\_128\_CBC\_SHA256\ =\ 0xC027}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00506}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_af3854b30439370dcf369f3d0536c58ee}{00506}}\ \ \ \ \ TLS\_ECDHE\_ECDSA\_WITH\_AES\_128\_CBC\_SHA\ =\ 0xC009}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00507}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a86ea78bf998ea81425e1ef973b671e25}{00507}}\ \ \ \ \ TLS\_ECDHE\_RSA\_WITH\_AES\_128\_CBC\_SHA\ =\ 0xC013}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00508}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a69d5611672f24fbd600611aafa642c5b}{00508}}\ \ \ \ \ TLS\_DHE\_RSA\_WITH\_AES\_128\_CBC\_SHA256\ =\ 0x0067}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00509}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a7f28a695e963b5e82ce804b5c623cc0d}{00509}}\ \ \ \ \ TLS\_DHE\_RSA\_WITH\_AES\_128\_CBC\_SHA\ =\ 0x0033}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00510}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_ac3cb6fc58608e6cdb0e8f9254de68bed}{00510}}\ \ \ \ \ TLS\_RSA\_WITH\_AES\_256\_GCM\_SHA384\ =\ 0x009D}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00511}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a1f77fb482c972c8cb5f2b05c23f8ed97}{00511}}\ \ \ \ \ TLS\_RSA\_WITH\_AES\_128\_GCM\_SHA256\ =\ 0x009C}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00512}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_afec0cf12afefc3f81368cc70f2fef21b}{00512}}\ \ \ \ \ TLS\_RSA\_WITH\_AES\_256\_CBC\_SHA256\ =\ 0x003D}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00513}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a73b803c3ce7e50dbeeea015990104083}{00513}}\ \ \ \ \ TLS\_RSA\_WITH\_AES\_128\_CBC\_SHA256\ =\ 0x003C}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00514}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a1f46c382b377f5f547897101565aa0d1}{00514}}\ \ \ \ \ TLS\_RSA\_WITH\_AES\_256\_CBC\_SHA\ =\ 0x0035}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00515}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_ad2700ec1ce327f08d2c6cd8ba319c2fc}{00515}}\ \ \ \ \ TLS\_RSA\_WITH\_AES\_128\_CBC\_SHA\ =\ 0x002F}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00516}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a14a5e445f7c26dbaeaed0659aab0661c}{00516}}\ \ \ \ \ TLS\_AES\_128\_GCM\_SHA256\ =\ 0x1301}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00517}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a20a5b51c24a9d6cfbef7752f517b3615}{00517}}\ \ \ \ \ TLS\_AES\_256\_GCM\_SHA384\ =\ 0x1302}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00518}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a5524bc14f355d2628a75e026ac80a00b}{00518}}\ \ \ \ \ TLS\_AES\_128\_CCM\_8\_SHA256\ =\ 0x1305}
+\DoxyCodeLine{\Hypertarget{bindings_8py_source_l00519}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1urllib3_1_1contrib_1_1__securetransport_1_1bindings_1_1_security_const_a9c5637ee22d1186a1a24d3f8feb0e1c3}{00519}}\ \ \ \ \ TLS\_AES\_128\_CCM\_SHA256\ =\ 0x1304}
+
+\end{DoxyCode}

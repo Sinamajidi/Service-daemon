@@ -1,0 +1,47 @@
+\doxysection{metadata\+\_\+editable.\+py}
+\hypertarget{metadata__editable_8py_source}{}\label{metadata__editable_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/operations/build/metadata\_editable.py@{venv/Lib/site-\/packages/pip/\_internal/operations/build/metadata\_editable.py}}
+\doxymbox{\hyperlink{metadata__editable_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1metadata__editable}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}Metadata\ generation\ logic\ for\ source\ distributions."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00003}00003\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00005}00005\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1pyproject__hooks}{pip.\_vendor.pyproject\_hooks}}\ \textcolor{keyword}{import}\ BuildBackendHookCaller}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1build__env}{pip.\_internal.build\_env}}\ \textcolor{keyword}{import}\ BuildEnvironment}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00008}00008\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00009}00009\ \ \ \ \ InstallationSubprocessError,}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00010}00010\ \ \ \ \ MetadataGenerationFailed,}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00011}00011\ )}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00012}00012\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1subprocess}{pip.\_internal.utils.subprocess}}\ \textcolor{keyword}{import}\ runner\_with\_spinner\_message}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00013}00013\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir}{pip.\_internal.utils.temp\_dir}}\ \textcolor{keyword}{import}\ TempDirectory}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00015}00015\ }
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00016}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1metadata__editable_aea0a392c7332526c0254be43bebf7025}{00016}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1metadata__editable_aea0a392c7332526c0254be43bebf7025}{generate\_editable\_metadata}}(}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00017}00017\ \ \ \ \ build\_env:\ BuildEnvironment,\ backend:\ BuildBackendHookCaller,\ details:\ str}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00018}00018\ )\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00019}00019\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Generate\ metadata\ using\ mechanisms\ described\ in\ PEP\ 660.}}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00020}00020\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00021}00021\ \textcolor{stringliteral}{\ \ \ \ Returns\ the\ generated\ metadata\ directory.}}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00022}00022\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00023}00023\ \ \ \ \ metadata\_tmpdir\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory}{TempDirectory}}(kind=\textcolor{stringliteral}{"{}modern-\/metadata"{}},\ globally\_managed=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00025}00025\ \ \ \ \ metadata\_dir\ =\ metadata\_tmpdir.path}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00027}00027\ \ \ \ \ \textcolor{keyword}{with}\ build\_env:}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00028}00028\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Note\ that\ BuildBackendHookCaller\ implements\ a\ fallback\ for}}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00029}00029\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ prepare\_metadata\_for\_build\_wheel/editable,\ so\ we\ don't\ have\ to}}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00030}00030\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ consider\ the\ possibility\ that\ this\ hook\ doesn't\ exist.}}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00031}00031\ \ \ \ \ \ \ \ \ runner\ =\ runner\_with\_spinner\_message(}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00032}00032\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Preparing\ editable\ metadata\ (pyproject.toml)"{}}}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00033}00033\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ backend.subprocess\_runner(runner):}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ distinfo\_dir\ =\ backend.prepare\_metadata\_for\_build\_editable(metadata\_dir)}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ InstallationSubprocessError\ \textcolor{keyword}{as}\ error:}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_metadata_generation_failed}{MetadataGenerationFailed}}(package\_details=details)\ \textcolor{keyword}{from}\ error}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00040}00040\ \ \ \ \ \textcolor{keyword}{assert}\ distinfo\_dir\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{metadata__editable_8py_source_l00041}00041\ \ \ \ \ \textcolor{keywordflow}{return}\ os.path.join(metadata\_dir,\ distinfo\_dir)}
+
+\end{DoxyCode}

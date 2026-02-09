@@ -1,0 +1,170 @@
+\doxysection{\+\_\+tstrings.\+py}
+\hypertarget{__tstrings_8py_source}{}\label{__tstrings_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_tstrings.py@{venv/Lib/site-\/packages/psycopg/\_tstrings.py}}
+\doxymbox{\hyperlink{__tstrings_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00002}00002\ \textcolor{stringliteral}{Template\ strings\ support\ in\ queries.}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2025\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00009}00009\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Any}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00011}00011\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ abc}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00012}00012\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00013}00013\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ sql}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00014}00014\ \textcolor{keyword}{from}\ .\_enums\ \textcolor{keyword}{import}\ PyFormat}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00015}00015\ \textcolor{keyword}{from}\ .\_compat\ \textcolor{keyword}{import}\ Interpolation,\ Template}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00016}00016\ \textcolor{keyword}{from}\ .\_transformer\ \textcolor{keyword}{import}\ Transformer}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00018}00018\ \textcolor{comment}{\#\ Formats\ supported\ by\ template\ strings}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00019}\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_a2bbe7e365f9ac97faf01bdf10b1effb0}{00019}}\ FMT\_AUTO\ =\ PyFormat.AUTO.value}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00020}\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_a56410ebc135c69b142eb135538de90e4}{00020}}\ FMT\_TEXT\ =\ PyFormat.TEXT.value}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00021}\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_ae859712b732b492a6e301113140df174}{00021}}\ FMT\_BINARY\ =\ PyFormat.BINARY.value}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00022}\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_a764e7466dbdc0d2982a491ccbf54e992}{00022}}\ FMT\_IDENT\ =\ \textcolor{stringliteral}{"{}i"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00023}\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_ac0e303be45cfa64986a1d00fee632173}{00023}}\ FMT\_LITERAL\ =\ \textcolor{stringliteral}{"{}l"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00024}\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_a98433dc9df5a56a59e541e147e1013b4}{00024}}\ FMT\_SQL\ =\ \textcolor{stringliteral}{"{}q"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00027}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor}{00027}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor}{TemplateProcessor}}:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00028}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_af6a6a50a9d95577ef61e0dfddd9a747e}{00028}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_af6a6a50a9d95577ef61e0dfddd9a747e}{\_\_init\_\_}}(self,\ template:\ Template,\ *,\ tx:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_transformer}{abc.Transformer}},\ server\_params:\ bool):}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00029}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a143ef8674635dfbcd938d2c27956eff1}{00029}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a143ef8674635dfbcd938d2c27956eff1}{template}}\ =\ template}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00030}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a62b5ab960a12709f52b3cecb269ee438}{00030}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a62b5ab960a12709f52b3cecb269ee438}{\_tx}}\ =\ tx}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00031}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a3b7019ec1ef1e53c49aacfd6afb059cc}{00031}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a3b7019ec1ef1e53c49aacfd6afb059cc}{\_server\_params}}\ =\ server\_params}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00033}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a62f231b372ba431ca5cfd2055905c68c}{00033}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a62f231b372ba431ca5cfd2055905c68c}{query}}\ =\ b\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00034}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a50cf656466645b95c4cebdb6e114af18}{00034}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a50cf656466645b95c4cebdb6e114af18}{formats}}:\ list[PyFormat]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00035}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a33830a25074aa5d350cde27f929bcfaf}{00035}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a33830a25074aa5d350cde27f929bcfaf}{params}}:\ list[Any]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00037}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a431637ef8d197f7b35f42879b2d10c4f}{00037}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a431637ef8d197f7b35f42879b2d10c4f}{\_chunks}}:\ list[bytes]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00039}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_aef20bb5c91d31aacfeff186c5cb37cd0}{00039}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_aef20bb5c91d31aacfeff186c5cb37cd0}{process}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a76efcc62716536191c78e74ad74cc8a7}{\_process\_template}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a143ef8674635dfbcd938d2c27956eff1}{template}})}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a62f231b372ba431ca5cfd2055905c68c}{query}}\ =\ b\textcolor{stringliteral}{"{}"{}}.join(self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a431637ef8d197f7b35f42879b2d10c4f}{\_chunks}})}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00043}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_af1bf7fdb7b7e33b26a55e57ab13ae449}{00043}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_af1bf7fdb7b7e33b26a55e57ab13ae449}{\_check\_template\_format}}(self,\ item:\ Interpolation,\ want\_fmt:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ item.format\_spec\ ==\ want\_fmt:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ fmt\ =\ f\textcolor{stringliteral}{"{}:\{item.format\_spec\}"{}}\ \textcolor{keywordflow}{if}\ item.format\_spec\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ cls\ =\ type(item.value)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}\{cls.\_\_module\_\_\}.\{cls.\_\_qualname\_\_\}\ require\ format\ ':\{want\_fmt\}'"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(f\textcolor{stringliteral}{"{}\{msg\};\ got\ '\{\{\{item.expression\}\{fmt\}\}\}'"{}})}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00051}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a76efcc62716536191c78e74ad74cc8a7}{00051}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a76efcc62716536191c78e74ad74cc8a7}{\_process\_template}}(self,\ t:\ Template)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ item\ \textcolor{keywordflow}{in}\ t:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(item,\ str):}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a431637ef8d197f7b35f42879b2d10c4f}{\_chunks}}.append(item.encode(self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a62b5ab960a12709f52b3cecb269ee438}{\_tx}}.encoding))}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ isinstance(item,\ Interpolation)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ item.conversion:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}conversions\ not\ supported\ in\ query;\ got"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ '\{\{\{item.expression\}!\{item.conversion\}\}\}'"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(item.value,\ Template):}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_af1bf7fdb7b7e33b26a55e57ab13ae449}{\_check\_template\_format}}(item,\ FMT\_SQL)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a76efcc62716536191c78e74ad74cc8a7}{\_process\_template}}(item.value)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(item.value,\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable}{sql.Composable}}):}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_aa4f63f766bc910a62fcb24a281724684}{\_process\_composable}}(item)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ (fmt\ :=\ item.format\_spec\ \textcolor{keywordflow}{or}\ FMT\_AUTO)\ ==\ FMT\_IDENT:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(item.value,\ str):}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}identifier\ values\ must\ be\ strings;\ got"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ \{type(item.value).\_\_qualname\_\_\}"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ in\ \{\{\{item.expression\}:\{fmt\}\}\}"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a431637ef8d197f7b35f42879b2d10c4f}{\_chunks}}.append(\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier}{sql.Identifier}}(item.value).\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_a1f64049ce57beb376d75461741077e9a}{as\_bytes}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a62b5ab960a12709f52b3cecb269ee438}{\_tx}}))}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ fmt\ ==\ FMT\_LITERAL:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a431637ef8d197f7b35f42879b2d10c4f}{\_chunks}}.append(\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_literal}{sql.Literal}}(item.value).\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_a1f64049ce57beb376d75461741077e9a}{as\_bytes}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a62b5ab960a12709f52b3cecb269ee438}{\_tx}}))}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ fmt\ ==\ FMT\_SQL:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ It\ must\ have\ been\ processed\ already}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}sql\ values\ must\ be\ sql.Composite,\ sql.SQL,\ or\ Template;"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ got\ \{type(item.value).\_\_qualname\_\_\}"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ in\ \{\{\{item.expression\}:\{fmt\}\}\}"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00090}00090\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a3b7019ec1ef1e53c49aacfd6afb059cc}{\_server\_params}}:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_aad4defef87ce19098d86305ff63618d5}{\_process\_server\_variable}}(item,\ fmt)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a6cf8639cd054f9d178ebdc5c8afca77a}{\_process\_client\_variable}}(item,\ fmt)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00097}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_aad4defef87ce19098d86305ff63618d5}{00097}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_aad4defef87ce19098d86305ff63618d5}{\_process\_server\_variable}}(self,\ item:\ Interpolation,\ fmt:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ pyfmt\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__enums_1_1_py_format}{PyFormat}}(fmt)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}format\ '\{fmt\}'\ not\ supported\ in\ query;"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ got\ '\{\{\{item.expression\}:\{fmt\}\}\}'"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a50cf656466645b95c4cebdb6e114af18}{formats}}.append(pyfmt)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a33830a25074aa5d350cde27f929bcfaf}{params}}.append(item.value)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a431637ef8d197f7b35f42879b2d10c4f}{\_chunks}}.append(b\textcolor{stringliteral}{"{}\$\%d"{}}\ \%\ len(self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a33830a25074aa5d350cde27f929bcfaf}{params}}))}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00109}00109\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00110}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a6cf8639cd054f9d178ebdc5c8afca77a}{00110}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a6cf8639cd054f9d178ebdc5c8afca77a}{\_process\_client\_variable}}(self,\ item:\ Interpolation,\ fmt:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpsycopg_1_1__enums_1_1_py_format}{PyFormat}}(fmt)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ValueError:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}format\ '\{fmt\}'\ not\ supported\ in\ query;"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ got\ '\{\{\{item.expression\}:\{fmt\}\}\}'"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00118}00118\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ param\ =\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_literal}{sql.Literal}}(item.value).\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_a1f64049ce57beb376d75461741077e9a}{as\_bytes}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a62b5ab960a12709f52b3cecb269ee438}{\_tx}})}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a431637ef8d197f7b35f42879b2d10c4f}{\_chunks}}.append(param)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a33830a25074aa5d350cde27f929bcfaf}{params}}.append(param)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00122}00122\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00123}\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_aa4f63f766bc910a62fcb24a281724684}{00123}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_aa4f63f766bc910a62fcb24a281724684}{\_process\_composable}}(self,\ item:\ Interpolation)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(item.value,\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier}{sql.Identifier}}):}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_af1bf7fdb7b7e33b26a55e57ab13ae449}{\_check\_template\_format}}(item,\ FMT\_IDENT)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a431637ef8d197f7b35f42879b2d10c4f}{\_chunks}}.append(item.value.as\_bytes(self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a62b5ab960a12709f52b3cecb269ee438}{\_tx}}))}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00128}00128\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(item.value,\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_literal}{sql.Literal}}):}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_af1bf7fdb7b7e33b26a55e57ab13ae449}{\_check\_template\_format}}(item,\ FMT\_LITERAL)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a431637ef8d197f7b35f42879b2d10c4f}{\_chunks}}.append(item.value.as\_bytes(self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a62b5ab960a12709f52b3cecb269ee438}{\_tx}}))}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00133}00133\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(item.value,\ (\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{sql.SQL}},\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{sql.Composed}})):}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_af1bf7fdb7b7e33b26a55e57ab13ae449}{\_check\_template\_format}}(item,\ FMT\_SQL)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a431637ef8d197f7b35f42879b2d10c4f}{\_chunks}}.append(item.value.as\_bytes(self.\doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor_a62b5ab960a12709f52b3cecb269ee438}{\_tx}}))}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00138}00138\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{type(item.value).\_\_qualname\_\_\}\ not\ supported\ in\ string\ templates"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00143}00143\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00145}\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_a85757f535d6373e74775c6c4e0863586}{00145}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_a85757f535d6373e74775c6c4e0863586}{as\_string}}(t:\ Template,\ context:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_adapt_context}{abc.AdaptContext}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00146}00146\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Convert\ a\ template\ string\ to\ a\ string.}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00147}00147\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00148}00148\ \textcolor{stringliteral}{\ \ \ \ This\ function\ is\ exposed\ as\ part\ of\ psycopg.sql.as\_string().}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00149}00149\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00150}00150\ \ \ \ \ tx\ =\ Transformer(context)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00151}00151\ \ \ \ \ tp\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor}{TemplateProcessor}}(t,\ tx=tx,\ server\_params=\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00152}00152\ \ \ \ \ tp.process()}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00153}00153\ \ \ \ \ \textcolor{keywordflow}{return}\ tp.query.decode(tx.encoding)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00156}\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_a1f64049ce57beb376d75461741077e9a}{00156}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__tstrings_a1f64049ce57beb376d75461741077e9a}{as\_bytes}}(t:\ Template,\ context:\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_adapt_context}{abc.AdaptContext}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00157}00157\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Convert\ a\ template\ string\ to\ a\ bytes\ string.}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00158}00158\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00159}00159\ \textcolor{stringliteral}{\ \ \ \ This\ function\ is\ exposed\ as\ part\ of\ psycopg.sql.as\_bytes().}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00160}00160\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00161}00161\ \ \ \ \ tx\ =\ Transformer(context)}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00162}00162\ \ \ \ \ tp\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor}{TemplateProcessor}}(t,\ tx=tx,\ server\_params=\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00163}00163\ \ \ \ \ tp.process()}
+\DoxyCodeLine{\Hypertarget{__tstrings_8py_source_l00164}00164\ \ \ \ \ \textcolor{keywordflow}{return}\ tp.query}
+
+\end{DoxyCode}

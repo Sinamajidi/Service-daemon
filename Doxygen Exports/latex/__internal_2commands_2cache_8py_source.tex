@@ -1,0 +1,261 @@
+\doxysection{cache.\+py}
+\hypertarget{__internal_2commands_2cache_8py_source}{}\label{__internal_2commands_2cache_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/commands/cache.py@{venv/Lib/site-\/packages/pip/\_internal/commands/cache.py}}
+\doxymbox{\hyperlink{__internal_2commands_2cache_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1commands_1_1cache}{00001}}\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00002}00002\ \textcolor{keyword}{import}\ textwrap}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00003}00003\ \textcolor{keyword}{from}\ optparse\ \textcolor{keyword}{import}\ Values}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00004}00004\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Callable}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00005}00005\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00006}00006\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1base__command}{pip.\_internal.cli.base\_command}}\ \textcolor{keyword}{import}\ Command}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1status__codes}{pip.\_internal.cli.status\_codes}}\ \textcolor{keyword}{import}\ ERROR,\ SUCCESS}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00008}00008\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ CommandError,\ PipError}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00009}00009\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils}{pip.\_internal.utils}}\ \textcolor{keyword}{import}\ filesystem}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1logging}{pip.\_internal.utils.logging}}\ \textcolor{keyword}{import}\ getLogger}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00011}00011\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1misc}{pip.\_internal.utils.misc}}\ \textcolor{keyword}{import}\ format\_size}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00013}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1commands_1_1cache_a1d5cbd9e2af0c242d94ab98d82a0555c}{00013}}\ logger\ =\ getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00015}00015\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00016}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command}{00016}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command}{CacheCommand}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command}{Command}}):}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00017}00017\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00018}00018\ \textcolor{stringliteral}{\ \ \ \ Inspect\ and\ manage\ pip's\ wheel\ cache.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00019}00019\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00020}00020\ \textcolor{stringliteral}{\ \ \ \ Subcommands:}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00021}00021\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00022}00022\ \textcolor{stringliteral}{\ \ \ \ -\/\ dir:\ Show\ the\ cache\ directory.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00023}00023\ \textcolor{stringliteral}{\ \ \ \ -\/\ info:\ Show\ information\ about\ the\ cache.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00024}00024\ \textcolor{stringliteral}{\ \ \ \ -\/\ list:\ List\ filenames\ of\ packages\ stored\ in\ the\ cache.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00025}00025\ \textcolor{stringliteral}{\ \ \ \ -\/\ remove:\ Remove\ one\ or\ more\ package\ from\ the\ cache.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00026}00026\ \textcolor{stringliteral}{\ \ \ \ -\/\ purge:\ Remove\ all\ items\ from\ the\ cache.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00027}00027\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00028}00028\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}<pattern>\`{}\`{}\ can\ be\ a\ glob\ expression\ or\ a\ package\ name.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00029}00029\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00031}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command}{00031}}\ \ \ \ \ ignore\_require\_venv\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00032}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command}{00032}}\ \ \ \ \ usage\ =\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00033}00033\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \%prog\ dir}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00034}00034\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \%prog\ info}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00035}00035\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \%prog\ list\ [<pattern>]\ [-\/-\/format=[human,\ abspath]]}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00036}00036\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \%prog\ remove\ <pattern>}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00037}00037\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \%prog\ purge}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00038}00038\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00040}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a0f77d59024b9b1ef961c52f13d212f24}{00040}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a0f77d59024b9b1ef961c52f13d212f24}{add\_options}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/format"{}},}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ \ \ \ \ action=\textcolor{stringliteral}{"{}store"{}},}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}list\_format"{}},}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \ \ \ \ default=\textcolor{stringliteral}{"{}human"{}},}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ \ \ \ \ choices=(\textcolor{stringliteral}{"{}human"{}},\ \textcolor{stringliteral}{"{}abspath"{}}),}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}Select\ the\ output\ format\ among:\ human\ (default)\ or\ abspath"{}},}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00050}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command}{00050}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_af55279eb904d389000b26fec0cdfb165}{parser}}.insert\_option\_group(0,\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00052}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_ad0b1027778717f2f314cf48129cc9a0c}{00052}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_ad0b1027778717f2f314cf48129cc9a0c}{handler\_map}}(self)\ -\/>\ dict[str,\ Callable[[Values,\ list[str]],\ None]]:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \{}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00054}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_af06da7955408f317786e4ded72af133c}{00054}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}dir"{}}:\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_af06da7955408f317786e4ded72af133c}{get\_cache\_dir}},}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00055}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a9237ef7b4df90181265988e8ebaff257}{00055}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}info"{}}:\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a9237ef7b4df90181265988e8ebaff257}{get\_cache\_info}},}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00056}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a50afdbbab08556bf669349838afb97ce}{00056}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}list"{}}:\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a50afdbbab08556bf669349838afb97ce}{list\_cache\_items}},}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00057}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a613a000da3ef4725a207fc101e52a904}{00057}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}remove"{}}:\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a613a000da3ef4725a207fc101e52a904}{remove\_cache\_items}},}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00058}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a68f3bd9eed21b611a4695c23fba76238}{00058}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}purge"{}}:\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a68f3bd9eed21b611a4695c23fba76238}{purge\_cache}},}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00061}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_ac3a5f132443ce79af741a8de40eb3629}{00061}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_ac3a5f132443ce79af741a8de40eb3629}{run}}(self,\ options:\ Values,\ args:\ list[str])\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ handler\_map\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_af318461485c4491f94bd6104a94fab0e}{handler\_map}}()}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ options.cache\_dir:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \ \ \ \ logger.error(\textcolor{stringliteral}{"{}pip\ cache\ commands\ can\ not\ function\ since\ cache\ is\ disabled."{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ERROR}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Determine\ action}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ args\ \textcolor{keywordflow}{or}\ args[0]\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ handler\_map:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \ \ \ \ logger.error(}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Need\ an\ action\ (\%s)\ to\ perform."{}},}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{},\ "{}}.join(sorted(handler\_map)),}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ERROR}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00075}00075\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ action\ =\ args[0]}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Error\ handling\ happens\ here,\ not\ in\ the\ action-\/handlers.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \ \ \ \ handler\_map[action](options,\ args[1:])}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ PipError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ \ \ \ \ logger.error(e.args[0])}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ERROR}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ SUCCESS}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00087}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_aab40a29ba84dd5d7b9afb4fca1756318}{00087}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_af06da7955408f317786e4ded72af133c}{get\_cache\_dir}}(self,\ options:\ Values,\ args:\ list[str])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ args:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(\textcolor{stringliteral}{"{}Too\ many\ arguments"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00090}00090\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ logger.info(options.cache\_dir)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00093}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_adf519a6c0651285bff3da5709406589b}{00093}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a9237ef7b4df90181265988e8ebaff257}{get\_cache\_info}}(self,\ options:\ Values,\ args:\ list[str])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ args:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(\textcolor{stringliteral}{"{}Too\ many\ arguments"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ num\_http\_files\ =\ len(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a7bf7eab77491bdc90848871464f7bf01}{\_find\_http\_files}}(options))}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ num\_packages\ =\ len(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a3e38f6c131e7b89d3bcc09967f83c067}{\_find\_wheels}}(options,\ \textcolor{stringliteral}{"{}*"{}}))}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00099}00099\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ http\_cache\_location\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a5523806388de9bb7b802ed785c0ccc4e}{\_cache\_dir}}(options,\ \textcolor{stringliteral}{"{}http-\/v2"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ old\_http\_cache\_location\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a5523806388de9bb7b802ed785c0ccc4e}{\_cache\_dir}}(options,\ \textcolor{stringliteral}{"{}http"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ wheels\_cache\_location\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a5523806388de9bb7b802ed785c0ccc4e}{\_cache\_dir}}(options,\ \textcolor{stringliteral}{"{}wheels"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ http\_cache\_size\ =\ filesystem.format\_size(}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ filesystem.directory\_size(http\_cache\_location)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ +\ filesystem.directory\_size(old\_http\_cache\_location)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ wheels\_cache\_size\ =\ filesystem.format\_directory\_size(wheels\_cache\_location)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ message\ =\ (}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \ \ \ \ textwrap.dedent(}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00112}00112\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Package\ index\ page\ cache\ location\ (pip\ v23.3+):\ \{http\_cache\_location\}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00113}00113\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Package\ index\ page\ cache\ location\ (older\ pips):\ \{old\_http\_cache\_location\}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00114}00114\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Package\ index\ page\ cache\ size:\ \{http\_cache\_size\}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00115}00115\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Number\ of\ HTTP\ files:\ \{num\_http\_files\}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00116}00116\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Locally\ built\ wheels\ location:\ \{wheels\_cache\_location\}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00117}00117\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Locally\ built\ wheels\ size:\ \{wheels\_cache\_size\}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00118}00118\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Number\ of\ locally\ built\ wheels:\ \{package\_count\}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00119}00119\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}"{}"{}}\ \ \textcolor{comment}{\#\ noqa:\ E501}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \ \ \ \ .format(}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ http\_cache\_location=http\_cache\_location,}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ old\_http\_cache\_location=old\_http\_cache\_location,}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ http\_cache\_size=http\_cache\_size,}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ num\_http\_files=num\_http\_files,}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheels\_cache\_location=wheels\_cache\_location,}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ package\_count=num\_packages,}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ wheels\_cache\_size=wheels\_cache\_size,}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ .strip()}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00132}00132\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ logger.info(message)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00134}00134\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00135}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_ac8eaf8d2f624ec784f2bed7c20328cdd}{00135}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a50afdbbab08556bf669349838afb97ce}{list\_cache\_items}}(self,\ options:\ Values,\ args:\ list[str])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(args)\ >\ 1:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(\textcolor{stringliteral}{"{}Too\ many\ arguments"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00138}00138\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ args:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \ \ \ \ pattern\ =\ args[0]}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ pattern\ =\ \textcolor{stringliteral}{"{}*"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00143}00143\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ files\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a3e38f6c131e7b89d3bcc09967f83c067}{\_find\_wheels}}(options,\ pattern)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.list\_format\ ==\ \textcolor{stringliteral}{"{}human"{}}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a0df881853ad281b3deb67c8ccb8d52e7}{format\_for\_human}}(files)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_aa8e60ef17a34a439a7714f0ec35bccb9}{format\_for\_abspath}}(files)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00149}00149\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00150}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a0df881853ad281b3deb67c8ccb8d52e7}{00150}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a0df881853ad281b3deb67c8ccb8d52e7}{format\_for\_human}}(self,\ files:\ list[str])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ files:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}No\ locally\ built\ wheels\ cached."{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ results\ =\ []}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ filename\ \textcolor{keywordflow}{in}\ files:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \ \ \ \ wheel\ =\ os.path.basename(filename)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \ \ \ \ size\ =\ filesystem.format\_file\_size(filename)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ results.append(f\textcolor{stringliteral}{"{}\ -\/\ \{wheel\}\ (\{size\})"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}Cache\ contents:\(\backslash\)n"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}\(\backslash\)n"{}}.join(sorted(results)))}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00162}00162\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00163}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_aa8e60ef17a34a439a7714f0ec35bccb9}{00163}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_aa8e60ef17a34a439a7714f0ec35bccb9}{format\_for\_abspath}}(self,\ files:\ list[str])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ files:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}\(\backslash\)n"{}}.join(sorted(files)))}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00167}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_ae4266994e38f97a1af51f62a52620b90}{00167}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a613a000da3ef4725a207fc101e52a904}{remove\_cache\_items}}(self,\ options:\ Values,\ args:\ list[str])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(args)\ >\ 1:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(\textcolor{stringliteral}{"{}Too\ many\ arguments"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00170}00170\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ args:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(\textcolor{stringliteral}{"{}Please\ provide\ a\ pattern"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ files\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a3e38f6c131e7b89d3bcc09967f83c067}{\_find\_wheels}}(options,\ args[0])}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00175}00175\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ no\_matching\_msg\ =\ \textcolor{stringliteral}{"{}No\ matching\ packages"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ args[0]\ ==\ \textcolor{stringliteral}{"{}*"{}}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Only\ fetch\ http\ files\ if\ no\ specific\ pattern\ given}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \ \ \ \ files\ +=\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a7bf7eab77491bdc90848871464f7bf01}{\_find\_http\_files}}(options)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Add\ the\ pattern\ to\ the\ log\ message}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \ \ \ \ no\_matching\_msg\ +=\ f\textcolor{stringliteral}{'\ for\ pattern\ "{}\{args[0]\}"{}'}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00183}00183\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ files:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(no\_matching\_msg)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00186}00186\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ bytes\_removed\ =\ 0}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ filename\ \textcolor{keywordflow}{in}\ files:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \ \ \ \ bytes\_removed\ +=\ os.stat(filename).st\_size}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \ \ \ \ os.unlink(filename)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \ \ \ \ logger.verbose(\textcolor{stringliteral}{"{}Removed\ \%s"{}},\ filename)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ http\_dirs\ =\ filesystem.subdirs\_without\_files(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a5523806388de9bb7b802ed785c0ccc4e}{\_cache\_dir}}(options,\ \textcolor{stringliteral}{"{}http"{}}))}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ wheel\_dirs\ =\ filesystem.subdirs\_without\_wheels(}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a5523806388de9bb7b802ed785c0ccc4e}{\_cache\_dir}}(options,\ \textcolor{stringliteral}{"{}wheels"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ dirs\ =\ [*http\_dirs,\ *wheel\_dirs]}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00198}00198\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ subdir\ \textcolor{keywordflow}{in}\ dirs:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ file\ \textcolor{keywordflow}{in}\ subdir.iterdir():}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ file.unlink(missing\_ok=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ subdir.rmdir()}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ FileNotFoundError:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ directory\ is\ already\ gone,\ that's\ fine.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \ \ \ \ logger.verbose(\textcolor{stringliteral}{"{}Removed\ \%s"{}},\ subdir)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00208}00208\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ selfcheck.json\ is\ no\ longer\ used\ by\ pip.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ selfcheck\_json\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a5523806388de9bb7b802ed785c0ccc4e}{\_cache\_dir}}(options,\ \textcolor{stringliteral}{"{}selfcheck.json"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.isfile(selfcheck\_json):}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \ \ \ \ os.remove(selfcheck\_json)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \ \ \ \ logger.verbose(\textcolor{stringliteral}{"{}Removed\ legacy\ selfcheck.json\ file"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00214}00214\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}Files\ removed:\ \%s\ (\%s)"{}},\ len(files),\ format\_size(bytes\_removed))}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}Directories\ removed:\ \%s"{}},\ len(dirs))}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00217}00217\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00218}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a94a5932abe88bc42a9b887fd5188526c}{00218}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a68f3bd9eed21b611a4695c23fba76238}{purge\_cache}}(self,\ options:\ Values,\ args:\ list[str])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ args:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(\textcolor{stringliteral}{"{}Too\ many\ arguments"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00221}00221\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a613a000da3ef4725a207fc101e52a904}{remove\_cache\_items}}(options,\ [\textcolor{stringliteral}{"{}*"{}}])}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00223}00223\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00224}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a5523806388de9bb7b802ed785c0ccc4e}{00224}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a5523806388de9bb7b802ed785c0ccc4e}{\_cache\_dir}}(self,\ options:\ Values,\ subdir:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ os.path.join(options.cache\_dir,\ subdir)}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00226}00226\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00227}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a7bf7eab77491bdc90848871464f7bf01}{00227}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a7bf7eab77491bdc90848871464f7bf01}{\_find\_http\_files}}(self,\ options:\ Values)\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ old\_http\_dir\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a5523806388de9bb7b802ed785c0ccc4e}{\_cache\_dir}}(options,\ \textcolor{stringliteral}{"{}http"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ new\_http\_dir\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a5523806388de9bb7b802ed785c0ccc4e}{\_cache\_dir}}(options,\ \textcolor{stringliteral}{"{}http-\/v2"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ filesystem.find\_files(old\_http\_dir,\ \textcolor{stringliteral}{"{}*"{}})\ +\ filesystem.find\_files(}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \ \ \ \ new\_http\_dir,\ \textcolor{stringliteral}{"{}*"{}}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00233}00233\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00234}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a3e38f6c131e7b89d3bcc09967f83c067}{00234}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a3e38f6c131e7b89d3bcc09967f83c067}{\_find\_wheels}}(self,\ options:\ Values,\ pattern:\ str)\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ wheel\_dir\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1cache_1_1_cache_command_a5523806388de9bb7b802ed785c0ccc4e}{\_cache\_dir}}(options,\ \textcolor{stringliteral}{"{}wheels"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00236}00236\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ wheel\ filename\ format,\ as\ specified\ in\ PEP\ 427,\ is:}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ \{distribution\}-\/\{version\}(-\/\{build\})?-\/\{python\}-\/\{abi\}-\/\{platform\}.whl}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Additionally,\ non-\/alphanumeric\ values\ in\ the\ distribution\ are}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ normalized\ to\ underscores\ (\_),\ meaning\ hyphens\ can\ never\ occur}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ before\ \`{}-\/\{version\}`.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Given\ that\ information:}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ -\/\ If\ the\ pattern\ we're\ given\ contains\ a\ hyphen\ (-\/),\ the\ user\ is}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ providing\ at\ least\ the\ version.\ Thus,\ we\ can\ just\ append\ \`{}*.whl`}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ to\ match\ the\ rest\ of\ it.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ -\/\ If\ the\ pattern\ we're\ given\ doesn't\ contain\ a\ hyphen\ (-\/),\ the}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ user\ is\ only\ providing\ the\ name.\ Thus,\ we\ append\ \`{}-\/*.whl`\ to}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ match\ the\ hyphen\ before\ the\ version,\ followed\ by\ anything\ else.}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ PEP\ 427:\ https://www.python.org/dev/peps/pep-\/0427/}}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ pattern\ =\ pattern\ +\ (\textcolor{stringliteral}{"{}*.whl"{}}\ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}-\/"{}}\ \textcolor{keywordflow}{in}\ pattern\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}-\/*.whl"{}})}
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00254}00254\ }
+\DoxyCodeLine{\Hypertarget{__internal_2commands_2cache_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ filesystem.find\_files(wheel\_dir,\ pattern)}
+
+\end{DoxyCode}

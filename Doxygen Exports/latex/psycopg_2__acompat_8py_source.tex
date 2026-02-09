@@ -1,0 +1,98 @@
+\doxysection{\+\_\+acompat.\+py}
+\hypertarget{psycopg_2__acompat_8py_source}{}\label{psycopg_2__acompat_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_acompat.py@{venv/Lib/site-\/packages/psycopg/\_acompat.py}}
+\doxymbox{\hyperlink{psycopg_2__acompat_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00002}00002\ \textcolor{stringliteral}{Utilities\ to\ ease\ the\ differences\ between\ async\ and\ sync\ code.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00003}00003\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00004}00004\ \textcolor{stringliteral}{These\ object\ offer\ a\ similar\ interface\ between\ sync\ and\ async\ versions;\ the}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00005}00005\ \textcolor{stringliteral}{script\ async\_to\_sync.py\ will\ replace\ the\ async\ names\ with\ the\ sync\ names}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00006}00006\ \textcolor{stringliteral}{when\ generating\ the\ sync\ version.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00007}00007\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00009}00009\ \textcolor{comment}{\#\ Copyright\ (C)\ 2023\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00011}00011\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00013}00013\ \textcolor{keyword}{import}\ queue}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00014}00014\ \textcolor{keyword}{import}\ asyncio}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00015}00015\ \textcolor{keyword}{import}\ threading}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00016}00016\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Any,\ TypeAlias}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00017}00017\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Callable,\ Coroutine}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00018}00018\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00019}00019\ \textcolor{keyword}{from}\ .\_compat\ \textcolor{keyword}{import}\ TypeVar}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00020}00020\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00021}\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_a30f96be495ee824438a45f6c580ddf5f}{00021}}\ Worker:\ TypeAlias\ =\ threading.Thread}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00022}\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_ad526c56ab81b2d7cee1d414b476537fb}{00022}}\ AWorker:\ TypeAlias\ =\ asyncio.Task[\textcolor{keywordtype}{None}]}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00023}\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_a065ce6288f10a5c29a05662e8c869f14}{00023}}\ Lock\ =\ threading.Lock}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00024}\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_a51fda4481f82b922a214a9233bfd1d05}{00024}}\ ALock\ =\ asyncio.Lock}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00026}\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_aec98a60b601e32aa76471f5bfc5ba8ff}{00026}}\ T\ =\ TypeVar(\textcolor{stringliteral}{"{}T"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00029}\doxymbox{\hyperlink{classpsycopg_1_1__acompat_1_1_queue}{00029}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__acompat_1_1_queue}{Queue}}(queue.Queue[T]):}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00030}00030\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00031}00031\ \textcolor{stringliteral}{\ \ \ \ A\ Queue\ subclass\ with\ an\ interruptible\ get()\ method.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00032}00032\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00034}\doxymbox{\hyperlink{classpsycopg_1_1__acompat_1_1_queue_ad7ada6faec7ec86b569aaa2575084f4b}{00034}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__acompat_1_1_queue_ad7ada6faec7ec86b569aaa2575084f4b}{get}}(self,\ block:\ bool\ =\ \textcolor{keyword}{True},\ timeout:\ float\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ T:}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Always\ specify\ a\ timeout\ to\ make\ the\ wait\ interruptible.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ timeout\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ \ \ \ \ timeout\ =\ 24.0\ *\ 60.0\ *\ 60.0}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ super().\doxymbox{\hyperlink{classpsycopg_1_1__acompat_1_1_queue_ad7ada6faec7ec86b569aaa2575084f4b}{get}}(block=block,\ timeout=timeout)}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00041}\doxymbox{\hyperlink{classpsycopg_1_1__acompat_1_1_a_queue}{00041}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__acompat_1_1_a_queue}{AQueue}}(asyncio.Queue[T]):}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00042}00042\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00045}\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_a607ee601d592a5b8802cdc4b96df7d8b}{00045}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_a607ee601d592a5b8802cdc4b96df7d8b}{aspawn}}(}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00046}00046\ \ \ \ \ f:\ Callable[...,\ Coroutine[Any,\ Any,\ \textcolor{keywordtype}{None}]],}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00047}00047\ \ \ \ \ args:\ tuple[Any,\ ...]\ =\ (),}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00048}00048\ \ \ \ \ name:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00049}00049\ )\ -\/>\ asyncio.Task[\textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00050}00050\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00051}00051\ \textcolor{stringliteral}{\ \ \ \ Equivalent\ to\ asyncio.create\_task.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00052}00052\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00053}00053\ \ \ \ \ \textcolor{keywordflow}{return}\ asyncio.create\_task(f(*args),\ name=name)}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00056}\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_ae7cc356ba716459799bec4be0324e11a}{00056}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_ae7cc356ba716459799bec4be0324e11a}{spawn}}(}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00057}00057\ \ \ \ \ f:\ Callable[...,\ Any],}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00058}00058\ \ \ \ \ args:\ tuple[Any,\ ...]\ =\ (),}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00059}00059\ \ \ \ \ name:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00060}00060\ )\ -\/>\ threading.Thread:}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00061}00061\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00062}00062\ \textcolor{stringliteral}{\ \ \ \ Equivalent\ to\ creating\ and\ running\ a\ daemon\ thread.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00063}00063\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00064}00064\ \ \ \ \ t\ =\ threading.Thread(target=f,\ args=args,\ name=name,\ daemon=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00065}00065\ \ \ \ \ t.start()}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00066}00066\ \ \ \ \ \textcolor{keywordflow}{return}\ t}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00069}\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_ad187c6443b1dad30f7cbae2adfbcedff}{00069}}\ \textcolor{keyword}{async\ def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_ad187c6443b1dad30f7cbae2adfbcedff}{agather}}(*tasks:\ asyncio.Task[Any],\ timeout:\ float\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00070}00070\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00071}00071\ \textcolor{stringliteral}{\ \ \ \ Equivalent\ to\ asyncio.gather\ or\ Thread.join()}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00073}00073\ \ \ \ \ wait\ =\ asyncio.gather(*tasks)}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00074}00074\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ timeout\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ await\ asyncio.wait\_for(asyncio.shield(wait),\ timeout=timeout)}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \ \ \ \ await\ wait}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00079}00079\ \ \ \ \ \textcolor{keywordflow}{except}\ asyncio.TimeoutError:}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00081}00081\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00083}00083\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00085}\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_a2f0c3b88f3f6bea2bf932a0a6f69bd50}{00085}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__acompat_a2f0c3b88f3f6bea2bf932a0a6f69bd50}{gather}}(*tasks:\ threading.Thread,\ timeout:\ float\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00086}00086\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00087}00087\ \textcolor{stringliteral}{\ \ \ \ Equivalent\ to\ asyncio.gather\ or\ Thread.join()}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00088}00088\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00089}00089\ \ \ \ \ \textcolor{keywordflow}{for}\ t\ \textcolor{keywordflow}{in}\ tasks:}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ t.is\_alive():}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{psycopg_2__acompat_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ t.join(timeout)}
+
+\end{DoxyCode}

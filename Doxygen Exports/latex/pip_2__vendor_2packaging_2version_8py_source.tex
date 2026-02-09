@@ -1,0 +1,798 @@
+\doxysection{version.\+py}
+\hypertarget{pip_2__vendor_2packaging_2version_8py_source}{}\label{pip_2__vendor_2packaging_2version_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/packaging/version.py@{venv/Lib/site-\/packages/pip/\_vendor/packaging/version.py}}
+\doxymbox{\hyperlink{pip_2__vendor_2packaging_2version_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version}{00001}}\ \textcolor{comment}{\#\ This\ file\ is\ dual\ licensed\ under\ the\ terms\ of\ the\ Apache\ License,\ Version}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00002}00002\ \textcolor{comment}{\#\ 2.0,\ and\ the\ BSD\ License.\ See\ the\ LICENSE\ file\ in\ the\ root\ of\ this\ repository}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00003}00003\ \textcolor{comment}{\#\ for\ complete\ details.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00004}00004\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00005}00005\ \textcolor{stringliteral}{..\ testsetup::}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00006}00006\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00007}00007\ \textcolor{stringliteral}{\ \ \ \ from\ pip.\_vendor.packaging.version\ import\ parse,\ Version}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00008}00008\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00012}00012\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00013}00013\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00014}00014\ \textcolor{keyword}{import}\ typing}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00015}00015\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00016}00016\ \ \ \ \ Any,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00017}00017\ \ \ \ \ Callable,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00018}00018\ \ \ \ \ Literal,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00019}00019\ \ \ \ \ NamedTuple,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00020}00020\ \ \ \ \ SupportsInt,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00021}00021\ \ \ \ \ Tuple,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00022}00022\ \ \ \ \ TypedDict,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00023}00023\ \ \ \ \ Union,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00024}00024\ )}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00026}00026\ \textcolor{keyword}{from}\ .\_structures\ \textcolor{keyword}{import}\ Infinity,\ InfinityType,\ NegativeInfinity,\ NegativeInfinityType}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00028}00028\ \textcolor{keywordflow}{if}\ typing.TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00029}00029\ \ \ \ \ \textcolor{keyword}{from}\ typing\_extensions\ \textcolor{keyword}{import}\ Self,\ Unpack}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00031}00031\ \textcolor{keywordflow}{if}\ sys.version\_info\ >=\ (3,\ 13):\ \ \textcolor{comment}{\#\ pragma:\ no\ cover}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00032}00032\ \ \ \ \ \textcolor{keyword}{from}\ warnings\ \textcolor{keyword}{import}\ deprecated\ \textcolor{keyword}{as}\ \_deprecated}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00033}00033\ \textcolor{keywordflow}{elif}\ typing.TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00034}00034\ \ \ \ \ \textcolor{keyword}{from}\ typing\_extensions\ \textcolor{keyword}{import}\ deprecated\ \textcolor{keyword}{as}\ \_deprecated}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00035}00035\ \textcolor{keywordflow}{else}:\ \ \textcolor{comment}{\#\ pragma:\ no\ cover}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00036}00036\ \ \ \ \ \textcolor{keyword}{import}\ functools}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00037}00037\ \ \ \ \ \textcolor{keyword}{import}\ warnings}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00039}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_aa76b28e98031f94b16249826f0116bcd}{00039}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_aa76b28e98031f94b16249826f0116bcd}{\_deprecated}}(message:\ str)\ -\/>\ object:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }decorator(func:\ object)\ -\/>\ object:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{preprocessor}{@functools.wraps(func)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }wrapper(*args:\ object,\ **kwargs:\ object)\ -\/>\ object:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ warnings.warn(}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ message,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ category=DeprecationWarning,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ stacklevel=2,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ func(*args,\ **kwargs)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ wrapper}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ decorator}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00055}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a41d945301d89dcc654f7f24cb9b92e4f}{00055}}\ \_LETTER\_NORMALIZATION\ =\ \{}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00056}00056\ \ \ \ \ \textcolor{stringliteral}{"{}alpha"{}}:\ \textcolor{stringliteral}{"{}a"{}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00057}00057\ \ \ \ \ \textcolor{stringliteral}{"{}beta"{}}:\ \textcolor{stringliteral}{"{}b"{}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00058}00058\ \ \ \ \ \textcolor{stringliteral}{"{}c"{}}:\ \textcolor{stringliteral}{"{}rc"{}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00059}00059\ \ \ \ \ \textcolor{stringliteral}{"{}pre"{}}:\ \textcolor{stringliteral}{"{}rc"{}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00060}00060\ \ \ \ \ \textcolor{stringliteral}{"{}preview"{}}:\ \textcolor{stringliteral}{"{}rc"{}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00061}00061\ \ \ \ \ \textcolor{stringliteral}{"{}rev"{}}:\ \textcolor{stringliteral}{"{}post"{}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00062}00062\ \ \ \ \ \textcolor{stringliteral}{"{}r"{}}:\ \textcolor{stringliteral}{"{}post"{}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00063}00063\ \}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00065}00065\ \_\_all\_\_\ =\ [\textcolor{stringliteral}{"{}VERSION\_PATTERN"{}},\ \textcolor{stringliteral}{"{}InvalidVersion"{}},\ \textcolor{stringliteral}{"{}Version"{}},\ \textcolor{stringliteral}{"{}parse"{}}]}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00066}00066\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00067}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a90f9068b43b9f81840911d51156eee8f}{00067}}\ LocalType\ =\ Tuple[Union[int,\ str],\ ...]}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00069}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a8bef4442b9641fe075c9b2a21e4d8617}{00069}}\ CmpPrePostDevType\ =\ Union[InfinityType,\ NegativeInfinityType,\ Tuple[str,\ int]]}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00070}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a91265c8b1630485f87c20f2a86277ed5}{00070}}\ CmpLocalType\ =\ Union[}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00071}00071\ \ \ \ \ NegativeInfinityType,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00072}00072\ \ \ \ \ Tuple[Union[Tuple[int,\ str],\ Tuple[NegativeInfinityType,\ Union[int,\ str]]],\ ...],}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00073}00073\ ]}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00074}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a507764ccfbe3f5d3bbf8613f4268cc22}{00074}}\ CmpKey\ =\ Tuple[}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00075}00075\ \ \ \ \ int,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00076}00076\ \ \ \ \ Tuple[int,\ ...],}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00077}00077\ \ \ \ \ CmpPrePostDevType,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00078}00078\ \ \ \ \ CmpPrePostDevType,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00079}00079\ \ \ \ \ CmpPrePostDevType,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00080}00080\ \ \ \ \ CmpLocalType,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00081}00081\ ]}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00082}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_add88494efca2f03ef37253dc747bf0c7}{00082}}\ VersionComparisonMethod\ =\ Callable[[CmpKey,\ CmpKey],\ bool]}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00083}00083\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00085}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_replace}{00085}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_replace}{\_VersionReplace}}(TypedDict,\ total=\textcolor{keyword}{False}):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00086}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_replace_ac52302e35b8f583d528a304e97300b2e}{00086}}\ \ \ \ \ epoch:\ int\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00087}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_replace_a649aa0f98e37e11b9eae2d8e9b1c7d57}{00087}}\ \ \ \ \ release:\ tuple[int,\ ...]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00088}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_replace_a154a8de070a82895ff0395bba80cc371}{00088}}\ \ \ \ \ pre:\ tuple[Literal[\textcolor{stringliteral}{"{}a"{}},\ \textcolor{stringliteral}{"{}b"{}},\ \textcolor{stringliteral}{"{}rc"{}}],\ int]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00089}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_replace_af86b6c41cb8101b05757e03156682ac2}{00089}}\ \ \ \ \ post:\ int\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00090}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_replace_a286168670fd328ce5797bd0732b9b30d}{00090}}\ \ \ \ \ dev:\ int\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00091}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_replace_ad76e5b4f053e43ffc7e23024ff6659e1}{00091}}\ \ \ \ \ local:\ str\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00094}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a8d08c6e16f895a15e8342a384dcbf62e}{00094}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a8d08c6e16f895a15e8342a384dcbf62e}{parse}}(version:\ str)\ -\/>\ Version:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00095}00095\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Parse\ the\ given\ version\ string.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00096}00096\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00097}00097\ \textcolor{stringliteral}{\ \ \ \ >>>\ parse('1.0.dev1')}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00098}00098\ \textcolor{stringliteral}{\ \ \ \ <Version('1.0.dev1')>}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00099}00099\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00100}00100\ \textcolor{stringliteral}{\ \ \ \ :param\ version:\ The\ version\ string\ to\ parse.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00101}00101\ \textcolor{stringliteral}{\ \ \ \ :raises\ InvalidVersion:\ When\ the\ version\ string\ is\ not\ a\ valid\ version.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00102}00102\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00103}00103\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version}{Version}}(version)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00106}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_invalid_version}{00106}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_invalid_version}{InvalidVersion}}(ValueError):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00107}00107\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Raised\ when\ a\ version\ string\ is\ not\ a\ valid\ version.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00108}00108\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00109}00109\ \textcolor{stringliteral}{\ \ \ \ >>>\ Version("{}invalid"{})}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00110}00110\ \textcolor{stringliteral}{\ \ \ \ Traceback\ (most\ recent\ call\ last):}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00111}00111\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ...}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00112}00112\ \textcolor{stringliteral}{\ \ \ \ packaging.version.InvalidVersion:\ Invalid\ version:\ 'invalid'}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00113}00113\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00114}00114\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00115}00115\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00116}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version}{00116}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version}{\_BaseVersion}}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00117}00117\ \ \ \ \ \_\_slots\_\_\ =\ ()}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00118}00118\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00119}00119\ \ \ \ \ \textcolor{comment}{\#\ This\ can\ also\ be\ a\ normal\ member\ (see\ the\ packaging\_legacy\ package);}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00120}00120\ \ \ \ \ \textcolor{comment}{\#\ we\ are\ just\ requiring\ it\ to\ be\ readable.\ Actually\ defining\ a\ property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00121}00121\ \ \ \ \ \textcolor{comment}{\#\ has\ runtime\ effect\ on\ subclasses,\ so\ it's\ typing\ only.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00122}00122\ \ \ \ \ \textcolor{keywordflow}{if}\ typing.TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00123}00123\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00125}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a2d57a53511c389e9a49c5a9d9e756f8f}{00125}}\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a7c10ef38720fb75786c756e453b5ad9f}{\_key}}(self)\ -\/>\ tuple[Any,\ ...]:\ ...}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00126}00126\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00127}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a6eb268de9493a7d5fa498fc7de6ec825}{00127}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a6eb268de9493a7d5fa498fc7de6ec825}{\_\_hash\_\_}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00128}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a7c10ef38720fb75786c756e453b5ad9f}{00128}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hash(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a7c10ef38720fb75786c756e453b5ad9f}{\_key}})}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00129}00129\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00130}00130\ \ \ \ \ \textcolor{comment}{\#\ Please\ keep\ the\ duplicated\ \`{}isinstance`\ check}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00131}00131\ \ \ \ \ \textcolor{comment}{\#\ in\ the\ six\ comparisons\ hereunder}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00132}00132\ \ \ \ \ \textcolor{comment}{\#\ unless\ you\ find\ a\ way\ to\ avoid\ adding\ overhead\ function\ calls.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00133}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_ab22293b72e52325276c6ec9ee73474f1}{00133}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_ab22293b72e52325276c6ec9ee73474f1}{\_\_lt\_\_}}(self,\ other:\ \_BaseVersion)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(other,\ \_BaseVersion):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00136}00136\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a7c10ef38720fb75786c756e453b5ad9f}{\_key}}\ <\ other.\_key}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00138}00138\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00139}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a1c33cc43ad3808b02273731ca8f2c014}{00139}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a1c33cc43ad3808b02273731ca8f2c014}{\_\_le\_\_}}(self,\ other:\ \_BaseVersion)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(other,\ \_BaseVersion):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00142}00142\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a7c10ef38720fb75786c756e453b5ad9f}{\_key}}\ <=\ other.\_key}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00145}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a3a11a0890c9e59fbb73a32239c34a104}{00145}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a3a11a0890c9e59fbb73a32239c34a104}{\_\_eq\_\_}}(self,\ other:\ object)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(other,\ \_BaseVersion):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00148}00148\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a7c10ef38720fb75786c756e453b5ad9f}{\_key}}\ ==\ other.\_key}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00150}00150\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00151}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_ad28a381f2cc890c8f10983c338ecd230}{00151}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_ad28a381f2cc890c8f10983c338ecd230}{\_\_ge\_\_}}(self,\ other:\ \_BaseVersion)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(other,\ \_BaseVersion):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a7c10ef38720fb75786c756e453b5ad9f}{\_key}}\ >=\ other.\_key}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00156}00156\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00157}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_adbd83754cc71bb1e396215d654b01bfe}{00157}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_adbd83754cc71bb1e396215d654b01bfe}{\_\_gt\_\_}}(self,\ other:\ \_BaseVersion)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(other,\ \_BaseVersion):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00160}00160\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a7c10ef38720fb75786c756e453b5ad9f}{\_key}}\ >\ other.\_key}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00162}00162\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00163}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a6b953c32809d52f9cafca4b6624e008e}{00163}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a6b953c32809d52f9cafca4b6624e008e}{\_\_ne\_\_}}(self,\ other:\ object)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(other,\ \_BaseVersion):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a7c10ef38720fb75786c756e453b5ad9f}{\_key}}\ !=\ other.\_key}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00168}00168\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00169}00169\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00170}00170\ \textcolor{comment}{\#\ Deliberately\ not\ anchored\ to\ the\ start\ and\ end\ of\ the\ string,\ to\ make\ it}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00171}00171\ \textcolor{comment}{\#\ easier\ for\ 3rd\ party\ code\ to\ reuse}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00172}00172\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00173}00173\ \textcolor{comment}{\#\ Note\ that\ ++\ doesn't\ behave\ identically\ on\ CPython\ and\ PyPy,\ so\ not\ using\ it\ here}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00174}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a6fc7d5e3de2d81a13aad2263879df22a}{00174}}\ \_VERSION\_PATTERN\ =\ \textcolor{stringliteral}{r"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00175}00175\ \textcolor{stringliteral}{\ \ \ \ v?+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ optional\ leading\ v}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00176}00176\ \textcolor{stringliteral}{\ \ \ \ (?:}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00177}00177\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?:(?P<epoch>[0-\/9]+)!)?+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ epoch}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00178}00178\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?P<release>[0-\/9]+(?:\(\backslash\).[0-\/9]+)*+)\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ release\ segment}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00179}00179\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?P<pre>\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ pre-\/release}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00180}00180\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ [.\_-\/]?+}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00181}00181\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (?P<pre\_l>alpha|a|beta|b|preview|pre|c|rc)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00182}00182\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ [.\_-\/]?+}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00183}00183\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (?P<pre\_n>[0-\/9]+)?}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00184}00184\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ )?+}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00185}00185\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?P<post>\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ post\ release}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00186}00186\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (?:-\/(?P<post\_n1>[0-\/9]+))}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00187}00187\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ |}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00188}00188\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (?:}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00189}00189\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ [.\_-\/]?}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00190}00190\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (?P<post\_l>post|rev|r)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00191}00191\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ [.\_-\/]?}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00192}00192\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (?P<post\_n2>[0-\/9]+)?}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00193}00193\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ )}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00194}00194\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ )?+}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00195}00195\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?P<dev>\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ dev\ release}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00196}00196\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ [.\_-\/]?+}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00197}00197\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (?P<dev\_l>dev)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00198}00198\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ [.\_-\/]?+}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00199}00199\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (?P<dev\_n>[0-\/9]+)?}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00200}00200\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ )?+}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00201}00201\ \textcolor{stringliteral}{\ \ \ \ )}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00202}00202\ \textcolor{stringliteral}{\ \ \ \ (?:\(\backslash\)+}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00203}00203\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?P<local>\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ local\ version}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00204}00204\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ [a-\/z0-\/9]+}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00205}00205\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (?:[.\_-\/][a-\/z0-\/9]+)*+}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00206}00206\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ )}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00207}00207\ \textcolor{stringliteral}{\ \ \ \ )?+}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00208}00208\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00209}00209\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00210}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a4e7d38782e0f2ed851bd434ed83110ad}{00210}}\ \_VERSION\_PATTERN\_OLD\ =\ \_VERSION\_PATTERN.replace(\textcolor{stringliteral}{"{}*+"{}},\ \textcolor{stringliteral}{"{}*"{}}).replace(\textcolor{stringliteral}{"{}?+"{}},\ \textcolor{stringliteral}{"{}?"{}})}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00211}00211\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00212}00212\ \textcolor{comment}{\#\ Possessive\ qualifiers\ were\ added\ in\ Python\ 3.11.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00213}00213\ \textcolor{comment}{\#\ CPython\ 3.11.0-\/3.11.4\ had\ a\ bug:\ https://github.com/python/cpython/pull/107795}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00214}00214\ \textcolor{comment}{\#\ Older\ PyPy\ also\ had\ a\ bug.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00215}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_ae768c69a0c94a60441e7341b7af9a7ac}{00215}}\ VERSION\_PATTERN\ =\ (}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00216}00216\ \ \ \ \ \_VERSION\_PATTERN\_OLD}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00217}00217\ \ \ \ \ \textcolor{keywordflow}{if}\ (sys.implementation.name\ ==\ \textcolor{stringliteral}{"{}cpython"{}}\ \textcolor{keywordflow}{and}\ sys.version\_info\ <\ (3,\ 11,\ 5))}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00218}00218\ \ \ \ \ \textcolor{keywordflow}{or}\ (sys.implementation.name\ ==\ \textcolor{stringliteral}{"{}pypy"{}}\ \textcolor{keywordflow}{and}\ sys.version\_info\ <\ (3,\ 11,\ 13))}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00219}00219\ \ \ \ \ \textcolor{keywordflow}{or}\ sys.version\_info\ <\ (3,\ 11)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00220}00220\ \ \ \ \ \textcolor{keywordflow}{else}\ \_VERSION\_PATTERN}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00221}00221\ )}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00222}00222\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00223}00223\ \textcolor{stringliteral}{A\ string\ containing\ the\ regular\ expression\ used\ to\ match\ a\ valid\ version.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00224}00224\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00225}00225\ \textcolor{stringliteral}{The\ pattern\ is\ not\ anchored\ at\ either\ end,\ and\ is\ intended\ for\ embedding\ in\ larger}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00226}00226\ \textcolor{stringliteral}{expressions\ (for\ example,\ matching\ a\ version\ number\ as\ part\ of\ a\ file\ name).\ The}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00227}00227\ \textcolor{stringliteral}{regular\ expression\ should\ be\ compiled\ with\ the\ \`{}\`{}re.VERBOSE\`{}\`{}\ and\ \`{}\`{}re.IGNORECASE\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00228}00228\ \textcolor{stringliteral}{flags\ set.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00229}00229\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00230}00230\ \textcolor{stringliteral}{:meta\ hide-\/value:}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00231}00231\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00232}00232\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00233}00233\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00234}00234\ \textcolor{comment}{\#\ Validation\ pattern\ for\ local\ version\ in\ replace()}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00235}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a28c06e9158598938ae32e2d724d44c45}{00235}}\ \_LOCAL\_PATTERN\ =\ re.compile(\textcolor{stringliteral}{r"{}[a-\/z0-\/9]+(?:[.\_-\/][a-\/z0-\/9]+)*"{}},\ re.IGNORECASE)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00236}00236\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00237}00237\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00238}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a1a844eb70524989b2f933d60eaa4f82f}{00238}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a1a844eb70524989b2f933d60eaa4f82f}{\_validate\_epoch}}(value:\ object,\ /)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00239}00239\ \ \ \ \ epoch\ =\ value\ \textcolor{keywordflow}{or}\ 0}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00240}00240\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(epoch,\ int)\ \textcolor{keywordflow}{and}\ epoch\ >=\ 0:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ epoch}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00242}00242\ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}epoch\ must\ be\ non-\/negative\ integer,\ got\ \{epoch\}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00243}00243\ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_invalid_version}{InvalidVersion}}(msg)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00244}00244\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00245}00245\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00246}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a0dec0f3bbbde96b5489fdd8bc08a99af}{00246}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a0dec0f3bbbde96b5489fdd8bc08a99af}{\_validate\_release}}(value:\ object,\ /)\ -\/>\ tuple[int,\ ...]:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00247}00247\ \ \ \ \ release\ =\ (0,)\ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ value}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00248}00248\ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ isinstance(release,\ tuple)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ len(release)\ >\ 0}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ all(isinstance(i,\ int)\ \textcolor{keywordflow}{and}\ i\ >=\ 0\ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ release)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00252}00252\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ release}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00254}00254\ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}release\ must\ be\ a\ non-\/empty\ tuple\ of\ non-\/negative\ integers,\ got\ \{release\}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00255}00255\ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_invalid_version}{InvalidVersion}}(msg)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00256}00256\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00257}00257\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00258}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_afdaa0d6f31c0c22e876b03486c6fdb71}{00258}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_afdaa0d6f31c0c22e876b03486c6fdb71}{\_validate\_pre}}(value:\ object,\ /)\ -\/>\ tuple[Literal[\textcolor{stringliteral}{"{}a"{}},\ \textcolor{stringliteral}{"{}b"{}},\ \textcolor{stringliteral}{"{}rc"{}}],\ int]\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00259}00259\ \ \ \ \ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ value}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00261}00261\ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ isinstance(value,\ tuple)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ len(value)\ ==\ 2}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ value[0]\ \textcolor{keywordflow}{in}\ (\textcolor{stringliteral}{"{}a"{}},\ \textcolor{stringliteral}{"{}b"{}},\ \textcolor{stringliteral}{"{}rc"{}})}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ isinstance(value[1],\ int)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ value[1]\ >=\ 0}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00267}00267\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ value}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00269}00269\ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}pre\ must\ be\ a\ tuple\ of\ ('a'|'b'|'rc',\ non-\/negative\ int),\ got\ \{value\}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00270}00270\ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_invalid_version}{InvalidVersion}}(msg)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00271}00271\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00272}00272\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00273}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a36c1c244b51ad0868beea75923ae3afb}{00273}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a36c1c244b51ad0868beea75923ae3afb}{\_validate\_post}}(value:\ object,\ /)\ -\/>\ tuple[Literal[\textcolor{stringliteral}{"{}post"{}}],\ int]\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00274}00274\ \ \ \ \ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ value}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00276}00276\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(value,\ int)\ \textcolor{keywordflow}{and}\ value\ >=\ 0:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (\textcolor{stringliteral}{"{}post"{}},\ value)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00278}00278\ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}post\ must\ be\ non-\/negative\ integer,\ got\ \{value\}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00279}00279\ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_invalid_version}{InvalidVersion}}(msg)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00280}00280\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00281}00281\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00282}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_ac45de37ed6101c4f3e1aa166e9df6574}{00282}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_ac45de37ed6101c4f3e1aa166e9df6574}{\_validate\_dev}}(value:\ object,\ /)\ -\/>\ tuple[Literal[\textcolor{stringliteral}{"{}dev"{}}],\ int]\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00283}00283\ \ \ \ \ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ value}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00285}00285\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(value,\ int)\ \textcolor{keywordflow}{and}\ value\ >=\ 0:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (\textcolor{stringliteral}{"{}dev"{}},\ value)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00287}00287\ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}dev\ must\ be\ non-\/negative\ integer,\ got\ \{value\}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00288}00288\ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_invalid_version}{InvalidVersion}}(msg)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00289}00289\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00290}00290\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00291}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a3967156c22ac084423b72e67d47bfe00}{00291}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a3967156c22ac084423b72e67d47bfe00}{\_validate\_local}}(value:\ object,\ /)\ -\/>\ LocalType\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00292}00292\ \ \ \ \ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ value}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00294}00294\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(value,\ str)\ \textcolor{keywordflow}{and}\ \_LOCAL\_PATTERN.fullmatch(value):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a2c061f00ad82d92d02b6edc93c67ceb9}{\_parse\_local\_version}}(value)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00296}00296\ \ \ \ \ msg\ =\ f\textcolor{stringliteral}{"{}local\ must\ be\ a\ valid\ version\ string,\ got\ \{value!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00297}00297\ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_invalid_version}{InvalidVersion}}(msg)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00298}00298\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00299}00299\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00300}00300\ \textcolor{comment}{\#\ Backward\ compatibility\ for\ internals\ before\ 26.0.\ Do\ not\ use.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00301}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version}{00301}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version}{\_Version}}(NamedTuple):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00302}00302\ \ \ \ \ epoch:\ int}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00303}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_a3c66e34d4621df81601d5a45697a20ad}{00303}}\ \ \ \ \ release:\ tuple[int,\ ...]}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00304}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_aff5cbc3eaa3ac787dcb526f0bbd0d593}{00304}}\ \ \ \ \ dev:\ tuple[str,\ int]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00305}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_a8257378272e73c2dc94b609b7977df88}{00305}}\ \ \ \ \ pre:\ tuple[str,\ int]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00306}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_aee2fb262419928ba4dc9f5de572dfe65}{00306}}\ \ \ \ \ post:\ tuple[str,\ int]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00307}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version_a94273ec3d82cc233964357a713a47c12}{00307}}\ \ \ \ \ local:\ LocalType\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00308}00308\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00309}00309\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00310}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version}{00310}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version}{Version}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version}{\_BaseVersion}}):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00311}00311\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}This\ class\ abstracts\ handling\ of\ a\ project's\ versions.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00312}00312\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00313}00313\ \textcolor{stringliteral}{\ \ \ \ A\ :class:\`{}Version\`{}\ instance\ is\ comparison\ aware\ and\ can\ be\ compared\ and}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00314}00314\ \textcolor{stringliteral}{\ \ \ \ sorted\ using\ the\ standard\ Python\ interfaces.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00315}00315\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00316}00316\ \textcolor{stringliteral}{\ \ \ \ >>>\ v1\ =\ Version("{}1.0a5"{})}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00317}00317\ \textcolor{stringliteral}{\ \ \ \ >>>\ v2\ =\ Version("{}1.0"{})}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00318}00318\ \textcolor{stringliteral}{\ \ \ \ >>>\ v1}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00319}00319\ \textcolor{stringliteral}{\ \ \ \ <Version('1.0a5')>}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00320}00320\ \textcolor{stringliteral}{\ \ \ \ >>>\ v2}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00321}00321\ \textcolor{stringliteral}{\ \ \ \ <Version('1.0')>}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00322}00322\ \textcolor{stringliteral}{\ \ \ \ >>>\ v1\ <\ v2}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00323}00323\ \textcolor{stringliteral}{\ \ \ \ True}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00324}00324\ \textcolor{stringliteral}{\ \ \ \ >>>\ v1\ ==\ v2}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00325}00325\ \textcolor{stringliteral}{\ \ \ \ False}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00326}00326\ \textcolor{stringliteral}{\ \ \ \ >>>\ v1\ >\ v2}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00327}00327\ \textcolor{stringliteral}{\ \ \ \ False}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00328}00328\ \textcolor{stringliteral}{\ \ \ \ >>>\ v1\ >=\ v2}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00329}00329\ \textcolor{stringliteral}{\ \ \ \ False}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00330}00330\ \textcolor{stringliteral}{\ \ \ \ >>>\ v1\ <=\ v2}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00331}00331\ \textcolor{stringliteral}{\ \ \ \ True}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00332}00332\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00333}00333\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00334}00334\ \ \ \ \ \_\_slots\_\_\ =\ (\textcolor{stringliteral}{"{}\_dev"{}},\ \textcolor{stringliteral}{"{}\_epoch"{}},\ \textcolor{stringliteral}{"{}\_key\_cache"{}},\ \textcolor{stringliteral}{"{}\_local"{}},\ \textcolor{stringliteral}{"{}\_post"{}},\ \textcolor{stringliteral}{"{}\_pre"{}},\ \textcolor{stringliteral}{"{}\_release"{}})}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00335}00335\ \ \ \ \ \_\_match\_args\_\_\ =\ (\textcolor{stringliteral}{"{}\_str"{}},)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00336}00336\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00337}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a661e7072e407806d2a024923b1d4e4d4}{00337}}\ \ \ \ \ \_regex\ =\ re.compile(\textcolor{stringliteral}{r"{}\(\backslash\)s*"{}}\ +\ VERSION\_PATTERN\ +\ \textcolor{stringliteral}{r"{}\(\backslash\)s*"{}},\ re.VERBOSE\ |\ re.IGNORECASE)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00338}00338\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00339}00339\ \ \ \ \ \_epoch:\ int}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00340}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aae13bab9428735fc8776117bc0392a76}{00340}}\ \ \ \ \ \_release:\ tuple[int,\ ...]}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00341}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_ab2779bf698cc25084aa103142528db7b}{00341}}\ \ \ \ \ \_dev:\ tuple[str,\ int]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00342}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4df9e07159ef28670f2f471b83a3bc55}{00342}}\ \ \ \ \ \_pre:\ tuple[str,\ int]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00343}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a210f5387506c506efd086b556bc1dcce}{00343}}\ \ \ \ \ \_post:\ tuple[str,\ int]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00344}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa760c84a4621c74fde6354a5022ba6ac}{00344}}\ \ \ \ \ \_local:\ LocalType\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00345}00345\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00346}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a37bbdba01b679093e6b0bba1749f6f31}{00346}}\ \ \ \ \ \_key\_cache:\ CmpKey\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00347}00347\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00348}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_adf2517310e85553a05a05feaafb81651}{00348}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_adf2517310e85553a05a05feaafb81651}{\_\_init\_\_}}(self,\ version:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Initialize\ a\ Version\ object.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00350}00350\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00351}00351\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ version:}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00352}00352\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ The\ string\ representation\ of\ a\ version\ which\ will\ be\ parsed\ and\ normalized}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00353}00353\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ before\ use.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00354}00354\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :raises\ InvalidVersion:}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00355}00355\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ If\ the\ \`{}\`{}version\`{}\`{}\ does\ not\ conform\ to\ PEP\ 440\ in\ any\ way\ then\ this}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00356}00356\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ exception\ will\ be\ raised.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00357}00357\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00358}00358\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Validate\ the\ version\ and\ parse\ it\ into\ pieces}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ match\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a661e7072e407806d2a024923b1d4e4d4}{\_regex}}.fullmatch(version)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ match:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_invalid_version}{InvalidVersion}}(f\textcolor{stringliteral}{"{}Invalid\ version:\ \{version!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00362}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1fcb49a3cff36ad195cfda6f5499ef01}{00362}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1fcb49a3cff36ad195cfda6f5499ef01}{\_epoch}}\ =\ int(match.group(\textcolor{stringliteral}{"{}epoch"{}}))\ \textcolor{keywordflow}{if}\ match.group(\textcolor{stringliteral}{"{}epoch"{}})\ \textcolor{keywordflow}{else}\ 0}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aae13bab9428735fc8776117bc0392a76}{\_release}}\ =\ tuple(map(int,\ match.group(\textcolor{stringliteral}{"{}release"{}}).split(\textcolor{stringliteral}{"{}."{}})))}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4df9e07159ef28670f2f471b83a3bc55}{\_pre}}\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a4169ddcff98ada907ab8914de83409b8}{\_parse\_letter\_version}}(match.group(\textcolor{stringliteral}{"{}pre\_l"{}}),\ match.group(\textcolor{stringliteral}{"{}pre\_n"{}}))}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a210f5387506c506efd086b556bc1dcce}{\_post}}\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a4169ddcff98ada907ab8914de83409b8}{\_parse\_letter\_version}}(}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00366}00366\ \ \ \ \ \ \ \ \ \ \ \ \ match.group(\textcolor{stringliteral}{"{}post\_l"{}}),\ match.group(\textcolor{stringliteral}{"{}post\_n1"{}})\ \textcolor{keywordflow}{or}\ match.group(\textcolor{stringliteral}{"{}post\_n2"{}})}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00367}00367\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00368}00368\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_ab2779bf698cc25084aa103142528db7b}{\_dev}}\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a4169ddcff98ada907ab8914de83409b8}{\_parse\_letter\_version}}(match.group(\textcolor{stringliteral}{"{}dev\_l"{}}),\ match.group(\textcolor{stringliteral}{"{}dev\_n"{}}))}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa760c84a4621c74fde6354a5022ba6ac}{\_local}}\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a2c061f00ad82d92d02b6edc93c67ceb9}{\_parse\_local\_version}}(match.group(\textcolor{stringliteral}{"{}local"{}}))}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00370}00370\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Key\ which\ will\ be\ used\ for\ sorting}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00372}00372\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a37bbdba01b679093e6b0bba1749f6f31}{\_key\_cache}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00373}00373\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00374}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a8b426c70bc09d554cf4cffdb6bbefe84}{00374}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a8b426c70bc09d554cf4cffdb6bbefe84}{\_\_replace\_\_}}(self,\ **kwargs:\ Unpack[\_VersionReplace])\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ epoch\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a1a844eb70524989b2f933d60eaa4f82f}{\_validate\_epoch}}(kwargs[\textcolor{stringliteral}{"{}epoch"{}}])\ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}epoch"{}}\ \textcolor{keywordflow}{in}\ kwargs\ \textcolor{keywordflow}{else}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1fcb49a3cff36ad195cfda6f5499ef01}{\_epoch}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ release\ =\ (}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a0dec0f3bbbde96b5489fdd8bc08a99af}{\_validate\_release}}(kwargs[\textcolor{stringliteral}{"{}release"{}}])}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}release"{}}\ \textcolor{keywordflow}{in}\ kwargs}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00379}00379\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aae13bab9428735fc8776117bc0392a76}{\_release}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ pre\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_afdaa0d6f31c0c22e876b03486c6fdb71}{\_validate\_pre}}(kwargs[\textcolor{stringliteral}{"{}pre"{}}])\ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}pre"{}}\ \textcolor{keywordflow}{in}\ kwargs\ \textcolor{keywordflow}{else}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4df9e07159ef28670f2f471b83a3bc55}{\_pre}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ post\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a36c1c244b51ad0868beea75923ae3afb}{\_validate\_post}}(kwargs[\textcolor{stringliteral}{"{}post"{}}])\ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}post"{}}\ \textcolor{keywordflow}{in}\ kwargs\ \textcolor{keywordflow}{else}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a210f5387506c506efd086b556bc1dcce}{\_post}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ dev\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_ac45de37ed6101c4f3e1aa166e9df6574}{\_validate\_dev}}(kwargs[\textcolor{stringliteral}{"{}dev"{}}])\ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}dev"{}}\ \textcolor{keywordflow}{in}\ kwargs\ \textcolor{keywordflow}{else}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_ab2779bf698cc25084aa103142528db7b}{\_dev}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ local\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a3967156c22ac084423b72e67d47bfe00}{\_validate\_local}}(kwargs[\textcolor{stringliteral}{"{}local"{}}])\ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}local"{}}\ \textcolor{keywordflow}{in}\ kwargs\ \textcolor{keywordflow}{else}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa760c84a4621c74fde6354a5022ba6ac}{\_local}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00385}00385\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ \ \ \ \ epoch\ ==\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1fcb49a3cff36ad195cfda6f5499ef01}{\_epoch}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ release\ ==\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aae13bab9428735fc8776117bc0392a76}{\_release}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ pre\ ==\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4df9e07159ef28670f2f471b83a3bc55}{\_pre}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00390}00390\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ post\ ==\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a210f5387506c506efd086b556bc1dcce}{\_post}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ dev\ ==\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_ab2779bf698cc25084aa103142528db7b}{\_dev}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ local\ ==\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa760c84a4621c74fde6354a5022ba6ac}{\_local}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00395}00395\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ new\_version\ =\ self.\_\_class\_\_.\_\_new\_\_(self.\_\_class\_\_)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ new\_version.\_key\_cache\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ new\_version.\_epoch\ =\ epoch}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00399}00399\ \ \ \ \ \ \ \ \ new\_version.\_release\ =\ release}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ new\_version.\_pre\ =\ pre}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ new\_version.\_post\ =\ post}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ new\_version.\_dev\ =\ dev}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ new\_version.\_local\ =\ local}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00404}00404\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00405}00405\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ new\_version}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00406}00406\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00407}00407\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00408}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a905a67d0945749e867fa1c7c0ca20180}{00408}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___base_version_a7c10ef38720fb75786c756e453b5ad9f}{\_key}}(self)\ -\/>\ CmpKey:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00409}00409\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a37bbdba01b679093e6b0bba1749f6f31}{\_key\_cache}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a37bbdba01b679093e6b0bba1749f6f31}{\_key\_cache}}\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_ad36277412be913ed5724da60c87404c1}{\_cmpkey}}(}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00411}00411\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1fcb49a3cff36ad195cfda6f5499ef01}{\_epoch}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00412}00412\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aae13bab9428735fc8776117bc0392a76}{\_release}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00413}00413\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4df9e07159ef28670f2f471b83a3bc55}{\_pre}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00414}00414\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a210f5387506c506efd086b556bc1dcce}{\_post}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00415}00415\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_ab2779bf698cc25084aa103142528db7b}{\_dev}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00416}00416\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa760c84a4621c74fde6354a5022ba6ac}{\_local}},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a37bbdba01b679093e6b0bba1749f6f31}{\_key\_cache}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00419}00419\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00420}00420\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00421}00421\ \ \ \ \ \textcolor{preprocessor}{@\_deprecated("{}Version.\_version\ is\ private\ and\ will\ be\ removed\ soon"{})}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00422}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a19777a158e402ae0defc4513734158db}{00422}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a19777a158e402ae0defc4513734158db}{\_version}}(self)\ -\/>\ \_Version:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___version}{\_Version}}(}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00424}00424\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1fcb49a3cff36ad195cfda6f5499ef01}{\_epoch}},\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aae13bab9428735fc8776117bc0392a76}{\_release}},\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_ab2779bf698cc25084aa103142528db7b}{\_dev}},\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4df9e07159ef28670f2f471b83a3bc55}{\_pre}},\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a210f5387506c506efd086b556bc1dcce}{\_post}},\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa760c84a4621c74fde6354a5022ba6ac}{\_local}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00426}00426\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00427}00427\ \ \ \ \ \textcolor{preprocessor}{@\_version.setter}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00428}00428\ \ \ \ \ \textcolor{preprocessor}{@\_deprecated("{}Version.\_version\ is\ private\ and\ will\ be\ removed\ soon"{})}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00429}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a3fbfd04bb0ee01a9b70ccac1591bdfa7}{00429}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a19777a158e402ae0defc4513734158db}{\_version}}(self,\ value:\ \_Version)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00430}00430\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1fcb49a3cff36ad195cfda6f5499ef01}{\_epoch}}\ =\ value.epoch}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00431}00431\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aae13bab9428735fc8776117bc0392a76}{\_release}}\ =\ value.release}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00432}00432\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_ab2779bf698cc25084aa103142528db7b}{\_dev}}\ =\ value.dev}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00433}00433\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4df9e07159ef28670f2f471b83a3bc55}{\_pre}}\ =\ value.pre}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00434}00434\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a210f5387506c506efd086b556bc1dcce}{\_post}}\ =\ value.post}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00435}00435\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa760c84a4621c74fde6354a5022ba6ac}{\_local}}\ =\ value.local}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00436}00436\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a37bbdba01b679093e6b0bba1749f6f31}{\_key\_cache}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00437}00437\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00438}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a0bd591153bee752969ec5e4291b61999}{00438}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a0bd591153bee752969ec5e4291b61999}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ representation\ of\ the\ Version\ that\ shows\ all\ internal\ state.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00440}00440\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00441}00441\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version('1.0.0')}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00442}00442\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ <Version('1.0.0')>}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00443}00443\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}<Version('\{self\}')>"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00445}00445\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00446}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a686f71816a505b78188a90ae3f119f6c}{00446}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a686f71816a505b78188a90ae3f119f6c}{\_\_str\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00447}00447\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ string\ representation\ of\ the\ version\ that\ can\ be\ round-\/tripped.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00448}00448\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00449}00449\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ str(Version("{}1.0a5"{}))}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00450}00450\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ '1.0a5'}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00451}00451\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ This\ is\ a\ hot\ function,\ so\ not\ calling\ self.base\_version}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00453}00453\ \ \ \ \ \ \ \ \ version\ =\ \textcolor{stringliteral}{"{}."{}}.join(map(str,\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1b2bf7d8ba7765030f1b8bcd4c173eba}{release}}))}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00454}00454\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00455}00455\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Epoch}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00456}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4e7011aebf870f84d93ef36c66d8a6df}{00456}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4e7011aebf870f84d93ef36c66d8a6df}{epoch}}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ \ \ \ \ version\ =\ f\textcolor{stringliteral}{"{}\{self.epoch\}!\{version\}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00458}00458\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Pre-\/release}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00460}00460\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a79d7e0d346e95a7cde4d92178b9b482e}{pre}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ \ \ \ \ version\ +=\ \textcolor{stringliteral}{"{}"{}}.join(map(str,\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a79d7e0d346e95a7cde4d92178b9b482e}{pre}}))}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00462}00462\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00463}00463\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Post-\/release}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00464}00464\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_af615db7a5128f7b711311080aed6af4c}{post}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00465}00465\ \ \ \ \ \ \ \ \ \ \ \ \ version\ +=\ f\textcolor{stringliteral}{"{}.post\{self.post\}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00466}00466\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00467}00467\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Development\ release}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00468}00468\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a7ee5378ada8bc3d0ee394d78452d4b01}{dev}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00469}00469\ \ \ \ \ \ \ \ \ \ \ \ \ version\ +=\ f\textcolor{stringliteral}{"{}.dev\{self.dev\}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00470}00470\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00471}00471\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Local\ version\ segment}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00472}00472\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa0b153affddaf76ab6bbc4b2553dabf5}{local}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00473}00473\ \ \ \ \ \ \ \ \ \ \ \ \ version\ +=\ f\textcolor{stringliteral}{"{}+\{self.local\}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00474}00474\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00475}00475\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ version}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00476}00476\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00477}00477\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00478}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a6dbc657b2669e73b04ed681be7e07226}{00478}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a6dbc657b2669e73b04ed681be7e07226}{\_str}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00479}00479\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Internal\ property\ for\ match\_args"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00480}00480\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ str(self)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00481}00481\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00482}00482\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00483}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a854051b5e69c2698df6571d11810b8d3}{00483}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4e7011aebf870f84d93ef36c66d8a6df}{epoch}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ epoch\ of\ the\ version.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00485}00485\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00486}00486\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}2.0.0"{}).epoch}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00487}00487\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 0}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00488}00488\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1!2.0.0"{}).epoch}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00489}00489\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 1}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00490}00490\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00491}00491\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1fcb49a3cff36ad195cfda6f5499ef01}{\_epoch}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00492}00492\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00493}00493\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00494}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a5e735af3294e2d74e0f5917a5a3ff942}{00494}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1b2bf7d8ba7765030f1b8bcd4c173eba}{release}}(self)\ -\/>\ tuple[int,\ ...]:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00495}00495\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ components\ of\ the\ "{}release"{}\ segment\ of\ the\ version.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00496}00496\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00497}00497\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3"{}).release}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00498}00498\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (1,\ 2,\ 3)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00499}00499\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}2.0.0"{}).release}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00500}00500\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (2,\ 0,\ 0)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00501}00501\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1!2.0.0.post0"{}).release}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00502}00502\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (2,\ 0,\ 0)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00503}00503\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00504}00504\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Includes\ trailing\ zeroes\ but\ not\ the\ epoch\ or\ any\ pre-\/release\ /\ development\ /}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00505}00505\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ post-\/release\ suffixes.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00506}00506\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aae13bab9428735fc8776117bc0392a76}{\_release}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00508}00508\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00509}00509\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00510}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a79d7e0d346e95a7cde4d92178b9b482e}{00510}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a79d7e0d346e95a7cde4d92178b9b482e}{pre}}(self)\ -\/>\ tuple[str,\ int]\ |\ None:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00511}00511\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ pre-\/release\ segment\ of\ the\ version.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00512}00512\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00513}00513\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ print(Version("{}1.2.3"{}).pre)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00514}00514\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00515}00515\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3a1"{}).pre}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00516}00516\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ('a',\ 1)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00517}00517\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3b1"{}).pre}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00518}00518\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ('b',\ 1)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00519}00519\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3rc1"{}).pre}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00520}00520\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ('rc',\ 1)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00521}00521\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4df9e07159ef28670f2f471b83a3bc55}{\_pre}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00523}00523\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00524}00524\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00525}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_af615db7a5128f7b711311080aed6af4c}{00525}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_af615db7a5128f7b711311080aed6af4c}{post}}(self)\ -\/>\ int\ |\ None:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00526}00526\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ post-\/release\ number\ of\ the\ version.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00527}00527\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00528}00528\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ print(Version("{}1.2.3"{}).post)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00529}00529\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00530}00530\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3.post1"{}).post}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00531}00531\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 1}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00532}00532\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00533}00533\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a210f5387506c506efd086b556bc1dcce}{\_post}}[1]\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a210f5387506c506efd086b556bc1dcce}{\_post}}\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00534}00534\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00535}00535\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00536}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a7ee5378ada8bc3d0ee394d78452d4b01}{00536}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a7ee5378ada8bc3d0ee394d78452d4b01}{dev}}(self)\ -\/>\ int\ |\ None:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00537}00537\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ development\ number\ of\ the\ version.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00538}00538\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00539}00539\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ print(Version("{}1.2.3"{}).dev)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00540}00540\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00541}00541\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3.dev1"{}).dev}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00542}00542\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 1}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00543}00543\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00544}00544\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_ab2779bf698cc25084aa103142528db7b}{\_dev}}[1]\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_ab2779bf698cc25084aa103142528db7b}{\_dev}}\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00545}00545\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00546}00546\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00547}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa0b153affddaf76ab6bbc4b2553dabf5}{00547}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa0b153affddaf76ab6bbc4b2553dabf5}{local}}(self)\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ local\ version\ segment\ of\ the\ version.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00549}00549\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00550}00550\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ print(Version("{}1.2.3"{}).local)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00551}00551\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00552}00552\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3+abc"{}).local}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00553}00553\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 'abc'}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00554}00554\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00555}00555\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa760c84a4621c74fde6354a5022ba6ac}{\_local}}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00556}00556\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}."{}}.join(str(x)\ \textcolor{keywordflow}{for}\ x\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa760c84a4621c74fde6354a5022ba6ac}{\_local}})}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00557}00557\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00558}00558\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00559}00559\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00560}00560\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00561}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a273801465c8474bf9d21226af6947893}{00561}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a273801465c8474bf9d21226af6947893}{public}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00562}00562\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ public\ portion\ of\ the\ version.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00563}00563\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00564}00564\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3"{}).public}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00565}00565\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ '1.2.3'}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00566}00566\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3+abc"{}).public}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00567}00567\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ '1.2.3'}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00568}00568\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1!1.2.3dev1+abc"{}).public}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00569}00569\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ '1!1.2.3.dev1'}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00570}00570\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00571}00571\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ str(self).split(\textcolor{stringliteral}{"{}+"{}},\ 1)[0]}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00572}00572\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00573}00573\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00574}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a2c93c06191b035670624f1012cf873b4}{00574}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a2c93c06191b035670624f1012cf873b4}{base\_version}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00575}00575\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ "{}base\ version"{}\ of\ the\ version.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00576}00576\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00577}00577\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3"{}).base\_version}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00578}00578\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ '1.2.3'}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00579}00579\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3+abc"{}).base\_version}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00580}00580\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ '1.2.3'}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00581}00581\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1!1.2.3dev1+abc"{}).base\_version}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00582}00582\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ '1!1.2.3'}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00583}00583\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00584}00584\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ "{}base\ version"{}\ is\ the\ public\ version\ of\ the\ project\ without\ any\ pre\ or\ post}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00585}00585\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ release\ markers.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00586}00586\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00587}00587\ \ \ \ \ \ \ \ \ release\_segment\ =\ \textcolor{stringliteral}{"{}."{}}.join(map(str,\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1b2bf7d8ba7765030f1b8bcd4c173eba}{release}}))}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00588}00588\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.epoch\}!\{release\_segment\}"{}}\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4e7011aebf870f84d93ef36c66d8a6df}{epoch}}\ \textcolor{keywordflow}{else}\ release\_segment}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00589}00589\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00590}00590\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00591}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a30f3befc3f9f12b94681fe7678b979bd}{00591}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a30f3befc3f9f12b94681fe7678b979bd}{is\_prerelease}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00592}00592\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Whether\ this\ version\ is\ a\ pre-\/release.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00593}00593\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00594}00594\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3"{}).is\_prerelease}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00595}00595\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ False}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00596}00596\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3a1"{}).is\_prerelease}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00597}00597\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ True}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00598}00598\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3b1"{}).is\_prerelease}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00599}00599\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ True}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00600}00600\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3rc1"{}).is\_prerelease}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00601}00601\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ True}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00602}00602\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3dev1"{}).is\_prerelease}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00603}00603\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ True}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00604}00604\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00605}00605\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a7ee5378ada8bc3d0ee394d78452d4b01}{dev}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a79d7e0d346e95a7cde4d92178b9b482e}{pre}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00606}00606\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00607}00607\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00608}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a13ff52f4a2a330c24d84da8669cba0f3}{00608}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a13ff52f4a2a330c24d84da8669cba0f3}{is\_postrelease}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00609}00609\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Whether\ this\ version\ is\ a\ post-\/release.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00610}00610\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00611}00611\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3"{}).is\_postrelease}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00612}00612\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ False}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00613}00613\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3.post1"{}).is\_postrelease}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00614}00614\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ True}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00615}00615\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00616}00616\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_af615db7a5128f7b711311080aed6af4c}{post}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00617}00617\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00618}00618\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00619}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a0c8229d89cc0f377c86443d4e2855853}{00619}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a0c8229d89cc0f377c86443d4e2855853}{is\_devrelease}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00620}00620\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Whether\ this\ version\ is\ a\ development\ release.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00621}00621\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00622}00622\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3"{}).is\_devrelease}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00623}00623\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ False}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00624}00624\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3.dev1"{}).is\_devrelease}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00625}00625\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ True}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00626}00626\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00627}00627\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a7ee5378ada8bc3d0ee394d78452d4b01}{dev}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00628}00628\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00629}00629\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00630}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a788afb713579f6ffde55671169fa6e37}{00630}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a788afb713579f6ffde55671169fa6e37}{major}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00631}00631\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ first\ item\ of\ :attr:\`{}release\`{}\ or\ \`{}\`{}0\`{}\`{}\ if\ unavailable.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00632}00632\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00633}00633\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3"{}).major}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00634}00634\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 1}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00635}00635\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00636}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1b2bf7d8ba7765030f1b8bcd4c173eba}{00636}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1b2bf7d8ba7765030f1b8bcd4c173eba}{release}}[0]\ \textcolor{keywordflow}{if}\ len(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1b2bf7d8ba7765030f1b8bcd4c173eba}{release}})\ >=\ 1\ \textcolor{keywordflow}{else}\ 0}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00637}00637\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00638}00638\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00639}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_acbcd8f485ded70e636e4312f6391e4ac}{00639}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_acbcd8f485ded70e636e4312f6391e4ac}{minor}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00640}00640\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ second\ item\ of\ :attr:\`{}release\`{}\ or\ \`{}\`{}0\`{}\`{}\ if\ unavailable.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00641}00641\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00642}00642\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3"{}).minor}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00643}00643\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 2}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00644}00644\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1"{}).minor}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00645}00645\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 0}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00646}00646\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00647}00647\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1b2bf7d8ba7765030f1b8bcd4c173eba}{release}}[1]\ \textcolor{keywordflow}{if}\ len(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1b2bf7d8ba7765030f1b8bcd4c173eba}{release}})\ >=\ 2\ \textcolor{keywordflow}{else}\ 0}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00648}00648\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00649}00649\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00650}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a9d6cebea1905dc6f9e7d32b62b6cfead}{00650}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a9d6cebea1905dc6f9e7d32b62b6cfead}{micro}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00651}00651\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ third\ item\ of\ :attr:\`{}release\`{}\ or\ \`{}\`{}0\`{}\`{}\ if\ unavailable.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00652}00652\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00653}00653\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1.2.3"{}).micro}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00654}00654\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 3}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00655}00655\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ Version("{}1"{}).micro}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00656}00656\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 0}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00657}00657\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00658}00658\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1b2bf7d8ba7765030f1b8bcd4c173eba}{release}}[2]\ \textcolor{keywordflow}{if}\ len(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1b2bf7d8ba7765030f1b8bcd4c173eba}{release}})\ >=\ 3\ \textcolor{keywordflow}{else}\ 0}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00659}00659\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00660}00660\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00661}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release}{00661}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release}{\_TrimmedRelease}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version}{Version}}):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00662}00662\ \ \ \ \ \_\_slots\_\_\ =\ ()}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00663}00663\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00664}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release_a25c12f07ffa80eba869da8ab1f100574}{00664}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release_a25c12f07ffa80eba869da8ab1f100574}{\_\_init\_\_}}(self,\ version:\ str\ |\ Version)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00665}00665\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(version,\ Version):}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00666}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release}{00666}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1fcb49a3cff36ad195cfda6f5499ef01}{\_epoch}}\ =\ version.\_epoch}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00667}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release}{00667}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aae13bab9428735fc8776117bc0392a76}{\_release}}\ =\ version.\_release}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00668}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release}{00668}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_ab2779bf698cc25084aa103142528db7b}{\_dev}}\ =\ version.\_dev}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00669}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release}{00669}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a4df9e07159ef28670f2f471b83a3bc55}{\_pre}}\ =\ version.\_pre}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00670}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release}{00670}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a210f5387506c506efd086b556bc1dcce}{\_post}}\ =\ version.\_post}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00671}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release}{00671}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_aa760c84a4621c74fde6354a5022ba6ac}{\_local}}\ =\ version.\_local}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00672}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release}{00672}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a37bbdba01b679093e6b0bba1749f6f31}{\_key\_cache}}\ =\ version.\_key\_cache}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00673}00673\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00674}00674\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release_a25c12f07ffa80eba869da8ab1f100574}{\_\_init\_\_}}(version)\ \ \textcolor{comment}{\#\ pragma:\ no\ cover}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00675}00675\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00676}00676\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00677}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1___trimmed_release_a2800de6db866555a3a49564da618b4c4}{00677}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version_a1b2bf7d8ba7765030f1b8bcd4c173eba}{release}}(self)\ -\/>\ tuple[int,\ ...]:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00678}00678\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00679}00679\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Release\ segment\ without\ any\ trailing\ zeros.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00680}00680\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00681}00681\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ \_TrimmedRelease('1.0.0').release}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00682}00682\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (1,)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00683}00683\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ \_TrimmedRelease('0.0').release}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00684}00684\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (0,)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00685}00685\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00686}00686\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ This\ leaves\ one\ 0.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00687}00687\ \ \ \ \ \ \ \ \ rel\ =\ super().release}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00688}00688\ \ \ \ \ \ \ \ \ len\_release\ =\ len(rel)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00689}00689\ \ \ \ \ \ \ \ \ i\ =\ len\_release}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00690}00690\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ i\ >\ 1\ \textcolor{keywordflow}{and}\ rel[i\ -\/\ 1]\ ==\ 0:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00691}00691\ \ \ \ \ \ \ \ \ \ \ \ \ i\ -\/=\ 1}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00692}00692\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ rel\ \textcolor{keywordflow}{if}\ i\ ==\ len\_release\ \textcolor{keywordflow}{else}\ rel[:i]}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00693}00693\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00694}00694\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00695}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a4169ddcff98ada907ab8914de83409b8}{00695}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a4169ddcff98ada907ab8914de83409b8}{\_parse\_letter\_version}}(}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00696}00696\ \ \ \ \ letter:\ str\ |\ \textcolor{keywordtype}{None},\ number:\ str\ |\ bytes\ |\ SupportsInt\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00697}00697\ )\ -\/>\ tuple[str,\ int]\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00698}00698\ \ \ \ \ \textcolor{keywordflow}{if}\ letter:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00699}00699\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ normalize\ any\ letters\ to\ their\ lower\ case\ form}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00700}00700\ \ \ \ \ \ \ \ \ letter\ =\ letter.lower()}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00701}00701\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00702}00702\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ consider\ some\ words\ to\ be\ alternate\ spellings\ of\ other\ words\ and}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00703}00703\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ in\ those\ cases\ we\ want\ to\ normalize\ the\ spellings\ to\ our\ preferred}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00704}00704\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ spelling.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00705}00705\ \ \ \ \ \ \ \ \ letter\ =\ \_LETTER\_NORMALIZATION.get(letter,\ letter)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00706}00706\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00707}00707\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ consider\ there\ to\ be\ an\ implicit\ 0\ in\ a\ pre-\/release\ if\ there\ is}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00708}00708\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ not\ a\ numeral\ associated\ with\ it.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00709}00709\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ letter,\ int(number\ \textcolor{keywordflow}{or}\ 0)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00710}00710\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00711}00711\ \ \ \ \ \textcolor{keywordflow}{if}\ number:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00712}00712\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ assume\ if\ we\ are\ given\ a\ number,\ but\ we\ are\ not\ given\ a\ letter}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00713}00713\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ then\ this\ is\ using\ the\ implicit\ post\ release\ syntax\ (e.g.\ 1.0-\/1)}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00714}00714\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}post"{}},\ int(number)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00715}00715\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00716}00716\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00717}00717\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00718}00718\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00719}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_aa4fdf7849871c007a47883e3b16b3976}{00719}}\ \_local\_version\_separators\ =\ re.compile(\textcolor{stringliteral}{r"{}[\(\backslash\).\_-\/]"{}})}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00720}00720\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00721}00721\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00722}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a2c061f00ad82d92d02b6edc93c67ceb9}{00722}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_a2c061f00ad82d92d02b6edc93c67ceb9}{\_parse\_local\_version}}(local:\ str\ |\ \textcolor{keywordtype}{None})\ -\/>\ LocalType\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00723}00723\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00724}00724\ \textcolor{stringliteral}{\ \ \ \ Takes\ a\ string\ like\ abc.1.twelve\ and\ turns\ it\ into\ ("{}abc"{},\ 1,\ "{}twelve"{}).}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00725}00725\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00726}00726\ \ \ \ \ \textcolor{keywordflow}{if}\ local\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00727}00727\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tuple(}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00728}00728\ \ \ \ \ \ \ \ \ \ \ \ \ part.lower()\ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ part.isdigit()\ \textcolor{keywordflow}{else}\ int(part)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00729}00729\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ part\ \textcolor{keywordflow}{in}\ \_local\_version\_separators.split(local)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00730}00730\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00731}00731\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00732}00732\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00733}00733\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00734}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_ad36277412be913ed5724da60c87404c1}{00734}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version_ad36277412be913ed5724da60c87404c1}{\_cmpkey}}(}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00735}00735\ \ \ \ \ epoch:\ int,}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00736}00736\ \ \ \ \ release:\ tuple[int,\ ...],}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00737}00737\ \ \ \ \ pre:\ tuple[str,\ int]\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00738}00738\ \ \ \ \ post:\ tuple[str,\ int]\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00739}00739\ \ \ \ \ dev:\ tuple[str,\ int]\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00740}00740\ \ \ \ \ local:\ LocalType\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00741}00741\ )\ -\/>\ CmpKey:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00742}00742\ \ \ \ \ \textcolor{comment}{\#\ When\ we\ compare\ a\ release\ version,\ we\ want\ to\ compare\ it\ with\ all\ of\ the}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00743}00743\ \ \ \ \ \textcolor{comment}{\#\ trailing\ zeros\ removed.\ We\ will\ use\ this\ for\ our\ sorting\ key.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00744}00744\ \ \ \ \ len\_release\ =\ len(release)}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00745}00745\ \ \ \ \ i\ =\ len\_release}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00746}00746\ \ \ \ \ \textcolor{keywordflow}{while}\ i\ \textcolor{keywordflow}{and}\ release[i\ -\/\ 1]\ ==\ 0:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00747}00747\ \ \ \ \ \ \ \ \ i\ -\/=\ 1}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00748}00748\ \ \ \ \ \_release\ =\ release\ \textcolor{keywordflow}{if}\ i\ ==\ len\_release\ \textcolor{keywordflow}{else}\ release[:i]}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00749}00749\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00750}00750\ \ \ \ \ \textcolor{comment}{\#\ We\ need\ to\ "{}trick"{}\ the\ sorting\ algorithm\ to\ put\ 1.0.dev0\ before\ 1.0a0.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00751}00751\ \ \ \ \ \textcolor{comment}{\#\ We'll\ do\ this\ by\ abusing\ the\ pre\ segment,\ but\ we\ \_only\_\ want\ to\ do\ this}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00752}00752\ \ \ \ \ \textcolor{comment}{\#\ if\ there\ is\ not\ a\ pre\ or\ a\ post\ segment.\ If\ we\ have\ one\ of\ those\ then}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00753}00753\ \ \ \ \ \textcolor{comment}{\#\ the\ normal\ sorting\ rules\ will\ handle\ this\ case\ correctly.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00754}00754\ \ \ \ \ \textcolor{keywordflow}{if}\ pre\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ post\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ dev\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00755}00755\ \ \ \ \ \ \ \ \ \_pre:\ CmpPrePostDevType\ =\ NegativeInfinity}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00756}00756\ \ \ \ \ \textcolor{comment}{\#\ Versions\ without\ a\ pre-\/release\ (except\ as\ noted\ above)\ should\ sort\ after}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00757}00757\ \ \ \ \ \textcolor{comment}{\#\ those\ with\ one.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00758}00758\ \ \ \ \ \textcolor{keywordflow}{elif}\ pre\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00759}00759\ \ \ \ \ \ \ \ \ \_pre\ =\ Infinity}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00760}00760\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00761}00761\ \ \ \ \ \ \ \ \ \_pre\ =\ pre}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00762}00762\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00763}00763\ \ \ \ \ \textcolor{comment}{\#\ Versions\ without\ a\ post\ segment\ should\ sort\ before\ those\ with\ one.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00764}00764\ \ \ \ \ \textcolor{keywordflow}{if}\ post\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00765}00765\ \ \ \ \ \ \ \ \ \_post:\ CmpPrePostDevType\ =\ NegativeInfinity}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00766}00766\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00767}00767\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00768}00768\ \ \ \ \ \ \ \ \ \_post\ =\ post}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00769}00769\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00770}00770\ \ \ \ \ \textcolor{comment}{\#\ Versions\ without\ a\ development\ segment\ should\ sort\ after\ those\ with\ one.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00771}00771\ \ \ \ \ \textcolor{keywordflow}{if}\ dev\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00772}00772\ \ \ \ \ \ \ \ \ \_dev:\ CmpPrePostDevType\ =\ Infinity}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00773}00773\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00774}00774\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00775}00775\ \ \ \ \ \ \ \ \ \_dev\ =\ dev}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00776}00776\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00777}00777\ \ \ \ \ \textcolor{keywordflow}{if}\ local\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00778}00778\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Versions\ without\ a\ local\ segment\ should\ sort\ before\ those\ with\ one.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00779}00779\ \ \ \ \ \ \ \ \ \_local:\ CmpLocalType\ =\ NegativeInfinity}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00780}00780\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00781}00781\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Versions\ with\ a\ local\ segment\ need\ that\ segment\ parsed\ to\ implement}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00782}00782\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ sorting\ rules\ in\ PEP440.}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00783}00783\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ -\/\ Alpha\ numeric\ segments\ sort\ before\ numeric\ segments}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00784}00784\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ -\/\ Alpha\ numeric\ segments\ sort\ lexicographically}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00785}00785\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ -\/\ Numeric\ segments\ sort\ numerically}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00786}00786\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ -\/\ Shorter\ versions\ sort\ before\ longer\ versions\ when\ the\ prefixes}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00787}00787\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ match\ exactly}}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00788}00788\ \ \ \ \ \ \ \ \ \_local\ =\ tuple(}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00789}00789\ \ \ \ \ \ \ \ \ \ \ \ \ (i,\ \textcolor{stringliteral}{"{}"{}})\ \textcolor{keywordflow}{if}\ isinstance(i,\ int)\ \textcolor{keywordflow}{else}\ (NegativeInfinity,\ i)\ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ local}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00790}00790\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00791}00791\ }
+\DoxyCodeLine{\Hypertarget{pip_2__vendor_2packaging_2version_8py_source_l00792}00792\ \ \ \ \ \textcolor{keywordflow}{return}\ epoch,\ \_release,\ \_pre,\ \_post,\ \_dev,\ \_local}
+
+\end{DoxyCode}

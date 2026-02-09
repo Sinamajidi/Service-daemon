@@ -1,0 +1,265 @@
+\doxysection{freeze.\+py}
+\hypertarget{operations_2freeze_8py_source}{}\label{operations_2freeze_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/operations/freeze.py@{venv/Lib/site-\/packages/pip/\_internal/operations/freeze.py}}
+\doxymbox{\hyperlink{operations_2freeze_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1freeze}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00003}00003\ \textcolor{keyword}{import}\ collections}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00004}00004\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00005}00005\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00006}00006\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Container,\ Generator,\ Iterable}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00007}00007\ \textcolor{keyword}{from}\ dataclasses\ \textcolor{keyword}{import}\ dataclass,\ field}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00008}00008\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ NamedTuple}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1utils}{pip.\_vendor.packaging.utils}}\ \textcolor{keyword}{import}\ NormalizedName,\ canonicalize\_name}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00011}00011\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1version}{pip.\_vendor.packaging.version}}\ \textcolor{keyword}{import}\ InvalidVersion}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00013}00013\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ BadCommand,\ InstallationError}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00014}00014\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1metadata}{pip.\_internal.metadata}}\ \textcolor{keyword}{import}\ BaseDistribution,\ get\_environment}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00015}00015\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1constructors}{pip.\_internal.req.constructors}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00016}00016\ \ \ \ \ install\_req\_from\_editable,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00017}00017\ \ \ \ \ install\_req\_from\_line,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00018}00018\ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00019}00019\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__file}{pip.\_internal.req.req\_file}}\ \textcolor{keyword}{import}\ COMMENT\_RE}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00020}00020\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1direct__url__helpers}{pip.\_internal.utils.direct\_url\_helpers}}\ \textcolor{keyword}{import}\ direct\_url\_as\_pep440\_direct\_reference}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00022}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1freeze_a9af16aabecbcae08546946f45c00e541}{00022}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00025}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1___editable_info}{00025}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1___editable_info}{\_EditableInfo}}(NamedTuple):}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00026}00026\ \ \ \ \ requirement:\ str}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00027}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1___editable_info_a7712ace7a1f8f24c3d7102b7266d03f3}{00027}}\ \ \ \ \ comments:\ list[str]}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00030}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1freeze_aeea933b813af6209ce1c70a089cd5db6}{00030}}\ \textcolor{keyword}{def\ }freeze(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00031}00031\ \ \ \ \ requirement:\ list[str]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00032}00032\ \ \ \ \ local\_only:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00033}00033\ \ \ \ \ user\_only:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00034}00034\ \ \ \ \ paths:\ list[str]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00035}00035\ \ \ \ \ isolated:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00036}00036\ \ \ \ \ exclude\_editable:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00037}00037\ \ \ \ \ skip:\ Container[str]\ =\ (),}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00038}00038\ )\ -\/>\ Generator[str,\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00039}00039\ \ \ \ \ installations:\ dict[str,\ FrozenRequirement]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00041}00041\ \ \ \ \ dists\ =\ get\_environment(paths).iter\_installed\_distributions(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ local\_only=local\_only,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ skip=(),}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ user\_only=user\_only,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00045}00045\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00046}00046\ \ \ \ \ \textcolor{keywordflow}{for}\ dist\ \textcolor{keywordflow}{in}\ dists:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ req\ =\ FrozenRequirement.from\_dist(dist)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ exclude\_editable\ \textcolor{keywordflow}{and}\ req.editable:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ installations[req.canonical\_name]\ =\ req}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00052}00052\ \ \ \ \ \textcolor{keywordflow}{if}\ requirement:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ options\ that\ don't\ get\ turned\ into\ an\ InstallRequirement}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ should\ only\ be\ emitted\ once,\ even\ if\ the\ same\ option\ is\ in\ multiple}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ requirements\ files,\ so\ we\ need\ to\ keep\ track\ of\ what\ has\ been\ emitted}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ so\ that\ we\ don't\ emit\ it\ again\ if\ it's\ seen\ again}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ emitted\_options:\ set[str]\ =\ set()}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ keep\ track\ of\ which\ files\ a\ requirement\ is\ in\ so\ that\ we\ can}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ give\ an\ accurate\ warning\ if\ a\ requirement\ appears\ multiple\ times.}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ req\_files:\ dict[str,\ list[str]]\ =\ collections.defaultdict(list)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ req\_file\_path\ \textcolor{keywordflow}{in}\ requirement:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ open(req\_file\_path)\ \textcolor{keyword}{as}\ req\_file:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ line\ \textcolor{keywordflow}{in}\ req\_file:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{not}\ line.strip()}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ line.strip().startswith(\textcolor{stringliteral}{"{}\#"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{or}\ line.startswith(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/r"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/requirement"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/f"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/find-\/links"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/i"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/index-\/url"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/pre"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/trusted-\/host"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/process-\/dependency-\/links"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/extra-\/index-\/url"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/use-\/feature"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\ =\ line.rstrip()}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ line\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ emitted\_options:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ emitted\_options.add(line)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ line}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ line.startswith((\textcolor{stringliteral}{"{}-\/e"{}},\ \textcolor{stringliteral}{"{}-\/-\/editable"{}})):}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ line.startswith(\textcolor{stringliteral}{"{}-\/e"{}}):}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\ =\ line[2:].strip()}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\ =\ line[len(\textcolor{stringliteral}{"{}-\/-\/editable"{}})\ :].strip().lstrip(\textcolor{stringliteral}{"{}="{}})}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\_req\ =\ install\_req\_from\_editable(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ isolated=isolated,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\_req\ =\ install\_req\_from\_line(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ COMMENT\_RE.sub(\textcolor{stringliteral}{"{}"{}},\ line).strip(),}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ isolated=isolated,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ line\_req.name:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Skipping\ line\ in\ requirement\ file\ [\%s]\ because\ "{}}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}it's\ not\ clear\ what\ it\ would\ install:\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_file\_path,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line.strip(),}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ \ (add\ \#egg=PackageName\ to\ the\ URL\ to\ avoid"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ this\ warning)"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\_req\_canonical\_name\ =\ canonicalize\_name(line\_req.name)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ line\_req\_canonical\_name\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ installations:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ either\ it's\ not\ installed,\ or\ it\ is\ installed}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ but\ has\ been\ processed\ already}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ req\_files[line\_req.name]:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Requirement\ file\ [\%s]\ contains\ \%s,\ but\ "{}}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}package\ \%r\ is\ not\ installed"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_file\_path,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ COMMENT\_RE.sub(\textcolor{stringliteral}{"{}"{}},\ line).strip(),}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\_req.name,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_files[line\_req.name].append(req\_file\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ str(installations[line\_req\_canonical\_name]).rstrip()}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ del\ installations[line\_req\_canonical\_name]}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\_files[line\_req.name].append(req\_file\_path)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00134}00134\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Warn\ about\ requirements\ that\ were\ included\ multiple\ times\ (in\ a}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ single\ requirements\ file\ or\ in\ different\ requirements\ files).}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ name,\ files\ \textcolor{keywordflow}{in}\ req\_files.items():}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(files)\ >\ 1:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Requirement\ \%s\ included\ multiple\ times\ [\%s]"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ name,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{},\ "{}}.join(sorted(set(files))),}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ (\textcolor{stringliteral}{"{}\#\#\ The\ following\ requirements\ were\ added\ by\ pip\ freeze:"{}})}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00146}00146\ \ \ \ \ \textcolor{keywordflow}{for}\ installation\ \textcolor{keywordflow}{in}\ sorted(installations.values(),\ key=\textcolor{keyword}{lambda}\ x:\ x.name.lower()):}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ installation.canonical\_name\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ skip:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ str(installation).rstrip()}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00149}00149\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00150}00150\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00151}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1freeze_a6459dcd45b9829542dc6546fd7af1a03}{00151}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1freeze_a6459dcd45b9829542dc6546fd7af1a03}{\_format\_as\_name\_version}}(dist:\ BaseDistribution)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00152}00152\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ dist\_version\ =\ dist.version}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00154}00154\ \ \ \ \ \textcolor{keywordflow}{except}\ InvalidVersion:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ legacy\ version}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{dist.raw\_name\}===\{dist.raw\_version\}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00157}00157\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{dist.raw\_name\}==\{dist\_version\}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00159}00159\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00160}00160\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00161}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1freeze_a214f67a14ef70a58fb181ff0c8cb8b3b}{00161}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1freeze_a214f67a14ef70a58fb181ff0c8cb8b3b}{\_get\_editable\_info}}(dist:\ BaseDistribution)\ -\/>\ \_EditableInfo:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00162}00162\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00163}00163\ \textcolor{stringliteral}{\ \ \ \ Compute\ and\ return\ values\ (req,\ comments)\ for\ use\ in}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00164}00164\ \textcolor{stringliteral}{\ \ \ \ FrozenRequirement.from\_dist().}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00165}00165\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00166}00166\ \ \ \ \ editable\_project\_location\ =\ dist.editable\_project\_location}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00167}00167\ \ \ \ \ \textcolor{keyword}{assert}\ editable\_project\_location}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00168}00168\ \ \ \ \ location\ =\ os.path.normcase(os.path.abspath(editable\_project\_location))}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00169}00169\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00170}00170\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs}{pip.\_internal.vcs}}\ \textcolor{keyword}{import}\ RemoteNotFoundError,\ RemoteNotValidError,\ vcs}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00171}00171\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00172}00172\ \ \ \ \ vcs\_backend\ =\ vcs.get\_backend\_for\_dir(location)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00174}00174\ \ \ \ \ \textcolor{keywordflow}{if}\ vcs\_backend\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ display\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1freeze_a6459dcd45b9829542dc6546fd7af1a03}{\_format\_as\_name\_version}}(dist)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'No\ VCS\ found\ for\ editable\ requirement\ "{}\%s"{}\ in:\ \%r'},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \ \ \ \ display,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \ \ \ \ location,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1___editable_info}{\_EditableInfo}}(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \ \ \ \ requirement=location,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ comments=[f\textcolor{stringliteral}{"{}\#\ Editable\ install\ with\ no\ version\ control\ (\{display\})"{}}],}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00185}00185\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00186}00186\ \ \ \ \ vcs\_name\ =\ type(vcs\_backend).\_\_name\_\_}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00187}00187\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00188}00188\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ req\ =\ vcs\_backend.get\_src\_requirement(location,\ dist.raw\_name)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00190}00190\ \ \ \ \ \textcolor{keywordflow}{except}\ RemoteNotFoundError:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ display\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1freeze_a6459dcd45b9829542dc6546fd7af1a03}{\_format\_as\_name\_version}}(dist)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1___editable_info}{\_EditableInfo}}(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \ \ \ \ requirement=location,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ comments=[f\textcolor{stringliteral}{"{}\#\ Editable\ \{vcs\_name\}\ install\ with\ no\ remote\ (\{display\})"{}}],}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00196}00196\ \ \ \ \ \textcolor{keywordflow}{except}\ RemoteNotValidError\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ display\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1freeze_a6459dcd45b9829542dc6546fd7af1a03}{\_format\_as\_name\_version}}(dist)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1___editable_info}{\_EditableInfo}}(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ requirement=location,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ comments=[}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\#\ Editable\ \{vcs\_name\}\ install\ (\{display\})\ with\ either\ a\ deleted\ "{}}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}local\ remote\ or\ invalid\ URI:"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\#\ '\{ex.url\}'"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ ],}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00206}00206\ \ \ \ \ \textcolor{keywordflow}{except}\ BadCommand:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}cannot\ determine\ version\ of\ editable\ source\ in\ \%s\ "{}}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}(\%s\ command\ not\ found\ in\ path)"{}},}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ location,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \ \ \ \ vcs\_backend.name,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1___editable_info}{\_EditableInfo}}(requirement=location,\ comments=[])}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00214}00214\ \ \ \ \ \textcolor{keywordflow}{except}\ InstallationError\ \textcolor{keyword}{as}\ exc:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}Error\ when\ trying\ to\ get\ requirement\ for\ VCS\ system\ \%s"{}},\ exc)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00216}00216\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1___editable_info}{\_EditableInfo}}(requirement=req,\ comments=[])}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00218}00218\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00219}00219\ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}Could\ not\ determine\ repository\ location\ of\ \%s"{}},\ location)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00220}00220\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00221}00221\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1___editable_info}{\_EditableInfo}}(}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ requirement=location,}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ comments=[\textcolor{stringliteral}{"{}\#\#\ !!\ Could\ not\ determine\ repository\ location"{}}],}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00224}00224\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00225}00225\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00226}00226\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00227}00227\ \textcolor{preprocessor}{@dataclass(frozen=True)}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00228}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement}{00228}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement}{FrozenRequirement}}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00229}00229\ \ \ \ \ name:\ str}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00230}00230\ \ \ \ \ req:\ str}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00231}00231\ \ \ \ \ editable:\ bool}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00232}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement_a3c229c4d43becafd38230663449ff4d4}{00232}}\ \ \ \ \ comments:\ Iterable[str]\ =\ field(default\_factory=tuple)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00233}00233\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00234}00234\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00235}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement_a1a64633e7a7b560201ee2f7195d408c8}{00235}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement_a1a64633e7a7b560201ee2f7195d408c8}{canonical\_name}}(self)\ -\/>\ NormalizedName:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00236}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement_a026a2d38b53406c4706d3caec7d8dc88}{00236}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ canonicalize\_name(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement_a026a2d38b53406c4706d3caec7d8dc88}{name}})}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00237}00237\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00238}00238\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00239}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement_a9f02c3cf3248e2d5ad554df8b96169e1}{00239}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement_a9f02c3cf3248e2d5ad554df8b96169e1}{from\_dist}}(cls,\ dist:\ BaseDistribution)\ -\/>\ FrozenRequirement:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ editable\ =\ dist.editable}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ editable:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ req,\ comments\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1freeze_a214f67a14ef70a58fb181ff0c8cb8b3b}{\_get\_editable\_info}}(dist)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \ \ \ \ comments\ =\ []}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \ \ \ \ direct\_url\ =\ dist.direct\_url}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ direct\_url:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ if\ PEP\ 610\ metadata\ is\ present,\ use\ it}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\ =\ direct\_url\_as\_pep440\_direct\_reference(direct\_url,\ dist.raw\_name)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ name==version\ requirement}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ req\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1freeze_a6459dcd45b9829542dc6546fd7af1a03}{\_format\_as\_name\_version}}(dist)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00252}00252\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls(dist.raw\_name,\ req,\ editable,\ comments=comments)}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00254}00254\ }
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00255}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement_aad637d838c08a07f99d59c9916851b49}{00255}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement_aad637d838c08a07f99d59c9916851b49}{\_\_str\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ req\ =\ self.req}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00257}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement_a37fb8ac1cf88ce9feb08f67c248a7d59}{00257}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement_a37fb8ac1cf88ce9feb08f67c248a7d59}{editable}}:}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ req\ =\ f\textcolor{stringliteral}{"{}-\/e\ \{req\}"{}}}
+\DoxyCodeLine{\Hypertarget{operations_2freeze_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}\(\backslash\)n"{}}.join(list(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1freeze_1_1_frozen_requirement_a3c229c4d43becafd38230663449ff4d4}{comments}})\ +\ [str(req)])\ +\ \textcolor{stringliteral}{"{}\(\backslash\)n"{}}}
+
+\end{DoxyCode}

@@ -1,0 +1,559 @@
+\doxysection{sql.\+py}
+\hypertarget{psycopg_2sql_8py_source}{}\label{psycopg_2sql_8py_source}\index{venv/Lib/site-\/packages/psycopg/sql.py@{venv/Lib/site-\/packages/psycopg/sql.py}}
+\doxymbox{\hyperlink{psycopg_2sql_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1sql}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00002}00002\ \textcolor{stringliteral}{SQL\ composition\ utility\ module}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00009}00009\ \textcolor{keyword}{import}\ codecs}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00010}00010\ \textcolor{keyword}{import}\ string}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00011}00011\ \textcolor{keyword}{from}\ abc\ \textcolor{keyword}{import}\ ABC,\ abstractmethod}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00012}00012\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Any,\ overload}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00013}00013\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterable,\ Iterator,\ Sequence}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00015}00015\ \textcolor{keyword}{from}\ .pq\ \textcolor{keyword}{import}\ Escaping}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00016}00016\ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ AdaptContext}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00017}00017\ \textcolor{keyword}{from}\ .\_enums\ \textcolor{keyword}{import}\ PyFormat}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00018}00018\ \textcolor{keyword}{from}\ .\_compat\ \textcolor{keyword}{import}\ LiteralString,\ Template}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00019}00019\ \textcolor{keyword}{from}\ .\_encodings\ \textcolor{keyword}{import}\ conn\_encoding}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00020}00020\ \textcolor{keyword}{from}\ .\_transformer\ \textcolor{keyword}{import}\ Transformer}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00023}\doxymbox{\hyperlink{namespacepsycopg_1_1sql_aafeb205f0f5a955e24d3824b06efee6d}{00023}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1sql_aafeb205f0f5a955e24d3824b06efee6d}{quote}}(obj:\ Any,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00024}00024\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00025}00025\ \textcolor{stringliteral}{\ \ \ \ Adapt\ a\ Python\ object\ to\ a\ quoted\ SQL\ string.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00026}00026\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00027}00027\ \textcolor{stringliteral}{\ \ \ \ Use\ this\ function\ only\ if\ you\ absolutely\ want\ to\ convert\ a\ Python\ string\ to}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00028}00028\ \textcolor{stringliteral}{\ \ \ \ an\ SQL\ quoted\ literal\ to\ use\ e.g.\ to\ generate\ batch\ SQL\ and\ you\ won't\ have}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00029}00029\ \textcolor{stringliteral}{\ \ \ \ a\ connection\ available\ when\ you\ will\ need\ to\ use\ it.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00030}00030\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00031}00031\ \textcolor{stringliteral}{\ \ \ \ This\ function\ is\ relatively\ inefficient,\ because\ it\ doesn't\ cache\ the}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00032}00032\ \textcolor{stringliteral}{\ \ \ \ adaptation\ rules.\ If\ you\ pass\ a\ \`{}!context\`{}\ you\ can\ adapt\ the\ adaptation}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00033}00033\ \textcolor{stringliteral}{\ \ \ \ rules\ used,\ otherwise\ only\ global\ rules\ are\ used.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00034}00034\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00035}00035\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00036}00036\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_literal}{Literal}}(obj).\doxymbox{\hyperlink{namespacepsycopg_1_1sql_a00d5699de972302c155e81162a4234ad}{as\_string}}(context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00039}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable}{00039}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable}{Composable}}(ABC):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00040}00040\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00041}00041\ \textcolor{stringliteral}{\ \ \ \ Abstract\ base\ class\ for\ objects\ that\ can\ be\ used\ to\ compose\ an\ SQL\ string.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00042}00042\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00043}00043\ \textcolor{stringliteral}{\ \ \ \ \`{}!Composable\`{}\ objects\ can\ be\ joined\ using\ the\ \`{}\`{}+\`{}\`{}\ operator:\ the\ result}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00044}00044\ \textcolor{stringliteral}{\ \ \ \ will\ be\ a\ \`{}Composed\`{}\ instance\ containing\ the\ objects\ joined.\ The\ operator}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00045}00045\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}*\`{}\`{}\ is\ also\ supported\ with\ an\ integer\ argument:\ the\ result\ is\ a}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00046}00046\ \textcolor{stringliteral}{\ \ \ \ \`{}!Composed\`{}\ instance\ containing\ the\ left\ argument\ repeated\ as\ many\ times\ as}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00047}00047\ \textcolor{stringliteral}{\ \ \ \ requested.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00048}00048\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00049}00049\ \textcolor{stringliteral}{\ \ \ \ \`{}!SQL\`{}\ and\ \`{}!Composed\`{}\ objects\ can\ be\ passed\ directly\ to}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00050}00050\ \textcolor{stringliteral}{\ \ \ \ \`{}\string~psycopg.Cursor.execute()\`{},\ \`{}\string~psycopg.Cursor.executemany()\`{},}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00051}00051\ \textcolor{stringliteral}{\ \ \ \ \`{}\string~psycopg.Cursor.copy()\`{}\ in\ place\ of\ the\ query\ string.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00052}00052\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00054}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a5c4ce2904f55acff2d47503c98dc85c1}{00054}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a5c4ce2904f55acff2d47503c98dc85c1}{\_\_init\_\_}}(self,\ obj:\ Any):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00055}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{00055}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}}\ =\ obj}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00057}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ae210b366502cacd0d26c222c9a018f81}{00057}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ae210b366502cacd0d26c222c9a018f81}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_name\_\_\}(\{self.\_obj!r\})"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00060}00060\ \ \ \ \ \textcolor{preprocessor}{@abstractmethod}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00061}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ad5edef6d8030f66a310463370390f06b}{00061}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ad5edef6d8030f66a310463370390f06b}{as\_bytes}}(self,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00063}00063\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ value\ of\ the\ object\ as\ bytes.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00064}00064\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00065}00065\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ context:\ the\ context\ to\ evaluate\ the\ object\ into.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00066}00066\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :type\ context:\ \`{}connection\`{}\ or\ \`{}cursor\`{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00067}00067\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00068}00068\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ method\ is\ automatically\ invoked\ by\ \`{}\string~psycopg.Cursor.execute()\`{},}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00069}00069\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}\string~psycopg.Cursor.executemany()\`{},\ \`{}\string~psycopg.Cursor.copy()\`{}\ if\ a}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00070}00070\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}!Composable\`{}\ is\ passed\ instead\ of\ the\ query\ string.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00071}00071\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00075}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ab28fdacdd91961a0784222ce46c83336}{00075}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ab28fdacdd91961a0784222ce46c83336}{as\_string}}(self,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00077}00077\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ value\ of\ the\ object\ as\ string.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00078}00078\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ context:\ the\ context\ to\ evaluate\ the\ string\ into.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00080}00080\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :type\ context:\ \`{}connection\`{}\ or\ \`{}cursor\`{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00081}00081\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00082}00082\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ enc\ =\ conn\_encoding(context.connection\ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance((b\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ad5edef6d8030f66a310463370390f06b}{as\_bytes}}(context)),\ bytes):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b.decode(enc)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ buffer\ object}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ codecs.lookup(enc).decode(b)[0]}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00089}00089\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00090}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ab73faf448ae13060ea159b0298fb24aa}{00090}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ab73faf448ae13060ea159b0298fb24aa}{\_\_add\_\_}}(self,\ other:\ Composable)\ -\/>\ Composed:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(other,\ Composed):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{Composed}}([self])\ +\ other}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(other,\ Composable):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{Composed}}([self])\ +\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{Composed}}([other])}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00097}00097\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00098}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a88f294e3b2c7728ade850d4b2f34fe10}{00098}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a88f294e3b2c7728ade850d4b2f34fe10}{\_\_mul\_\_}}(self,\ n:\ int)\ -\/>\ Composed:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{Composed}}([self]\ *\ n)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00100}00100\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00101}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ac46235441c812e953e0e3925c8d30da5}{00101}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ac46235441c812e953e0e3925c8d30da5}{\_\_eq\_\_}}(self,\ other:\ Any)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ type(self)\ \textcolor{keywordflow}{is}\ type(other)\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}}\ ==\ other.\_obj}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00104}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_aa595ebc603f6f8e0c04db797825dd4ce}{00104}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_aa595ebc603f6f8e0c04db797825dd4ce}{\_\_ne\_\_}}(self,\ other:\ Any)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ac46235441c812e953e0e3925c8d30da5}{\_\_eq\_\_}}(other)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00108}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{00108}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{Composed}}(\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable}{Composable}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00109}00109\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00110}00110\ \textcolor{stringliteral}{\ \ \ \ A\ \`{}Composable\`{}\ object\ made\ of\ a\ sequence\ of\ \`{}!Composable\`{}.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00111}00111\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00112}00112\ \textcolor{stringliteral}{\ \ \ \ The\ object\ is\ usually\ created\ using\ \`{}!Composable\`{}\ operators\ and\ methods}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00113}00113\ \textcolor{stringliteral}{\ \ \ \ (such\ as\ the\ \`{}SQL.format()\`{}\ method).\ \`{}!Composed\`{}\ objects\ can\ be\ passed}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00114}00114\ \textcolor{stringliteral}{\ \ \ \ directly\ to\ \`{}\string~psycopg.Cursor.execute()\`{},\ \`{}\string~psycopg.Cursor.executemany()\`{},}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00115}00115\ \textcolor{stringliteral}{\ \ \ \ \`{}\string~psycopg.Cursor.copy()\`{}\ in\ place\ of\ the\ query\ string.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00116}00116\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00117}00117\ \textcolor{stringliteral}{\ \ \ \ It\ is\ also\ possible\ to\ create\ a\ \`{}!Composed\`{}\ directly\ specifying\ a\ sequence}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00118}00118\ \textcolor{stringliteral}{\ \ \ \ of\ objects\ as\ arguments:\ if\ they\ are\ not\ \`{}!Composable\`{}\ they\ will\ be\ wrapped}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00119}00119\ \textcolor{stringliteral}{\ \ \ \ in\ a\ \`{}Literal\`{}.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00120}00120\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00121}00121\ \textcolor{stringliteral}{\ \ \ \ Example::}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00122}00122\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00123}00123\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ comp\ =\ sql.Composed(}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00124}00124\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ...\ \ \ \ \ [sql.SQL("{}INSERT\ INTO\ "{}),\ sql.Identifier("{}table"{})])}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00125}00125\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ print(comp.as\_string(conn))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00126}00126\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ INSERT\ INTO\ "{}table"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00127}00127\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00128}00128\ \textcolor{stringliteral}{\ \ \ \ \`{}!Composed\`{}\ objects\ are\ iterable\ (so\ they\ can\ be\ used\ in\ \`{}SQL.join\`{}\ for}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00129}00129\ \textcolor{stringliteral}{\ \ \ \ instance).}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00130}00130\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00132}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{00132}}\ \ \ \ \ \_obj:\ list[Composable]}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00133}00133\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00134}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed_ab58569d7909a7beb9b3bb7777a3cda36}{00134}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed_ab58569d7909a7beb9b3bb7777a3cda36}{\_\_init\_\_}}(self,\ seq:\ Sequence[Any]):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ seq\ =\ [obj\ \textcolor{keywordflow}{if}\ isinstance(obj,\ Composable)\ \textcolor{keywordflow}{else}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_literal}{Literal}}(obj)\ \textcolor{keywordflow}{for}\ obj\ \textcolor{keywordflow}{in}\ seq]}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed_ab58569d7909a7beb9b3bb7777a3cda36}{\_\_init\_\_}}(seq)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00137}00137\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00138}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed_aede980d50ec1dbde83a3b6527ad21f5d}{00138}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed_aede980d50ec1dbde83a3b6527ad21f5d}{as\_bytes}}(self,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}"{}}.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed_ad64fad5b24a5374030144f72e3152dac}{join}}(obj.as\_bytes(context)\ \textcolor{keywordflow}{for}\ obj\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00140}00140\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00141}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed_a5afb6bd310d32b92fa0e48f76b5626e0}{00141}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed_a5afb6bd310d32b92fa0e48f76b5626e0}{\_\_iter\_\_}}(self)\ -\/>\ Iterator[Composable]:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ iter(self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00143}00143\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00144}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed_acbdfa3de6343d6ca66c003bf4718ee34}{00144}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed_acbdfa3de6343d6ca66c003bf4718ee34}{\_\_add\_\_}}(self,\ other:\ Composable)\ -\/>\ Composed:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(other,\ Composed):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{Composed}}(self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}}\ +\ other.\_obj)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(other,\ Composable):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{Composed}}(self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}}\ +\ [other])}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00151}00151\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00152}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed_ad64fad5b24a5374030144f72e3152dac}{00152}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed_ad64fad5b24a5374030144f72e3152dac}{join}}(self,\ joiner:\ SQL\ |\ LiteralString)\ -\/>\ Composed:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00154}00154\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ a\ new\ \`{}!Composed\`{}\ interposing\ the\ \`{}!joiner\`{}\ with\ the\ \`{}!Composed\`{}\ items.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00155}00155\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00156}00156\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ \`{}!joiner\`{}\ must\ be\ a\ \`{}SQL\`{}\ or\ a\ string\ which\ will\ be\ interpreted\ as}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00157}00157\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ an\ \`{}SQL\`{}.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00158}00158\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00159}00159\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Example::}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00160}00160\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00161}00161\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ >>>\ fields\ =\ sql.Identifier('foo')\ +\ sql.Identifier('bar')\ \ \#\ a\ Composed}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00162}00162\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ >>>\ print(fields.join(',\ ').as\_string(conn))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00163}00163\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ "{}foo"{},\ "{}bar"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00164}00164\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00165}00165\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(joiner,\ str):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ joiner\ =\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{SQL}}(joiner)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ \textcolor{keywordflow}{not}\ isinstance(joiner,\ SQL):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Composed.join()\ argument\ must\ be\ strings\ or\ SQL,"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ got\ \{joiner!r\}\ instead"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ joiner.join(self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00175}00175\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00176}00176\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00177}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{00177}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{SQL}}(\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable}{Composable}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00178}00178\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00179}00179\ \textcolor{stringliteral}{\ \ \ \ A\ \`{}Composable\`{}\ representing\ a\ snippet\ of\ SQL\ statement.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00180}00180\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00181}00181\ \textcolor{stringliteral}{\ \ \ \ \`{}!SQL\`{}\ exposes\ \`{}join()\`{}\ and\ \`{}format()\`{}\ methods\ useful\ to\ create\ a\ template}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00182}00182\ \textcolor{stringliteral}{\ \ \ \ where\ to\ merge\ variable\ parts\ of\ a\ query\ (for\ instance\ field\ or\ table}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00183}00183\ \textcolor{stringliteral}{\ \ \ \ names).}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00184}00184\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00185}00185\ \textcolor{stringliteral}{\ \ \ \ The\ \`{}!obj\`{}\ string\ doesn't\ undergo\ any\ form\ of\ escaping,\ so\ it\ is\ not}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00186}00186\ \textcolor{stringliteral}{\ \ \ \ suitable\ to\ represent\ variable\ identifiers\ or\ values:\ you\ should\ only\ use}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00187}00187\ \textcolor{stringliteral}{\ \ \ \ it\ to\ pass\ constant\ strings\ representing\ templates\ or\ snippets\ of\ SQL}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00188}00188\ \textcolor{stringliteral}{\ \ \ \ statements;\ use\ other\ objects\ such\ as\ \`{}Identifier\`{}\ or\ \`{}Literal\`{}\ to}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00189}00189\ \textcolor{stringliteral}{\ \ \ \ represent\ variable\ parts.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00190}00190\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00191}00191\ \textcolor{stringliteral}{\ \ \ \ \`{}!SQL\`{}\ objects\ can\ be\ passed\ directly\ to\ \`{}\string~psycopg.Cursor.execute()\`{},}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00192}00192\ \textcolor{stringliteral}{\ \ \ \ \`{}\string~psycopg.Cursor.executemany()\`{},\ \`{}\string~psycopg.Cursor.copy()\`{}\ in\ place\ of\ the}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00193}00193\ \textcolor{stringliteral}{\ \ \ \ query\ string.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00194}00194\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00195}00195\ \textcolor{stringliteral}{\ \ \ \ Example::}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00196}00196\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00197}00197\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ query\ =\ sql.SQL("{}SELECT\ \{0\}\ FROM\ \{1\}"{}).format(}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00198}00198\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ...\ \ \ \ sql.SQL(',\ ').join([sql.Identifier('foo'),\ sql.Identifier('bar')]),}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00199}00199\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ...\ \ \ \ sql.Identifier('table'))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00200}00200\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ print(query.as\_string(conn))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00201}00201\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ SELECT\ "{}foo"{},\ "{}bar"{}\ FROM\ "{}table"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00202}00202\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00203}00203\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00204}00204\ \ \ \ \ \_obj:\ LiteralString}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00205}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_a18e710f8ad45e8978dfaa4d40395b5c6}{00205}}\ \ \ \ \ \_formatter\ =\ string.Formatter()}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00206}00206\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00207}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_a72144da6bc3932e640b6b848826eba78}{00207}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_a72144da6bc3932e640b6b848826eba78}{\_\_init\_\_}}(self,\ obj:\ LiteralString):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_a72144da6bc3932e640b6b848826eba78}{\_\_init\_\_}}(obj)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(obj,\ str):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(f\textcolor{stringliteral}{"{}SQL\ values\ must\ be\ strings,\ got\ \{obj!r\}\ instead"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00211}00211\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00212}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_aa9b66ef9daa8f9a663cd99c7d54d4143}{00212}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_aa9b66ef9daa8f9a663cd99c7d54d4143}{as\_string}}(self,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00214}00214\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00215}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_ad15703a7968454ec62e6bb46ff67992e}{00215}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_ad15703a7968454ec62e6bb46ff67992e}{as\_bytes}}(self,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ conn\ =\ context.connection\ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ enc\ =\ conn\_encoding(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}}.encode(enc)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00219}00219\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00220}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_ae8f926398d2a544370d42e8854da8fa8}{00220}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_ae8f926398d2a544370d42e8854da8fa8}{format}}(self,\ *args:\ Any,\ **kwargs:\ Any)\ -\/>\ Composed:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00222}00222\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Merge\ \`{}Composable\`{}\ objects\ into\ a\ template.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00223}00223\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00224}00224\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ args:\ parameters\ to\ replace\ to\ numbered\ (\`{}\`{}\{0\}\`{}\`{},\ \`{}\`{}\{1\}\`{}\`{})\ or}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00225}00225\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ auto-\/numbered\ (\`{}\`{}\{\}\`{}\`{})\ placeholders}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00226}00226\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ kwargs:\ parameters\ to\ replace\ to\ named\ (\`{}\`{}\{name\}\`{}\`{})\ placeholders}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00227}00227\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :return:\ the\ union\ of\ the\ \`{}!SQL\`{}\ string\ with\ placeholders\ replaced}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00228}00228\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :rtype:\ \`{}Composed\`{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00229}00229\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00230}00230\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ method\ is\ similar\ to\ the\ Python\ \`{}str.format()\`{}\ method:\ the\ string}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00231}00231\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ template\ supports\ auto-\/numbered\ (\`{}\`{}\{\}\`{}\`{}),\ numbered\ (\`{}\`{}\{0\}\`{}\`{},}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00232}00232\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}\`{}\{1\}\`{}\`{}...),\ and\ named\ placeholders\ (\`{}\`{}\{name\}\`{}\`{}),\ with\ positional}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00233}00233\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ arguments\ replacing\ the\ numbered\ placeholders\ and\ keywords\ replacing}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00234}00234\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ the\ named\ ones.\ However\ placeholder\ modifiers\ (\`{}\`{}\{0!r\}\`{}\`{},\ \`{}\`{}\{0:<10\}\`{}\`{})}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00235}00235\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ are\ not\ supported.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00236}00236\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00237}00237\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ a\ \`{}!Composable\`{}\ objects\ is\ passed\ to\ the\ template\ it\ will\ be\ merged}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00238}00238\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ according\ to\ its\ \`{}as\_string()\`{}\ method.\ If\ any\ other\ Python\ object\ is}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00239}00239\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ passed,\ it\ will\ be\ wrapped\ in\ a\ \`{}Literal\`{}\ object\ and\ so\ escaped}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00240}00240\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ according\ to\ SQL\ rules.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00241}00241\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00242}00242\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Example::}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00243}00243\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00244}00244\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ >>>\ print(sql.SQL("{}SELECT\ *\ FROM\ \{\}\ WHERE\ \{\}\ =\ \%s"{})}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00245}00245\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ ...\ \ \ \ \ .format(sql.Identifier('people'),\ sql.Identifier('id'))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00246}00246\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ ...\ \ \ \ \ .as\_string(conn))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00247}00247\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ SELECT\ *\ FROM\ "{}people"{}\ WHERE\ "{}id"{}\ =\ \%s}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00248}00248\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00249}00249\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ >>>\ print(sql.SQL("{}SELECT\ *\ FROM\ \{tbl\}\ WHERE\ name\ =\ \{name\}"{})}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00250}00250\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ ...\ \ \ \ \ .format(tbl=sql.Identifier('people'),\ name="{}O'Rourke"{}))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00251}00251\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ ...\ \ \ \ \ .as\_string(conn))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00252}00252\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ SELECT\ *\ FROM\ "{}people"{}\ WHERE\ name\ =\ 'O''Rourke'}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00253}00253\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00254}00254\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ rv:\ list[Composable]\ =\ []}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ autonum:\ int\ |\ \textcolor{keywordtype}{None}\ =\ 0}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ TODO:\ this\ is\ probably\ not\ the\ right\ way\ to\ whitelist\ pre}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ pyre\ complains.\ Will\ wait\ for\ mypy\ to\ complain\ too\ to\ fix.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ pre:\ LiteralString}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00260}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{00260}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ pre,\ name,\ spec,\ conv\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_a18e710f8ad45e8978dfaa4d40395b5c6}{\_formatter}}.parse(self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ spec:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(\textcolor{stringliteral}{"{}no\ format\ specification\ supported\ by\ SQL"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ conv:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(\textcolor{stringliteral}{"{}no\ format\ conversion\ supported\ by\ SQL"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ pre:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rv.append(\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{SQL}}(pre))}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00267}00267\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ name\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00270}00270\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ name.isdigit():}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ autonum:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}cannot\ switch\ from\ automatic\ field\ numbering\ to\ manual"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rv.append(args[int(name)])}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ autonum\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00278}00278\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ \textcolor{keywordflow}{not}\ name:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ autonum\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}cannot\ switch\ from\ manual\ field\ numbering\ to\ automatic"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rv.append(args[autonum])}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ autonum\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00286}00286\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rv.append(kwargs[name])}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00289}00289\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{Composed}}(rv)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00291}00291\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00292}00292\ \ \ \ \ \textcolor{preprocessor}{@overload}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00293}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_ae4356cf4d1373b3577ecb556309c985e}{00293}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_ae4356cf4d1373b3577ecb556309c985e}{join}}(self,\ seq:\ Iterable[Template])\ -\/>\ Template:\ ...}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00294}00294\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00295}00295\ \ \ \ \ \textcolor{preprocessor}{@overload}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00296}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_ac111433a05e4f3fd071e8d0e45067842}{00296}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_ae4356cf4d1373b3577ecb556309c985e}{join}}(self,\ seq:\ Iterable[Any])\ -\/>\ Composed:\ ...}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00297}00297\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00298}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_ae3d26e95e6f52ed5f2ef6154404479d7}{00298}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l_ae4356cf4d1373b3577ecb556309c985e}{join}}(self,\ seq:\ Iterable[Any])\ -\/>\ Composed\ |\ Template:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00300}00300\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Join\ a\ sequence\ of\ \`{}Composable\`{}.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00301}00301\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00302}00302\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ seq:\ the\ elements\ to\ join.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00303}00303\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00304}00304\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Use\ the\ \`{}!SQL\`{}\ object's\ string\ to\ separate\ the\ elements\ in\ \`{}!seq\`{}.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00305}00305\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Elements\ that\ are\ not\ \`{}Composable\`{}\ will\ be\ considered\ \`{}Literal\`{}.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00306}00306\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00307}00307\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ the\ arguments\ are\ \`{}Template\`{}\ instance,\ return\ a\ \`{}Template\`{}\ joining}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00308}00308\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ all\ the\ items.\ Note\ that\ arguments\ must\ either\ be\ all\ templates\ or}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00309}00309\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ none\ should\ be.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00310}00310\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00311}00311\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Note\ that\ \`{}Composed\`{}\ objects\ are\ iterable\ too,\ so\ they\ can\ be\ used\ as}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00312}00312\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ argument\ for\ this\ method.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00313}00313\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00314}00314\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Example::}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00315}00315\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00316}00316\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ >>>\ snip\ =\ sql.SQL(',\ ').join(}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00317}00317\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ ...\ \ \ \ \ sql.Identifier(n)\ for\ n\ in\ ['foo',\ 'bar',\ 'baz'])}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00318}00318\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ >>>\ print(snip.as\_string(conn))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00319}00319\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ "{}foo"{},\ "{}bar"{},\ "{}baz"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00320}00320\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00321}00321\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ it\ =\ iter(seq)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00323}00323\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ \ \ \ \ first\ =\ next(it)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00325}00325\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ StopIteration:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00326}00326\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{Composed}}([])}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00327}00327\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(first,\ Template):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \ \ \ \ items\ =\ list(first)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ t\ \textcolor{keywordflow}{in}\ it:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00331}00331\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(t,\ Template):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00332}00332\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(f\textcolor{stringliteral}{"{}can't\ mix\ Template\ and\ \{type(t).\_\_name\_\_\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ items.append(self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00334}00334\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ items.extend(t)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00335}00335\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1__compat_1_1_template}{Template}}(*items)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00336}00336\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ cs\ =\ [first]}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ it:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(i,\ Template):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(f\textcolor{stringliteral}{"{}can't\ mix\ Template\ and\ \{type(i).\_\_name\_\_\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00341}00341\ \ \ \ \ \ \ \ \ \ \ \ \ cs.append(self)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ \ \ \ \ cs.append(i)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00343}00343\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composed}{Composed}}(cs)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00345}00345\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00346}00346\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00347}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier}{00347}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier}{Identifier}}(\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable}{Composable}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00348}00348\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00349}00349\ \textcolor{stringliteral}{\ \ \ \ A\ \`{}Composable\`{}\ representing\ an\ SQL\ identifier\ or\ a\ dot-\/separated\ sequence.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00350}00350\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00351}00351\ \textcolor{stringliteral}{\ \ \ \ Identifiers\ usually\ represent\ names\ of\ database\ objects,\ such\ as\ tables\ or}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00352}00352\ \textcolor{stringliteral}{\ \ \ \ fields.\ PostgreSQL\ identifiers\ follow\ \`{}different\ rules\`{}\_\_\ than\ SQL\ string}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00353}00353\ \textcolor{stringliteral}{\ \ \ \ literals\ for\ escaping\ (e.g.\ they\ use\ double\ quotes\ instead\ of\ single).}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00354}00354\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00355}00355\ \textcolor{stringliteral}{\ \ \ \ ..\ \_\_:\ https://www.postgresql.org/docs/current/sql-\/syntax-\/lexical.html\#\ \(\backslash\)}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00356}00356\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ SQL-\/SYNTAX-\/IDENTIFIERS}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00357}00357\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00358}00358\ \textcolor{stringliteral}{\ \ \ \ Example::}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00359}00359\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00360}00360\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ t1\ =\ sql.Identifier("{}foo"{})}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00361}00361\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ t2\ =\ sql.Identifier("{}ba'r"{})}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00362}00362\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ t3\ =\ sql.Identifier('ba"{}z')}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00363}00363\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ print(sql.SQL(',\ ').join([t1,\ t2,\ t3]).as\_string(conn))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00364}00364\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}foo"{},\ "{}ba'r"{},\ "{}ba"{}"{}z"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00365}00365\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00366}00366\ \textcolor{stringliteral}{\ \ \ \ Multiple\ strings\ can\ be\ passed\ to\ the\ object\ to\ represent\ a\ qualified\ name,}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00367}00367\ \textcolor{stringliteral}{\ \ \ \ i.e.\ a\ dot-\/separated\ sequence\ of\ identifiers.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00368}00368\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00369}00369\ \textcolor{stringliteral}{\ \ \ \ Example::}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00370}00370\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00371}00371\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ query\ =\ sql.SQL("{}SELECT\ \{\}\ FROM\ \{\}"{}).format(}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00372}00372\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ...\ \ \ \ \ sql.Identifier("{}table"{},\ "{}field"{}),}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00373}00373\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ...\ \ \ \ \ sql.Identifier("{}schema"{},\ "{}table"{}))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00374}00374\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ print(query.as\_string(conn))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00375}00375\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ SELECT\ "{}table"{}."{}field"{}\ FROM\ "{}schema"{}."{}table"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00376}00376\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00377}00377\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00378}00378\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00379}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier}{00379}}\ \ \ \ \ \_obj:\ Sequence[str]}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00380}00380\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00381}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier_a0f9c52c9b828d917a84e1df0656d0a29}{00381}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier_a0f9c52c9b828d917a84e1df0656d0a29}{\_\_init\_\_}}(self,\ *strings:\ str):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ init\ super()\ now\ to\ make\ the\ \_\_repr\_\_\ not\ explode\ in\ case\ of\ error}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier_a0f9c52c9b828d917a84e1df0656d0a29}{\_\_init\_\_}}(strings)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00384}00384\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00385}00385\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ strings:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(\textcolor{stringliteral}{"{}Identifier\ cannot\ be\ empty"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00387}00387\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ s\ \textcolor{keywordflow}{in}\ strings:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(s,\ str):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00390}00390\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}SQL\ identifier\ parts\ must\ be\ strings,\ got\ \{s!r\}\ instead"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00393}00393\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00394}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier_a6865b2cb5101682757a22bb8f1b0ae8c}{00394}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier_a6865b2cb5101682757a22bb8f1b0ae8c}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_name\_\_\}(\{',\ '.join(map(repr,\ self.\_obj))\})"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00396}00396\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00397}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier_a84eefbfe27681cdcb79169479252078b}{00397}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier_a84eefbfe27681cdcb79169479252078b}{as\_bytes}}(self,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ conn\ :=\ (context.connection\ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00399}00399\ \ \ \ \ \ \ \ \ \ \ \ \ esc\ =\ Escaping(conn.pgconn)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ \ \ \ \ enc\ =\ conn\_encoding(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ \ \ \ \ escs\ =\ [esc.escape\_identifier(s.encode(enc))\ \textcolor{keywordflow}{for}\ s\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}}]}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \ \ \ \ escs\ =\ [self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier_a4afe1d292ef09ef45a5b1436351ad111}{\_escape\_identifier}}(s.encode())\ \textcolor{keywordflow}{for}\ s\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}}]}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}."{}}.join(escs)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00405}00405\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00406}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier_a4afe1d292ef09ef45a5b1436351ad111}{00406}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_identifier_a4afe1d292ef09ef45a5b1436351ad111}{\_escape\_identifier}}(self,\ s:\ bytes)\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00408}00408\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Approximation\ of\ PQescapeIdentifier\ taking\ no\ connection.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00409}00409\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{'"{}'}\ +\ s.replace(b\textcolor{stringliteral}{'"{}'},\ b\textcolor{stringliteral}{'"{}"{}'})\ +\ b\textcolor{stringliteral}{'"{}'}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00411}00411\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00412}00412\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00413}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_literal}{00413}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_literal}{Literal}}(\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable}{Composable}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00414}00414\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00415}00415\ \textcolor{stringliteral}{\ \ \ \ A\ \`{}Composable\`{}\ representing\ an\ SQL\ value\ to\ include\ in\ a\ query.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00416}00416\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00417}00417\ \textcolor{stringliteral}{\ \ \ \ Usually\ you\ will\ want\ to\ include\ placeholders\ in\ the\ query\ and\ pass\ values}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00418}00418\ \textcolor{stringliteral}{\ \ \ \ as\ \`{}\string~cursor.execute()\`{}\ arguments.\ If\ however\ you\ really\ really\ need\ to}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00419}00419\ \textcolor{stringliteral}{\ \ \ \ include\ a\ literal\ value\ in\ the\ query\ you\ can\ use\ this\ object.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00420}00420\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00421}00421\ \textcolor{stringliteral}{\ \ \ \ The\ string\ returned\ by\ \`{}!as\_string()\`{}\ follows\ the\ normal\ :ref:\`{}adaptation}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00422}00422\ \textcolor{stringliteral}{\ \ \ \ rules\ <types-\/adaptation>\`{}\ for\ Python\ objects.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00423}00423\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00424}00424\ \textcolor{stringliteral}{\ \ \ \ Example::}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00425}00425\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00426}00426\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ s1\ =\ sql.Literal("{}fo'o"{})}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00427}00427\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ s2\ =\ sql.Literal(42)}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00428}00428\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ s3\ =\ sql.Literal(date(2000,\ 1,\ 1))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00429}00429\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ print(sql.SQL(',\ ').join([s1,\ s2,\ s3]).as\_string(conn))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00430}00430\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ 'fo''o',\ 42,\ '2000-\/01-\/01'::date}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00431}00431\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00432}00432\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00433}00433\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00434}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_literal_a008e3201f1f3ae2623c83656ed07b595}{00434}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_literal_a008e3201f1f3ae2623c83656ed07b595}{as\_bytes}}(self,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00435}00435\ \ \ \ \ \ \ \ \ tx\ =\ Transformer.from\_context(context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00436}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_literal}{00436}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tx.as\_literal(self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00437}00437\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00438}00438\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00439}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder}{00439}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder}{Placeholder}}(\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable}{Composable}}):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00440}00440\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ \`{}Composable\`{}\ representing\ a\ placeholder\ for\ query\ parameters.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00441}00441\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00442}00442\ \textcolor{stringliteral}{\ \ \ \ If\ the\ name\ is\ specified,\ generate\ a\ named\ placeholder\ (e.g.\ \`{}\`{}\%(name)s\`{}\`{},}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00443}00443\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}\%(name)b\`{}\`{}),\ otherwise\ generate\ a\ positional\ placeholder\ (e.g.\ \`{}\`{}\%s\`{}\`{},}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00444}00444\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}\%b\`{}\`{}).}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00445}00445\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00446}00446\ \textcolor{stringliteral}{\ \ \ \ The\ object\ is\ useful\ to\ generate\ SQL\ queries\ with\ a\ variable\ number\ of}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00447}00447\ \textcolor{stringliteral}{\ \ \ \ arguments.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00448}00448\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00449}00449\ \textcolor{stringliteral}{\ \ \ \ Examples::}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00450}00450\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00451}00451\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ names\ =\ ['foo',\ 'bar',\ 'baz']}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00452}00452\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00453}00453\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ q1\ =\ sql.SQL("{}INSERT\ INTO\ my\_table\ (\{\})\ VALUES\ (\{\})"{}).format(}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00454}00454\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ...\ \ \ \ \ sql.SQL(',\ ').join(map(sql.Identifier,\ names)),}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00455}00455\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ...\ \ \ \ \ sql.SQL(',\ ').join(sql.Placeholder()\ *\ len(names)))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00456}00456\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ print(q1.as\_string(conn))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00457}00457\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ INSERT\ INTO\ my\_table\ ("{}foo"{},\ "{}bar"{},\ "{}baz"{})\ VALUES\ (\%s,\ \%s,\ \%s)}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00458}00458\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00459}00459\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ q2\ =\ sql.SQL("{}INSERT\ INTO\ my\_table\ (\{\})\ VALUES\ (\{\})"{}).format(}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00460}00460\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ...\ \ \ \ \ sql.SQL(',\ ').join(map(sql.Identifier,\ names)),}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00461}00461\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ...\ \ \ \ \ sql.SQL(',\ ').join(map(sql.Placeholder,\ names)))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00462}00462\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ >>>\ print(q2.as\_string(conn))}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00463}00463\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ INSERT\ INTO\ my\_table\ ("{}foo"{},\ "{}bar"{},\ "{}baz"{})\ VALUES\ (\%(foo)s,\ \%(bar)s,\ \%(baz)s)}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00464}00464\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00465}00465\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00466}00466\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00467}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_a852a12a2542d536f21dab05fca8df9f3}{00467}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_a852a12a2542d536f21dab05fca8df9f3}{\_\_init\_\_}}(self,\ name:\ str\ =\ \textcolor{stringliteral}{"{}"{}},\ format:\ str\ |\ PyFormat\ =\ PyFormat.AUTO):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00468}00468\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_a852a12a2542d536f21dab05fca8df9f3}{\_\_init\_\_}}(name)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00469}00469\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(name,\ str):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00470}00470\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(f\textcolor{stringliteral}{"{}expected\ string\ as\ name,\ got\ \{name!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00471}00471\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00472}00472\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{})"{}}\ \textcolor{keywordflow}{in}\ name:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00473}00473\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(f\textcolor{stringliteral}{"{}invalid\ name:\ \{name!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00474}00474\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00475}00475\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ type(format)\ \textcolor{keywordflow}{is}\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00476}00476\ \ \ \ \ \ \ \ \ \ \ \ \ format\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__enums_1_1_py_format}{PyFormat}}(format)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00477}00477\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(format,\ PyFormat):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00478}00478\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00479}00479\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}expected\ PyFormat\ as\ format,\ got\ \{type(format).\_\_name\_\_!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00480}00480\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00481}00481\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00482}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_adc244f7a87812461116c564e6eb9f099}{00482}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_adc244f7a87812461116c564e6eb9f099}{\_format}}:\ PyFormat\ =\ format}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00483}00483\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00484}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_ac3f424e3ba1b966f4ae1e16d67d68626}{00484}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_ac3f424e3ba1b966f4ae1e16d67d68626}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00485}00485\ \ \ \ \ \ \ \ \ parts\ =\ []}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00486}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder}{00486}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00487}00487\ \ \ \ \ \ \ \ \ \ \ \ \ parts.append(repr(self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}}))}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00488}00488\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_adc244f7a87812461116c564e6eb9f099}{\_format}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ PyFormat.AUTO:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00489}00489\ \ \ \ \ \ \ \ \ \ \ \ \ parts.append(f\textcolor{stringliteral}{"{}format=\{self.\_format.name\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00490}00490\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00491}00491\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_name\_\_\}(\{',\ '.join(parts)\})"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00492}00492\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00493}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_a93986a922656a70bf16ee4b2818bd513}{00493}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_a93986a922656a70bf16ee4b2818bd513}{as\_string}}(self,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00494}00494\ \ \ \ \ \ \ \ \ code\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_adc244f7a87812461116c564e6eb9f099}{\_format}}.value}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00495}00495\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\%(\{self.\_obj\})\{code\}"{}}\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_a774acbe135b432ff6d15a3f846a365bd}{\_obj}}\ \textcolor{keywordflow}{else}\ f\textcolor{stringliteral}{"{}\%\{code\}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00496}00496\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00497}\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_ad11d537bd5237c3b567753734efe463f}{00497}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_placeholder_ad11d537bd5237c3b567753734efe463f}{as\_bytes}}(self,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00498}00498\ \ \ \ \ \ \ \ \ conn\ =\ context.connection\ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00499}00499\ \ \ \ \ \ \ \ \ enc\ =\ conn\_encoding(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable_ab28fdacdd91961a0784222ce46c83336}{as\_string}}(context).encode(enc)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00501}00501\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00502}00502\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00503}00503\ \textcolor{comment}{\#\ Literals}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00504}\doxymbox{\hyperlink{namespacepsycopg_1_1sql_a9369053829a1e9ab1382f8385d51988b}{00504}}\ NULL\ =\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{SQL}}(\textcolor{stringliteral}{"{}NULL"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00505}\doxymbox{\hyperlink{namespacepsycopg_1_1sql_a0360c1be6e607ca4e059db7ff4132516}{00505}}\ DEFAULT\ =\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{SQL}}(\textcolor{stringliteral}{"{}DEFAULT"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00506}00506\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00507}00507\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00508}\doxymbox{\hyperlink{namespacepsycopg_1_1sql_a00d5699de972302c155e81162a4234ad}{00508}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1sql_a00d5699de972302c155e81162a4234ad}{as\_string}}(obj:\ Any,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00509}00509\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Convert\ an\ object\ to\ a\ string\ according\ to\ SQL\ rules.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00510}00510\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00511}00511\ \textcolor{stringliteral}{\ \ \ \ :param\ obj:\ the\ object\ to\ convert}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00512}00512\ \textcolor{stringliteral}{\ \ \ \ :param\ context:\ the\ context\ in\ which\ to\ convert\ the\ object}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00513}00513\ \textcolor{stringliteral}{\ \ \ \ :type\ context:\ \`{}\string~psycopg.abc.AdaptContext\`{}\ |\ \`{}!None\`{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00514}00514\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00515}00515\ \textcolor{stringliteral}{\ \ \ \ Adaptation\ happens\ according\ to\ the\ type\ of\ \`{}!obj\`{}:}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00516}00516\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00517}00517\ \textcolor{stringliteral}{\ \ \ \ -\/\ \`{}Composable\`{}\ objects\ are\ converted\ according\ to\ their}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00518}00518\ \textcolor{stringliteral}{\ \ \ \ \ \ \`{}\string~Composable.as\_string()\`{}\ method;}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00519}00519\ \textcolor{stringliteral}{\ \ \ \ -\/\ \`{}\string~string.templatelib.Template\`{}\ strings\ are\ converted\ according\ to\ the}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00520}00520\ \textcolor{stringliteral}{\ \ \ \ \ \ rules\ documented\ in\ :ref:\`{}template-\/strings\`{};}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00521}00521\ \textcolor{stringliteral}{\ \ \ \ -\/\ every\ other\ object\ is\ converted\ as\ it\ was\ :ref:\`{}a\ parameter\ passed\ to\ a}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00522}00522\ \textcolor{stringliteral}{\ \ \ \ \ \ query\ <types-\/adaptation>\`{}.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00523}00523\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00524}00524\ \textcolor{stringliteral}{\ \ \ \ If\ \`{}!context\`{}\ is\ specified\ then\ it\ is\ be\ used\ to\ customize\ the\ conversion.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00525}00525\ \textcolor{stringliteral}{\ \ \ \ for\ example\ using\ the\ encoding\ of\ a\ connection\ or\ the\ dumpers\ registered.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00526}00526\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00527}00527\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(obj,\ Composable):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00528}00528\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ obj.as\_string(context=context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00529}00529\ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(obj,\ Template):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00530}00530\ \ \ \ \ \ \ \ \ \textcolor{keyword}{from}\ .\_tstrings\ \textcolor{keyword}{import}\ as\_string}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00531}00531\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00532}00532\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepsycopg_1_1sql_a00d5699de972302c155e81162a4234ad}{as\_string}}(obj,\ context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00533}00533\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_literal}{Literal}}(obj).\doxymbox{\hyperlink{namespacepsycopg_1_1sql_a00d5699de972302c155e81162a4234ad}{as\_string}}(context=context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00535}00535\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00536}00536\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00537}\doxymbox{\hyperlink{namespacepsycopg_1_1sql_aa7ab1c7aa2e49bdee3bfeecda987640d}{00537}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1sql_aa7ab1c7aa2e49bdee3bfeecda987640d}{as\_bytes}}(obj:\ Any,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00538}00538\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Convert\ an\ object\ to\ a\ bytes\ string\ according\ to\ SQL\ rules.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00539}00539\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00540}00540\ \textcolor{stringliteral}{\ \ \ \ :param\ obj:\ the\ object\ to\ convert}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00541}00541\ \textcolor{stringliteral}{\ \ \ \ :param\ context:\ the\ context\ in\ which\ to\ convert\ the\ object}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00542}00542\ \textcolor{stringliteral}{\ \ \ \ :type\ context:\ \`{}\string~psycopg.abc.AdaptContext\`{}\ |\ \`{}!None\`{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00543}00543\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00544}00544\ \textcolor{stringliteral}{\ \ \ \ See\ \`{}as\_string()\`{}\ for\ details.}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00545}00545\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00546}00546\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(obj,\ Composable):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00547}00547\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ obj.as\_bytes(context=context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00548}00548\ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(obj,\ Template):}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00549}00549\ \ \ \ \ \ \ \ \ \textcolor{keyword}{from}\ .\_tstrings\ \textcolor{keyword}{import}\ as\_bytes}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00550}00550\ }
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00551}00551\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepsycopg_1_1sql_aa7ab1c7aa2e49bdee3bfeecda987640d}{as\_bytes}}(obj,\ context)}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00552}00552\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg_2sql_8py_source_l00553}00553\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_literal}{Literal}}(obj).\doxymbox{\hyperlink{namespacepsycopg_1_1sql_aa7ab1c7aa2e49bdee3bfeecda987640d}{as\_bytes}}(context=context)}
+
+\end{DoxyCode}

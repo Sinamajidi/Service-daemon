@@ -1,0 +1,363 @@
+\doxysection{\+\_\+py\+\_\+transformer.\+py}
+\hypertarget{__py__transformer_8py_source}{}\label{__py__transformer_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_py\_transformer.py@{venv/Lib/site-\/packages/psycopg/\_py\_transformer.py}}
+\doxymbox{\hyperlink{__py__transformer_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__py__transformer}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00002}00002\ \textcolor{stringliteral}{Helper\ object\ to\ transform\ values\ between\ Python\ and\ PostgreSQL}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00003}00003\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00004}00004\ \textcolor{stringliteral}{Python\ implementation\ of\ the\ object.\ Use\ the\ \`{}\_transformer\ module\ to\ import}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00005}00005\ \textcolor{stringliteral}{the\ right\ implementation\ (Python\ or\ C).\ The\ public\ place\ where\ the\ object}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00006}00006\ \textcolor{stringliteral}{is\ exported\ is\ \`{}psycopg.adapt\`{}\ (which\ we\ may\ not\ use\ to\ avoid\ circular}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00007}00007\ \textcolor{stringliteral}{dependencies\ problems).}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00008}00008\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00010}00010\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00012}00012\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00014}00014\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any,\ DefaultDict,\ TypeAlias}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00015}00015\ \textcolor{keyword}{from}\ collections\ \textcolor{keyword}{import}\ defaultdict}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00016}00016\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Sequence}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00018}00018\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ abc}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00019}00019\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00020}00020\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ pq}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00021}00021\ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ AdaptContext,\ Buffer,\ LoadFunc,\ NoneType,\ PyFormat}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00022}00022\ \textcolor{keyword}{from}\ .rows\ \textcolor{keyword}{import}\ Row,\ RowMaker}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00023}00023\ \textcolor{keyword}{from}\ .\_oids\ \textcolor{keyword}{import}\ INVALID\_OID,\ TEXT\_OID}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00024}00024\ \textcolor{keyword}{from}\ .\_encodings\ \textcolor{keyword}{import}\ conn\_encoding}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00026}00026\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00027}00027\ \ \ \ \ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ DumperKey\ \ \textcolor{comment}{\#\ noqa:\ F401}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00028}00028\ \ \ \ \ \textcolor{keyword}{from}\ .adapt\ \textcolor{keyword}{import}\ AdaptersMap}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00029}00029\ \ \ \ \ \textcolor{keyword}{from}\ .pq.abc\ \textcolor{keyword}{import}\ PGresult}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00030}00030\ \ \ \ \ \textcolor{keyword}{from}\ .\_connection\_base\ \textcolor{keyword}{import}\ BaseConnection}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00031}00031\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00032}\doxymbox{\hyperlink{namespacepsycopg_1_1__py__transformer_aa975fe5718c0da56cb25ce15ac8f230d}{00032}}\ DumperCache:\ TypeAlias\ =\ \textcolor{stringliteral}{"{}dict[DumperKey,\ abc.Dumper]"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00033}\doxymbox{\hyperlink{namespacepsycopg_1_1__py__transformer_a23dcb9f91af90563f7a4a8e1e5212cb7}{00033}}\ OidDumperCache:\ TypeAlias\ =\ dict[int,\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_dumper}{abc.Dumper}}]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00034}\doxymbox{\hyperlink{namespacepsycopg_1_1__py__transformer_afc9bc57a8719a651f3f9f21536b638db}{00034}}\ LoaderCache:\ TypeAlias\ =\ dict[int,\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_loader}{abc.Loader}}]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00036}\doxymbox{\hyperlink{namespacepsycopg_1_1__py__transformer_a51285f043a19eb88cb4d0daedeae8c18}{00036}}\ TEXT\ =\ pq.Format.TEXT}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00037}\doxymbox{\hyperlink{namespacepsycopg_1_1__py__transformer_a6d0385f3d2a9a1ab1570123ea68d5dfb}{00037}}\ PY\_TEXT\ =\ PyFormat.TEXT}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00040}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer}{00040}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer}{Transformer}}(\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_adapt_context}{AdaptContext}}):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00041}00041\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00042}00042\ \textcolor{stringliteral}{\ \ \ \ An\ object\ that\ can\ adapt\ efficiently\ between\ Python\ and\ PostgreSQL.}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00043}00043\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00044}00044\ \textcolor{stringliteral}{\ \ \ \ The\ life\ cycle\ of\ the\ object\ is\ the\ query,\ so\ it\ is\ assumed\ that\ attributes}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00045}00045\ \textcolor{stringliteral}{\ \ \ \ such\ as\ the\ server\ version\ or\ the\ connection\ encoding\ will\ not\ change.\ The}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00046}00046\ \textcolor{stringliteral}{\ \ \ \ object\ have\ its\ state\ so\ adapting\ several\ values\ of\ the\ same\ type\ can\ be}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00047}00047\ \textcolor{stringliteral}{\ \ \ \ optimised.}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00048}00048\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00049}00049\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00051}00051\ \ \ \ \ \_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg.adapt"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00053}00053\ \ \ \ \ \_\_slots\_\_\ =\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00054}00054\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ types\ formats}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00055}00055\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \_conn\ \_adapters\ \_pgresult\ \_dumpers\ \_loaders\ \_encoding\ \_none\_oid}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00056}00056\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \_oid\_dumpers\ \_oid\_types\ \_row\_dumpers\ \_row\_loaders}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00057}00057\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}.split()}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00059}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a93a6921b83e952474b61474cecb34b28}{00059}}\ \ \ \ \ types:\ tuple[int,\ ...]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00060}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a60c5f0c13211b047556f792273f3dc12}{00060}}\ \ \ \ \ formats:\ list[\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_format}{pq.Format}}]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00061}00061\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00062}00062\ \ \ \ \ \_adapters:\ AdaptersMap}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00063}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_aa7a624125e050fab6303451d5e35597d}{00063}}\ \ \ \ \ \_pgresult:\ PGresult\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00064}00064\ \ \ \ \ \_none\_oid:\ int}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00065}00065\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00066}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a8ecaeb5aa241a34d4085ff5a6ff16a7f}{00066}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a8ecaeb5aa241a34d4085ff5a6ff16a7f}{\_\_init\_\_}}(self,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_aa7a624125e050fab6303451d5e35597d}{\_pgresult}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a93a6921b83e952474b61474cecb34b28}{types}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a60c5f0c13211b047556f792273f3dc12}{formats}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ WARNING:\ don't\ store\ context,\ or\ you'll\ create\ a\ loop\ with\ the\ Cursor}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ context:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00071}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af6299e48dfcc66034348a5da5d66b2c9}{00071}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af6299e48dfcc66034348a5da5d66b2c9}{\_adapters}}\ =\ context.adapters}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00072}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a98e2e5941fb90c12e421bae78d693767}{00072}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a98e2e5941fb90c12e421bae78d693767}{\_conn}}\ =\ context.connection}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ postgres}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00075}00075\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af6299e48dfcc66034348a5da5d66b2c9}{\_adapters}}\ =\ postgres.adapters}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a98e2e5941fb90c12e421bae78d693767}{\_conn}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00078}00078\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ mapping\ fmt,\ class\ -\/>\ Dumper\ instance}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00080}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_aa75509167c88d099da111de4dbc7e5d4}{00080}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_aa75509167c88d099da111de4dbc7e5d4}{\_dumpers}}:\ DefaultDict[PyFormat,\ DumperCache]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_aa75509167c88d099da111de4dbc7e5d4}{\_dumpers}}\ =\ defaultdict(dict)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ mapping\ fmt,\ oid\ -\/>\ Dumper\ instance}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Not\ often\ used,\ so\ create\ it\ only\ if\ needed.}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00085}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af0ad5adc1d3698a45249b3fdae094cc8}{00085}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af0ad5adc1d3698a45249b3fdae094cc8}{\_oid\_dumpers}}:\ tuple[OidDumperCache,\ OidDumperCache]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af0ad5adc1d3698a45249b3fdae094cc8}{\_oid\_dumpers}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00087}00087\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ mapping\ fmt,\ oid\ -\/>\ Loader\ instance}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00089}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_ac7b9fe2d6e5dfb8110c14d4b3ef351c6}{00089}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_ac7b9fe2d6e5dfb8110c14d4b3ef351c6}{\_loaders}}:\ tuple[LoaderCache,\ LoaderCache]\ =\ (\{\},\ \{\})}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00090}00090\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00091}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a567cfa3c38678f0cb28a89945c1a5a0d}{00091}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a567cfa3c38678f0cb28a89945c1a5a0d}{\_row\_dumpers}}:\ list[\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_dumper}{abc.Dumper}}]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ sequence\ of\ load\ functions\ from\ value\ to\ python}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ length\ of\ the\ result\ columns}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00095}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_afc156f777c9b4ce8ebe05e6a26d89db8}{00095}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_afc156f777c9b4ce8ebe05e6a26d89db8}{\_row\_loaders}}:\ list[LoadFunc]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ mapping\ oid\ -\/>\ type\ sql\ representation}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00098}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0f22acb8287c69a8e11d84ef03a4239f}{00098}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0f22acb8287c69a8e11d84ef03a4239f}{\_oid\_types}}:\ dict[int,\ bytes]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00099}00099\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00100}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a3a84afa9f140f8bad3d75f89fdf0c9f5}{00100}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a3a84afa9f140f8bad3d75f89fdf0c9f5}{\_encoding}}\ =\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00101}00101\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00102}00102\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00103}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_ac20448faeefcc0f50082a5e262385b8b}{00103}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_ac20448faeefcc0f50082a5e262385b8b}{from\_context}}(cls,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None})\ -\/>\ Transformer:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00105}00105\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ a\ Transformer\ from\ an\ AdaptContext.}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00106}00106\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00107}00107\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ the\ context\ is\ a\ Transformer\ instance,\ just\ return\ it.}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00108}00108\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(context,\ Transformer):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ context}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls(context)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00113}00113\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00114}00114\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00115}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_ad0a2ff8a376e4f7991816653ce009b60}{00115}}\ \ \ \ \ \textcolor{keyword}{def\ }connection(self)\ -\/>\ BaseConnection[Any]\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a98e2e5941fb90c12e421bae78d693767}{\_conn}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00117}00117\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00118}00118\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00119}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a37be7d1c393c0f5f7975ddbaecd5dd2b}{00119}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a37be7d1c393c0f5f7975ddbaecd5dd2b}{encoding}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a3a84afa9f140f8bad3d75f89fdf0c9f5}{\_encoding}}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a3a84afa9f140f8bad3d75f89fdf0c9f5}{\_encoding}}\ =\ conn\_encoding(self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_ad0a2ff8a376e4f7991816653ce009b60}{connection}})}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a3a84afa9f140f8bad3d75f89fdf0c9f5}{\_encoding}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00123}00123\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00124}00124\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00125}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a4f4c9e6ff8a07c10f47f85d5925834ac}{00125}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_acc2de5016d8f73efa8751639302fdfdc}{adapters}}(self)\ -\/>\ AdaptersMap:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af6299e48dfcc66034348a5da5d66b2c9}{\_adapters}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00128}00128\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00129}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a4e09122cc01fdc53b907a54e2a8e9345}{00129}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a4e09122cc01fdc53b907a54e2a8e9345}{pgresult}}(self)\ -\/>\ PGresult\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_aa7a624125e050fab6303451d5e35597d}{\_pgresult}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00132}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af8df0fac269673210f6f81e2c04ee4d7}{00132}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af8df0fac269673210f6f81e2c04ee4d7}{set\_pgresult}}(}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ result:\ PGresult\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ set\_loaders:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ format:\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_format}{pq.Format}}\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00138}00138\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_aa7a624125e050fab6303451d5e35597d}{\_pgresult}}\ =\ result}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00140}00140\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ result:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00142}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a47a8792ab538c25e4c24bf3ad5effffb}{00142}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a47a8792ab538c25e4c24bf3ad5effffb}{\_nfields}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a345b1fc7cc8ffb4fbcfde30bddcce9fd}{\_ntuples}}\ =\ 0}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ set\_loaders:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_afc156f777c9b4ce8ebe05e6a26d89db8}{\_row\_loaders}}\ =\ []}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00147}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a345b1fc7cc8ffb4fbcfde30bddcce9fd}{00147}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a345b1fc7cc8ffb4fbcfde30bddcce9fd}{\_ntuples}}\ =\ result.ntuples}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ nf\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a47a8792ab538c25e4c24bf3ad5effffb}{\_nfields}}\ =\ result.nfields}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00149}00149\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ set\_loaders:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00152}00152\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ nf:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_afc156f777c9b4ce8ebe05e6a26d89db8}{\_row\_loaders}}\ =\ []}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00156}00156\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ fmt:\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_format}{pq.Format}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ fmt\ =\ result.fformat(0)\ \textcolor{keywordflow}{if}\ format\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ format\ \ \textcolor{comment}{\#\ type:\ ignore}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_afc156f777c9b4ce8ebe05e6a26d89db8}{\_row\_loaders}}\ =\ [}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0d79db72b6a0a54a755a1f2ec58a9edb}{get\_loader}}(result.ftype(i),\ fmt).load\ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(nf)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00162}00162\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00163}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0162410e79f5ea06cedf7d824794d19b}{00163}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0162410e79f5ea06cedf7d824794d19b}{set\_dumper\_types}}(self,\ types:\ Sequence[int],\ format:\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_format}{pq.Format}})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a567cfa3c38678f0cb28a89945c1a5a0d}{\_row\_dumpers}}\ =\ [self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_adb794daf61aefbcc77e247fd79ab2dd8}{get\_dumper\_by\_oid}}(oid,\ format)\ \textcolor{keywordflow}{for}\ oid\ \textcolor{keywordflow}{in}\ types]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a93a6921b83e952474b61474cecb34b28}{types}}\ =\ tuple(types)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a60c5f0c13211b047556f792273f3dc12}{formats}}\ =\ [format]\ *\ len(types)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00167}00167\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00168}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af21996d8db7805232265c30f7f959353}{00168}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af21996d8db7805232265c30f7f959353}{set\_loader\_types}}(self,\ types:\ Sequence[int],\ format:\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_format}{pq.Format}})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_afc156f777c9b4ce8ebe05e6a26d89db8}{\_row\_loaders}}\ =\ [self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0d79db72b6a0a54a755a1f2ec58a9edb}{get\_loader}}(oid,\ format).load\ \textcolor{keywordflow}{for}\ oid\ \textcolor{keywordflow}{in}\ types]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00170}00170\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00171}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a8294c672f9dc164b352d4449735d29cc}{00171}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a8294c672f9dc164b352d4449735d29cc}{dump\_sequence}}(}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ self,\ params:\ Sequence[Any],\ formats:\ Sequence[PyFormat]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00173}00173\ \ \ \ \ )\ -\/>\ Sequence[Buffer\ |\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ nparams\ =\ len(params)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ out:\ list[Buffer\ |\ \textcolor{keywordtype}{None}]\ =\ [\textcolor{keywordtype}{None}]\ *\ nparams}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00176}00176\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ we\ have\ dumpers,\ it\ means\ set\_dumper\_types\ had\ been\ called,\ in}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ which\ case\ self.types\ and\ self.formats\ are\ set\ to\ sequences\ of\ the}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ right\ size.}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a567cfa3c38678f0cb28a89945c1a5a0d}{\_row\_dumpers}}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a567cfa3c38678f0cb28a89945c1a5a0d}{\_row\_dumpers}})\ !=\ nparams:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.DataError(}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}expected\ \{len(self.\_row\_dumpers)\}\ values\ in\ row,\ got\ \{nparams\}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(nparams):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (param\ :=\ params[i])\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ out[i]\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a567cfa3c38678f0cb28a89945c1a5a0d}{\_row\_dumpers}}[i].dump(param)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ out}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00189}00189\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ types\ =\ [self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a51ff50fb237496a76f855970e008d2a8}{\_get\_none\_oid}}()]\ *\ nparams}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ pqformats\ =\ [TEXT]\ *\ nparams}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(nparams):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (param\ :=\ params[i])\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ dumper\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a7b1bf480d32cc70380cc36134ed4fc92}{get\_dumper}}(param,\ formats[i])}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ out[i]\ =\ dumper.dump(param)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ types[i]\ =\ dumper.oid}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ pqformats[i]\ =\ dumper.format}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00200}00200\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a93a6921b83e952474b61474cecb34b28}{types}}\ =\ tuple(types)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a60c5f0c13211b047556f792273f3dc12}{formats}}\ =\ pqformats}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00203}00203\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ out}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00205}00205\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00206}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0fc951d5abf133d4e91c31034ef02bc0}{00206}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0fc951d5abf133d4e91c31034ef02bc0}{as\_literal}}(self,\ obj:\ Any)\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ dumper\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a7b1bf480d32cc70380cc36134ed4fc92}{get\_dumper}}(obj,\ PY\_TEXT)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ rv\ =\ dumper.quote(obj)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ result\ is\ quoted,\ and\ the\ oid\ not\ unknown\ or\ text,}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ add\ an\ explicit\ type\ cast.}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ the\ last\ char\ because\ the\ first\ one\ might\ be\ 'E'.}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ oid\ =\ dumper.oid}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ oid\ \textcolor{keywordflow}{and}\ rv\ \textcolor{keywordflow}{and}\ rv[-\/1]\ ==\ b\textcolor{stringliteral}{"{}'"{}}[0]\ \textcolor{keywordflow}{and}\ oid\ !=\ TEXT\_OID:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ type\_sql\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0f22acb8287c69a8e11d84ef03a4239f}{\_oid\_types}}[oid]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ti\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a4f4c9e6ff8a07c10f47f85d5925834ac}{adapters}}.types.get(oid):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ oid\ <\ 8192:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ builtin:\ prefer\ "{}timestamptz"{}\ to\ "{}timestamp\ with\ time\ zone"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ type\_sql\ =\ ti.name.encode(self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a37be7d1c393c0f5f7975ddbaecd5dd2b}{encoding}})}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ type\_sql\ =\ ti.regtype.encode(self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a37be7d1c393c0f5f7975ddbaecd5dd2b}{encoding}})}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ oid\ ==\ ti.array\_oid:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ type\_sql\ +=\ b\textcolor{stringliteral}{"{}[]"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ type\_sql\ =\ b\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0f22acb8287c69a8e11d84ef03a4239f}{\_oid\_types}}[oid]\ =\ type\_sql}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00228}00228\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ type\_sql:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rv\ =\ b\textcolor{stringliteral}{"{}\%s::\%s"{}}\ \%\ (rv,\ type\_sql)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00231}00231\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(rv,\ bytes):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \ \ \ \ rv\ =\ bytes(rv)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ rv}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00235}00235\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00236}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a7b1bf480d32cc70380cc36134ed4fc92}{00236}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a7b1bf480d32cc70380cc36134ed4fc92}{get\_dumper}}(self,\ obj:\ Any,\ format:\ PyFormat)\ -\/>\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_dumper}{abc.Dumper}}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00238}00238\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ a\ Dumper\ instance\ to\ dump\ \`{}!obj\`{}.}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00239}00239\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Normally,\ the\ type\ of\ the\ object\ dictates\ how\ to\ dump\ it}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ key\ =\ type(obj)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00242}00242\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Reuse\ an\ existing\ Dumper\ class\ for\ objects\ of\ the\ same\ type}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ cache\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_aa75509167c88d099da111de4dbc7e5d4}{\_dumpers}}[format]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \ \ \ \ dumper\ =\ cache[key]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ it's\ the\ first\ time\ we\ see\ this\ type,\ look\ for\ a\ dumper}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ configured\ for\ it.}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dcls\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a4f4c9e6ff8a07c10f47f85d5925834ac}{adapters}}.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a7b1bf480d32cc70380cc36134ed4fc92}{get\_dumper}}(key,\ format)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ e.ProgrammingError\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ex\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cache[key]\ =\ dumper\ =\ dcls(key,\ self)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00256}00256\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ if\ the\ dumper\ requires\ an\ upgrade\ to\ handle\ this\ specific\ value}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (key1\ :=\ dumper.get\_key(obj,\ format))\ \textcolor{keywordflow}{is}\ key:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dumper}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00260}00260\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ it\ does,\ ask\ the\ dumper\ to\ create\ its\ own\ upgraded\ version}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cache[key1]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ dumper\ =\ cache[key1]\ =\ dumper.upgrade(obj,\ format)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dumper}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00267}00267\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00268}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a51ff50fb237496a76f855970e008d2a8}{00268}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a51ff50fb237496a76f855970e008d2a8}{\_get\_none\_oid}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\_none\_oid}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00273}00273\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \ \ \ \ rv\ =\ self.\_none\_oid\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af6299e48dfcc66034348a5da5d66b2c9}{\_adapters}}.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a7b1bf480d32cc70380cc36134ed4fc92}{get\_dumper}}(NoneType,\ PY\_TEXT).oid}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InterfaceError(\textcolor{stringliteral}{"{}None\ dumper\ not\ found"{}})}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00278}00278\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ rv}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00280}00280\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00281}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_adb794daf61aefbcc77e247fd79ab2dd8}{00281}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_adb794daf61aefbcc77e247fd79ab2dd8}{get\_dumper\_by\_oid}}(self,\ oid:\ int,\ format:\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_format}{pq.Format}})\ -\/>\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_dumper}{abc.Dumper}}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00283}00283\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ a\ Dumper\ to\ dump\ an\ object\ to\ the\ type\ with\ given\ oid.}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00284}00284\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af0ad5adc1d3698a45249b3fdae094cc8}{\_oid\_dumpers}}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af0ad5adc1d3698a45249b3fdae094cc8}{\_oid\_dumpers}}\ =\ (\{\},\ \{\})}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00287}00287\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Reuse\ an\ existing\ Dumper\ class\ for\ objects\ of\ the\ same\ type}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ cache\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af0ad5adc1d3698a45249b3fdae094cc8}{\_oid\_dumpers}}[format]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cache[oid]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ it's\ the\ first\ time\ we\ see\ this\ type,\ look\ for\ a\ dumper}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ configured\ for\ it.}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ \ \ \ \ dcls\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a4f4c9e6ff8a07c10f47f85d5925834ac}{adapters}}.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_adb794daf61aefbcc77e247fd79ab2dd8}{get\_dumper\_by\_oid}}(oid,\ format)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ \ \ \ \ cache[oid]\ =\ dumper\ =\ dcls(NoneType,\ self)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00297}00297\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00298}00298\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dumper}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00299}00299\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00300}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_ad71a0285c46d70240b77ce84ecbea5d6}{00300}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_ad71a0285c46d70240b77ce84ecbea5d6}{load\_rows}}(self,\ row0:\ int,\ row1:\ int,\ make\_row:\ RowMaker[Row])\ -\/>\ list[Row]:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (res\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_aa7a624125e050fab6303451d5e35597d}{\_pgresult}}):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InterfaceError(\textcolor{stringliteral}{"{}result\ not\ set"{}})}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00303}00303\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (0\ <=\ row0\ <=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a345b1fc7cc8ffb4fbcfde30bddcce9fd}{\_ntuples}}\ \textcolor{keywordflow}{and}\ 0\ <=\ row1\ <=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a345b1fc7cc8ffb4fbcfde30bddcce9fd}{\_ntuples}}):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00305}00305\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InterfaceError(}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}rows\ must\ be\ included\ between\ 0\ and\ \{self.\_ntuples\}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00308}00308\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ records\ =\ []}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ row\ \textcolor{keywordflow}{in}\ range(row0,\ row1):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ \ \ \ \ record:\ list[Any]\ =\ [\textcolor{keywordtype}{None}]\ *\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a47a8792ab538c25e4c24bf3ad5effffb}{\_nfields}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00312}00312\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ col\ \textcolor{keywordflow}{in}\ range(self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a47a8792ab538c25e4c24bf3ad5effffb}{\_nfields}}):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (val\ :=\ res.get\_value(row,\ col))\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00314}00314\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ record[col]\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_afc156f777c9b4ce8ebe05e6a26d89db8}{\_row\_loaders}}[col](val)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00315}00315\ \ \ \ \ \ \ \ \ \ \ \ \ records.append(make\_row(record))}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00316}00316\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ records}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00318}00318\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00319}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a5dd20a46a1c7e14e95cc12fbaf889597}{00319}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a5dd20a46a1c7e14e95cc12fbaf889597}{load\_row}}(self,\ row:\ int,\ make\_row:\ RowMaker[Row])\ -\/>\ Row:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (res\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_aa7a624125e050fab6303451d5e35597d}{\_pgresult}}):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InterfaceError(\textcolor{stringliteral}{"{}result\ not\ set"{}})}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00322}00322\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00323}00323\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ 0\ <=\ row\ <=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a345b1fc7cc8ffb4fbcfde30bddcce9fd}{\_ntuples}}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InterfaceError(}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00325}00325\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}row\ must\ be\ included\ between\ 0\ and\ \{self.\_ntuples\}"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00326}00326\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00327}00327\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ record:\ list[Any]\ =\ [\textcolor{keywordtype}{None}]\ *\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a47a8792ab538c25e4c24bf3ad5effffb}{\_nfields}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ col\ \textcolor{keywordflow}{in}\ range(self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a47a8792ab538c25e4c24bf3ad5effffb}{\_nfields}}):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (val\ :=\ res.get\_value(row,\ col))\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00331}00331\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ record[col]\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_afc156f777c9b4ce8ebe05e6a26d89db8}{\_row\_loaders}}[col](val)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00332}00332\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ make\_row(record)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00334}00334\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00335}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_aa4a934b051664da117f471ed1b7aa565}{00335}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_aa4a934b051664da117f471ed1b7aa565}{load\_sequence}}(self,\ record:\ Sequence[Buffer\ |\ \textcolor{keywordtype}{None}])\ -\/>\ tuple[Any,\ ...]:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00336}00336\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_afc156f777c9b4ce8ebe05e6a26d89db8}{\_row\_loaders}})\ !=\ len(record):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}cannot\ load\ sequence\ of\ \{len(record)\}\ items:"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ \{len(self.\_row\_loaders)\}\ loaders\ registered"{}}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00341}00341\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tuple(}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ \ \ \ \ (self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_afc156f777c9b4ce8ebe05e6a26d89db8}{\_row\_loaders}}[i](val)\ \textcolor{keywordflow}{if}\ val\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i,\ val\ \textcolor{keywordflow}{in}\ enumerate(record)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00346}00346\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00347}\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0d79db72b6a0a54a755a1f2ec58a9edb}{00347}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0d79db72b6a0a54a755a1f2ec58a9edb}{get\_loader}}(self,\ oid:\ int,\ format:\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_format}{pq.Format}})\ -\/>\ \doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_loader}{abc.Loader}}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_ac7b9fe2d6e5dfb8110c14d4b3ef351c6}{\_loaders}}[format][oid]}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00352}00352\ }
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (loader\_cls\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af6299e48dfcc66034348a5da5d66b2c9}{\_adapters}}.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0d79db72b6a0a54a755a1f2ec58a9edb}{get\_loader}}(oid,\ format)):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (loader\_cls\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_af6299e48dfcc66034348a5da5d66b2c9}{\_adapters}}.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_a0d79db72b6a0a54a755a1f2ec58a9edb}{get\_loader}}(INVALID\_OID,\ format)):}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.InterfaceError(\textcolor{stringliteral}{"{}unknown\ oid\ loader\ not\ found"{}})}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ loader\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__py__transformer_1_1_transformer_ac7b9fe2d6e5dfb8110c14d4b3ef351c6}{\_loaders}}[format][oid]\ =\ loader\_cls(oid,\ self)}
+\DoxyCodeLine{\Hypertarget{__py__transformer_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ loader}
+
+\end{DoxyCode}

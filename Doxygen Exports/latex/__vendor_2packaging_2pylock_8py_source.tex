@@ -1,0 +1,641 @@
+\doxysection{pylock.\+py}
+\hypertarget{__vendor_2packaging_2pylock_8py_source}{}\label{__vendor_2packaging_2pylock_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/packaging/pylock.py@{venv/Lib/site-\/packages/pip/\_vendor/packaging/pylock.py}}
+\doxymbox{\hyperlink{__vendor_2packaging_2pylock_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00003}00003\ \textcolor{keyword}{import}\ dataclasses}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00004}00004\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00005}00005\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00006}00006\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Mapping,\ Sequence}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00007}00007\ \textcolor{keyword}{from}\ dataclasses\ \textcolor{keyword}{import}\ dataclass}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00008}00008\ \textcolor{keyword}{from}\ datetime\ \textcolor{keyword}{import}\ datetime}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00009}00009\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00010}00010\ \ \ \ \ TYPE\_CHECKING,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00011}00011\ \ \ \ \ Any,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00012}00012\ \ \ \ \ Callable,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00013}00013\ \ \ \ \ Protocol,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00014}00014\ \ \ \ \ TypeVar,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00015}00015\ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00016}00016\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00017}00017\ \textcolor{keyword}{from}\ .markers\ \textcolor{keyword}{import}\ Marker}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00018}00018\ \textcolor{keyword}{from}\ .specifiers\ \textcolor{keyword}{import}\ SpecifierSet}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00019}00019\ \textcolor{keyword}{from}\ .utils\ \textcolor{keyword}{import}\ NormalizedName,\ is\_normalized\_name}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00020}00020\ \textcolor{keyword}{from}\ .version\ \textcolor{keyword}{import}\ Version}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00022}00022\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:\ \ \textcolor{comment}{\#\ pragma:\ no\ cover}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00023}00023\ \ \ \ \ \textcolor{keyword}{from}\ pathlib\ \textcolor{keyword}{import}\ Path}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00025}00025\ \ \ \ \ \textcolor{keyword}{from}\ typing\_extensions\ \textcolor{keyword}{import}\ Self}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00027}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a484eb2c5ef73e451d0dc8dd6e6ddc82b}{00027}}\ \_logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00029}00029\ \_\_all\_\_\ =\ [}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00030}00030\ \ \ \ \ \textcolor{stringliteral}{"{}Package"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00031}00031\ \ \ \ \ \textcolor{stringliteral}{"{}PackageArchive"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00032}00032\ \ \ \ \ \textcolor{stringliteral}{"{}PackageDirectory"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00033}00033\ \ \ \ \ \textcolor{stringliteral}{"{}PackageSdist"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00034}00034\ \ \ \ \ \textcolor{stringliteral}{"{}PackageVcs"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00035}00035\ \ \ \ \ \textcolor{stringliteral}{"{}PackageWheel"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00036}00036\ \ \ \ \ \textcolor{stringliteral}{"{}Pylock"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00037}00037\ \ \ \ \ \textcolor{stringliteral}{"{}PylockUnsupportedVersionError"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00038}00038\ \ \ \ \ \textcolor{stringliteral}{"{}PylockValidationError"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00039}00039\ \ \ \ \ \textcolor{stringliteral}{"{}is\_valid\_pylock\_path"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00040}00040\ ]}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00042}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_ae567fb1f52d37bdf4baf590c3c50abb2}{00042}}\ \_T\ =\ TypeVar(\textcolor{stringliteral}{"{}\_T"{}})}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00043}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a30291394f7d582bccfd4eb5eb876ab63}{00043}}\ \_T2\ =\ TypeVar(\textcolor{stringliteral}{"{}\_T2"{}})}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00045}00045\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00046}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1___from_mapping_protocol}{00046}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1___from_mapping_protocol}{\_FromMappingProtocol}}(Protocol):\ \ \textcolor{comment}{\#\ pragma:\ no\ cover}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00047}00047\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00048}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1___from_mapping_protocol_a307fe8c2b2830f0ca2f6216c6ce2e8eb}{00048}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1___from_mapping_protocol_a307fe8c2b2830f0ca2f6216c6ce2e8eb}{\_from\_dict}}(cls,\ d:\ Mapping[str,\ Any])\ -\/>\ Self:\ ...}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00051}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a8bba80d1dad27cec0c0341cbb2eeb631}{00051}}\ \_FromMappingProtocolT\ =\ TypeVar(\textcolor{stringliteral}{"{}\_FromMappingProtocolT"{}},\ bound=\_FromMappingProtocol)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00054}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a7b3f02ba2cca50d572504f891eb48a6d}{00054}}\ \_PYLOCK\_FILE\_NAME\_RE\ =\ re.compile(\textcolor{stringliteral}{r"{}\string^pylock\(\backslash\).([\string^.]+)\(\backslash\).toml\$"{}})}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00057}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a6fceff2fcc6cd94db2dc50bd3660f3e9}{00057}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a6fceff2fcc6cd94db2dc50bd3660f3e9}{is\_valid\_pylock\_path}}(path:\ Path)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00058}00058\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Check\ if\ the\ given\ path\ is\ a\ valid\ pylock\ file\ path."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00059}00059\ \ \ \ \ \textcolor{keywordflow}{return}\ path.name\ ==\ \textcolor{stringliteral}{"{}pylock.toml"{}}\ \textcolor{keywordflow}{or}\ bool(\_PYLOCK\_FILE\_NAME\_RE.match(path.name))}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00061}00061\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00062}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a1b3f4536aa25b51dbcc545a2cf5f1bb8}{00062}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a1b3f4536aa25b51dbcc545a2cf5f1bb8}{\_toml\_key}}(key:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00063}00063\ \ \ \ \ \textcolor{keywordflow}{return}\ key.replace(\textcolor{stringliteral}{"{}\_"{}},\ \textcolor{stringliteral}{"{}-\/"{}})}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00065}00065\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00066}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a4900eddf8ad3a3a19eeee5ea947d43c7}{00066}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a4900eddf8ad3a3a19eeee5ea947d43c7}{\_toml\_value}}(key:\ str,\ value:\ Any)\ -\/>\ Any:\ \ \textcolor{comment}{\#\ noqa:\ ANN401}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00067}00067\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(value,\ (Version,\ Marker,\ SpecifierSet)):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ str(value)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00069}00069\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(value,\ Sequence)\ \textcolor{keywordflow}{and}\ key\ ==\ \textcolor{stringliteral}{"{}environments"{}}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ [str(v)\ \textcolor{keywordflow}{for}\ v\ \textcolor{keywordflow}{in}\ value]}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00071}00071\ \ \ \ \ \textcolor{keywordflow}{return}\ value}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00072}00072\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00073}00073\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00074}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_ac51fc458029cdf55a2b31fcf50d016a6}{00074}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_ac51fc458029cdf55a2b31fcf50d016a6}{\_toml\_dict\_factory}}(data:\ list[tuple[str,\ Any]])\ -\/>\ dict[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00075}00075\ \ \ \ \ \textcolor{keywordflow}{return}\ \{}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a1b3f4536aa25b51dbcc545a2cf5f1bb8}{\_toml\_key}}(key):\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a4900eddf8ad3a3a19eeee5ea947d43c7}{\_toml\_value}}(key,\ value)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ key,\ value\ \textcolor{keywordflow}{in}\ data}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00079}00079\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00082}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{00082}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d:\ Mapping[str,\ Any],\ expected\_type:\ type[\_T],\ key:\ str)\ -\/>\ \_T\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00083}00083\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ a\ value\ from\ the\ dictionary\ and\ verify\ it's\ the\ expected\ type."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00084}00084\ \ \ \ \ \textcolor{keywordflow}{if}\ (value\ :=\ d.get(key))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00086}00086\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(value,\ expected\_type):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Unexpected\ type\ \{type(value).\_\_name\_\_\}\ "{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}(expected\ \{expected\_type.\_\_name\_\_\})"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ context=key,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00092}00092\ \ \ \ \ \textcolor{keywordflow}{return}\ value}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00095}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a5e9ba2b9a348828fd3a7d8969db6676f}{00095}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a5e9ba2b9a348828fd3a7d8969db6676f}{\_get\_required}}(d:\ Mapping[str,\ Any],\ expected\_type:\ type[\_T],\ key:\ str)\ -\/>\ \_T:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00096}00096\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ a\ required\ value\ from\ the\ dictionary\ and\ verify\ it's\ the\ expected\ type."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00097}00097\ \ \ \ \ \textcolor{keywordflow}{if}\ (value\ :=\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ expected\_type,\ key))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1___pylock_required_key_error}{\_PylockRequiredKeyError}}(key)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00099}00099\ \ \ \ \ \textcolor{keywordflow}{return}\ value}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00100}00100\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00101}00101\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00102}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a3a04ecc8d8ffe7eaa3aaf02a8c7298d8}{00102}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a3a04ecc8d8ffe7eaa3aaf02a8c7298d8}{\_get\_sequence}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00103}00103\ \ \ \ \ d:\ Mapping[str,\ Any],\ expected\_item\_type:\ type[\_T],\ key:\ str}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00104}00104\ )\ -\/>\ Sequence[\_T]\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00105}00105\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ a\ list\ value\ from\ the\ dictionary\ and\ verify\ it's\ the\ expected\ items\ type."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00106}00106\ \ \ \ \ \textcolor{keywordflow}{if}\ (value\ :=\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ Sequence,\ key))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:\ \ \textcolor{comment}{\#\ type:\ ignore[type-\/abstract]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00108}00108\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(value,\ (str,\ bytes)):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ special\ case:\ str\ and\ bytes\ are\ Sequences,\ but\ we\ want\ to\ reject\ it}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Unexpected\ type\ \{type(value).\_\_name\_\_\}\ (expected\ Sequence)"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ context=key,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00114}00114\ \ \ \ \ \textcolor{keywordflow}{for}\ i,\ item\ \textcolor{keywordflow}{in}\ enumerate(value):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(item,\ expected\_item\_type):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Unexpected\ type\ \{type(item).\_\_name\_\_\}\ "{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}(expected\ \{expected\_item\_type.\_\_name\_\_\})"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ context=f\textcolor{stringliteral}{"{}\{key\}[\{i\}]"{}},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00121}00121\ \ \ \ \ \textcolor{keywordflow}{return}\ value}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00122}00122\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00123}00123\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00124}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a80173d8ad54c21fc6a7fa460b3d7048e}{00124}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a80173d8ad54c21fc6a7fa460b3d7048e}{\_get\_as}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00125}00125\ \ \ \ \ d:\ Mapping[str,\ Any],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00126}00126\ \ \ \ \ expected\_type:\ type[\_T],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00127}00127\ \ \ \ \ target\_type:\ Callable[[\_T],\ \_T2],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00128}00128\ \ \ \ \ key:\ str,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00129}00129\ )\ -\/>\ \_T2\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00130}00130\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ a\ value\ from\ the\ dictionary,\ verify\ it's\ the\ expected\ type,}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00131}00131\ \textcolor{stringliteral}{\ \ \ \ and\ convert\ to\ the\ target\ type.}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00132}00132\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00133}00133\ \textcolor{stringliteral}{\ \ \ \ This\ assumes\ the\ target\_type\ constructor\ accepts\ the\ value.}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00134}00134\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00135}00135\ \ \ \ \ \textcolor{keywordflow}{if}\ (value\ :=\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ expected\_type,\ key))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00137}00137\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ target\_type(value)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00139}00139\ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(e,\ context=key)\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00142}00142\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00143}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a51b8e54ac141209f5eecb832df990c55}{00143}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a51b8e54ac141209f5eecb832df990c55}{\_get\_required\_as}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00144}00144\ \ \ \ \ d:\ Mapping[str,\ Any],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00145}00145\ \ \ \ \ expected\_type:\ type[\_T],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00146}00146\ \ \ \ \ target\_type:\ Callable[[\_T],\ \_T2],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00147}00147\ \ \ \ \ key:\ str,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00148}00148\ )\ -\/>\ \_T2:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00149}00149\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ a\ required\ value\ from\ the\ dict,\ verify\ it's\ the\ expected\ type,}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00150}00150\ \textcolor{stringliteral}{\ \ \ \ and\ convert\ to\ the\ target\ type."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00151}00151\ \ \ \ \ \textcolor{keywordflow}{if}\ (value\ :=\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a80173d8ad54c21fc6a7fa460b3d7048e}{\_get\_as}}(d,\ expected\_type,\ target\_type,\ key))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1___pylock_required_key_error}{\_PylockRequiredKeyError}}(key)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00153}00153\ \ \ \ \ \textcolor{keywordflow}{return}\ value}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00156}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a959b8ead8bbddf3c130a018540cdc87b}{00156}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a959b8ead8bbddf3c130a018540cdc87b}{\_get\_sequence\_as}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00157}00157\ \ \ \ \ d:\ Mapping[str,\ Any],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00158}00158\ \ \ \ \ expected\_item\_type:\ type[\_T],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00159}00159\ \ \ \ \ target\_item\_type:\ Callable[[\_T],\ \_T2],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00160}00160\ \ \ \ \ key:\ str,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00161}00161\ )\ -\/>\ list[\_T2]\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00162}00162\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ list\ value\ from\ dictionary\ and\ verify\ expected\ items\ type."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00163}00163\ \ \ \ \ \textcolor{keywordflow}{if}\ (value\ :=\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a3a04ecc8d8ffe7eaa3aaf02a8c7298d8}{\_get\_sequence}}(d,\ expected\_item\_type,\ key))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00165}00165\ \ \ \ \ result\ =\ []}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00166}00166\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ item\ \textcolor{keywordflow}{in}\ value:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \ \ \ \ typed\_item\ =\ target\_item\_type(item)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ result.append(typed\_item)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00170}00170\ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(e,\ context=f\textcolor{stringliteral}{"{}\{key\}[\{len(result)\}]"{}})\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00172}00172\ \ \ \ \ \textcolor{keywordflow}{return}\ result}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00174}00174\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00175}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_abb511b6e758e6f66905338b74b5850a3}{00175}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_abb511b6e758e6f66905338b74b5850a3}{\_get\_object}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00176}00176\ \ \ \ \ d:\ Mapping[str,\ Any],\ target\_type:\ type[\_FromMappingProtocolT],\ key:\ str}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00177}00177\ )\ -\/>\ \_FromMappingProtocolT\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00178}00178\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ a\ dictionary\ value\ from\ the\ dictionary\ and\ convert\ it\ to\ a\ dataclass."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00179}00179\ \ \ \ \ \textcolor{keywordflow}{if}\ (value\ :=\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ Mapping,\ key))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:\ \ \textcolor{comment}{\#\ type:\ ignore[type-\/abstract]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00181}00181\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ target\_type.\_from\_dict(value)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00183}00183\ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(e,\ context=key)\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00185}00185\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00186}00186\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00187}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a31a1fe75eff2e38e88cbf9044a8de8c0}{00187}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a31a1fe75eff2e38e88cbf9044a8de8c0}{\_get\_sequence\_of\_objects}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00188}00188\ \ \ \ \ d:\ Mapping[str,\ Any],\ target\_item\_type:\ type[\_FromMappingProtocolT],\ key:\ str}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00189}00189\ )\ -\/>\ list[\_FromMappingProtocolT]\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00190}00190\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ a\ list\ value\ from\ the\ dictionary\ and\ convert\ its\ items\ to\ a\ dataclass."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00191}00191\ \ \ \ \ \textcolor{keywordflow}{if}\ (value\ :=\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a3a04ecc8d8ffe7eaa3aaf02a8c7298d8}{\_get\_sequence}}(d,\ Mapping,\ key))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:\ \ \textcolor{comment}{\#\ type:\ ignore[type-\/abstract]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00193}00193\ \ \ \ \ result:\ list[\_FromMappingProtocolT]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00194}00194\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ item\ \textcolor{keywordflow}{in}\ value:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ typed\_item\ =\ target\_item\_type.\_from\_dict(item)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ result.append(typed\_item)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00198}00198\ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(e,\ context=f\textcolor{stringliteral}{"{}\{key\}[\{len(result)\}]"{}})\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00200}00200\ \ \ \ \ \textcolor{keywordflow}{return}\ result}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00201}00201\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00202}00202\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00203}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_aba2aa3fc67c8a9f4a17f4fdfe6c908d2}{00203}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_aba2aa3fc67c8a9f4a17f4fdfe6c908d2}{\_get\_required\_sequence\_of\_objects}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00204}00204\ \ \ \ \ d:\ Mapping[str,\ Any],\ target\_item\_type:\ type[\_FromMappingProtocolT],\ key:\ str}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00205}00205\ )\ -\/>\ Sequence[\_FromMappingProtocolT]:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00206}00206\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ a\ required\ list\ value\ from\ the\ dictionary\ and\ convert\ its\ items\ to\ a}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00207}00207\ \textcolor{stringliteral}{\ \ \ \ dataclass."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00208}00208\ \ \ \ \ \textcolor{keywordflow}{if}\ (result\ :=\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a31a1fe75eff2e38e88cbf9044a8de8c0}{\_get\_sequence\_of\_objects}}(d,\ target\_item\_type,\ key))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1___pylock_required_key_error}{\_PylockRequiredKeyError}}(key)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00210}00210\ \ \ \ \ \textcolor{keywordflow}{return}\ result}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00211}00211\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00212}00212\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00213}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a8b1011fe1948d6c675751d1a68f7b01a}{00213}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a8b1011fe1948d6c675751d1a68f7b01a}{\_validate\_normalized\_name}}(name:\ str)\ -\/>\ NormalizedName:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00214}00214\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Validate\ that\ a\ string\ is\ a\ NormalizedName."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00215}00215\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ is\_normalized\_name(name):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(f\textcolor{stringliteral}{"{}Name\ \{name!r\}\ is\ not\ normalized"{}})}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00217}00217\ \ \ \ \ \textcolor{keywordflow}{return}\ NormalizedName(name)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00218}00218\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00219}00219\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00220}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_ad87a9b139dfc27f464d4357e84ab179d}{00220}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_ad87a9b139dfc27f464d4357e84ab179d}{\_validate\_path\_url}}(path:\ str\ |\ \textcolor{keywordtype}{None},\ url:\ str\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00221}00221\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ path\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ url:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(\textcolor{stringliteral}{"{}path\ or\ url\ must\ be\ provided"{}})}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00223}00223\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00224}00224\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00225}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a6e9bebb1ffcf4a71f0119bf0203a8e46}{00225}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a6e9bebb1ffcf4a71f0119bf0203a8e46}{\_validate\_hashes}}(hashes:\ Mapping[str,\ Any])\ -\/>\ Mapping[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00226}00226\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ hashes:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(\textcolor{stringliteral}{"{}At\ least\ one\ hash\ must\ be\ provided"{}})}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00228}00228\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ all(isinstance(hash\_val,\ str)\ \textcolor{keywordflow}{for}\ hash\_val\ \textcolor{keywordflow}{in}\ hashes.values()):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(\textcolor{stringliteral}{"{}Hash\ values\ must\ be\ strings"{}})}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00230}00230\ \ \ \ \ \textcolor{keywordflow}{return}\ hashes}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00231}00231\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00232}00232\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00233}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{00233}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(Exception):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00234}00234\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Raised\ when\ when\ input\ data\ is\ not\ spec-\/compliant."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00235}00235\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00236}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_a74ca0b22ff711eddc79aa1c40e166eb3}{00236}}\ \ \ \ \ context:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00237}00237\ \ \ \ \ message:\ str}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00238}00238\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00239}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_a59b079e8459999a20a35cb479e75eaf0}{00239}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_a59b079e8459999a20a35cb479e75eaf0}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ cause:\ str\ |\ Exception,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ context:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00244}00244\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(cause,\ PylockValidationError):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cause.context:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_a74ca0b22ff711eddc79aa1c40e166eb3}{context}}\ =\ (}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{context\}.\{cause.context\}"{}}\ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{else}\ cause.context}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_a74ca0b22ff711eddc79aa1c40e166eb3}{context}}\ =\ context}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00252}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_aa3a6082c1596f0999a626e142fb846a2}{00252}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_aa3a6082c1596f0999a626e142fb846a2}{message}}\ =\ cause.message}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_a74ca0b22ff711eddc79aa1c40e166eb3}{context}}\ =\ context}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_aa3a6082c1596f0999a626e142fb846a2}{message}}\ =\ str(cause)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00256}00256\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00257}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_ac344fecffbb8bfb5f27afd579e175bb2}{00257}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_ac344fecffbb8bfb5f27afd579e175bb2}{\_\_str\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_a74ca0b22ff711eddc79aa1c40e166eb3}{context}}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.message\}\ in\ \{self.context!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error_aa3a6082c1596f0999a626e142fb846a2}{message}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00261}00261\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00262}00262\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00263}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1___pylock_required_key_error}{00263}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1___pylock_required_key_error}{\_PylockRequiredKeyError}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00264}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1___pylock_required_key_error_a5259548e481922aed19bbf12b3ea6b6c}{00264}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1___pylock_required_key_error_a5259548e481922aed19bbf12b3ea6b6c}{\_\_init\_\_}}(self,\ key:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1___pylock_required_key_error_a5259548e481922aed19bbf12b3ea6b6c}{\_\_init\_\_}}(\textcolor{stringliteral}{"{}Missing\ required\ value"{}},\ context=key)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00266}00266\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00267}00267\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00268}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_unsupported_version_error}{00268}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_unsupported_version_error}{PylockUnsupportedVersionError}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00269}00269\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Raised\ when\ encountering\ an\ unsupported\ \`{}lock\_version\`{}."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00270}00270\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00271}00271\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00272}00272\ @dataclass(frozen=\textcolor{keyword}{True},\ init=\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00273}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_vcs}{00273}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_vcs}{PackageVcs}}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00274}00274\ \ \ \ \ type:\ str}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00275}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_vcs_ac595a7ca0641c8411245a1feebb8d212}{00275}}\ \ \ \ \ url:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00276}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_vcs_abef34c865fc6022476241e2d678b902b}{00276}}\ \ \ \ \ path:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00277}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_vcs_af8b4d172d72e6cd52429b385e27ead2c}{00277}}\ \ \ \ \ requested\_revision:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00278}00278\ \ \ \ \ commit\_id:\ str\ \ \textcolor{comment}{\#\ type:\ ignore[misc]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00279}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_vcs_a5efff53b6fec6683a440752389831574}{00279}}\ \ \ \ \ subdirectory:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00280}00280\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00281}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_vcs_afc0bc96f3d857559905c3730de517964}{00281}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_vcs_afc0bc96f3d857559905c3730de517964}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ type:\ str,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ url:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ path:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ requested\_revision:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ commit\_id:\ str,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ subdirectory:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00290}00290\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ Python\ 3.10+\ make\ dataclass\ kw\_only=True\ and\ remove\ \_\_init\_\_}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}type"{}},\ type)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}url"{}},\ url)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}path"{}},\ path)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}requested\_revision"{}},\ requested\_revision)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}commit\_id"{}},\ commit\_id)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00297}00297\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}subdirectory"{}},\ subdirectory)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00298}00298\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00299}00299\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00300}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_vcs_aa039da25647d5edc9f94524a5a19aef6}{00300}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_vcs_aa039da25647d5edc9f94524a5a19aef6}{\_from\_dict}}(cls,\ d:\ Mapping[str,\ Any])\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ package\_vcs\ =\ cls(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ \ \ \ \ type=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a5e9ba2b9a348828fd3a7d8969db6676f}{\_get\_required}}(d,\ str,\ \textcolor{stringliteral}{"{}type"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \ \ \ \ url=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}url"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \ \ \ \ path=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}path"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00305}00305\ \ \ \ \ \ \ \ \ \ \ \ \ requested\_revision=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}requested-\/revision"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \ \ \ \ commit\_id=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a5e9ba2b9a348828fd3a7d8969db6676f}{\_get\_required}}(d,\ str,\ \textcolor{stringliteral}{"{}commit-\/id"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ \ \ \ \ subdirectory=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}subdirectory"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_ad87a9b139dfc27f464d4357e84ab179d}{\_validate\_path\_url}}(package\_vcs.path,\ package\_vcs.url)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ package\_vcs}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00311}00311\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00312}00312\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00313}00313\ \textcolor{preprocessor}{@dataclass(frozen=True,\ init=False)}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00314}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_directory}{00314}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_directory}{PackageDirectory}}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00315}00315\ \ \ \ \ path:\ str}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00316}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_directory_abb6f4e6e8b394d53cc6df75a0f1e72a9}{00316}}\ \ \ \ \ editable:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00317}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_directory_aaf8db6f43c24082a96eeea66ba0a6785}{00317}}\ \ \ \ \ subdirectory:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00318}00318\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00319}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_directory_a0639395b5690d644d6a52a4fb6ead56b}{00319}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_directory_a0639395b5690d644d6a52a4fb6ead56b}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ path:\ str,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00323}00323\ \ \ \ \ \ \ \ \ editable:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ subdirectory:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00325}00325\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00326}00326\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ Python\ 3.10+\ make\ dataclass\ kw\_only=True\ and\ remove\ \_\_init\_\_}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00327}00327\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}path"{}},\ path)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}editable"{}},\ editable)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}subdirectory"{}},\ subdirectory)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00330}00330\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00331}00331\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00332}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_directory_ad05e8ff06f8af0abead1e991e7494372}{00332}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_directory_ad05e8ff06f8af0abead1e991e7494372}{\_from\_dict}}(cls,\ d:\ Mapping[str,\ Any])\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00334}00334\ \ \ \ \ \ \ \ \ \ \ \ \ path=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a5e9ba2b9a348828fd3a7d8969db6676f}{\_get\_required}}(d,\ str,\ \textcolor{stringliteral}{"{}path"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00335}00335\ \ \ \ \ \ \ \ \ \ \ \ \ editable=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ bool,\ \textcolor{stringliteral}{"{}editable"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00336}00336\ \ \ \ \ \ \ \ \ \ \ \ \ subdirectory=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}subdirectory"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00338}00338\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00339}00339\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00340}00340\ \textcolor{preprocessor}{@dataclass(frozen=True,\ init=False)}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00341}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_archive}{00341}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_archive}{PackageArchive}}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00342}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_archive_a2e0de1da0e04ae246492b40b529a7557}{00342}}\ \ \ \ \ url:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00343}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_archive_a3647992446505f7a6392740c5bdd470c}{00343}}\ \ \ \ \ path:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00344}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_archive_ac0c4b132149bf95244ef39f31606541b}{00344}}\ \ \ \ \ size:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00345}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_archive_a724244907635fd28d5e488e5e0102a18}{00345}}\ \ \ \ \ upload\_time:\ datetime\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00346}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_archive_af0e9b17d6075d188afa26e51d9de9fc6}{00346}}\ \ \ \ \ hashes:\ Mapping[str,\ str]\ \ \textcolor{comment}{\#\ type:\ ignore[misc]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00347}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_archive_adb4ee117cdfd0c2188d4d7841180f388}{00347}}\ \ \ \ \ subdirectory:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00348}00348\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00349}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_archive_aba3ec464f8ddfeb3ab87bed5c028299a}{00349}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_archive_aba3ec464f8ddfeb3ab87bed5c028299a}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ url:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ path:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ size:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ upload\_time:\ datetime\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ hashes:\ Mapping[str,\ str],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ subdirectory:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00358}00358\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ Python\ 3.10+\ make\ dataclass\ kw\_only=True\ and\ remove\ \_\_init\_\_}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}url"{}},\ url)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}path"{}},\ path)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}size"{}},\ size)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}upload\_time"{}},\ upload\_time)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}hashes"{}},\ hashes)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}subdirectory"{}},\ subdirectory)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00366}00366\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00367}00367\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00368}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_archive_ac74812ee962afc5976408372adaca9c8}{00368}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_archive_ac74812ee962afc5976408372adaca9c8}{\_from\_dict}}(cls,\ d:\ Mapping[str,\ Any])\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ package\_archive\ =\ cls(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ \ \ \ \ url=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}url"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ \ \ \ \ path=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}path"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00372}00372\ \ \ \ \ \ \ \ \ \ \ \ \ size=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ int,\ \textcolor{stringliteral}{"{}size"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00373}00373\ \ \ \ \ \ \ \ \ \ \ \ \ upload\_time=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ datetime,\ \textcolor{stringliteral}{"{}upload-\/time"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ \ \ \ \ hashes=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a51b8e54ac141209f5eecb832df990c55}{\_get\_required\_as}}(d,\ Mapping,\ \_validate\_hashes,\ \textcolor{stringliteral}{"{}hashes"{}}),\ \ \textcolor{comment}{\#\ type:\ ignore[type-\/abstract]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ \ \ \ \ subdirectory=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}subdirectory"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_ad87a9b139dfc27f464d4357e84ab179d}{\_validate\_path\_url}}(package\_archive.path,\ package\_archive.url)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ package\_archive}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00379}00379\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00380}00380\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00381}00381\ \textcolor{preprocessor}{@dataclass(frozen=True,\ init=False)}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00382}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_sdist}{00382}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_sdist}{PackageSdist}}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00383}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_sdist_a22d01088e14922f8e859413fd602d7e7}{00383}}\ \ \ \ \ name:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00384}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_sdist_a395467ba3b67680544c0ec801226afe7}{00384}}\ \ \ \ \ upload\_time:\ datetime\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00385}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_sdist_aac899fcdcf452056fd4fa4562999a6ee}{00385}}\ \ \ \ \ url:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00386}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_sdist_aab67e52787201b1664dfbc654ec247ab}{00386}}\ \ \ \ \ path:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00387}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_sdist_aaafebad4c9fef24209ddc7bbaff4ed62}{00387}}\ \ \ \ \ size:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00388}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_sdist_a508daea955bdd98db46b3b8216cd083e}{00388}}\ \ \ \ \ hashes:\ Mapping[str,\ str]\ \ \textcolor{comment}{\#\ type:\ ignore[misc]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00389}00389\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00390}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_sdist_a25343aa767d5dd2ad1182d951060829a}{00390}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_sdist_a25343aa767d5dd2ad1182d951060829a}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ name:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ upload\_time:\ datetime\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ url:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ path:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ size:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ hashes:\ Mapping[str,\ str],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00399}00399\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ Python\ 3.10+\ make\ dataclass\ kw\_only=True\ and\ remove\ \_\_init\_\_}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}name"{}},\ name)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}upload\_time"{}},\ upload\_time)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}url"{}},\ url)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}path"{}},\ path)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00405}00405\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}size"{}},\ size)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00406}00406\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}hashes"{}},\ hashes)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00407}00407\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00408}00408\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00409}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_sdist_a99e6a63017b171a13974bfc502ec9f2a}{00409}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_sdist_a99e6a63017b171a13974bfc502ec9f2a}{\_from\_dict}}(cls,\ d:\ Mapping[str,\ Any])\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ package\_sdist\ =\ cls(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00411}00411\ \ \ \ \ \ \ \ \ \ \ \ \ name=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}name"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00412}00412\ \ \ \ \ \ \ \ \ \ \ \ \ upload\_time=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ datetime,\ \textcolor{stringliteral}{"{}upload-\/time"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00413}00413\ \ \ \ \ \ \ \ \ \ \ \ \ url=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}url"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00414}00414\ \ \ \ \ \ \ \ \ \ \ \ \ path=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}path"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00415}00415\ \ \ \ \ \ \ \ \ \ \ \ \ size=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ int,\ \textcolor{stringliteral}{"{}size"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00416}00416\ \ \ \ \ \ \ \ \ \ \ \ \ hashes=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a51b8e54ac141209f5eecb832df990c55}{\_get\_required\_as}}(d,\ Mapping,\ \_validate\_hashes,\ \textcolor{stringliteral}{"{}hashes"{}}),\ \ \textcolor{comment}{\#\ type:\ ignore[type-\/abstract]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_ad87a9b139dfc27f464d4357e84ab179d}{\_validate\_path\_url}}(package\_sdist.path,\ package\_sdist.url)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ package\_sdist}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00420}00420\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00421}00421\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00422}00422\ \textcolor{preprocessor}{@dataclass(frozen=True,\ init=False)}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00423}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_wheel}{00423}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_wheel}{PackageWheel}}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00424}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_wheel_a16f8b7f22433de23d0e5af81a660880e}{00424}}\ \ \ \ \ name:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00425}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_wheel_a999b349f8b5dd7b1fa3389c37bccadf6}{00425}}\ \ \ \ \ upload\_time:\ datetime\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00426}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_wheel_a62eb50e45442784b2d73ec55519ebaf8}{00426}}\ \ \ \ \ url:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00427}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_wheel_a0742e0da022d32a6ef4fe19cea74d85e}{00427}}\ \ \ \ \ path:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00428}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_wheel_ae0899c1d2ec9dbe7bae231de8958afd9}{00428}}\ \ \ \ \ size:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00429}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_wheel_a84490b85d0d2653967a4b9fbe268415b}{00429}}\ \ \ \ \ hashes:\ Mapping[str,\ str]\ \ \textcolor{comment}{\#\ type:\ ignore[misc]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00430}00430\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00431}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_wheel_acd769142f706f81adaff808514c58221}{00431}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_wheel_acd769142f706f81adaff808514c58221}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00432}00432\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00433}00433\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00434}00434\ \ \ \ \ \ \ \ \ name:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00435}00435\ \ \ \ \ \ \ \ \ upload\_time:\ datetime\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00436}00436\ \ \ \ \ \ \ \ \ url:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00437}00437\ \ \ \ \ \ \ \ \ path:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ size:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ hashes:\ Mapping[str,\ str],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00440}00440\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ Python\ 3.10+\ make\ dataclass\ kw\_only=True\ and\ remove\ \_\_init\_\_}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00442}00442\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}name"{}},\ name)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00443}00443\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}upload\_time"{}},\ upload\_time)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}url"{}},\ url)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}path"{}},\ path)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00446}00446\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}size"{}},\ size)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00447}00447\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}hashes"{}},\ hashes)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00448}00448\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00449}00449\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00450}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_wheel_a3488ccbc4f7d487e7905fabf37484adb}{00450}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_wheel_a3488ccbc4f7d487e7905fabf37484adb}{\_from\_dict}}(cls,\ d:\ Mapping[str,\ Any])\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00451}00451\ \ \ \ \ \ \ \ \ package\_wheel\ =\ cls(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ \ \ \ \ name=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}name"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00453}00453\ \ \ \ \ \ \ \ \ \ \ \ \ upload\_time=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ datetime,\ \textcolor{stringliteral}{"{}upload-\/time"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00454}00454\ \ \ \ \ \ \ \ \ \ \ \ \ url=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}url"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00455}00455\ \ \ \ \ \ \ \ \ \ \ \ \ path=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}path"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ \ \ \ \ size=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ int,\ \textcolor{stringliteral}{"{}size"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ \ \ \ \ hashes=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a51b8e54ac141209f5eecb832df990c55}{\_get\_required\_as}}(d,\ Mapping,\ \_validate\_hashes,\ \textcolor{stringliteral}{"{}hashes"{}}),\ \ \textcolor{comment}{\#\ type:\ ignore[type-\/abstract]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00458}00458\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_ad87a9b139dfc27f464d4357e84ab179d}{\_validate\_path\_url}}(package\_wheel.path,\ package\_wheel.url)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00460}00460\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ package\_wheel}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00461}00461\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00462}00462\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00463}00463\ \textcolor{preprocessor}{@dataclass(frozen=True,\ init=False)}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00464}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package}{00464}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package}{Package}}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00465}00465\ \ \ \ \ name:\ NormalizedName}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00466}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_aa6f0dcd4622d3e596e76ae731286074e}{00466}}\ \ \ \ \ version:\ Version\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00467}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a77adb6bd90b1689852cba1f85826e85b}{00467}}\ \ \ \ \ marker:\ Marker\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00468}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a5b2c0877c6ccf9047af378eb6dae7cb6}{00468}}\ \ \ \ \ requires\_python:\ SpecifierSet\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00469}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_aa4243588145d4b6c9df9c407a0641a69}{00469}}\ \ \ \ \ dependencies:\ Sequence[Mapping[str,\ Any]]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00470}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_aec1dcebcfcad40d013ff2597443f3fa6}{00470}}\ \ \ \ \ vcs:\ PackageVcs\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00471}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_aeddcbb1769ef2e52f37865134eca32aa}{00471}}\ \ \ \ \ directory:\ PackageDirectory\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00472}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a75810288a42e51b6d6ff48c3823b6e2c}{00472}}\ \ \ \ \ archive:\ PackageArchive\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00473}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a0bcb9d4c013695b7e60fc1114f36af0d}{00473}}\ \ \ \ \ index:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00474}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a9b3f186acc4bdb883bfed3f9a4c5e18c}{00474}}\ \ \ \ \ sdist:\ PackageSdist\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00475}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_ac256ec72a9ddd9d4da9dc2b1b7a33d24}{00475}}\ \ \ \ \ wheels:\ Sequence[PackageWheel]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00476}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_aa5ce53143602f4fd2c6133f93c596485}{00476}}\ \ \ \ \ attestation\_identities:\ Sequence[Mapping[str,\ Any]]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00477}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a889a7b56a4286708d63b57e69010d9aa}{00477}}\ \ \ \ \ tool:\ Mapping[str,\ Any]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00478}00478\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00479}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a1719fe9b57293fbd339dc0d732631cbb}{00479}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a1719fe9b57293fbd339dc0d732631cbb}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00480}00480\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00481}00481\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00482}00482\ \ \ \ \ \ \ \ \ name:\ NormalizedName,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00483}00483\ \ \ \ \ \ \ \ \ version:\ Version\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ marker:\ Marker\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00485}00485\ \ \ \ \ \ \ \ \ requires\_python:\ SpecifierSet\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00486}00486\ \ \ \ \ \ \ \ \ dependencies:\ Sequence[Mapping[str,\ Any]]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00487}00487\ \ \ \ \ \ \ \ \ vcs:\ PackageVcs\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00488}00488\ \ \ \ \ \ \ \ \ directory:\ PackageDirectory\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00489}00489\ \ \ \ \ \ \ \ \ archive:\ PackageArchive\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00490}00490\ \ \ \ \ \ \ \ \ index:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00491}00491\ \ \ \ \ \ \ \ \ sdist:\ PackageSdist\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00492}00492\ \ \ \ \ \ \ \ \ wheels:\ Sequence[PackageWheel]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00493}00493\ \ \ \ \ \ \ \ \ attestation\_identities:\ Sequence[Mapping[str,\ Any]]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00494}00494\ \ \ \ \ \ \ \ \ tool:\ Mapping[str,\ Any]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00495}00495\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00496}00496\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ Python\ 3.10+\ make\ dataclass\ kw\_only=True\ and\ remove\ \_\_init\_\_}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00497}00497\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}name"{}},\ name)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00498}00498\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}version"{}},\ version)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00499}00499\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}marker"{}},\ marker)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}requires\_python"{}},\ requires\_python)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00501}00501\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}dependencies"{}},\ dependencies)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00502}00502\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}vcs"{}},\ vcs)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00503}00503\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}directory"{}},\ directory)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00504}00504\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}archive"{}},\ archive)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00505}00505\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}index"{}},\ index)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00506}00506\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}sdist"{}},\ sdist)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}wheels"{}},\ wheels)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00508}00508\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}attestation\_identities"{}},\ attestation\_identities)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00509}00509\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}tool"{}},\ tool)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00510}00510\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00511}00511\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00512}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a4736c78170a640b4cd4a3ff1753cf90f}{00512}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a4736c78170a640b4cd4a3ff1753cf90f}{\_from\_dict}}(cls,\ d:\ Mapping[str,\ Any])\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00513}00513\ \ \ \ \ \ \ \ \ package\ =\ cls(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00514}00514\ \ \ \ \ \ \ \ \ \ \ \ \ name=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a51b8e54ac141209f5eecb832df990c55}{\_get\_required\_as}}(d,\ str,\ \_validate\_normalized\_name,\ \textcolor{stringliteral}{"{}name"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ \ \ \ \ version=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a80173d8ad54c21fc6a7fa460b3d7048e}{\_get\_as}}(d,\ str,\ Version,\ \textcolor{stringliteral}{"{}version"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00516}00516\ \ \ \ \ \ \ \ \ \ \ \ \ requires\_python=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a80173d8ad54c21fc6a7fa460b3d7048e}{\_get\_as}}(d,\ str,\ SpecifierSet,\ \textcolor{stringliteral}{"{}requires-\/python"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00517}00517\ \ \ \ \ \ \ \ \ \ \ \ \ dependencies=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a3a04ecc8d8ffe7eaa3aaf02a8c7298d8}{\_get\_sequence}}(d,\ Mapping,\ \textcolor{stringliteral}{"{}dependencies"{}}),\ \ \textcolor{comment}{\#\ type:\ ignore[type-\/abstract]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00518}00518\ \ \ \ \ \ \ \ \ \ \ \ \ marker=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a80173d8ad54c21fc6a7fa460b3d7048e}{\_get\_as}}(d,\ str,\ Marker,\ \textcolor{stringliteral}{"{}marker"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ \ \ \ \ vcs=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_abb511b6e758e6f66905338b74b5850a3}{\_get\_object}}(d,\ PackageVcs,\ \textcolor{stringliteral}{"{}vcs"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ \ \ \ \ directory=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_abb511b6e758e6f66905338b74b5850a3}{\_get\_object}}(d,\ PackageDirectory,\ \textcolor{stringliteral}{"{}directory"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \ \ \ \ archive=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_abb511b6e758e6f66905338b74b5850a3}{\_get\_object}}(d,\ PackageArchive,\ \textcolor{stringliteral}{"{}archive"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \ \ \ \ index=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ str,\ \textcolor{stringliteral}{"{}index"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00523}00523\ \ \ \ \ \ \ \ \ \ \ \ \ sdist=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_abb511b6e758e6f66905338b74b5850a3}{\_get\_object}}(d,\ PackageSdist,\ \textcolor{stringliteral}{"{}sdist"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ \ \ \ \ wheels=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a31a1fe75eff2e38e88cbf9044a8de8c0}{\_get\_sequence\_of\_objects}}(d,\ PackageWheel,\ \textcolor{stringliteral}{"{}wheels"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00525}00525\ \ \ \ \ \ \ \ \ \ \ \ \ attestation\_identities=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a3a04ecc8d8ffe7eaa3aaf02a8c7298d8}{\_get\_sequence}}(d,\ Mapping,\ \textcolor{stringliteral}{"{}attestation-\/identities"{}}),\ \ \textcolor{comment}{\#\ type:\ ignore[type-\/abstract]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00526}00526\ \ \ \ \ \ \ \ \ \ \ \ \ tool=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ Mapping,\ \textcolor{stringliteral}{"{}tool"{}}),\ \ \textcolor{comment}{\#\ type:\ ignore[type-\/abstract]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00528}00528\ \ \ \ \ \ \ \ \ distributions\ =\ bool(package.sdist)\ +\ len(package.wheels\ \textcolor{keywordflow}{or}\ [])}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00529}00529\ \ \ \ \ \ \ \ \ direct\_urls\ =\ (}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00530}00530\ \ \ \ \ \ \ \ \ \ \ \ \ bool(package.vcs)\ +\ bool(package.directory)\ +\ bool(package.archive)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00531}00531\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00532}00532\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ distributions\ >\ 0\ \textcolor{keywordflow}{and}\ direct\_urls\ >\ 0:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00533}00533\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}None\ of\ vcs,\ directory,\ archive\ must\ be\ set\ if\ sdist\ or\ wheels\ are\ set"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00535}00535\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00536}00536\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ distributions\ ==\ 0\ \textcolor{keywordflow}{and}\ direct\_urls\ !=\ 1:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00537}00537\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00538}00538\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Exactly\ one\ of\ vcs,\ directory,\ archive\ must\ be\ set\ "{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00539}00539\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}if\ sdist\ and\ wheels\ are\ not\ set"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00540}00540\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00541}00541\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00542}00542\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i,\ attestation\_identity\ \textcolor{keywordflow}{in}\ enumerate(\ \ \textcolor{comment}{\#\ noqa:\ B007}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00543}00543\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ package.attestation\_identities\ \textcolor{keywordflow}{or}\ []}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00544}00544\ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00545}00545\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a5e9ba2b9a348828fd3a7d8969db6676f}{\_get\_required}}(attestation\_identity,\ str,\ \textcolor{stringliteral}{"{}kind"{}})}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00546}00546\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00547}00547\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_validation_error}{PylockValidationError}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ e,\ context=f\textcolor{stringliteral}{"{}attestation-\/identities[\{i\}]"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00549}00549\ \ \ \ \ \ \ \ \ \ \ \ \ )\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00550}00550\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ package}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00551}00551\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00552}00552\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00553}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a11690c9371973964c6a3aa500c3b2f54}{00553}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a11690c9371973964c6a3aa500c3b2f54}{is\_direct}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00554}00554\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordflow}{not}\ (self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_a9b3f186acc4bdb883bfed3f9a4c5e18c}{sdist}}\ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_package_ac256ec72a9ddd9d4da9dc2b1b7a33d24}{wheels}})}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00555}00555\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00556}00556\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00557}00557\ \textcolor{preprocessor}{@dataclass(frozen=True,\ init=False)}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00558}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock}{00558}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock}{Pylock}}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00559}00559\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ class\ representing\ a\ pylock\ file."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00560}00560\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00561}00561\ \ \ \ \ lock\_version:\ Version}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00562}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a686c4f2337efaa1e114cac7ecebc097d}{00562}}\ \ \ \ \ environments:\ Sequence[Marker]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00563}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_ac1d9c4f922838de2db286d85ad4c60e6}{00563}}\ \ \ \ \ requires\_python:\ SpecifierSet\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00564}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a134f72807f2e54079251d926242542ed}{00564}}\ \ \ \ \ extras:\ Sequence[NormalizedName]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00565}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_ad9a13ec6d7eb0497056cc5aa629d2861}{00565}}\ \ \ \ \ dependency\_groups:\ Sequence[str]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00566}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a6015754a864c57c4d0e210d4a160449d}{00566}}\ \ \ \ \ default\_groups:\ Sequence[str]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00567}00567\ \ \ \ \ created\_by:\ str\ \ \textcolor{comment}{\#\ type:\ ignore[misc]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00568}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_aa42fb096378aeca8ea9f9f660edee236}{00568}}\ \ \ \ \ packages:\ Sequence[Package]\ \ \textcolor{comment}{\#\ type:\ ignore[misc]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00569}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a15a12e456cb2768c255af4df7c6939cc}{00569}}\ \ \ \ \ tool:\ Mapping[str,\ Any]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00570}00570\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00571}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a5e5edbd56ed2664f5a02b1ab508592cb}{00571}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a5e5edbd56ed2664f5a02b1ab508592cb}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00572}00572\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00573}00573\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00574}00574\ \ \ \ \ \ \ \ \ lock\_version:\ Version,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00575}00575\ \ \ \ \ \ \ \ \ environments:\ Sequence[Marker]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00576}00576\ \ \ \ \ \ \ \ \ requires\_python:\ SpecifierSet\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00577}00577\ \ \ \ \ \ \ \ \ extras:\ Sequence[NormalizedName]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00578}00578\ \ \ \ \ \ \ \ \ dependency\_groups:\ Sequence[str]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00579}00579\ \ \ \ \ \ \ \ \ default\_groups:\ Sequence[str]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00580}00580\ \ \ \ \ \ \ \ \ created\_by:\ str,}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00581}00581\ \ \ \ \ \ \ \ \ packages:\ Sequence[Package],}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00582}00582\ \ \ \ \ \ \ \ \ tool:\ Mapping[str,\ Any]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00583}00583\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00584}00584\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ Python\ 3.10+\ make\ dataclass\ kw\_only=True\ and\ remove\ \_\_init\_\_}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00585}00585\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}lock\_version"{}},\ lock\_version)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00586}00586\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}environments"{}},\ environments)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00587}00587\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}requires\_python"{}},\ requires\_python)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00588}00588\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}extras"{}},\ extras)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00589}00589\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}dependency\_groups"{}},\ dependency\_groups)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00590}00590\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}default\_groups"{}},\ default\_groups)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00591}00591\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}created\_by"{}},\ created\_by)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00592}00592\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}packages"{}},\ packages)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00593}00593\ \ \ \ \ \ \ \ \ object.\_\_setattr\_\_(self,\ \textcolor{stringliteral}{"{}tool"{}},\ tool)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00594}00594\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00595}00595\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00596}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a391b5384c7866bafcd05ae66d9c06062}{00596}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a391b5384c7866bafcd05ae66d9c06062}{\_from\_dict}}(cls,\ d:\ Mapping[str,\ Any])\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00597}00597\ \ \ \ \ \ \ \ \ pylock\ =\ cls(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00598}00598\ \ \ \ \ \ \ \ \ \ \ \ \ lock\_version=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a51b8e54ac141209f5eecb832df990c55}{\_get\_required\_as}}(d,\ str,\ Version,\ \textcolor{stringliteral}{"{}lock-\/version"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00599}00599\ \ \ \ \ \ \ \ \ \ \ \ \ environments=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a959b8ead8bbddf3c130a018540cdc87b}{\_get\_sequence\_as}}(d,\ str,\ Marker,\ \textcolor{stringliteral}{"{}environments"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00600}00600\ \ \ \ \ \ \ \ \ \ \ \ \ extras=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a959b8ead8bbddf3c130a018540cdc87b}{\_get\_sequence\_as}}(d,\ str,\ \_validate\_normalized\_name,\ \textcolor{stringliteral}{"{}extras"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00601}00601\ \ \ \ \ \ \ \ \ \ \ \ \ dependency\_groups=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a3a04ecc8d8ffe7eaa3aaf02a8c7298d8}{\_get\_sequence}}(d,\ str,\ \textcolor{stringliteral}{"{}dependency-\/groups"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00602}00602\ \ \ \ \ \ \ \ \ \ \ \ \ default\_groups=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a3a04ecc8d8ffe7eaa3aaf02a8c7298d8}{\_get\_sequence}}(d,\ str,\ \textcolor{stringliteral}{"{}default-\/groups"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00603}00603\ \ \ \ \ \ \ \ \ \ \ \ \ created\_by=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a5e9ba2b9a348828fd3a7d8969db6676f}{\_get\_required}}(d,\ str,\ \textcolor{stringliteral}{"{}created-\/by"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00604}00604\ \ \ \ \ \ \ \ \ \ \ \ \ requires\_python=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a80173d8ad54c21fc6a7fa460b3d7048e}{\_get\_as}}(d,\ str,\ SpecifierSet,\ \textcolor{stringliteral}{"{}requires-\/python"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00605}00605\ \ \ \ \ \ \ \ \ \ \ \ \ packages=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_aba2aa3fc67c8a9f4a17f4fdfe6c908d2}{\_get\_required\_sequence\_of\_objects}}(d,\ Package,\ \textcolor{stringliteral}{"{}packages"{}}),}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00606}00606\ \ \ \ \ \ \ \ \ \ \ \ \ tool=\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock_a0e5b0a937c2fd6a4940a89b709af6811}{\_get}}(d,\ Mapping,\ \textcolor{stringliteral}{"{}tool"{}}),\ \ \textcolor{comment}{\#\ type:\ ignore[type-\/abstract]}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00607}00607\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00608}00608\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version}{Version}}(\textcolor{stringliteral}{"{}1"{}})\ <=\ pylock.lock\_version\ <\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version}{Version}}(\textcolor{stringliteral}{"{}2"{}}):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00609}00609\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_unsupported_version_error}{PylockUnsupportedVersionError}}(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00610}00610\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}pylock\ version\ \{pylock.lock\_version\}\ is\ not\ supported"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00611}00611\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00612}00612\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ pylock.lock\_version\ >\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1version_1_1_version}{Version}}(\textcolor{stringliteral}{"{}1.0"{}}):}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00613}00613\ \ \ \ \ \ \ \ \ \ \ \ \ \_logger.warning(}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00614}00614\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}pylock\ minor\ version\ \%s\ is\ not\ supported"{}},\ pylock.lock\_version}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00615}00615\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00616}00616\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ pylock}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00617}00617\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00618}00618\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00619}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a471d98bbb8e89f8f885fbf37e3f906e3}{00619}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a471d98bbb8e89f8f885fbf37e3f906e3}{from\_dict}}(cls,\ d:\ Mapping[str,\ Any],\ /)\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00620}00620\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Create\ and\ validate\ a\ Pylock\ instance\ from\ a\ TOML\ dictionary.}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00621}00621\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00622}00622\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Raises\ :class:\`{}PylockValidationError\`{}\ if\ the\ input\ data\ is\ not}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00623}00623\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ spec-\/compliant.}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00624}00624\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00625}00625\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a391b5384c7866bafcd05ae66d9c06062}{\_from\_dict}}(d)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00626}00626\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00627}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a0a7abc57e1b9443b3ed8f6aadc73e43a}{00627}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a0a7abc57e1b9443b3ed8f6aadc73e43a}{to\_dict}}(self)\ -\/>\ Mapping[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00628}00628\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Convert\ the\ Pylock\ instance\ to\ a\ TOML\ dictionary."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00629}00629\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dataclasses.asdict(self,\ dict\_factory=\_toml\_dict\_factory)}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00630}00630\ }
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00631}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a481241befce662d08022edfcaf36f6f2}{00631}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a481241befce662d08022edfcaf36f6f2}{validate}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00632}00632\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Validate\ the\ Pylock\ instance\ against\ the\ specification.}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00633}00633\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00634}00634\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Raises\ :class:\`{}PylockValidationError\`{}\ otherwise."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__vendor_2packaging_2pylock_8py_source_l00635}00635\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a471d98bbb8e89f8f885fbf37e3f906e3}{from\_dict}}(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1pylock_1_1_pylock_a0a7abc57e1b9443b3ed8f6aadc73e43a}{to\_dict}}())}
+
+\end{DoxyCode}

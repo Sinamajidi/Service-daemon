@@ -1,0 +1,1045 @@
+\doxysection{pool.\+py}
+\hypertarget{psycopg__pool_2pool_8py_source}{}\label{psycopg__pool_2pool_8py_source}\index{venv/Lib/site-\/packages/psycopg\_pool/pool.py@{venv/Lib/site-\/packages/psycopg\_pool/pool.py}}
+\doxymbox{\hyperlink{psycopg__pool_2pool_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg__pool_1_1pool}{00001}}\ \textcolor{comment}{\#\ WARNING:\ this\ file\ is\ auto-\/generated\ by\ 'async\_to\_sync.py'}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00002}00002\ \textcolor{comment}{\#\ from\ the\ original\ file\ 'pool\_async.py'}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00003}00003\ \textcolor{comment}{\#\ DO\ NOT\ CHANGE!\ Change\ the\ original\ file\ instead.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00004}00004\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00005}00005\ \textcolor{stringliteral}{Psycopg\ connection\ pool\ module\ (sync\ version).}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00006}00006\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00008}00008\ \textcolor{comment}{\#\ Copyright\ (C)\ 2021\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00012}00012\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00013}00013\ \textcolor{keyword}{import}\ warnings}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00014}00014\ \textcolor{keyword}{from}\ abc\ \textcolor{keyword}{import}\ ABC,\ abstractmethod}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00015}00015\ \textcolor{keyword}{from}\ time\ \textcolor{keyword}{import}\ monotonic}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00016}00016\ \textcolor{keyword}{from}\ types\ \textcolor{keyword}{import}\ TracebackType}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00017}00017\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Any,\ Generic,\ cast}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00018}00018\ \textcolor{keyword}{from}\ weakref\ \textcolor{keyword}{import}\ ref}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00019}00019\ \textcolor{keyword}{from}\ contextlib\ \textcolor{keyword}{import}\ contextmanager}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00020}00020\ \textcolor{keyword}{from}\ collections\ \textcolor{keyword}{import}\ deque}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00021}00021\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterator}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00023}00023\ \textcolor{keyword}{from}\ psycopg\ \textcolor{keyword}{import}\ Connection}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00024}00024\ \textcolor{keyword}{from}\ psycopg\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00025}00025\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepsycopg_1_1pq}{psycopg.pq}}\ \textcolor{keyword}{import}\ TransactionStatus}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00027}00027\ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ CT,\ ConnectFailedCB,\ ConnectionCB,\ ConninfoParam,\ KwargsParam}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00028}00028\ \textcolor{keyword}{from}\ .base\ \textcolor{keyword}{import}\ AttemptWithBackoff,\ BasePool}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00029}00029\ \textcolor{keyword}{from}\ .sched\ \textcolor{keyword}{import}\ Scheduler}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00030}00030\ \textcolor{keyword}{from}\ .errors\ \textcolor{keyword}{import}\ PoolClosed,\ PoolTimeout,\ TooManyRequests}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00031}00031\ \textcolor{keyword}{from}\ .\_compat\ \textcolor{keyword}{import}\ PSYCOPG\_VERSION,\ PoolConnection,\ Self}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00032}00032\ \textcolor{keyword}{from}\ .\_acompat\ \textcolor{keyword}{import}\ Condition,\ Event,\ Lock,\ Queue,\ Worker,\ current\_thread\_name}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00033}00033\ \textcolor{keyword}{from}\ .\_acompat\ \textcolor{keyword}{import}\ gather,\ sleep,\ spawn}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00035}\doxymbox{\hyperlink{namespacepsycopg__pool_1_1pool_a850d586ca375179ecb009fb115cd4666}{00035}}\ CLIENT\_EXCEPTIONS\ =\ Exception}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00037}\doxymbox{\hyperlink{namespacepsycopg__pool_1_1pool_a1832c56e2eaf9b17d7ef87bc68b8bd7b}{00037}}\ logger\ =\ logging.getLogger(\textcolor{stringliteral}{"{}psycopg.pool"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00040}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00040}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{ConnectionPool}}(Generic[CT],\ BasePool):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00041}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00041}}\ \ \ \ \ \_pool:\ deque[CT]}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00043}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aedad54331bcefc5aa9d409ec39f769b0}{00043}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aedad54331bcefc5aa9d409ec39f769b0}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ conninfo:\ ConninfoParam\ =\ \textcolor{stringliteral}{"{}"{}},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ connection\_class:\ type[CT]\ =\ cast(type[CT],\ Connection),}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ kwargs:\ KwargsParam\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ min\_size:\ int\ =\ 4,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ max\_size:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ open:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ configure:\ ConnectionCB[CT]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ check:\ ConnectionCB[CT]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ reset:\ ConnectionCB[CT]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ name:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ close\_returns:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ timeout:\ float\ =\ 30.0,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ max\_waiting:\ int\ =\ 0,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ max\_lifetime:\ float\ =\ 60\ *\ 60.0,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ max\_idle:\ float\ =\ 10\ *\ 60.0,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ reconnect\_timeout:\ float\ =\ 5\ *\ 60.0,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ reconnect\_failed:\ ConnectFailedCB\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ num\_workers:\ int\ =\ 3,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00064}00064\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ close\_returns\ \textcolor{keywordflow}{and}\ PSYCOPG\_VERSION\ <\ (3,\ 3):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ connection\_class\ \textcolor{keywordflow}{is}\ Connection:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ connection\_class\ =\ cast(type[CT],\ PoolConnection)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Using\ 'close\_returns=True'\ and\ a\ non-\/standard\ 'connection\_class'\ requires\ psycopg\ 3.3\ or\ newer.\ Please\ check\ the\ docs\ at\ https://www.psycopg.org/psycopg3/docs/advanced/pool.html\#pool-\/sqlalchemy\ for\ a\ workaround."{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00072}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a25fcd6a83ecb21f231b992ecc9cdaa79}{00072}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a25fcd6a83ecb21f231b992ecc9cdaa79}{conninfo}}\ =\ conninfo}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00073}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a95de5d5ed425244bfefc8235192a40a8}{00073}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a95de5d5ed425244bfefc8235192a40a8}{kwargs}}\ =\ kwargs}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00074}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aaf9b8d5d85e4aa56cfe89bf63fbf7ca6}{00074}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aaf9b8d5d85e4aa56cfe89bf63fbf7ca6}{connection\_class}}\ =\ connection\_class}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00075}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af3f29a6d2d506d4a9c51cb85fde846c0}{00075}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af3f29a6d2d506d4a9c51cb85fde846c0}{\_check}}\ =\ check}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00076}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_add707523bdedfb7e2e053b382c349702}{00076}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_add707523bdedfb7e2e053b382c349702}{\_configure}}\ =\ configure}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00077}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aead53cc1ade905860d559d99eb983248}{00077}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aead53cc1ade905860d559d99eb983248}{\_reset}}\ =\ reset}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00078}00078\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00079}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a6d8b9df7a4ac223d6797ba2cebb94473}{00079}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a6d8b9df7a4ac223d6797ba2cebb94473}{\_reconnect\_failed}}\ =\ reconnect\_failed}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ these\ are\ asyncio\ objects,\ make\ sure\ to\ create\ them\ on\ open}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ to\ attach\ them\ to\ the\ right\ loop.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00083}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{00083}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:\ Lock}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00084}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab1adcb409c1b51f9d5429a8a1cb12edf}{00084}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab1adcb409c1b51f9d5429a8a1cb12edf}{\_sched}}:\ Scheduler}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00085}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a298b66248563c4ef017daef30f3e1d7f}{00085}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a298b66248563c4ef017daef30f3e1d7f}{\_tasks}}:\ Queue[MaintenanceTask]}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00087}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad3bc52fd48a9a2af8e75d352c98505b1}{00087}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad3bc52fd48a9a2af8e75d352c98505b1}{\_waiting}}\ =\ deque[WaitingClient[CT]]()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ to\ notify\ that\ the\ pool\ is\ full}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00090}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ada603a8a93881367402ffa7c395c7eb5}{00090}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ada603a8a93881367402ffa7c395c7eb5}{\_pool\_full\_event}}:\ Event\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00091}00091\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00092}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a50ee5010938610a037cf6ef07d12e6f9}{00092}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a50ee5010938610a037cf6ef07d12e6f9}{\_sched\_runner}}:\ Worker\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00093}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac5b708c9cf31aacb0cecebe099b599bb}{00093}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac5b708c9cf31aacb0cecebe099b599bb}{\_workers}}:\ list[Worker]\ =\ []}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aedad54331bcefc5aa9d409ec39f769b0}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ min\_size=min\_size,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \ \ \ \ max\_size=max\_size,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \ \ \ \ name=name,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ close\_returns=close\_returns,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \ \ \ \ timeout=timeout,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ max\_waiting=max\_waiting,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ max\_lifetime=max\_lifetime,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ max\_idle=max\_idle,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ reconnect\_timeout=reconnect\_timeout,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ num\_workers=num\_workers,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ open\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \ \ \ \ open\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a00863dd74d29e1898398f7f0bc489e3e}{\_open\_implicit}}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00110}00110\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ open:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af9fe7c430870576468ea35b43d17d52b}{\_open}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00113}00113\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00114}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a7f2ee8603b2e09c827d2fd9dbe0c5209}{00114}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a7f2ee8603b2e09c827d2fd9dbe0c5209}{\_\_del\_\_}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ '\_closed'\ property\ is\ not\ set\ we\ probably\ failed\ in\ \_\_init\_\_.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Don't\ try\ anything\ complicated\ as\ probably\ it\ won't\ work.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ getattr(self,\ \textcolor{stringliteral}{"{}\_closed"{}},\ \textcolor{keyword}{True}):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ workers\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_abfaeac09031e4ccd1e036949c569acb9}{\_signal\_stop\_worker}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ hint\ =\ \textcolor{stringliteral}{"{}you\ can\ try\ to\ call\ 'close()'\ explicitly\ or\ to\ use\ the\ pool\ as\ context\ manager"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ gather(*workers,\ timeout=5.0,\ timeout\_hint=hint)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00123}00123\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00124}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_adc97b4a534433d254a25a4539fc7d56d}{00124}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_adc97b4a534433d254a25a4539fc7d56d}{\_check\_open\_getconn}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_adc97b4a534433d254a25a4539fc7d56d}{\_check\_open\_getconn}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00126}00126\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00127}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00127}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a00863dd74d29e1898398f7f0bc489e3e}{\_open\_implicit}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a00863dd74d29e1898398f7f0bc489e3e}{\_open\_implicit}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00129}00129\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ warnings.warn(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}the\ default\ for\ the\ \{type(self).\_\_name\_\_\}\ 'open'\ parameter\ will\ become\ 'False'\ in\ a\ future\ release.\ Please\ use\ open=\{\{True|False\}\}\ explicitly,\ or\ use\ the\ pool\ as\ context\ manager\ using:\ \`{}with\ \{type(self).\_\_name\_\_\}(...)\ as\ pool:\ ...`"{}},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ DeprecationWarning,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00134}00134\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00135}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac32fff56fa15382562c5eab09898216b}{00135}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac32fff56fa15382562c5eab09898216b}{wait}}(self,\ timeout:\ float\ =\ 30.0)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00137}00137\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Wait\ for\ the\ pool\ to\ be\ full\ (with\ \`{}min\_size\`{}\ connections)\ after\ creation.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00138}00138\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00139}00139\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Close\ the\ pool,\ and\ raise\ \`{}PoolTimeout\`{},\ if\ not\ ready\ within\ *timeout*}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00140}00140\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ sec.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00141}00141\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00142}00142\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Calling\ this\ method\ is\ not\ mandatory:\ you\ can\ try\ and\ use\ the\ pool}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00143}00143\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ immediately\ after\ its\ creation.\ The\ first\ client\ will\ be\ served\ as\ soon}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00144}00144\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ as\ a\ connection\ is\ ready.\ You\ can\ use\ this\ method\ if\ you\ prefer\ your}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00145}00145\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ program\ to\ terminate\ in\ case\ the\ environment\ is\ not\ configured}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00146}00146\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ properly,\ rather\ than\ trying\ to\ stay\ up\ the\ hardest\ it\ can.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00147}00147\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a40385389cac498a0748eabb73a8c665c}{\_check\_open\_getconn}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00149}00149\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ada603a8a93881367402ffa7c395c7eb5}{\_pool\_full\_event}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}})\ >=\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab10a06231dd530addb3a32313fdce590}{\_min\_size}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ada603a8a93881367402ffa7c395c7eb5}{\_pool\_full\_event}}\ =\ Event()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00156}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00156}}\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}waiting\ for\ pool\ \%r\ initialization"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ada603a8a93881367402ffa7c395c7eb5}{\_pool\_full\_event}}.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac32fff56fa15382562c5eab09898216b}{wait}}(timeout):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ade247b8f525a2edd5ae761a42909a47f}{close}}()\ \ \textcolor{comment}{\#\ stop\ all\ the\ tasks}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg__pool_1_1errors_1_1_pool_timeout}{PoolTimeout}}(f\textcolor{stringliteral}{"{}pool\ initialization\ incomplete\ after\ \{timeout\}\ sec"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00160}00160\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ada603a8a93881367402ffa7c395c7eb5}{\_pool\_full\_event}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ada603a8a93881367402ffa7c395c7eb5}{\_pool\_full\_event}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00164}00164\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}pool\ \%r\ is\ ready\ to\ use"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00167}00167\ \ \ \ \ \textcolor{preprocessor}{@contextmanager}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00168}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a3a01f344434bac2df89c3591e8620e1a}{00168}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a3a01f344434bac2df89c3591e8620e1a}{connection}}(self,\ timeout:\ float\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ Iterator[CT]:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Context\ manager\ to\ obtain\ a\ connection\ from\ the\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00170}00170\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00171}00171\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ connection\ immediately\ if\ available,\ otherwise\ wait\ up\ to}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00172}00172\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *timeout*\ or\ \`{}self.timeout\`{}\ seconds\ and\ throw\ \`{}PoolTimeout\`{}\ if\ a}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00173}00173\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ connection\ is\ not\ available\ in\ time.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00174}00174\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00175}00175\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Upon\ context\ exit,\ return\ the\ connection\ to\ the\ pool.\ Apply\ the\ normal}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00176}00176\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :ref:\`{}connection\ context\ behaviour\ <with-\/connection>\`{}\ (commit/rollback}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00177}00177\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ the\ transaction\ in\ case\ of\ success/error).\ If\ the\ connection\ is\ no\ more}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00178}00178\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ in\ working\ state,\ replace\ it\ with\ a\ new\ one.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00179}00179\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ conn\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a6d3f22d81efe411db13fdf8b0ea4acdb}{getconn}}(timeout=timeout)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \ \ \ \ t0\ =\ monotonic()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ conn:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ conn}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a739ab7aa0e29c44c7d82ad972bd3b8fa}{putconn}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ \ \ \ \ t1\ =\ monotonic()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a17bca7f0506e6dbddd4d3a742531b779}{\_USAGE\_MS}}]\ +=\ int(1000.0\ *\ (t1\ -\/\ t0))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00189}00189\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00190}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a6d3f22d81efe411db13fdf8b0ea4acdb}{00190}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a6d3f22d81efe411db13fdf8b0ea4acdb}{getconn}}(self,\ timeout:\ float\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ CT:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Obtain\ a\ connection\ from\ the\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00192}00192\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00193}00193\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ You\ should\ preferably\ use\ \`{}connection()\`{}.\ Use\ this\ function\ only\ if}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00194}00194\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ it\ is\ not\ possible\ to\ use\ the\ connection\ as\ context\ manager.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00195}00195\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00196}00196\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ After\ using\ this\ function\ you\ *must*\ call\ a\ corresponding\ \`{}putconn()\`{}:}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00197}00197\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ failing\ to\ do\ so\ will\ deplete\ the\ pool.\ A\ depleted\ pool\ is\ a\ sad\ pool:}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00198}00198\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ you\ don't\ want\ a\ depleted\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00199}00199\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ timeout\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ timeout\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a919ccc15b0f1d898cc773f075bb47095}{timeout}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ deadline\ =\ monotonic()\ +\ timeout}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00203}00203\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}connection\ requested\ from\ \%r"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_aef4c64522a72edb8b48c1a36798b1246}{\_REQUESTS\_NUM}}]\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00206}00206\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a40385389cac498a0748eabb73a8c665c}{\_check\_open\_getconn}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00208}00208\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_afbd0a192dd04b8f0cbec64b945768f04}{\_getconn\_with\_check\_loop}}(deadline)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Re-\/raise\ the\ timeout\ exception\ presenting\ the\ user\ the\ global}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ timeout,\ not\ the\ per-\/attempt\ one.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ PoolTimeout:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg__pool_1_1errors_1_1_pool_timeout}{PoolTimeout}}(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}couldn't\ get\ a\ connection\ after\ \{timeout:.2f\}\ sec"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \ \ \ \ )\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00217}00217\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00218}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_afbd0a192dd04b8f0cbec64b945768f04}{00218}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_afbd0a192dd04b8f0cbec64b945768f04}{\_getconn\_with\_check\_loop}}(self,\ deadline:\ float)\ -\/>\ CT:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ attempt:\ AttemptWithBackoff\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00220}00220\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ \textcolor{keyword}{True}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a3829ce4fbed5fce260c928d4894e4148}{\_getconn\_unchecked}}(deadline\ -\/\ monotonic())}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af8b213a866d46e7a64bb5dc6a8bb0104}{\_check\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ CLIENT\_EXCEPTIONS:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ae07f8bcda86ee600083c06e20fe2adc9}{\_putconn}}(conn,\ from\_getconn=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}connection\ given\ by\ \%r"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ conn}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00230}00230\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Delay\ further\ checks\ to\ avoid\ a\ busy\ loop,\ using\ the\ same}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ backoff\ policy\ used\ in\ reconnection\ attempts.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \ \ \ \ now\ =\ monotonic()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ attempt:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ attempt\ =\ \doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_attempt_with_backoff}{AttemptWithBackoff}}(timeout=deadline\ -\/\ now)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ attempt.update\_delay(now)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00238}00238\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ attempt.time\_to\_give\_up(now):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg__pool_1_1errors_1_1_pool_timeout}{PoolTimeout}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ sleep(attempt.delay)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00243}00243\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00244}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a3829ce4fbed5fce260c928d4894e4148}{00244}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a3829ce4fbed5fce260c928d4894e4148}{\_getconn\_unchecked}}(self,\ timeout:\ float)\ -\/>\ CT:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Critical\ section:\ decide\ here\ if\ there's\ a\ connection\ ready}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ or\ if\ the\ client\ needs\ to\ wait.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (conn\ :=\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af0ecf534fe2125a2c3e3db0713849c4e}{\_get\_ready\_connection}}(timeout)):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ No\ connection\ available:\ put\ the\ client\ in\ the\ waiting\ queue}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ t0\ =\ monotonic()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pos:\ WaitingClient[CT]\ =\ \doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client}{WaitingClient}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad3bc52fd48a9a2af8e75d352c98505b1}{\_waiting}}.append(pos)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a5d00ed2cc2326d3766295edb4cbd7395}{\_REQUESTS\_QUEUED}}]\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00254}00254\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ there\ is\ space\ for\ the\ pool\ to\ grow,\ let's\ do\ it}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ae72fab9f2429958f8110dd47107ecdf1}{\_maybe\_grow\_pool}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00257}00257\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ we\ are\ in\ the\ waiting\ queue,\ wait\ to\ be\ assigned\ a\ connection}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ (outside\ the\ critical\ section,\ so\ only\ the\ waiting\ client\ is\ locked)}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ conn:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ pos.wait(timeout=timeout)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ CLIENT\_EXCEPTIONS:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a600041e89f960180d49d17b489397d48}{\_REQUESTS\_ERRORS}}]\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ t1\ =\ monotonic()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a5f03b9455e40982cf638d08c80af5530}{\_REQUESTS\_WAIT\_MS}}]\ +=\ int(1000.0\ *\ (t1\ -\/\ t0))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00269}00269\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Tell\ the\ connection\ it\ belongs\ to\ a\ pool\ to\ avoid\ closing\ on\ \_\_exit\_\_}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Note\ that\ this\ property\ shouldn't\ be\ set\ while\ the\ connection\ is\ in}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ pool,\ to\ avoid\ to\ create\ a\ reference\ loop.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ conn.\_pool\ =\ self}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ conn}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00275}00275\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00276}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af0ecf534fe2125a2c3e3db0713849c4e}{00276}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af0ecf534fe2125a2c3e3db0713849c4e}{\_get\_ready\_connection}}(self,\ timeout:\ float\ |\ \textcolor{keywordtype}{None})\ -\/>\ CT\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ a\ connection,\ if\ the\ client\ deserves\ one."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ timeout\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ timeout\ <=\ 0.0:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg__pool_1_1errors_1_1_pool_timeout}{PoolTimeout}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00280}00280\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ conn:\ CT\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Take\ a\ connection\ ready\ out\ of\ the\ pool}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}}.popleft()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00285}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00285}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}})\ <\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab17defdc08c19ff61d9c8ec5f4301e4f}{\_nconns\_min}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab17defdc08c19ff61d9c8ec5f4301e4f}{\_nconns\_min}}\ =\ len(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a32e0726362c3f93297c592679974c283}{max\_waiting}}\ \textcolor{keywordflow}{and}\ len(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad3bc52fd48a9a2af8e75d352c98505b1}{\_waiting}})\ >=\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a32e0726362c3f93297c592679974c283}{max\_waiting}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a600041e89f960180d49d17b489397d48}{\_REQUESTS\_ERRORS}}]\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg__pool_1_1errors_1_1_too_many_requests}{TooManyRequests}}(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}the\ pool\ \{self.name!r\}\ has\ already\ \{len(self.\_waiting)\}\ requests\ waiting"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ conn}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00293}00293\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00294}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af8b213a866d46e7a64bb5dc6a8bb0104}{00294}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af8b213a866d46e7a64bb5dc6a8bb0104}{\_check\_connection}}(self,\ conn:\ CT)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af3f29a6d2d506d4a9c51cb85fde846c0}{\_check}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00297}00297\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00298}00298\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af3f29a6d2d506d4a9c51cb85fde846c0}{\_check}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ CLIENT\_EXCEPTIONS\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}connection\ failed\ check:\ \%s"{}},\ e)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00302}00302\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00303}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ae72fab9f2429958f8110dd47107ecdf1}{00303}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ae72fab9f2429958f8110dd47107ecdf1}{\_maybe\_grow\_pool}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Allow\ only\ one\ task\ at\ time\ to\ grow\ the\ pool\ (or\ returning}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00305}00305\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ connections\ might\ be\ starved).}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}\ >=\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_abf4ff63941d7f7814f22255c1a33702d}{\_max\_size}}\ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a2d0040858580352ef28cf5156514c287}{\_growing}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00309}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00309}}\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}growing\ pool\ \%r\ to\ \%s"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00310}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00310}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a2d0040858580352ef28cf5156514c287}{\_growing}}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{AddConnection}}(self,\ growing=\textcolor{keyword}{True}))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00312}00312\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00313}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a739ab7aa0e29c44c7d82ad972bd3b8fa}{00313}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a739ab7aa0e29c44c7d82ad972bd3b8fa}{putconn}}(self,\ conn:\ CT)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00314}00314\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ a\ connection\ to\ the\ loving\ hands\ of\ its\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00315}00315\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00316}00316\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Use\ this\ function\ only\ paired\ with\ a\ \`{}getconn()\`{}.\ You\ don't\ need\ to\ use}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00317}00317\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ it\ if\ you\ use\ the\ much\ more\ comfortable\ \`{}connection()\`{}\ context\ manager.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00318}00318\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00319}00319\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Quick\ check\ to\ discard\ the\ wrong\ connection}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a87cfb70d09e5368a740fcf597ebadfff}{\_check\_pool\_putconn}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00321}00321\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}returning\ connection\ to\ \%r"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00323}00323\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a14429d23385d657f5ef156ebeef3f046}{\_maybe\_close\_connection}}(conn):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00325}00325\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00326}00326\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ae07f8bcda86ee600083c06e20fe2adc9}{\_putconn}}(conn,\ from\_getconn=\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00327}00327\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00328}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ae5f74dab839f28f582026ba84dd28141}{00328}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ae5f74dab839f28f582026ba84dd28141}{drain}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00330}00330\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Remove\ all\ the\ connections\ from\ the\ pool\ and\ create\ new\ ones.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00331}00331\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00332}00332\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ a\ connection\ is\ currently\ out\ of\ the\ pool\ it\ will\ be\ closed\ when}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00333}00333\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ returned\ to\ the\ pool\ and\ replaced\ with\ a\ new\ one.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00334}00334\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00335}00335\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ method\ is\ useful\ to\ force\ a\ connection\ re-\/configuration,\ for}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00336}00336\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ example\ when\ the\ adapters\ map\ changes\ after\ the\ pool\ was\ created.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00337}00337\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00338}00338\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ \ \ \ \ conns\ =\ list(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}}.clear()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00341}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00341}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a934fe01f2eec58cc83301e28b2255bb9}{\_drained\_at}}\ =\ monotonic()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00342}00342\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Close\ the\ connection\ already\ in\ the\ pool,\ open\ new\ ones.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ conn\ \textcolor{keywordflow}{in}\ conns:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{\_close\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{AddConnection}}(self))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00347}00347\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00348}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ae07f8bcda86ee600083c06e20fe2adc9}{00348}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ae07f8bcda86ee600083c06e20fe2adc9}{\_putconn}}(self,\ conn:\ CT,\ from\_getconn:\ bool)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Use\ a\ worker\ to\ perform\ eventual\ maintenance\ work\ in\ a\ separate\ task}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aead53cc1ade905860d559d99eb983248}{\_reset}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection}{ReturnConnection}}(self,\ conn,\ from\_getconn=from\_getconn))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a222bf06e7f512cc791c452df074680ab}{\_return\_connection}}(conn,\ from\_getconn=from\_getconn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00354}00354\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00355}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a14429d23385d657f5ef156ebeef3f046}{00355}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a14429d23385d657f5ef156ebeef3f046}{\_maybe\_close\_connection}}(self,\ conn:\ CT)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Close\ a\ returned\ connection\ if\ necessary.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00357}00357\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00358}00358\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ \`{}!True\ if\ the\ connection\ was\ closed.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00359}00359\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ pool\ is\ closed\ just\ close\ the\ connection\ instead\ of\ returning}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ it\ to\ the\ pool.\ For\ extra\ refcare\ remove\ the\ pool\ reference\ from\ it.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00362}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00362}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ad56edf9c93eca65a1784fd5a1deb1e03}{\_closed}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00363}00363\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00364}00364\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{\_close\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00366}00366\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00367}00367\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00368}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aec0e71b584172ee59cc3a6e2f24e6d04}{00368}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aec0e71b584172ee59cc3a6e2f24e6d04}{open}}(self,\ wait:\ bool\ =\ \textcolor{keyword}{False},\ timeout:\ float\ =\ 30.0)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Open\ the\ pool\ by\ starting\ connecting\ and\ and\ accepting\ clients.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00370}00370\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00371}00371\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ *wait*\ is\ \`{}!False\`{},\ return\ immediately\ and\ let\ the\ background\ worker}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00372}00372\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ fill\ the\ pool\ if\ \`{}min\_size\`{}\ >\ 0.\ Otherwise\ wait\ up\ to\ *timeout*\ seconds}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00373}00373\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ for\ the\ requested\ number\ of\ connections\ to\ be\ ready\ (see\ \`{}wait()\`{}\ for}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00374}00374\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ details).}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00375}00375\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00376}00376\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ It\ is\ safe\ to\ call\ \`{}!open()\`{}\ again\ on\ a\ pool\ already\ open\ (because\ the}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00377}00377\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ method\ was\ already\ called,\ or\ because\ the\ pool\ context\ was\ entered,\ or}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00378}00378\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ because\ the\ pool\ was\ initialized\ with\ *open*\ =\ \`{}!True\`{})\ but\ you\ cannot}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00379}00379\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ currently\ re-\/open\ a\ closed\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00380}00380\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Make\ sure\ the\ lock\ is\ created\ after\ there\ is\ an\ event\ loop}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac2842727509ba9454053e8876980c101}{\_ensure\_lock}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00383}00383\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00385}00385\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af9fe7c430870576468ea35b43d17d52b}{\_open}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00386}00386\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ wait:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac32fff56fa15382562c5eab09898216b}{wait}}(timeout=timeout)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00389}00389\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00390}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af9fe7c430870576468ea35b43d17d52b}{00390}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af9fe7c430870576468ea35b43d17d52b}{\_open}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ad56edf9c93eca65a1784fd5a1deb1e03}{\_closed}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00393}00393\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a798c83b085bd80b2ef0ef66dac0aae12}{\_check\_open}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00395}00395\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ A\ lock\ has\ been\ most\ likely,\ but\ not\ necessarily,\ created\ in\ \`{}open()`.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac2842727509ba9454053e8876980c101}{\_ensure\_lock}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00398}00398\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00399}00399\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Create\ these\ objects\ now\ to\ attach\ them\ to\ the\ right\ loop.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ See\ \#219}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a298b66248563c4ef017daef30f3e1d7f}{\_tasks}}\ =\ \doxymbox{\hyperlink{classpsycopg__pool_1_1__acompat_1_1_queue}{Queue}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab1adcb409c1b51f9d5429a8a1cb12edf}{\_sched}}\ =\ \doxymbox{\hyperlink{classpsycopg__pool_1_1sched_1_1_scheduler}{Scheduler}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00403}00403\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ad56edf9c93eca65a1784fd5a1deb1e03}{\_closed}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00405}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00405}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_afc81e99ca20ab417a5062ba63c78a120}{\_opened}}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00406}00406\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a2ccf388d7825fc1a251cfa63b795e982}{\_start\_workers}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00408}00408\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a9ede1f74be3dac5f31545904e6c862b3}{\_start\_initial\_tasks}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00409}00409\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00410}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac2842727509ba9454053e8876980c101}{00410}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac2842727509ba9454053e8876980c101}{\_ensure\_lock}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00411}00411\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Make\ sure\ the\ pool\ lock\ is\ created.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00412}00412\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00413}00413\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ In\ async\ code,\ also\ make\ sure\ that\ the\ loop\ is\ running.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00414}00414\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00415}00415\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00416}00416\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}\ =\ Lock()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00420}00420\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00421}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a2ccf388d7825fc1a251cfa63b795e982}{00421}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a2ccf388d7825fc1a251cfa63b795e982}{\_start\_workers}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a50ee5010938610a037cf6ef07d12e6f9}{\_sched\_runner}}\ =\ spawn(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab1adcb409c1b51f9d5429a8a1cb12edf}{\_sched}}.run,\ name=f\textcolor{stringliteral}{"{}\{self.name\}-\/scheduler"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac5b708c9cf31aacb0cecebe099b599bb}{\_workers}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00424}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00424}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab59ac8f87ec46ca6cba45721efee92b6}{num\_workers}}):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ \ \ \ \ t\ =\ spawn(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a3e4fe693ae432c3d57a4d7b97ca59911}{worker}},\ args=(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a298b66248563c4ef017daef30f3e1d7f}{\_tasks}},),\ name=f\textcolor{stringliteral}{"{}\{self.name\}-\/worker-\/\{i\}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00426}00426\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac5b708c9cf31aacb0cecebe099b599bb}{\_workers}}.append(t)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00427}00427\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00428}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a9ede1f74be3dac5f31545904e6c862b3}{00428}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a9ede1f74be3dac5f31545904e6c862b3}{\_start\_initial\_tasks}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00429}00429\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ populate\ the\ pool\ with\ initial\ min\_size\ connections\ in\ background}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00430}00430\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00431}00431\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{AddConnection}}(self))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00432}00432\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00433}00433\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Schedule\ a\ task\ to\ shrink\ the\ pool\ if\ connections\ over\ min\_size\ have}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00434}00434\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ remained\ unused.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00435}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00435}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule}{Schedule}}(self,\ \doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_shrink_pool}{ShrinkPool}}(self),\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a549e39884afb2f0ba85c74d9857e8dfa}{max\_idle}}))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00436}00436\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00437}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ade247b8f525a2edd5ae761a42909a47f}{00437}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ade247b8f525a2edd5ae761a42909a47f}{close}}(self,\ timeout:\ float\ =\ 5.0)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Close\ the\ pool\ and\ make\ it\ unavailable\ to\ new\ clients.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00439}00439\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00440}00440\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ All\ the\ waiting\ and\ future\ clients\ will\ fail\ to\ acquire\ a\ connection}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00441}00441\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ with\ a\ \`{}PoolClosed\`{}\ exception.\ Currently\ used\ connections\ will\ not\ be}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00442}00442\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ closed\ until\ returned\ to\ the\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00443}00443\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00444}00444\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Wait\ *timeout*\ seconds\ for\ threads\ to\ terminate\ their\ job,\ if\ positive.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00445}00445\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ the\ timeout\ expires\ the\ pool\ is\ closed\ anyway,\ although\ it\ may\ raise}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00446}00446\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ some\ warnings\ on\ exit.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00447}00447\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00448}00448\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ad56edf9c93eca65a1784fd5a1deb1e03}{\_closed}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00449}00449\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00450}00450\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00451}00451\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00452}00452\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ad56edf9c93eca65a1784fd5a1deb1e03}{\_closed}}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00453}00453\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}pool\ \%r\ closed"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00454}00454\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00455}00455\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Take\ waiting\ client\ and\ pool\ connections\ out\ of\ the\ state}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00456}00456\ \ \ \ \ \ \ \ \ \ \ \ \ waiting\ =\ list(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad3bc52fd48a9a2af8e75d352c98505b1}{\_waiting}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad3bc52fd48a9a2af8e75d352c98505b1}{\_waiting}}.clear()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00458}00458\ \ \ \ \ \ \ \ \ \ \ \ \ connections\ =\ list(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}}.clear()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00460}00460\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Take\ the\ workers\ out\ of\ the\ pool.\ Will\ stop\ them\ outside\ the\ lock}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00462}00462\ \ \ \ \ \ \ \ \ \ \ \ \ workers\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_abfaeac09031e4ccd1e036949c569acb9}{\_signal\_stop\_worker}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00463}00463\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00464}00464\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Now\ that\ the\ flag\ \_closed\ is\ set,\ getconn\ will\ fail\ immediately,}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00465}00465\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ putconn\ will\ just\ close\ the\ returned\ connection.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00466}00466\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00467}00467\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Wait\ for\ the\ worker\ tasks\ to\ terminate}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00468}00468\ \ \ \ \ \ \ \ \ gather(*workers,\ timeout=timeout)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00469}00469\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00470}00470\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Close\ the\ connections\ that\ were\ still\ in\ the\ pool}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00471}00471\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ conn\ \textcolor{keywordflow}{in}\ connections:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00472}00472\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{\_close\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00473}00473\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00474}00474\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Signal\ to\ eventual\ clients\ in\ the\ queue\ that\ business\ is\ closed.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00475}00475\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ pos\ \textcolor{keywordflow}{in}\ waiting:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00476}00476\ \ \ \ \ \ \ \ \ \ \ \ \ pos.fail(\doxymbox{\hyperlink{classpsycopg__pool_1_1errors_1_1_pool_closed}{PoolClosed}}(f\textcolor{stringliteral}{"{}the\ pool\ \{self.name!r\}\ is\ closed"{}}))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00477}00477\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00478}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_abfaeac09031e4ccd1e036949c569acb9}{00478}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_abfaeac09031e4ccd1e036949c569acb9}{\_signal\_stop\_worker}}(self)\ -\/>\ list[Worker]:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00479}00479\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Stop\ the\ scheduler}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00480}00480\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab1adcb409c1b51f9d5429a8a1cb12edf}{\_sched}}.enter(0,\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00481}00481\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00482}00482\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Stop\ the\ worker\ tasks}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00483}00483\ \ \ \ \ \ \ \ \ workers,\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac5b708c9cf31aacb0cecebe099b599bb}{\_workers}}\ =\ (self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ac5b708c9cf31aacb0cecebe099b599bb}{\_workers}}[:],\ [])}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ \_\ \textcolor{keywordflow}{in}\ workers:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00485}00485\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_stop_worker}{StopWorker}}(self))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00486}00486\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00487}00487\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a50ee5010938610a037cf6ef07d12e6f9}{\_sched\_runner}}:\ \ \textcolor{comment}{\#\ likely}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00488}00488\ \ \ \ \ \ \ \ \ \ \ \ \ workers.append(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a50ee5010938610a037cf6ef07d12e6f9}{\_sched\_runner}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00489}00489\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a50ee5010938610a037cf6ef07d12e6f9}{\_sched\_runner}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00490}00490\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00491}00491\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ workers}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00492}00492\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00493}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a54c4df89a6121de16ec35816f5e9b55e}{00493}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a54c4df89a6121de16ec35816f5e9b55e}{\_\_enter\_\_}}(self)\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00494}00494\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a00863dd74d29e1898398f7f0bc489e3e}{\_open\_implicit}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00495}00495\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aec0e71b584172ee59cc3a6e2f24e6d04}{open}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00496}00496\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00497}00497\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00498}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a8a547e3bb2157b68510660dd5233aaea}{00498}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a8a547e3bb2157b68510660dd5233aaea}{\_\_exit\_\_}}(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00499}00499\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00500}00500\ \ \ \ \ \ \ \ \ exc\_type:\ type[BaseException]\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00501}00501\ \ \ \ \ \ \ \ \ exc\_val:\ BaseException\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00502}00502\ \ \ \ \ \ \ \ \ exc\_tb:\ TracebackType\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00503}00503\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00504}00504\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ade247b8f525a2edd5ae761a42909a47f}{close}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00505}00505\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00506}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_afd1ff0c2b812c6eaa270420e06c8aa1d}{00506}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_afd1ff0c2b812c6eaa270420e06c8aa1d}{resize}}(self,\ min\_size:\ int,\ max\_size:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00507}00507\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Change\ the\ size\ of\ the\ pool\ during\ runtime."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00508}00508\ \ \ \ \ \ \ \ \ min\_size,\ max\_size\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_abb789c605caacc031fc22d39ab19572f}{\_check\_size}}(min\_size,\ max\_size)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00509}00509\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00510}00510\ \ \ \ \ \ \ \ \ ngrow\ =\ max(0,\ min\_size\ -\/\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab10a06231dd530addb3a32313fdce590}{\_min\_size}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00511}00511\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00512}00512\ \ \ \ \ \ \ \ \ logger.info(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00513}00513\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}resizing\ \%r\ to\ min\_size=\%s\ max\_size=\%s"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}},\ min\_size,\ max\_size}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00514}00514\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00516}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00516}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab10a06231dd530addb3a32313fdce590}{\_min\_size}}\ =\ min\_size}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00517}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00517}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_abf4ff63941d7f7814f22255c1a33702d}{\_max\_size}}\ =\ max\_size}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00518}00518\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}\ +=\ ngrow}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00519}00519\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(ngrow):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{AddConnection}}(self))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00522}00522\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00523}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a77d6732f0e17ee5aee46626d237ef3e9}{00523}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a77d6732f0e17ee5aee46626d237ef3e9}{check}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Verify\ the\ state\ of\ the\ connections\ currently\ in\ the\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00525}00525\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00526}00526\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Test\ each\ connection:\ if\ it\ works\ return\ it\ to\ the\ pool,\ otherwise}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00527}00527\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ dispose\ of\ it\ and\ create\ a\ new\ one.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00528}00528\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00529}00529\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00530}00530\ \ \ \ \ \ \ \ \ \ \ \ \ conns\ =\ list(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00531}00531\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}}.clear()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00532}00532\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00533}00533\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Give\ a\ chance\ to\ the\ pool\ to\ grow\ if\ it\ has\ no\ connection.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ case\ there\ are\ enough\ connection,\ or\ the\ pool\ is\ already}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00535}00535\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ growing,\ this\ is\ a\ no-\/op.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00536}00536\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ae72fab9f2429958f8110dd47107ecdf1}{\_maybe\_grow\_pool}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00537}00537\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00538}00538\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ conns:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00539}00539\ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ conns.pop()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00540}00540\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00541}00541\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ for\ expired\ connections}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00542}00542\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ conn.\_expire\_at\ <=\ monotonic():}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00543}00543\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}discarding\ expired\ connection\ \%s"{}},\ conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00544}00544\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{\_close\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00545}00545\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{AddConnection}}(self))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00546}00546\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00547}00547\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ for\ broken\ connections}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00549}00549\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00550}00550\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af9652f43bc3bc50ac2af8c6f9d395391}{check\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00551}00551\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ CLIENT\_EXCEPTIONS:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00552}00552\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7e50be7cfcf24d58589331c2de842836}{\_CONNECTIONS\_LOST}}]\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00553}00553\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}discarding\ broken\ connection:\ \%s"{}},\ conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00554}00554\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{AddConnection}}(self))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00555}00555\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00556}00556\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a0bd622b5a5e34056ddbf08af15f26d53}{\_add\_to\_pool}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00557}00557\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00558}00558\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00559}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af9652f43bc3bc50ac2af8c6f9d395391}{00559}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_af9652f43bc3bc50ac2af8c6f9d395391}{check\_connection}}(conn:\ CT)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00560}00560\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00561}00561\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ A\ simple\ check\ to\ verify\ that\ a\ connection\ is\ still\ working.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00562}00562\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00563}00563\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ quietly\ if\ the\ connection\ is\ still\ working,\ otherwise\ raise}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00564}00564\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ an\ exception.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00565}00565\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00566}00566\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Used\ internally\ by\ \`{}check()\`{},\ but\ also\ available\ for\ client\ usage,}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00567}00567\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ for\ instance\ as\ \`{}!check\`{}\ callback\ when\ a\ pool\ is\ created.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00568}00568\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00569}00569\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ conn.autocommit:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00570}00570\ \ \ \ \ \ \ \ \ \ \ \ \ conn.execute(\textcolor{stringliteral}{"{}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00571}00571\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00572}00572\ \ \ \ \ \ \ \ \ \ \ \ \ conn.autocommit\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00573}00573\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00574}00574\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conn.execute(\textcolor{stringliteral}{"{}"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00575}00575\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00576}00576\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conn.autocommit\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00577}00577\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00578}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a636254361930f236acac58c9faeda1fa}{00578}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a636254361930f236acac58c9faeda1fa}{reconnect\_failed}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00579}00579\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00580}00580\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Called\ when\ reconnection\ failed\ for\ longer\ than\ \`{}reconnect\_timeout\`{}.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00581}00581\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00582}00582\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a6d8b9df7a4ac223d6797ba2cebb94473}{\_reconnect\_failed}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00583}00583\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00584}00584\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00585}00585\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a6d8b9df7a4ac223d6797ba2cebb94473}{\_reconnect\_failed}}(self)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00586}00586\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00587}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{00587}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(self,\ task:\ MaintenanceTask)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00588}00588\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Run\ a\ maintenance\ task\ in\ a\ worker."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00589}00589\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a298b66248563c4ef017daef30f3e1d7f}{\_tasks}}.put\_nowait(task)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00590}00590\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00591}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a951c9f06d2c9570d1913cafd400a99f5}{00591}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a951c9f06d2c9570d1913cafd400a99f5}{schedule\_task}}(self,\ task:\ MaintenanceTask,\ delay:\ float)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00592}00592\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Run\ a\ maintenance\ task\ in\ a\ worker\ in\ the\ future."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00593}00593\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab1adcb409c1b51f9d5429a8a1cb12edf}{\_sched}}.enter(delay,\ task.tick)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00594}00594\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00595}00595\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00596}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a3e4fe693ae432c3d57a4d7b97ca59911}{00596}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a3e4fe693ae432c3d57a4d7b97ca59911}{worker}}(cls,\ q:\ Queue[MaintenanceTask])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00597}00597\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Runner\ to\ execute\ pending\ maintenance\ task.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00598}00598\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00599}00599\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ function\ is\ designed\ to\ run\ as\ a\ task.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00600}00600\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00601}00601\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Block\ on\ the\ queue\ *q*,\ run\ a\ task\ received.\ Finish\ running\ if\ a}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00602}00602\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ StopWorker\ is\ received.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00603}00603\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00604}00604\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ \textcolor{keyword}{True}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00605}00605\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance((task\ :=\ q.get()),\ StopWorker):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00606}00606\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}terminating\ working\ task\ \%s"{}},\ current\_thread\_name())}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00607}00607\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00608}00608\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00609}00609\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Run\ the\ task.\ Make\ sure\ don't\ die\ in\ the\ attempt.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00610}00610\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00611}00611\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ task.run()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00612}00612\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ CLIENT\_EXCEPTIONS\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00613}00613\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00614}00614\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}task\ run\ \%s\ failed:\ \%s:\ \%s"{}},\ task,\ ex.\_\_class\_\_.\_\_name\_\_,\ ex}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00615}00615\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00616}00616\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00617}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad4cac42ab058d90545e8bc2045fb8053}{00617}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad4cac42ab058d90545e8bc2045fb8053}{\_connect}}(self,\ timeout:\ float\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None})\ -\/>\ CT:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00618}00618\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ a\ new\ connection\ configured\ for\ the\ pool."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00619}00619\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ad254cd2c9ad45e44a8b6c43ff246152b}{\_CONNECTIONS\_NUM}}]\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00620}00620\ \ \ \ \ \ \ \ \ conninfo\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aed97b598530e3f3fe66f8219272a7128}{\_resolve\_conninfo}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00621}00621\ \ \ \ \ \ \ \ \ kwargs\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a429acb850266fa2733adfa8cba3ca19f}{\_resolve\_kwargs}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00622}00622\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ timeout:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00623}00623\ \ \ \ \ \ \ \ \ \ \ \ \ kwargs\ =\ kwargs.copy()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00624}00624\ \ \ \ \ \ \ \ \ \ \ \ \ kwargs[\textcolor{stringliteral}{"{}connect\_timeout"{}}]\ =\ max(round(timeout),\ 1)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00625}00625\ \ \ \ \ \ \ \ \ t0\ =\ monotonic()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00626}00626\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00627}00627\ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aaf9b8d5d85e4aa56cfe89bf63fbf7ca6}{connection\_class}}.connect(conninfo,\ **kwargs)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00628}00628\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ CLIENT\_EXCEPTIONS:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00629}00629\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a5b9ab1416b2c9d6a1afbf4c07dc0f21a}{\_CONNECTIONS\_ERRORS}}]\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00630}00630\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00631}00631\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00632}00632\ \ \ \ \ \ \ \ \ \ \ \ \ t1\ =\ monotonic()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00633}00633\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a8780f9b4804aa25ec83185f83fa559d7}{\_CONNECTIONS\_MS}}]\ +=\ int(1000.0\ *\ (t1\ -\/\ t0))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00634}00634\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00635}00635\ \ \ \ \ \ \ \ \ conn.\_pool\ =\ self}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00636}00636\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00637}00637\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_add707523bdedfb7e2e053b382c349702}{\_configure}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00638}00638\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_add707523bdedfb7e2e053b382c349702}{\_configure}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00639}00639\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (status\ :=\ conn.pgconn.transaction\_status)\ !=\ TransactionStatus.IDLE:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00640}00640\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ sname\ =\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_transaction_status}{TransactionStatus}}(status).name}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00641}00641\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00642}00642\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}connection\ left\ in\ status\ \{sname\}\ by\ configure\ function\ \{self.\_configure\}:\ discarded"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00643}00643\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00644}00644\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00645}00645\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Set\ an\ expiry\ date,\ with\ some\ randomness\ to\ avoid\ mass\ reconnection}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00646}00646\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a033f2a694ba85075969fb8405b2ec4df}{\_set\_connection\_expiry\_date}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00647}00647\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ conn}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00648}00648\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00649}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aed97b598530e3f3fe66f8219272a7128}{00649}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aed97b598530e3f3fe66f8219272a7128}{\_resolve\_conninfo}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00650}00650\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Resolve\ conninfo\ (static\ string,\ sync\ callable,\ or\ async\ callable)."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00651}00651\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ callable(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a25fcd6a83ecb21f231b992ecc9cdaa79}{conninfo}}):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00652}00652\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a25fcd6a83ecb21f231b992ecc9cdaa79}{conninfo}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00653}00653\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00654}00654\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a25fcd6a83ecb21f231b992ecc9cdaa79}{conninfo}}\ \textcolor{keywordflow}{or}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00655}00655\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00656}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a429acb850266fa2733adfa8cba3ca19f}{00656}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a429acb850266fa2733adfa8cba3ca19f}{\_resolve\_kwargs}}(self)\ -\/>\ dict[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00657}00657\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Resolve\ kwargs\ (static\ dict,\ sync\ callable,\ or\ async\ callable)."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00658}00658\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a95de5d5ed425244bfefc8235192a40a8}{kwargs}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00659}00659\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \{\}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00660}00660\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00661}00661\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ callable(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a95de5d5ed425244bfefc8235192a40a8}{kwargs}}):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00662}00662\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a95de5d5ed425244bfefc8235192a40a8}{kwargs}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00663}00663\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00664}00664\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a95de5d5ed425244bfefc8235192a40a8}{kwargs}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00665}00665\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00666}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a2dbb7477f379abfbc5be614d8f1d47af}{00666}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a2dbb7477f379abfbc5be614d8f1d47af}{\_add\_connection}}(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00667}00667\ \ \ \ \ \ \ \ \ self,\ attempt:\ AttemptWithBackoff\ |\ \textcolor{keywordtype}{None},\ growing:\ bool\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00668}00668\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00669}00669\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Try\ to\ connect\ and\ add\ the\ connection\ to\ the\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00670}00670\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00671}00671\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ failed,\ reschedule\ a\ new\ attempt\ in\ the\ future\ for\ a\ few\ times,\ then}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00672}00672\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ give\ up,\ decrease\ the\ pool\ connections\ number\ and\ call}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00673}00673\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}self.reconnect\_failed()\`{}.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00674}00674\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00675}00675\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00676}00676\ \ \ \ \ \ \ \ \ now\ =\ monotonic()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00677}00677\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ attempt:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00678}00678\ \ \ \ \ \ \ \ \ \ \ \ \ attempt\ =\ \doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_attempt_with_backoff}{AttemptWithBackoff}}(timeout=self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a8cf934e37c5e9672da6b40848780e0ec}{reconnect\_timeout}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00679}00679\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00680}00680\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00681}00681\ \ \ \ \ \ \ \ \ \ \ \ \ conn\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad4cac42ab058d90545e8bc2045fb8053}{\_connect}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00682}00682\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ CLIENT\_EXCEPTIONS\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00683}00683\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}error\ connecting\ in\ \%r:\ \%s"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}},\ ex)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00684}00684\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ attempt.time\_to\_give\_up(now):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00685}00685\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00686}00686\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}reconnection\ attempt\ in\ pool\ \%r\ failed\ after\ \%s\ sec"{}},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00687}00687\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00688}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool}{00688}}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a8cf934e37c5e9672da6b40848780e0ec}{reconnect\_timeout}},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00689}00689\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00690}00690\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00691}00691\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}\ -\/=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00692}00692\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ we\ have\ given\ up\ with\ a\ growing\ attempt,\ allow\ a\ new\ one.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00693}00693\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ growing\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a2d0040858580352ef28cf5156514c287}{\_growing}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00694}00694\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a2d0040858580352ef28cf5156514c287}{\_growing}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00695}00695\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a636254361930f236acac58c9faeda1fa}{reconnect\_failed}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00696}00696\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00697}00697\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ attempt.update\_delay(now)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00698}00698\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a951c9f06d2c9570d1913cafd400a99f5}{schedule\_task}}(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00699}00699\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{AddConnection}}(self,\ attempt,\ growing=growing),\ attempt.delay}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00700}00700\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00701}00701\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00702}00702\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00703}00703\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}adding\ new\ connection\ to\ the\ pool"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00704}00704\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a0bd622b5a5e34056ddbf08af15f26d53}{\_add\_to\_pool}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00705}00705\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ growing:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00706}00706\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00707}00707\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Keep\ on\ growing\ if\ the\ pool\ is\ not\ full\ yet,\ or\ if\ there\ are}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00708}00708\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ clients\ waiting\ and\ the\ pool\ can\ extend.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00709}00709\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}\ <\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab10a06231dd530addb3a32313fdce590}{\_min\_size}}\ \textcolor{keywordflow}{or}\ (}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00710}00710\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}\ <\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_abf4ff63941d7f7814f22255c1a33702d}{\_max\_size}}\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad3bc52fd48a9a2af8e75d352c98505b1}{\_waiting}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00711}00711\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00712}00712\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00713}00713\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}growing\ pool\ \%r\ to\ \%s"{}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00714}00714\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{AddConnection}}(self,\ growing=\textcolor{keyword}{True}))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00715}00715\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00716}00716\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a2d0040858580352ef28cf5156514c287}{\_growing}}\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00717}00717\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00718}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a222bf06e7f512cc791c452df074680ab}{00718}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a222bf06e7f512cc791c452df074680ab}{\_return\_connection}}(self,\ conn:\ CT,\ from\_getconn:\ bool)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00719}00719\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00720}00720\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ a\ connection\ to\ the\ pool\ after\ usage.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00721}00721\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00722}00722\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a23b962886c8e63eb018905d10246a475}{\_reset\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00723}00723\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ from\_getconn:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00724}00724\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ conn.pgconn.transaction\_status\ ==\ TransactionStatus.UNKNOWN:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00725}00725\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7e50be7cfcf24d58589331c2de842836}{\_CONNECTIONS\_LOST}}]\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00726}00726\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Connection\ no\ more\ in\ working\ state:\ create\ a\ new\ one.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00727}00727\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}not\ serving\ connection\ found\ broken"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00728}00728\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{AddConnection}}(self))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00729}00729\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00730}00730\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ conn.pgconn.transaction\_status\ ==\ TransactionStatus.UNKNOWN:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00731}00731\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a69cb86e03397d211555cd3160d8687a9}{\_stats}}[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ae32c1bb2517573abf29ec878663b5b5a}{\_RETURNS\_BAD}}]\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00732}00732\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Connection\ no\ more\ in\ working\ state:\ create\ a\ new\ one.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00733}00733\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}discarding\ closed\ connection:\ \%s"{}},\ conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00734}00734\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{AddConnection}}(self))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00735}00735\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00736}00736\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00737}00737\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ if\ the\ connection\ is\ past\ its\ best\ before\ date}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00738}00738\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ conn.\_created\_at\ <=\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a934fe01f2eec58cc83301e28b2255bb9}{\_drained\_at}}\ \textcolor{keywordflow}{or}\ conn.\_expire\_at\ <=\ monotonic():}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00739}00739\ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}discarding\ expired\ connection"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00740}00740\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{\_close\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00741}00741\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a1fee05fdd8f8074fb4421bc9bd3d12dc}{run\_task}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{AddConnection}}(self))}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00742}00742\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00743}00743\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00744}00744\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a0bd622b5a5e34056ddbf08af15f26d53}{\_add\_to\_pool}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00745}00745\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00746}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a0bd622b5a5e34056ddbf08af15f26d53}{00746}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a0bd622b5a5e34056ddbf08af15f26d53}{\_add\_to\_pool}}(self,\ conn:\ CT)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00747}00747\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00748}00748\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Add\ a\ connection\ to\ the\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00749}00749\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00750}00750\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ connection\ can\ be\ a\ fresh\ one\ or\ one\ already\ used\ in\ the\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00751}00751\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00752}00752\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ a\ client\ is\ already\ waiting\ for\ a\ connection\ pass\ it\ on,\ otherwise}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00753}00753\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ put\ it\ back\ into\ the\ pool}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00754}00754\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00755}00755\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Remove\ the\ pool\ reference\ from\ the\ connection\ before\ returning\ it}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00756}00756\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ to\ the\ state,\ to\ avoid\ to\ create\ a\ reference\ loop.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00757}00757\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Also\ disable\ the\ warning\ for\ open\ connection\ in\ conn.\_\_del\_\_}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00758}00758\ \ \ \ \ \ \ \ \ conn.\_pool\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00759}00759\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00760}00760\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Early\ bailout\ in\ case\ the\ pool\ is\ closed.\ Don't\ add\ anything\ to\ the}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00761}00761\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ state.\ There\ is\ still\ a\ remote\ chance\ that\ the\ pool\ will\ be\ closed}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00762}00762\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ between\ here\ and\ entering\ the\ lock.\ Therefore\ we\ will\ make\ another}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00763}00763\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ check\ later.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00764}00764\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ad56edf9c93eca65a1784fd5a1deb1e03}{\_closed}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00765}00765\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{\_close\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00766}00766\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00767}00767\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00768}00768\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Critical\ section:\ if\ there\ is\ a\ client\ waiting\ give\ it\ the\ connection}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00769}00769\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ otherwise\ put\ it\ back\ into\ the\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00770}00770\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00771}00771\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ if\ the\ pool\ was\ closed\ by\ the\ time\ we\ arrived\ here.\ It\ is}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00772}00772\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ unlikely\ but\ it\ doesn't\ seem\ impossible,\ if\ the\ worker\ was\ adding}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00773}00773\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ this\ connection\ while\ the\ main\ process\ is\ closing\ the\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00774}00774\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Now\ that\ we\ are\ in\ the\ critical\ section\ we\ know\ for\ real.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00775}00775\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ad56edf9c93eca65a1784fd5a1deb1e03}{\_closed}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00776}00776\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{\_close\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00777}00777\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00778}00778\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00779}00779\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad3bc52fd48a9a2af8e75d352c98505b1}{\_waiting}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00780}00780\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ there\ is\ a\ client\ waiting\ (which\ is\ still\ waiting\ and}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00781}00781\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ hasn't\ timed\ out),\ give\ it\ the\ connection\ and\ notify\ it.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00782}00782\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00783}00783\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad3bc52fd48a9a2af8e75d352c98505b1}{\_waiting}}.popleft().set(conn):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00784}00784\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00785}00785\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00786}00786\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ No\ client\ waiting\ for\ a\ connection:\ put\ it\ back\ into\ the\ pool}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00787}00787\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}}.append(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00788}00788\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ we\ have\ been\ asked\ to\ wait\ for\ pool\ init,\ notify\ the}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00789}00789\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ waiter\ if\ the\ pool\ is\ full.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00790}00790\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ada603a8a93881367402ffa7c395c7eb5}{\_pool\_full\_event}}\ \textcolor{keywordflow}{and}\ len(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}})\ >=\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab10a06231dd530addb3a32313fdce590}{\_min\_size}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00791}00791\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ada603a8a93881367402ffa7c395c7eb5}{\_pool\_full\_event}}.set()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00792}00792\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00793}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a23b962886c8e63eb018905d10246a475}{00793}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a23b962886c8e63eb018905d10246a475}{\_reset\_connection}}(self,\ conn:\ CT)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00794}00794\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00795}00795\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Bring\ a\ connection\ to\ IDLE\ state\ or\ close\ it.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00796}00796\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00797}00797\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (status\ :=\ conn.pgconn.transaction\_status)\ ==\ TransactionStatus.IDLE:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00798}00798\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00799}00799\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ status\ ==\ TransactionStatus.UNKNOWN:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00800}00800\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Connection\ closed}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00801}00801\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00802}00802\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ status\ ==\ TransactionStatus.INTRANS\ \textcolor{keywordflow}{or}\ status\ ==\ TransactionStatus.INERROR:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00803}00803\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Connection\ returned\ with\ an\ active\ transaction}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00804}00804\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}rolling\ back\ returned\ connection:\ \%s"{}},\ conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00805}00805\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00806}00806\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conn.rollback()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00807}00807\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ CLIENT\_EXCEPTIONS\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00808}00808\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00809}00809\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}rollback\ failed:\ \%s:\ \%s.\ Discarding\ connection\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00810}00810\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ex.\_\_class\_\_.\_\_name\_\_,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00811}00811\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ex,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00812}00812\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ conn,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00813}00813\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00814}00814\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{\_close\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00815}00815\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ status\ ==\ TransactionStatus.ACTIVE:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00816}00816\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Connection\ returned\ during\ an\ operation.\ Bad...\ just\ close\ it.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00817}00817\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}closing\ returned\ connection:\ \%s"{}},\ conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00818}00818\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{\_close\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00819}00819\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00820}00820\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aead53cc1ade905860d559d99eb983248}{\_reset}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00821}00821\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00822}00822\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aead53cc1ade905860d559d99eb983248}{\_reset}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00823}00823\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (status\ :=\ conn.pgconn.transaction\_status)\ !=\ TransactionStatus.IDLE:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00824}00824\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ sname\ =\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_transaction_status}{TransactionStatus}}(status).name}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00825}00825\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00826}00826\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}connection\ left\ in\ status\ \{sname\}\ by\ reset\ function\ \{self.\_reset\}:\ discarded"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00827}00827\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00828}00828\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ CLIENT\_EXCEPTIONS\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00829}00829\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}error\ resetting\ connection:\ \%s"{}},\ ex)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00830}00830\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{\_close\_connection}}(conn)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00831}00831\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00832}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{00832}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{\_close\_connection}}(self,\ conn:\ CT)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00833}00833\ \ \ \ \ \ \ \ \ conn.\_pool\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00834}00834\ \ \ \ \ \ \ \ \ conn.close()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00835}00835\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00836}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a688514dd74ecc0bce58727019ed00881}{00836}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_a688514dd74ecc0bce58727019ed00881}{\_shrink\_pool}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00837}00837\ \ \ \ \ \ \ \ \ to\_close:\ CT\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00838}00838\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00839}00839\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ab85b17b1295598decbe10ecf359f62c1}{\_lock}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00840}00840\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Reset\ the\ min\ number\ of\ connections\ used}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00841}00841\ \ \ \ \ \ \ \ \ \ \ \ \ nconns\_min\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab17defdc08c19ff61d9c8ec5f4301e4f}{\_nconns\_min}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00842}00842\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab17defdc08c19ff61d9c8ec5f4301e4f}{\_nconns\_min}}\ =\ len(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00843}00843\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00844}00844\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ pool\ can\ shrink\ and\ connections\ were\ unused,\ drop\ one}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00845}00845\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}\ >\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab10a06231dd530addb3a32313fdce590}{\_min\_size}}\ \textcolor{keywordflow}{and}\ nconns\_min\ >\ 0\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00846}00846\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ to\_close\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a56cd591f78636921a7748360f00bde3f}{\_pool}}.popleft()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00847}00847\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}}\ -\/=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00848}00848\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_ab17defdc08c19ff61d9c8ec5f4301e4f}{\_nconns\_min}}\ -\/=\ 1}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00849}00849\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00850}00850\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ to\_close:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00851}00851\ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00852}00852\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}shrinking\ pool\ \%r\ to\ \%s\ because\ \%s\ unused\ connections\ in\ the\ last\ \%s\ sec"{}},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00853}00853\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_acfb08ef560b4cb83c078c0c3a9b0a367}{name}},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00854}00854\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a7fcbbd2eedc1727e1b059b4aea140660}{\_nconns}},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00855}00855\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ nconns\_min,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00856}00856\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a549e39884afb2f0ba85c74d9857e8dfa}{max\_idle}},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00857}00857\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00858}00858\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_aa4f338d6f8b2059d022aaece3db92570}{\_close\_connection}}(to\_close)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00859}00859\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00860}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad225ab151aceaf076fc880bdfe65d685}{00860}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad225ab151aceaf076fc880bdfe65d685}{\_get\_measures}}(self)\ -\/>\ dict[str,\ int]:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00861}00861\ \ \ \ \ \ \ \ \ rv\ =\ super().\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad225ab151aceaf076fc880bdfe65d685}{\_get\_measures}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00862}00862\ \ \ \ \ \ \ \ \ rv[self.\doxymbox{\hyperlink{classpsycopg__pool_1_1base_1_1_base_pool_a27356eee453e0e971aa24b988950ab27}{\_REQUESTS\_WAITING}}]\ =\ len(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_connection_pool_ad3bc52fd48a9a2af8e75d352c98505b1}{\_waiting}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00863}00863\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ rv}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00864}00864\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00865}00865\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00866}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client}{00866}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client}{WaitingClient}}(Generic[CT]):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00867}00867\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ position\ in\ a\ queue\ for\ a\ client\ waiting\ for\ a\ connection."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00868}00868\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00869}00869\ \ \ \ \ \_\_slots\_\_\ =\ (\textcolor{stringliteral}{"{}conn"{}},\ \textcolor{stringliteral}{"{}error"{}},\ \textcolor{stringliteral}{"{}\_cond"{}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00870}00870\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00871}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a782d0bb9f75b5ea755e9164a776211cc}{00871}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a782d0bb9f75b5ea755e9164a776211cc}{\_\_init\_\_}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00872}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a6edf8e2b7591a82dfb27778395c8c3f9}{00872}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a6edf8e2b7591a82dfb27778395c8c3f9}{conn}}:\ CT\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00873}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_afdaac83dd02be17eeae419ae99013f36}{00873}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_afdaac83dd02be17eeae419ae99013f36}{error}}:\ BaseException\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00874}00874\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00875}00875\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ WaitingClient\ behaves\ in\ a\ way\ similar\ to\ an\ Event,\ but\ we\ need}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00876}00876\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ to\ notify\ reliably\ the\ flagger\ that\ the\ waiter\ has\ "{}accepted"{}\ the}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00877}00877\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ message\ and\ it\ hasn't\ timed\ out\ yet,\ otherwise\ the\ pool\ may\ give\ a}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00878}00878\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ connection\ to\ a\ client\ that\ has\ already\ timed\ out\ getconn(),\ which}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00879}00879\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ will\ be\ lost.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00880}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a9342ebc3fd5cc865eb30f25783f0d98c}{00880}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a9342ebc3fd5cc865eb30f25783f0d98c}{\_cond}}\ =\ Condition()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00881}00881\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00882}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a96b495170850077b99c0b9696655fe30}{00882}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a96b495170850077b99c0b9696655fe30}{wait}}(self,\ timeout:\ float)\ -\/>\ CT:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00883}00883\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Wait\ for\ a\ connection\ to\ be\ set\ and\ return\ it.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00884}00884\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00885}00885\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Raise\ an\ exception\ if\ the\ wait\ times\ out\ or\ if\ fail()\ is\ called.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00886}00886\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00887}00887\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a9342ebc3fd5cc865eb30f25783f0d98c}{\_cond}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00888}00888\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a6edf8e2b7591a82dfb27778395c8c3f9}{conn}}\ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_afdaac83dd02be17eeae419ae99013f36}{error}}):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00889}00889\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00890}00890\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a9342ebc3fd5cc865eb30f25783f0d98c}{\_cond}}.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a96b495170850077b99c0b9696655fe30}{wait}}(timeout):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00891}00891\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_afdaac83dd02be17eeae419ae99013f36}{error}}\ =\ \doxymbox{\hyperlink{classpsycopg__pool_1_1errors_1_1_pool_timeout}{PoolTimeout}}(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00892}00892\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}couldn't\ get\ a\ connection\ after\ \{timeout:.2f\}\ sec"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00893}00893\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00894}00894\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ CLIENT\_EXCEPTIONS\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00895}00895\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_afdaac83dd02be17eeae419ae99013f36}{error}}\ =\ ex}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00896}00896\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00897}00897\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a6edf8e2b7591a82dfb27778395c8c3f9}{conn}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00898}00898\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a6edf8e2b7591a82dfb27778395c8c3f9}{conn}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00899}00899\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00900}00900\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_afdaac83dd02be17eeae419ae99013f36}{error}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00901}00901\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_afdaac83dd02be17eeae419ae99013f36}{error}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00902}00902\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00903}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a0874e5b3199ea6469da77bbae72f1bd7}{00903}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a0874e5b3199ea6469da77bbae72f1bd7}{set}}(self,\ conn:\ CT)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00904}00904\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Signal\ the\ client\ waiting\ that\ a\ connection\ is\ ready.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00905}00905\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00906}00906\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ True\ if\ the\ client\ has\ "{}accepted"{}\ the\ connection,\ False}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00907}00907\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ otherwise\ (typically\ because\ wait()\ has\ timed\ out).}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00908}00908\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00909}00909\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a9342ebc3fd5cc865eb30f25783f0d98c}{\_cond}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00910}00910\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a6edf8e2b7591a82dfb27778395c8c3f9}{conn}}\ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_afdaac83dd02be17eeae419ae99013f36}{error}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00911}00911\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00912}00912\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00913}00913\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a6edf8e2b7591a82dfb27778395c8c3f9}{conn}}\ =\ conn}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00914}00914\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a9342ebc3fd5cc865eb30f25783f0d98c}{\_cond}}.notify\_all()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00915}00915\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00916}00916\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00917}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a65db0aa1a9a711ee487e1fc42315e127}{00917}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a65db0aa1a9a711ee487e1fc42315e127}{fail}}(self,\ error:\ Exception)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00918}00918\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Signal\ the\ client\ that,\ alas,\ they\ won't\ have\ a\ connection\ today.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00919}00919\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00920}00920\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ True\ if\ the\ client\ has\ "{}accepted"{}\ the\ error,\ False\ otherwise}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00921}00921\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (typically\ because\ wait()\ has\ timed\ out).}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00922}00922\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00923}00923\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a9342ebc3fd5cc865eb30f25783f0d98c}{\_cond}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00924}00924\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a6edf8e2b7591a82dfb27778395c8c3f9}{conn}}\ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_afdaac83dd02be17eeae419ae99013f36}{error}}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00925}00925\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00926}00926\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00927}00927\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_afdaac83dd02be17eeae419ae99013f36}{error}}\ =\ error}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00928}00928\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_waiting_client_a9342ebc3fd5cc865eb30f25783f0d98c}{\_cond}}.notify\_all()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00929}00929\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00930}00930\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00931}00931\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00932}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task}{00932}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task}{MaintenanceTask}}(ABC):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00933}00933\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ task\ to\ run\ asynchronously\ to\ maintain\ the\ pool\ state."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00934}00934\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00935}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_a8627fb8f03bfb09f1053e25f3daa45cb}{00935}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_a8627fb8f03bfb09f1053e25f3daa45cb}{\_\_init\_\_}}(self,\ pool:\ ConnectionPool[Any]):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00936}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_a3019daf8f4236b0f2586496e6df0f6f7}{00936}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_a3019daf8f4236b0f2586496e6df0f6f7}{pool}}\ =\ ref(pool)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00937}00937\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00938}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_ac0c3e6ab0b28bfd27a6603b70c6fc599}{00938}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_ac0c3e6ab0b28bfd27a6603b70c6fc599}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00939}00939\ \ \ \ \ \ \ \ \ pool\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_a3019daf8f4236b0f2586496e6df0f6f7}{pool}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00940}00940\ \ \ \ \ \ \ \ \ name\ =\ repr(pool.name)\ \textcolor{keywordflow}{if}\ pool\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}<pool\ is\ gone>"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00941}00941\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}<\{self.\_\_class\_\_.\_\_name\_\_\}\ \{name\}\ at\ 0x\{id(self):x\}>"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00942}00942\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00943}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_aec25231661296231fc881017c8e3f699}{00943}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_aec25231661296231fc881017c8e3f699}{run}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00944}00944\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Run\ the\ task.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00945}00945\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00946}00946\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ usually\ happens\ in\ a\ worker.\ Call\ the\ concrete\ \_run()}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00947}00947\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ implementation,\ if\ the\ pool\ is\ still\ alive.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00948}00948\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00949}00949\ \ \ \ \ \ \ \ \ pool\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_a3019daf8f4236b0f2586496e6df0f6f7}{pool}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00950}00950\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ pool\ \textcolor{keywordflow}{or}\ pool.closed:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00951}00951\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Pool\ is\ no\ more\ working.\ Quietly\ discard\ the\ operation.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00952}00952\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}task\ run\ discarded:\ \%s"{}},\ self)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00953}00953\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00954}00954\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00955}00955\ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}task\ running\ in\ \%s:\ \%s"{}},\ current\_thread\_name(),\ self)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00956}00956\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_a72f1ce21249014b5572f86746b4fc785}{\_run}}(pool)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00957}00957\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00958}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_a442ed70f46815b096ac667801e1880c5}{00958}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_a442ed70f46815b096ac667801e1880c5}{tick}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00959}00959\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Run\ the\ scheduled\ task}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00960}00960\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00961}00961\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ function\ is\ called\ by\ the\ scheduler\ task.\ Use\ a\ worker\ to}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00962}00962\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ run\ the\ task\ for\ real\ in\ order\ to\ free\ the\ scheduler\ immediately.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00963}00963\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00964}00964\ \ \ \ \ \ \ \ \ pool\ =\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_a3019daf8f4236b0f2586496e6df0f6f7}{pool}}()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00965}00965\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ pool\ \textcolor{keywordflow}{or}\ pool.closed:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00966}00966\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Pool\ is\ no\ more\ working.\ Quietly\ discard\ the\ operation.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00967}00967\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}task\ tick\ discarded:\ \%s"{}},\ self)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00968}00968\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00969}00969\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00970}00970\ \ \ \ \ \ \ \ \ pool.run\_task(self)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00971}00971\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00972}00972\ \ \ \ \ \textcolor{preprocessor}{@abstractmethod}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00973}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_a72f1ce21249014b5572f86746b4fc785}{00973}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task_a72f1ce21249014b5572f86746b4fc785}{\_run}}(self,\ pool:\ ConnectionPool[Any])\ -\/>\ \textcolor{keywordtype}{None}:\ ...}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00974}00974\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00975}00975\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00976}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_stop_worker}{00976}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_stop_worker}{StopWorker}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task}{MaintenanceTask}}):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00977}00977\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Signal\ the\ maintenance\ worker\ to\ terminate."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00978}00978\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00979}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_stop_worker_aae0d9b4c04351423bdb1d08959995073}{00979}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_stop_worker_aae0d9b4c04351423bdb1d08959995073}{\_run}}(self,\ pool:\ ConnectionPool[Any])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00980}00980\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00981}00981\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00982}00982\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00983}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{00983}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection}{AddConnection}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task}{MaintenanceTask}}):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00984}00984\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00985}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection_ad4b53e233e73b7663dc5eb4f274ea7fa}{00985}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection_ad4b53e233e73b7663dc5eb4f274ea7fa}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00986}00986\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00987}00987\ \ \ \ \ \ \ \ \ pool:\ ConnectionPool[Any],}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00988}00988\ \ \ \ \ \ \ \ \ attempt:\ AttemptWithBackoff\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00989}00989\ \ \ \ \ \ \ \ \ growing:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00990}00990\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00991}00991\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection_ad4b53e233e73b7663dc5eb4f274ea7fa}{\_\_init\_\_}}(pool)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00992}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection_a8b267b86f93a5ebc912ff7c97eb17617}{00992}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection_a8b267b86f93a5ebc912ff7c97eb17617}{attempt}}\ =\ attempt}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00993}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection_a2a32bc222814a40ae0c7093dcf7d17fa}{00993}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection_a2a32bc222814a40ae0c7093dcf7d17fa}{growing}}\ =\ growing}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00994}00994\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00995}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection_a091fd6290a01dfb3e5526bf360682fdc}{00995}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection_a091fd6290a01dfb3e5526bf360682fdc}{\_run}}(self,\ pool:\ ConnectionPool[Any])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00996}00996\ \ \ \ \ \ \ \ \ pool.\_add\_connection(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection_a8b267b86f93a5ebc912ff7c97eb17617}{attempt}},\ growing=self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_add_connection_a2a32bc222814a40ae0c7093dcf7d17fa}{growing}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00997}00997\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00998}00998\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l00999}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection}{00999}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection}{ReturnConnection}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task}{MaintenanceTask}}):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01000}01000\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Clean\ up\ and\ return\ a\ connection\ to\ the\ pool."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01001}01001\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01002}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection_a895045faf2f710728cee8f1652f4d510}{01002}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection_a895045faf2f710728cee8f1652f4d510}{\_\_init\_\_}}(self,\ pool:\ ConnectionPool[Any],\ conn:\ CT,\ from\_getconn:\ bool):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01003}01003\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection_a895045faf2f710728cee8f1652f4d510}{\_\_init\_\_}}(pool)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01004}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection_ac73949c69040afa59041e214c3d7eb20}{01004}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection_ac73949c69040afa59041e214c3d7eb20}{conn}}\ =\ conn}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01005}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection_a3a070d30ce872e99ebe8d5be555fc2ec}{01005}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection_a3a070d30ce872e99ebe8d5be555fc2ec}{from\_getconn}}\ =\ from\_getconn}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01006}01006\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01007}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection_aaa42f975f484d78c00ac098e776bc659}{01007}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection_aaa42f975f484d78c00ac098e776bc659}{\_run}}(self,\ pool:\ ConnectionPool[Any])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01008}01008\ \ \ \ \ \ \ \ \ pool.\_return\_connection(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection_ac73949c69040afa59041e214c3d7eb20}{conn}},\ from\_getconn=self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_return_connection_a3a070d30ce872e99ebe8d5be555fc2ec}{from\_getconn}})}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01009}01009\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01010}01010\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01011}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_shrink_pool}{01011}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_shrink_pool}{ShrinkPool}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task}{MaintenanceTask}}):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01012}01012\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}If\ the\ pool\ can\ shrink,\ remove\ one\ connection.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01013}01013\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01014}01014\ \textcolor{stringliteral}{\ \ \ \ Re-\/schedule\ periodically\ and\ also\ reset\ the\ minimum\ number\ of\ connections}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01015}01015\ \textcolor{stringliteral}{\ \ \ \ in\ the\ pool.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01016}01016\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01017}01017\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01018}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_shrink_pool_a7299481e45ac2138efd7836dddf17beb}{01018}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_shrink_pool_a7299481e45ac2138efd7836dddf17beb}{\_run}}(self,\ pool:\ ConnectionPool[Any])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01019}01019\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Reschedule\ the\ task\ now\ so\ that\ in\ case\ of\ any\ error\ we\ don't\ lose}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01020}01020\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ periodic\ run.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01021}01021\ \ \ \ \ \ \ \ \ pool.schedule\_task(self,\ pool.max\_idle)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01022}01022\ \ \ \ \ \ \ \ \ pool.\_shrink\_pool()}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01023}01023\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01024}01024\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01025}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule}{01025}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule}{Schedule}}(\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_maintenance_task}{MaintenanceTask}}):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01026}01026\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Schedule\ a\ task\ in\ the\ pool\ scheduler.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01027}01027\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01028}01028\ \textcolor{stringliteral}{\ \ \ \ This\ task\ is\ a\ trampoline\ to\ allow\ to\ use\ a\ sync\ call\ (pool.run\_task)}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01029}01029\ \textcolor{stringliteral}{\ \ \ \ to\ execute\ an\ async\ one\ (pool.schedule\_task).\ It\ is\ pretty\ much\ no-\/op}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01030}01030\ \textcolor{stringliteral}{\ \ \ \ in\ sync\ code.}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01031}01031\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01032}01032\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01033}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule_aad9864b3145a0deb95b8b27c5f66caef}{01033}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule_aad9864b3145a0deb95b8b27c5f66caef}{\_\_init\_\_}}(self,\ pool:\ ConnectionPool[Any],\ task:\ MaintenanceTask,\ delay:\ float):}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01034}01034\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule_aad9864b3145a0deb95b8b27c5f66caef}{\_\_init\_\_}}(pool)}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01035}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule_ac5ffe732f05232fc5227be072f38f1bf}{01035}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule_ac5ffe732f05232fc5227be072f38f1bf}{task}}\ =\ task}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01036}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule_a172503805bdd937edbdc7043f5e29566}{01036}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule_a172503805bdd937edbdc7043f5e29566}{delay}}\ =\ delay}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01037}01037\ }
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01038}\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule_a8577eef48a460b78fe478947a21e481a}{01038}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule_a8577eef48a460b78fe478947a21e481a}{\_run}}(self,\ pool:\ ConnectionPool[Any])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{psycopg__pool_2pool_8py_source_l01039}01039\ \ \ \ \ \ \ \ \ pool.schedule\_task(self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule_ac5ffe732f05232fc5227be072f38f1bf}{task}},\ self.\doxymbox{\hyperlink{classpsycopg__pool_1_1pool_1_1_schedule_a172503805bdd937edbdc7043f5e29566}{delay}})}
+
+\end{DoxyCode}

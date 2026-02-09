@@ -1,0 +1,114 @@
+\doxysection{\+\_\+debug.\+py}
+\hypertarget{__debug_8py_source}{}\label{__debug_8py_source}\index{venv/Lib/site-\/packages/psycopg/pq/\_debug.py@{venv/Lib/site-\/packages/psycopg/pq/\_debug.py}}
+\doxymbox{\hyperlink{__debug_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1pq_1_1__debug}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00002}00002\ \textcolor{stringliteral}{libpq\ debugging\ tools}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00003}00003\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00004}00004\ \textcolor{stringliteral}{These\ functionalities\ are\ exposed\ here\ for\ convenience,\ but\ are\ not\ part\ of}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00005}00005\ \textcolor{stringliteral}{the\ public\ interface\ and\ are\ subject\ to\ change\ at\ any\ moment.}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00006}00006\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00007}00007\ \textcolor{stringliteral}{Suggested\ usage::}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00008}00008\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00009}00009\ \textcolor{stringliteral}{\ \ \ \ import\ logging}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00010}00010\ \textcolor{stringliteral}{\ \ \ \ import\ psycopg}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00011}00011\ \textcolor{stringliteral}{\ \ \ \ from\ psycopg\ import\ pq}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00012}00012\ \textcolor{stringliteral}{\ \ \ \ from\ psycopg.pq.\_debug\ import\ PGconnDebug}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00013}00013\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00014}00014\ \textcolor{stringliteral}{\ \ \ \ logging.basicConfig(level=logging.INFO,\ format="{}\%(message)s"{})}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00015}00015\ \textcolor{stringliteral}{\ \ \ \ logger\ =\ logging.getLogger("{}psycopg.debug"{})}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00016}00016\ \textcolor{stringliteral}{\ \ \ \ logger.setLevel(logging.INFO)}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00017}00017\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00018}00018\ \textcolor{stringliteral}{\ \ \ \ assert\ pq.\_\_impl\_\_\ ==\ "{}python"{}}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00019}00019\ \textcolor{stringliteral}{\ \ \ \ pq.PGconn\ =\ PGconnDebug}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00020}00020\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00021}00021\ \textcolor{stringliteral}{\ \ \ \ with\ psycopg.connect("{}"{})\ as\ conn:}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00022}00022\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ conn.pgconn.trace(2)}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00023}00023\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ conn.pgconn.set\_trace\_flags(}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00024}00024\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ pq.Trace.SUPPRESS\_TIMESTAMPS\ |\ pq.Trace.REGRESS\_MODE)}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00025}00025\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ...}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00026}00026\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00027}00027\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00029}00029\ \textcolor{comment}{\#\ Copyright\ (C)\ 2022\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00031}00031\ \textcolor{keyword}{import}\ inspect}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00032}00032\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00033}00033\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Any}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00034}00034\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ wraps}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00035}00035\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Callable}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00037}00037\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ PGconn,\ abc}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00038}00038\ \textcolor{keyword}{from}\ .misc\ \textcolor{keyword}{import}\ connection\_summary}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00039}00039\ \textcolor{keyword}{from}\ ..\_compat\ \textcolor{keyword}{import}\ Self,\ TypeVar}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00041}\doxymbox{\hyperlink{namespacepsycopg_1_1pq_1_1__debug_a28ee899c0d256cd8df0156c5a1ae2060}{00041}}\ Func\ =\ \doxymbox{\hyperlink{classtyping__extensions_1_1_type_var}{TypeVar}}(\textcolor{stringliteral}{"{}Func"{}},\ bound=Callable[...,\ Any])}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00043}\doxymbox{\hyperlink{namespacepsycopg_1_1pq_1_1__debug_abf5c81344b5fc4b293a3ecc633a3a704}{00043}}\ logger\ =\ logging.getLogger(\textcolor{stringliteral}{"{}psycopg.debug"{}})}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00045}00045\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00046}\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug}{00046}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug}{PGconnDebug}}:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00047}00047\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Wrapper\ for\ a\ PQconn\ logging\ all\ its\ access."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00048}00048\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00049}\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_a44b824da7a9e2e3a3fb927016a6650cf}{00049}}\ \ \ \ \ \_pgconn:\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1abc_1_1_p_gconn}{abc.PGconn}}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00051}\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_a349c6746b60a8dc323fb6a1bc7aa3454}{00051}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_a349c6746b60a8dc323fb6a1bc7aa3454}{\_\_init\_\_}}(self,\ pgconn:\ abc.PGconn):}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_a664a4e2ff2f46ea00a0f6f79e744bcc1}{\_\_setattr\_\_}}(\textcolor{stringliteral}{"{}\_pgconn"{}},\ pgconn)}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00054}\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_ad168f8fe2ec5d1d110b0f55c8eddf8f6}{00054}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_ad168f8fe2ec5d1d110b0f55c8eddf8f6}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ cls\ =\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_module\_\_\}.\{self.\_\_class\_\_.\_\_qualname\_\_\}"{}}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ info\ =\ connection\_summary(self.\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_a44b824da7a9e2e3a3fb927016a6650cf}{\_pgconn}})}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}<\{cls\}\ \{info\}\ at\ 0x\{id(self):x\}>"{}}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00059}\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_a21ae76b61416c2e48e156f4682691a3e}{00059}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_a21ae76b61416c2e48e156f4682691a3e}{\_\_getattr\_\_}}(self,\ attr:\ str)\ -\/>\ Any:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ callable(value\ :=\ getattr(self.\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_a44b824da7a9e2e3a3fb927016a6650cf}{\_pgconn}},\ attr)):}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepsycopg_1_1pq_1_1__debug_a78303057c64d956a0689239bdc0466a7}{debugging}}(value)}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}PGconn.\%s\ -\/>\ \%s"{}},\ attr,\ value)}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ value}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00065}00065\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00066}\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_a664a4e2ff2f46ea00a0f6f79e744bcc1}{00066}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_a664a4e2ff2f46ea00a0f6f79e744bcc1}{\_\_setattr\_\_}}(self,\ attr:\ str,\ value:\ Any)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ setattr(self.\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_a44b824da7a9e2e3a3fb927016a6650cf}{\_pgconn}},\ attr,\ value)}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}PGconn.\%s\ <-\/\ \%s"{}},\ attr,\ value)}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00070}00070\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00071}\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_a4c0b2fa2337de16b97361b6e79ad97f8}{00071}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_a32db880f86f07207c4f2220c56061dd1}{connect}}(cls,\ conninfo:\ bytes)\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls(\doxymbox{\hyperlink{namespacepsycopg_1_1pq_1_1__debug_a78303057c64d956a0689239bdc0466a7}{debugging}}(PGconn.connect)(conninfo))}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00073}00073\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00074}00074\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00075}\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_acc0c22665751a8f92451e56743602ee9}{00075}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_acc0c22665751a8f92451e56743602ee9}{connect\_start}}(cls,\ conninfo:\ bytes)\ -\/>\ Self:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls(\doxymbox{\hyperlink{namespacepsycopg_1_1pq_1_1__debug_a78303057c64d956a0689239bdc0466a7}{debugging}}(PGconn.connect\_start)(conninfo))}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00078}00078\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00079}\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_af6f4bf4cb634c52e477a738610b15780}{00079}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__debug_1_1_p_gconn_debug_af6f4bf4cb634c52e477a738610b15780}{ping}}(self,\ conninfo:\ bytes)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepsycopg_1_1pq_1_1__debug_a78303057c64d956a0689239bdc0466a7}{debugging}}(PGconn.ping)(conninfo)}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00083}\doxymbox{\hyperlink{namespacepsycopg_1_1pq_1_1__debug_a78303057c64d956a0689239bdc0466a7}{00083}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1pq_1_1__debug_a78303057c64d956a0689239bdc0466a7}{debugging}}(f:\ Func)\ -\/>\ Func:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00084}00084\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Wrap\ a\ function\ in\ order\ to\ log\ its\ arguments\ and\ return\ value\ on\ call."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00085}00085\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00086}00086\ \ \ \ \ \textcolor{preprocessor}{@wraps(f)}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00087}00087\ \ \ \ \ \textcolor{keyword}{def\ }debugging\_(*args:\ Any,\ **kwargs:\ Any)\ -\/>\ Any:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ reprs\ =\ []}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ arg\ \textcolor{keywordflow}{in}\ args:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ reprs.append(f\textcolor{stringliteral}{"{}\{arg!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ k,\ v\ \textcolor{keywordflow}{in}\ kwargs.items():}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ reprs.append(f\textcolor{stringliteral}{"{}\{k\}=\{v!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}PGconn.\%s(\%s)"{}},\ f.\_\_name\_\_,\ \textcolor{stringliteral}{"{},\ "{}}.join(reprs))}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ rv\ =\ f(*args,\ **kwargs)}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ ex:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}\ \ \ \ <-\/\ \%r"{}},\ ex)}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Display\ the\ return\ value\ only\ if\ the\ function\ is\ declared\ to\ return}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ something\ else\ than\ None.}}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ ra\ =\ inspect.signature(f).return\_annotation}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ra\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{or}\ rv\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}\ \ \ \ <-\/\ \%r"{}},\ rv)}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ rv}
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{__debug_8py_source_l00108}00108\ \ \ \ \ \textcolor{keywordflow}{return}\ debugging\_\ \ \textcolor{comment}{\#\ type:\ ignore}}
+
+\end{DoxyCode}

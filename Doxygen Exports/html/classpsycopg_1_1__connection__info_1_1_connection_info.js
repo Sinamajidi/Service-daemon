@@ -1,0 +1,27 @@
+var classpsycopg_1_1__connection__info_1_1_connection_info =
+[
+    [ "__init__", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a7d371b4ae1f7df543c0b96a89ff02d52", null ],
+    [ "_get_pgconn_attr", "classpsycopg_1_1__connection__info_1_1_connection_info.html#aea28cc3ffa8ffb5bc94b17b565164446", null ],
+    [ "backend_pid", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a8e859af09958e6330767dfe8e24b4a66", null ],
+    [ "dbname", "classpsycopg_1_1__connection__info_1_1_connection_info.html#ae77732a9e8a58295a22e99a6d63199e2", null ],
+    [ "dsn", "classpsycopg_1_1__connection__info_1_1_connection_info.html#af618041ab71328983086cb0fe3b7b57e", null ],
+    [ "encoding", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a81541a51479424afb0724723e0efb627", null ],
+    [ "error_message", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a439a2d78d8464347038f393fea060552", null ],
+    [ "full_protocol_version", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a4eab489d626366d7ed74061461d0e712", null ],
+    [ "get_parameters", "classpsycopg_1_1__connection__info_1_1_connection_info.html#aa4c9ddd34e758352bee98caa060c074c", null ],
+    [ "host", "classpsycopg_1_1__connection__info_1_1_connection_info.html#ac4c11640f3cbddb83dec1c7076c53732", null ],
+    [ "hostaddr", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a65e8137876a896457c18446dcea0e1af", null ],
+    [ "options", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a632cf1f2c9203053d01acc52889ec90d", null ],
+    [ "parameter_status", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a94f2e95cd701346aa34c2b416ed3bbbb", null ],
+    [ "password", "classpsycopg_1_1__connection__info_1_1_connection_info.html#abb79d8699b10ca09d6cc40aafa90a1b0", null ],
+    [ "pipeline_status", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a65890eb86c243239bd32847617e0d664", null ],
+    [ "port", "classpsycopg_1_1__connection__info_1_1_connection_info.html#ac38bbb6b089bcd7e7f50be398f800a34", null ],
+    [ "server_version", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a38160e6ebd7f311d79496f1ec087ef45", null ],
+    [ "status", "classpsycopg_1_1__connection__info_1_1_connection_info.html#aa6a5a9aec6a49b3f97a2de923115d57c", null ],
+    [ "timezone", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a9eb1368e9cfb6484a37fafa8eca092f8", null ],
+    [ "transaction_status", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a9f79cd198b627187b18c056449ceaa5c", null ],
+    [ "user", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a569c2ab64747dc65590e0477437e9733", null ],
+    [ "vendor", "classpsycopg_1_1__connection__info_1_1_connection_info.html#ae9aff5205ac55b65c07bddcec6b157c6", null ],
+    [ "encoding", "classpsycopg_1_1__connection__info_1_1_connection_info.html#a64fdc00a160f5d0204f3846d2d04452f", null ],
+    [ "pgconn", "classpsycopg_1_1__connection__info_1_1_connection_info.html#ada68962fb12f507b54952c9401ee38f0", null ]
+];

@@ -1,0 +1,181 @@
+\doxysection{lock.\+py}
+\hypertarget{lock_8py_source}{}\label{lock_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/commands/lock.py@{venv/Lib/site-\/packages/pip/\_internal/commands/lock.py}}
+\doxymbox{\hyperlink{lock_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1commands_1_1lock}{00001}}\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00002}00002\ \textcolor{keyword}{from}\ optparse\ \textcolor{keyword}{import}\ Values}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00003}00003\ \textcolor{keyword}{from}\ pathlib\ \textcolor{keyword}{import}\ Path}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00005}00005\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor}{pip.\_vendor}}\ \textcolor{keyword}{import}\ tomli\_w}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00006}00006\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1pylock}{pip.\_vendor.packaging.pylock}}\ \textcolor{keyword}{import}\ is\_valid\_pylock\_path}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00008}00008\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cache}{pip.\_internal.cache}}\ \textcolor{keyword}{import}\ WheelCache}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00009}00009\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli}{pip.\_internal.cli}}\ \textcolor{keyword}{import}\ cmdoptions}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1req__command}{pip.\_internal.cli.req\_command}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00011}00011\ \ \ \ \ RequirementCommand,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00012}00012\ \ \ \ \ with\_cleanup,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00013}00013\ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00014}00014\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1status__codes}{pip.\_internal.cli.status\_codes}}\ \textcolor{keyword}{import}\ SUCCESS}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00015}00015\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1build__tracker}{pip.\_internal.operations.build.build\_tracker}}\ \textcolor{keyword}{import}\ get\_build\_tracker}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00016}00016\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1logging}{pip.\_internal.utils.logging}}\ \textcolor{keyword}{import}\ getLogger}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00017}00017\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1misc}{pip.\_internal.utils.misc}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00018}00018\ \ \ \ \ get\_pip\_version,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00019}00019\ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00020}00020\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1pylock}{pip.\_internal.utils.pylock}}\ \textcolor{keyword}{import}\ pylock\_from\_install\_requirements}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00021}00021\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir}{pip.\_internal.utils.temp\_dir}}\ \textcolor{keyword}{import}\ TempDirectory}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00023}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1commands_1_1lock_a25ae772f055c2015190c5187cf58cc61}{00023}}\ logger\ =\ getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00026}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1lock_1_1_lock_command}{00026}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1lock_1_1_lock_command}{LockCommand}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command}{RequirementCommand}}):}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00027}00027\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00028}00028\ \textcolor{stringliteral}{\ \ \ \ EXPERIMENTAL\ -\/\ Lock\ packages\ and\ their\ dependencies\ from:}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00029}00029\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00030}00030\ \textcolor{stringliteral}{\ \ \ \ -\/\ PyPI\ (and\ other\ indexes)\ using\ requirement\ specifiers.}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00031}00031\ \textcolor{stringliteral}{\ \ \ \ -\/\ VCS\ project\ urls.}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00032}00032\ \textcolor{stringliteral}{\ \ \ \ -\/\ Local\ project\ directories.}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00033}00033\ \textcolor{stringliteral}{\ \ \ \ -\/\ Local\ or\ remote\ source\ archives.}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00034}00034\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00035}00035\ \textcolor{stringliteral}{\ \ \ \ pip\ also\ supports\ locking\ from\ "{}requirements\ files"{},\ which\ provide\ an\ easy}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00036}00036\ \textcolor{stringliteral}{\ \ \ \ way\ to\ specify\ a\ whole\ environment\ to\ be\ installed.}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00037}00037\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00038}00038\ \textcolor{stringliteral}{\ \ \ \ The\ generated\ lock\ file\ is\ only\ guaranteed\ to\ be\ valid\ for\ the\ current}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00039}00039\ \textcolor{stringliteral}{\ \ \ \ python\ version\ and\ platform.}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00040}00040\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00042}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1lock_1_1_lock_command}{00042}}\ \ \ \ \ usage\ =\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00043}00043\ \textcolor{stringliteral}{\ \ \ \ \ \ \%prog\ [options]\ [-\/e]\ <local\ project\ path>\ ...}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00044}00044\ \textcolor{stringliteral}{\ \ \ \ \ \ \%prog\ [options]\ <requirement\ specifier>\ [package-\/index-\/options]\ ...}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00045}00045\ \textcolor{stringliteral}{\ \ \ \ \ \ \%prog\ [options]\ -\/r\ <requirements\ file>\ [package-\/index-\/options]\ ...}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00046}00046\ \textcolor{stringliteral}{\ \ \ \ \ \ \%prog\ [options]\ <archive\ url/path>\ ..."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00047}00047\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00048}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1lock_1_1_lock_command_ad3c45f9e14ffd2cc58cba7aaf41ace6d}{00048}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1lock_1_1_lock_command_ad3c45f9e14ffd2cc58cba7aaf41ace6d}{add\_options}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1cmdoptions_1_1_pip_option}{cmdoptions.PipOption}}(}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/output"{}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/o"{}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dest=\textcolor{stringliteral}{"{}output\_file"{}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ metavar=\textcolor{stringliteral}{"{}path"{}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ type=\textcolor{stringliteral}{"{}path"{}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ default=\textcolor{stringliteral}{"{}pylock.toml"{}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ help=\textcolor{stringliteral}{"{}Lock\ file\ name\ (default=pylock.toml).\ Use\ -\/\ for\ stdout."{}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.requirements())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.requirements\_from\_scripts())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.constraints())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.build\_constraints())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.no\_deps())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00065}00065\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.editable())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.src())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.ignore\_requires\_python())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.no\_build\_isolation())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.use\_pep517())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.check\_build\_deps())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.config\_settings())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00076}00076\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.require\_hashes())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}}.add\_option(cmdoptions.progress\_bar())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ index\_opts\ =\ cmdoptions.make\_option\_group(}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \ \ \ \ cmdoptions.index\_group,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_af55279eb904d389000b26fec0cdfb165}{parser}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ selection\_opts\ =\ cmdoptions.make\_option\_group(}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ cmdoptions.package\_selection\_group,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_af55279eb904d389000b26fec0cdfb165}{parser}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00089}00089\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_af55279eb904d389000b26fec0cdfb165}{parser}}.insert\_option\_group(0,\ index\_opts)}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_af55279eb904d389000b26fec0cdfb165}{parser}}.insert\_option\_group(0,\ selection\_opts)}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00092}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1lock_1_1_lock_command}{00092}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_af55279eb904d389000b26fec0cdfb165}{parser}}.insert\_option\_group(0,\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ac92a9689689c17dc866ddeeb2a276ef1}{cmd\_opts}})}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00094}00094\ \ \ \ \ \textcolor{preprocessor}{@with\_cleanup}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00095}\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1lock_1_1_lock_command_a0e6d81f65c44fef162d18970128de16f}{00095}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1commands_1_1lock_1_1_lock_command_a0e6d81f65c44fef162d18970128de16f}{run}}(self,\ options:\ Values,\ args:\ list[str])\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ logger.verbose(\textcolor{stringliteral}{"{}Using\ \%s"{}},\ get\_pip\_version())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00097}00097\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}pip\ lock\ is\ currently\ an\ experimental\ command.\ "{}}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}It\ may\ be\ removed/changed\ in\ a\ future\ release\ "{}}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}without\ prior\ warning."{}}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ cmdoptions.check\_build\_constraints(options)}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ cmdoptions.check\_release\_control\_exclusive(options)}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ session\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a0534b58b9b2272a9c287282c3af31a97}{get\_default\_session}}(options)}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ finder\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a57cf07699422fcd4b37e03b8da48ce32}{\_build\_package\_finder}}(}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \ \ \ \ options=options,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \ \ \ \ session=session,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_requires\_python=options.ignore\_requires\_python,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ build\_tracker\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1command__context_1_1_command_context_mix_in_a1a4327ab36cea3f5d59ceceecb6fed23}{enter\_context}}(get\_build\_tracker())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00115}00115\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ directory\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory}{TempDirectory}}(}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \ \ \ \ delete=\textcolor{keywordflow}{not}\ options.no\_clean,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \ \ \ \ kind=\textcolor{stringliteral}{"{}install"{}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \ \ \ \ globally\_managed=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ reqs\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a87566fcc1b61b9ea5f4f7335243345e4}{get\_requirements}}(args,\ options,\ finder,\ session)}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00123}00123\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ wheel\_cache\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1cache_1_1_wheel_cache}{WheelCache}}(options.cache\_dir)}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00125}00125\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Only\ when\ installing\ is\ it\ permitted\ to\ use\ PEP\ 660.}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ other\ circumstances\ (pip\ wheel,\ pip\ download)\ we\ generate}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ regular\ (i.e.\ non\ editable)\ metadata\ and\ wheels.}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ reqs:}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ req.permit\_editable\_wheels\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ preparer\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a0831590f8f79612bdacefcf3ce64a675}{make\_requirement\_preparer}}(}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ temp\_build\_dir=directory,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \ \ \ \ options=options,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \ \ \ \ build\_tracker=build\_tracker,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \ \ \ \ session=session,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \ \ \ \ finder=finder,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \ \ \ \ use\_user\_site=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \ \ \ \ verbosity=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command_ae0cee0c3cc3e808996a9da51e2a79301}{verbosity}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ resolver\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_a878b6e0ad66884df4ced45b3e6eb859c}{make\_resolver}}(}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ preparer=preparer,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ finder=finder,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \ \ \ \ options=options,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \ \ \ \ wheel\_cache=wheel\_cache,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \ \ \ \ use\_user\_site=\textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_installed=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ ignore\_requires\_python=options.ignore\_requires\_python,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ upgrade\_strategy=\textcolor{stringliteral}{"{}to-\/satisfy-\/only"{}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00151}00151\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1req__command_1_1_requirement_command_af1f8c63d1fb9670a7594ce1d28d7f114}{trace\_basic\_info}}(finder)}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00153}00153\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ requirement\_set\ =\ resolver.resolve(reqs,\ check\_supported\_wheels=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.output\_file\ ==\ \textcolor{stringliteral}{"{}-\/"{}}:}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \ \ \ \ base\_dir\ =\ Path.cwd()}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ output\_file\_path\ =\ Path(options.output\_file)}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ is\_valid\_pylock\_path(output\_file\_path):}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\%s\ is\ not\ a\ valid\ lock\ file\ name."{}},}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ output\_file\_path,}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ base\_dir\ =\ output\_file\_path.parent}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ pylock\ =\ pylock\_from\_install\_requirements(}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ requirement\_set.requirements.values(),\ base\_dir=base\_dir}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ pylock\_toml\ =\ tomli\_w.dumps(pylock.to\_dict())}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.output\_file\ ==\ \textcolor{stringliteral}{"{}-\/"{}}:}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ sys.stdout.write(pylock\_toml)}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \ \ \ \ output\_file\_path.write\_text(pylock\_toml,\ encoding=\textcolor{stringliteral}{"{}utf-\/8"{}})}
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00174}00174\ }
+\DoxyCodeLine{\Hypertarget{lock_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ SUCCESS}
+
+\end{DoxyCode}

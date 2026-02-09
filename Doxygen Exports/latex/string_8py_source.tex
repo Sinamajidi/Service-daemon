@@ -1,0 +1,238 @@
+\doxysection{string.\+py}
+\hypertarget{string_8py_source}{}\label{string_8py_source}\index{venv/Lib/site-\/packages/psycopg/types/string.py@{venv/Lib/site-\/packages/psycopg/types/string.py}}
+\doxymbox{\hyperlink{string_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1string}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00002}00002\ \textcolor{stringliteral}{Adapters\ for\ textual\ types.}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00009}00009\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00011}00011\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ \_oids}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00012}00012\ \textcolor{keyword}{from}\ ..pq\ \textcolor{keyword}{import}\ Escaping,\ Format}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00013}00013\ \textcolor{keyword}{from}\ ..abc\ \textcolor{keyword}{import}\ AdaptContext}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00014}00014\ \textcolor{keyword}{from}\ ..adapt\ \textcolor{keyword}{import}\ Buffer,\ Dumper,\ Loader}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00015}00015\ \textcolor{keyword}{from}\ ..errors\ \textcolor{keyword}{import}\ DataError}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00016}00016\ \textcolor{keyword}{from}\ ..\_encodings\ \textcolor{keyword}{import}\ conn\_encoding}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00018}00018\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00019}00019\ \ \ \ \ \textcolor{keyword}{from}\ ..pq.abc\ \textcolor{keyword}{import}\ Escaping\ \textcolor{keyword}{as}\ EscapingProto}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00020}00020\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00022}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___base_str_dumper}{00022}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___base_str_dumper}{\_BaseStrDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00023}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___base_str_dumper_aecc5fa91d9317a6200fe50a5e4abf534}{00023}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___base_str_dumper_aecc5fa91d9317a6200fe50a5e4abf534}{\_\_init\_\_}}(self,\ cls:\ type,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00024}00024\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___base_str_dumper_aecc5fa91d9317a6200fe50a5e4abf534}{\_\_init\_\_}}(cls,\ context)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00025}00025\ \ \ \ \ \ \ \ \ enc\ =\ conn\_encoding(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac19516f509822a8161669804c73ca263}{connection}})}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00026}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___base_str_dumper_a4b600d58709eb5530589a8bc90ba476a}{00026}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___base_str_dumper_a4b600d58709eb5530589a8bc90ba476a}{\_encoding}}\ =\ enc\ \textcolor{keywordflow}{if}\ enc\ !=\ \textcolor{stringliteral}{"{}ascii"{}}\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}utf-\/8"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00029}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_binary_dumper}{00029}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_binary_dumper}{\_StrBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___base_str_dumper}{\_BaseStrDumper}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00030}00030\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00031}00031\ \textcolor{stringliteral}{\ \ \ \ Base\ class\ to\ dump\ a\ Python\ strings\ to\ a\ Postgres\ text\ type,\ in\ binary\ format.}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00032}00032\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00033}00033\ \textcolor{stringliteral}{\ \ \ \ Subclasses\ shall\ specify\ the\ oids\ of\ real\ types\ (text,\ varchar,\ name...).}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00034}00034\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00036}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_binary_dumper}{00036}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00038}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_binary_dumper_a63ce6e4fbfd3a993dd2984390fa9685c}{00038}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_binary_dumper_a63ce6e4fbfd3a993dd2984390fa9685c}{dump}}(self,\ obj:\ str)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ server\ will\ raise\ DataError\ subclass\ if\ the\ string\ contains\ 0x00}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00040}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_binary_dumper}{00040}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ obj.encode(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___base_str_dumper_a4b600d58709eb5530589a8bc90ba476a}{\_encoding}})}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00043}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_dumper}{00043}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_dumper}{\_StrDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___base_str_dumper}{\_BaseStrDumper}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00044}00044\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00045}00045\ \textcolor{stringliteral}{\ \ \ \ Base\ class\ to\ dump\ a\ Python\ strings\ to\ a\ Postgres\ text\ type,\ in\ text\ format.}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00046}00046\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00047}00047\ \textcolor{stringliteral}{\ \ \ \ Subclasses\ shall\ specify\ the\ oids\ of\ real\ types\ (text,\ varchar,\ name...).}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00048}00048\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00050}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_dumper_ab9252deb29d87b2369d2d6dfac05258c}{00050}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_dumper_ab9252deb29d87b2369d2d6dfac05258c}{dump}}(self,\ obj:\ str)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}\(\backslash\)x00"{}}\ \textcolor{keywordflow}{in}\ obj:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpsycopg_1_1errors_1_1_data_error}{DataError}}(\textcolor{stringliteral}{"{}PostgreSQL\ text\ fields\ cannot\ contain\ NUL\ (0x00)\ bytes"{}})}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00054}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_dumper}{00054}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ obj.encode(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___base_str_dumper_a4b600d58709eb5530589a8bc90ba476a}{\_encoding}})}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00057}00057\ \textcolor{comment}{\#\ The\ next\ are\ concrete\ dumpers,\ each\ one\ specifying\ the\ oid\ they\ dump\ to.}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00060}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_binary_dumper}{00060}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_binary_dumper}{StrBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_binary_dumper}{\_StrBinaryDumper}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00061}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_binary_dumper}{00061}}\ \ \ \ \ oid\ =\ \_oids.TEXT\_OID}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00062}00062\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00064}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_binary_dumper_varchar}{00064}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_binary_dumper_varchar}{StrBinaryDumperVarchar}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_binary_dumper}{\_StrBinaryDumper}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00065}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_binary_dumper_varchar}{00065}}\ \ \ \ \ oid\ =\ \_oids.VARCHAR\_OID}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00066}00066\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00068}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_binary_dumper_name}{00068}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_binary_dumper_name}{StrBinaryDumperName}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_binary_dumper}{\_StrBinaryDumper}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00069}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_binary_dumper_name}{00069}}\ \ \ \ \ oid\ =\ \_oids.NAME\_OID}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00071}00071\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00072}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_dumper}{00072}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_dumper}{StrDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_dumper}{\_StrDumper}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00073}00073\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00074}00074\ \textcolor{stringliteral}{\ \ \ \ Dumper\ for\ strings\ in\ text\ format\ to\ the\ text\ oid.}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00075}00075\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00076}00076\ \textcolor{stringliteral}{\ \ \ \ Note\ that\ this\ dumper\ is\ not\ used\ by\ default\ because\ the\ type\ is\ too\ strict}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00077}00077\ \textcolor{stringliteral}{\ \ \ \ and\ PostgreSQL\ would\ require\ an\ explicit\ casts\ to\ everything\ that\ is\ not\ a}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00078}00078\ \textcolor{stringliteral}{\ \ \ \ text\ field.\ However\ it\ is\ useful\ where\ the\ unknown\ oid\ is\ ambiguous\ and\ the}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ text\ oid\ is\ required,\ for\ instance\ with\ variadic\ functions.}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00080}00080\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00082}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_dumper}{00082}}\ \ \ \ \ oid\ =\ \_oids.TEXT\_OID}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00083}00083\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00085}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_dumper_varchar}{00085}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_dumper_varchar}{StrDumperVarchar}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_dumper}{\_StrDumper}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00086}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_dumper_varchar}{00086}}\ \ \ \ \ oid\ =\ \_oids.VARCHAR\_OID}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00087}00087\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00089}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_dumper_name}{00089}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_dumper_name}{StrDumperName}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_dumper}{\_StrDumper}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00090}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_dumper_name}{00090}}\ \ \ \ \ oid\ =\ \_oids.NAME\_OID}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00091}00091\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00093}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_dumper_unknown}{00093}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_str_dumper_unknown}{StrDumperUnknown}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1___str_dumper}{\_StrDumper}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00094}00094\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00095}00095\ \textcolor{stringliteral}{\ \ \ \ Dumper\ for\ strings\ in\ text\ format\ to\ the\ unknown\ oid.}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00096}00096\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00097}00097\ \textcolor{stringliteral}{\ \ \ \ This\ dumper\ is\ the\ default\ dumper\ for\ strings\ and\ allows\ to\ use\ Python}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00098}00098\ \textcolor{stringliteral}{\ \ \ \ strings\ to\ represent\ almost\ every\ data\ type.\ In\ a\ few\ places,\ however,\ the}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00099}00099\ \textcolor{stringliteral}{\ \ \ \ unknown\ oid\ is\ not\ accepted\ (for\ instance\ in\ variadic\ functions\ such\ as}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00100}00100\ \textcolor{stringliteral}{\ \ \ \ 'concat()').\ In\ that\ case\ either\ a\ cast\ on\ the\ placeholder\ ('\%s::text')\ or}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00101}00101\ \textcolor{stringliteral}{\ \ \ \ the\ StrTextDumper\ should\ be\ used.}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00102}00102\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00104}00104\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00107}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_loader}{00107}}\ \textcolor{keyword}{class\ }TextLoader(Loader):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00108}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_loader_a718aaefeb163a2274fdd58cdefbe3f56}{00108}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_loader_a718aaefeb163a2274fdd58cdefbe3f56}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_loader_a718aaefeb163a2274fdd58cdefbe3f56}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ enc\ =\ conn\_encoding(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}})}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00111}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_loader_ab414e89dcdc9c0dcfb90b6e80e5b0bc9}{00111}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_loader_ab414e89dcdc9c0dcfb90b6e80e5b0bc9}{\_encoding}}\ =\ enc\ \textcolor{keywordflow}{if}\ enc\ !=\ \textcolor{stringliteral}{"{}ascii"{}}\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00112}00112\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00113}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_loader_a2a2d5af08da8350bc9f3510b35240599}{00113}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_loader_a2a2d5af08da8350bc9f3510b35240599}{load}}(self,\ data:\ Buffer)\ -\/>\ bytes\ |\ str:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_loader_ab414e89dcdc9c0dcfb90b6e80e5b0bc9}{\_encoding}}:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(data,\ memoryview):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ data\ =\ bytes(data)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ data.decode(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_loader_ab414e89dcdc9c0dcfb90b6e80e5b0bc9}{\_encoding}})}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ return\ bytes\ for\ SQL\_ASCII\ db}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(data,\ bytes):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ data\ =\ bytes(data)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ data}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00123}00123\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00124}00124\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00125}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_binary_loader}{00125}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_binary_loader}{TextBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_loader}{TextLoader}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00126}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_text_binary_loader}{00126}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00128}00128\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00129}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper}{00129}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper}{BytesDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00130}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper}{00130}}\ \ \ \ \ oid\ =\ \_oids.BYTEA\_OID}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00131}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a73eda13daac06b7be0eb586002dddc10}{00131}}\ \ \ \ \ \_qprefix\ =\ b\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00132}00132\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00133}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a01e2209eb433fa9d185fa2f598e5d1c5}{00133}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a01e2209eb433fa9d185fa2f598e5d1c5}{\_\_init\_\_}}(self,\ cls:\ type,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a01e2209eb433fa9d185fa2f598e5d1c5}{\_\_init\_\_}}(cls,\ context)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00135}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a6c65bbe75827ca1731216d472bc8712b}{00135}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a6c65bbe75827ca1731216d472bc8712b}{\_esc}}\ =\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1abc_1_1_escaping}{Escaping}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac19516f509822a8161669804c73ca263}{connection}}.pgconn\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac19516f509822a8161669804c73ca263}{connection}}\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00136}00136\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00137}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_af302b6908fccc41e9de64da5f375d1e8}{00137}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_af302b6908fccc41e9de64da5f375d1e8}{dump}}(self,\ obj:\ Buffer)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a6c65bbe75827ca1731216d472bc8712b}{\_esc}}.escape\_bytea(obj)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00139}00139\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00140}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a6312de31137c506bf74b1e0b3a1ca365}{00140}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a6312de31137c506bf74b1e0b3a1ca365}{quote}}(self,\ obj:\ Buffer)\ -\/>\ Buffer:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (escaped\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_dumper_a085d78c1db54cb151df3cd8868b1c4d4}{dump}}(obj))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}NULL"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00143}00143\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ cannot\ use\ the\ base\ quoting\ because\ escape\_bytea\ already\ returns}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ quotes\ content.\ if\ scs\ is\ off\ it\ will\ escape\ the\ backslashes\ in}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ the\ format,\ otherwise\ it\ won't,\ but\ it\ doesn't\ tell\ us\ what\ quotes\ to}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ use.}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00148}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper}{00148}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac19516f509822a8161669804c73ca263}{connection}}:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a73eda13daac06b7be0eb586002dddc10}{\_qprefix}}:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ scs\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac19516f509822a8161669804c73ca263}{connection}}.pgconn.parameter\_status(}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ b\textcolor{stringliteral}{"{}standard\_conforming\_strings"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a73eda13daac06b7be0eb586002dddc10}{\_qprefix}}\ =\ b\textcolor{stringliteral}{"{}'"{}}\ \textcolor{keywordflow}{if}\ scs\ ==\ b\textcolor{stringliteral}{"{}on"{}}\ \textcolor{keywordflow}{else}\ b\textcolor{stringliteral}{"{}\ E'"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a73eda13daac06b7be0eb586002dddc10}{\_qprefix}}\ +\ escaped\ +\ b\textcolor{stringliteral}{"{}'"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00156}00156\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We\ don't\ have\ a\ connection,\ so\ someone\ is\ using\ us\ to\ generate\ a\ file}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ to\ use\ off-\/line\ or\ something\ like\ that.\ PQescapeBytea,\ like\ its}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ string\ counterpart,\ is\ not\ predictable\ whether\ it\ will\ escape}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ backslashes.}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ rv:\ bytes\ =\ b\textcolor{stringliteral}{"{}\ E'"{}}\ +\ escaped\ +\ b\textcolor{stringliteral}{"{}'"{}}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_dumper_a6c65bbe75827ca1731216d472bc8712b}{\_esc}}.escape\_bytea(b\textcolor{stringliteral}{"{}\(\backslash\)x00"{}})\ ==\ b\textcolor{stringliteral}{"{}\(\backslash\)\(\backslash\)000"{}}:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ rv\ =\ rv.replace(b\textcolor{stringliteral}{"{}\(\backslash\)\(\backslash\)"{}},\ b\textcolor{stringliteral}{"{}\(\backslash\)\(\backslash\)\(\backslash\)\(\backslash\)"{}})}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ rv}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00165}00165\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00167}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_binary_dumper}{00167}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_binary_dumper}{BytesBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00168}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_binary_dumper}{00168}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00169}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_binary_dumper}{00169}}\ \ \ \ \ oid\ =\ \_oids.BYTEA\_OID}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00170}00170\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00171}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_binary_dumper_a732641e660585e7cfe689868d2f845d5}{00171}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytes_binary_dumper_a732641e660585e7cfe689868d2f845d5}{dump}}(self,\ obj:\ Buffer)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ obj}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00174}00174\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00175}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_loader}{00175}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_loader}{ByteaLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00176}00176\ \ \ \ \ \_escaping:\ EscapingProto}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00177}00177\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00178}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_loader_abb547fba5afaba414aff4d045f762bf1}{00178}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_loader_abb547fba5afaba414aff4d045f762bf1}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_loader_abb547fba5afaba414aff4d045f762bf1}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ hasattr(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_loader_a526dd9c4eb5c08788a435ffe49f68bfc}{\_\_class\_\_}},\ \textcolor{stringliteral}{"{}\_escaping"{}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_loader_a526dd9c4eb5c08788a435ffe49f68bfc}{\_\_class\_\_}}.\_escaping\ =\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1abc_1_1_escaping}{Escaping}}()}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00182}00182\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00183}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_loader_a29d6f0348ffb3e3f4d62a600f52a199f}{00183}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_loader_a29d6f0348ffb3e3f4d62a600f52a199f}{load}}(self,\ data:\ Buffer)\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\_escaping.unescape\_bytea(data)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00185}00185\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00186}00186\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00187}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_binary_loader}{00187}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_binary_loader}{ByteaBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}}):}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00188}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_binary_loader}{00188}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00189}00189\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00190}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_binary_loader_a8f6353621d78e515b7a0ce7a0226cd35}{00190}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1string_1_1_bytea_binary_loader_a8f6353621d78e515b7a0ce7a0226cd35}{load}}(self,\ data:\ Buffer)\ -\/>\ Buffer:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ data}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00193}00193\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00194}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1string_a11608cc169fdf9823b8c29fe52746fb6}{00194}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1string_a11608cc169fdf9823b8c29fe52746fb6}{register\_default\_adapters}}(context:\ AdaptContext)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00195}00195\ \ \ \ \ adapters\ =\ context.adapters}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00196}00196\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00197}00197\ \ \ \ \ \textcolor{comment}{\#\ NOTE:\ the\ order\ the\ dumpers\ are\ registered\ is\ relevant.\ The\ last\ one}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00198}00198\ \ \ \ \ \textcolor{comment}{\#\ registered\ becomes\ the\ default\ for\ each\ type.\ Usually,\ binary\ is\ the}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00199}00199\ \ \ \ \ \textcolor{comment}{\#\ default\ dumper.\ For\ text\ we\ use\ the\ text\ dumper\ as\ default\ because\ it}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00200}00200\ \ \ \ \ \textcolor{comment}{\#\ plays\ the\ role\ of\ unknown,\ and\ it\ can\ be\ cast\ automatically\ to\ other}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00201}00201\ \ \ \ \ \textcolor{comment}{\#\ types.\ However,\ before\ that,\ we\ register\ dumper\ with\ 'text',\ 'varchar',}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00202}00202\ \ \ \ \ \textcolor{comment}{\#\ 'name'\ oids,\ which\ will\ be\ used\ when\ a\ text\ dumper\ is\ looked\ up\ by\ oid.}}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00203}00203\ \ \ \ \ adapters.register\_dumper(str,\ StrBinaryDumperName)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00204}00204\ \ \ \ \ adapters.register\_dumper(str,\ StrBinaryDumperVarchar)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00205}00205\ \ \ \ \ adapters.register\_dumper(str,\ StrBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00206}00206\ \ \ \ \ adapters.register\_dumper(str,\ StrDumperName)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00207}00207\ \ \ \ \ adapters.register\_dumper(str,\ StrDumperVarchar)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00208}00208\ \ \ \ \ adapters.register\_dumper(str,\ StrDumper)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00209}00209\ \ \ \ \ adapters.register\_dumper(str,\ StrDumperUnknown)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00210}00210\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00211}00211\ \ \ \ \ adapters.register\_loader(\_oids.INVALID\_OID,\ TextLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00212}00212\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}bpchar"{}},\ TextLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00213}00213\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}name"{}},\ TextLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00214}00214\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}text"{}},\ TextLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00215}00215\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}varchar"{}},\ TextLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00216}00216\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{'"{}char"{}'},\ TextLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00217}00217\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}bpchar"{}},\ TextBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00218}00218\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}name"{}},\ TextBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00219}00219\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}text"{}},\ TextBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00220}00220\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}varchar"{}},\ TextBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00221}00221\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{'"{}char"{}'},\ TextBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00222}00222\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00223}00223\ \ \ \ \ adapters.register\_dumper(bytes,\ BytesDumper)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00224}00224\ \ \ \ \ adapters.register\_dumper(bytearray,\ BytesDumper)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00225}00225\ \ \ \ \ adapters.register\_dumper(memoryview,\ BytesDumper)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00226}00226\ \ \ \ \ adapters.register\_dumper(bytes,\ BytesBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00227}00227\ \ \ \ \ adapters.register\_dumper(bytearray,\ BytesBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00228}00228\ \ \ \ \ adapters.register\_dumper(memoryview,\ BytesBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00229}00229\ }
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00230}00230\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}bytea"{}},\ ByteaLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00231}00231\ \ \ \ \ adapters.register\_loader(\_oids.INVALID\_OID,\ ByteaBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{string_8py_source_l00232}00232\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}bytea"{}},\ ByteaBinaryLoader)}
+
+\end{DoxyCode}

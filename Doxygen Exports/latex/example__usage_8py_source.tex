@@ -1,0 +1,418 @@
+\doxysection{example\+\_\+usage.\+py}
+\hypertarget{example__usage_8py_source}{}\label{example__usage_8py_source}\index{examples/example\_usage.py@{examples/example\_usage.py}}
+\doxymbox{\hyperlink{example__usage_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00001}\doxymbox{\hyperlink{namespaceexample__usage}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}!\ @file\ example\_usage.py}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00002}00002\ \textcolor{stringliteral}{@brief\ Example\ usage\ and\ testing\ for\ the\ database\ layer.}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00003}00003\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00004}00004\ \textcolor{stringliteral}{Demonstrates\ how\ to\ use\ the\ database\ initialization\ and\ communication\ layer.}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00005}00005\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00007}00007\ \textcolor{keyword}{from}\ pathlib\ \textcolor{keyword}{import}\ Path}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00008}00008\ \textcolor{keyword}{from}\ datetime\ \textcolor{keyword}{import}\ date,\ datetime,\ timedelta}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00009}00009\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00010}00010\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00012}00012\ \textcolor{comment}{\#\ Add\ project\ root\ to\ path\ so\ imports\ work\ from\ anywhere}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00013}00013\ sys.path.insert(0,\ str(Path(\_\_file\_\_).parent.parent))}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00015}00015\ \textcolor{comment}{\#\ Import\ our\ modules}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00016}00016\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacedatabase_1_1db__init}{database.db\_init}}\ \textcolor{keyword}{import}\ DatabaseInitializer}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00017}00017\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacedatabase_1_1db__connection}{database.db\_connection}}\ \textcolor{keyword}{import}\ get\_db}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00018}00018\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacedatabase_1_1data__access__layer}{database.data\_access\_layer}}\ \textcolor{keyword}{import}\ get\_dal}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00019}00019\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacedatabase_1_1entity__access}{database.entity\_access}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00020}00020\ \ \ \ \ get\_user\_access,\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00021}00021\ \ \ \ \ get\_tenant\_access,\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00022}00022\ \ \ \ \ get\_unit\_access,\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00023}00023\ \ \ \ \ get\_booking\_access}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00024}00024\ )}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00025}00025\ \textcolor{keyword}{from}\ config\ \textcolor{keyword}{import}\ DB\_CONFIG}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00027}00027\ \textcolor{comment}{\#\ Get\ schema\ file\ path}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00028}\doxymbox{\hyperlink{namespaceexample__usage_a4b964bd275c55c7d08bf582b12aff1c3}{00028}}\ SCHEMA\_FILE\ =\ Path(\_\_file\_\_).parent.parent\ /\ \textcolor{stringliteral}{'database'}\ /\ \textcolor{stringliteral}{'schema.sql'}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00030}00030\ \textcolor{comment}{\#\ Configure\ logging}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00031}\doxymbox{\hyperlink{namespaceexample__usage_ab7b794679f9e00e1156fde03b21e9be9}{00031}}\ logging.basicConfig(level=logging.INFO,\ format=\textcolor{stringliteral}{'\%(asctime)s\ -\/\ \%(levelname)s\ -\/\ \%(message)s'})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00032}\doxymbox{\hyperlink{namespaceexample__usage_a2b4a0404638c446fd34ba03b0d6736dd}{00032}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00035}\doxymbox{\hyperlink{namespaceexample__usage_a05d2bfa34133b0e49d953c2f68789796}{00035}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespaceexample__usage_a05d2bfa34133b0e49d953c2f68789796}{initialize\_database}}():}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00036}00036\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Step\ 1:\ Initialize\ the\ database."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00037}00037\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00038}00038\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}STEP\ 1:\ DATABASE\ INITIALIZATION"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00039}00039\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00040}00040\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00041}00041\ \ \ \ \ db\_init\ =\ \doxymbox{\hyperlink{classdatabase_1_1db__init_1_1_database_initializer}{DatabaseInitializer}}(DB\_CONFIG)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00042}00042\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00043}00043\ \ \ \ \ \textcolor{comment}{\#\ Initialize\ database\ (drop\ and\ recreate)}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00044}00044\ \ \ \ \ db\_init.initialize(SCHEMA\_FILE,\ drop\_if\_exists=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00045}00045\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00046}00046\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}Database\ initialized\ successfully!"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00047}00047\ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00048}00048\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00050}\doxymbox{\hyperlink{namespaceexample__usage_a4583665cc8a55043e0878b6e2a197022}{00050}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespaceexample__usage_a4583665cc8a55043e0878b6e2a197022}{example\_simple\_queries}}():}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00051}00051\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Demonstrate\ simple\ queries\ that\ return\ IDs\ only.}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00052}00052\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00053}00053\ \textcolor{stringliteral}{\ \ \ \ This\ is\ the\ preferred\ approach:\ get\ IDs\ first,\ then\ fetch\ complete\ data\ only\ when\ needed.}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00054}00054\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00055}00055\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00056}00056\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}STEP\ 2:\ SIMPLE\ QUERIES\ (IDs\ only)"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00057}00057\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00058}00058\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00059}00059\ \ \ \ \ user\_access\ =\ get\_user\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00060}00060\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00061}00061\ \ \ \ \ \textcolor{comment}{\#\ Get\ all\ user\ IDs}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00062}00062\ \ \ \ \ user\_ids\ =\ user\_access.get\_all\_user\_ids()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00063}00063\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Total\ users:\ \{len(user\_ids)\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00064}00064\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00065}00065\ \ \ \ \ \textcolor{comment}{\#\ Get\ users\ by\ role}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00066}00066\ \ \ \ \ tenant\_ids\ =\ user\_access.get\_users\_by\_role\_ids(\textcolor{stringliteral}{'tenant'})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00067}00067\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Tenant\ users:\ \{len(tenant\_ids)\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00068}00068\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00069}00069\ \ \ \ \ \textcolor{comment}{\#\ Count\ users}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00070}00070\ \ \ \ \ admin\_count\ =\ user\_access.count\_users\_by\_role(\textcolor{stringliteral}{'admin'})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00071}00071\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Admin\ count:\ \{admin\_count\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00072}00072\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00073}00073\ \ \ \ \ \textcolor{comment}{\#\ Check\ if\ user\ exists}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00074}00074\ \ \ \ \ \textcolor{keywordflow}{if}\ user\_ids:}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ exists\ =\ user\_access.user\_exists(user\_ids[0])}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}First\ user\ exists:\ \{exists\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00077}00077\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00078}00078\ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00081}\doxymbox{\hyperlink{namespaceexample__usage_a6028efbae0ecc6d914a80c6258649fa6}{00081}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespaceexample__usage_a6028efbae0ecc6d914a80c6258649fa6}{example\_complete\_data\_queries}}():}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00082}00082\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Demonstrate\ complete\ data\ queries\ that\ return\ dictionaries.}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00083}00083\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00084}00084\ \textcolor{stringliteral}{\ \ \ \ Objects\ are\ NOT\ instantiated\ unless\ explicitly\ requested.}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00085}00085\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00086}00086\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00087}00087\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}STEP\ 3:\ COMPLETE\ DATA\ QUERIES\ (Dictionaries)"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00088}00088\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00089}00089\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00090}00090\ \ \ \ \ user\_access\ =\ get\_user\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00091}00091\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00092}00092\ \ \ \ \ \textcolor{comment}{\#\ Get\ user\ data\ as\ dictionary\ (no\ object\ instantiation)}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00093}00093\ \ \ \ \ user\_ids\ =\ user\_access.get\_all\_user\_ids()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00094}00094\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00095}00095\ \ \ \ \ \textcolor{keywordflow}{if}\ user\_ids:}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ user\_data\ =\ user\_access.get\_user\_data(user\_ids[0])}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}User\ data\ (dict):\ \{user\_data\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Only\ instantiate\ object\ when\ GUI\ explicitly\ needs\ it}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ user\_obj\ =\ user\_access.get\_user(user\_ids[0])}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}User\ object:\ \{user\_obj\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}User\ to\_dict():\ \{user\_obj.to\_dict()\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00103}00103\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00104}00104\ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00107}\doxymbox{\hyperlink{namespaceexample__usage_ae1f3d716266f4a8921a3203a3bfaf898}{00107}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespaceexample__usage_ae1f3d716266f4a8921a3203a3bfaf898}{example\_data\_creation}}():}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00108}00108\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Demonstrate\ creating\ records\ in\ the\ database."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00109}00109\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00110}00110\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}STEP\ 4:\ DATA\ CREATION"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00111}00111\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00112}00112\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00113}00113\ \ \ \ \ user\_access\ =\ get\_user\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00114}00114\ \ \ \ \ tenant\_access\ =\ get\_tenant\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00115}00115\ \ \ \ \ dal\ =\ get\_dal()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00116}00116\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00117}00117\ \ \ \ \ \textcolor{comment}{\#\ Create\ a\ building\ first}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00118}00118\ \ \ \ \ building\_data\ =\ \{}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'name'}:\ \textcolor{stringliteral}{'Sunset\ Apartments'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'address'}:\ \textcolor{stringliteral}{'123\ Main\ Street'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'city'}:\ \textcolor{stringliteral}{'San\ Francisco'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'state'}:\ \textcolor{stringliteral}{'CA'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'postal\_code'}:\ \textcolor{stringliteral}{'94102'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'timezone'}:\ \textcolor{stringliteral}{'America/Los\_Angeles'}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00125}00125\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00126}00126\ \ \ \ \ building\_id\ =\ dal.insert\_record(\textcolor{stringliteral}{'buildings'},\ building\_data)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00127}00127\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Created\ building:\ \{building\_id\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00128}00128\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00129}00129\ \ \ \ \ \textcolor{comment}{\#\ Create\ a\ unit}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00130}00130\ \ \ \ \ unit\_access\ =\ get\_unit\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00131}00131\ \ \ \ \ unit\_id\ =\ unit\_access.create\_unit(}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ building\_id=building\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ unit\_number=\textcolor{stringliteral}{'101'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ floor=1,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ bedrooms=2,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ bathrooms=1.5,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ sqft=850}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00138}00138\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00139}00139\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Created\ unit:\ \{unit\_id\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00140}00140\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00141}00141\ \ \ \ \ \textcolor{comment}{\#\ Create\ users}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00142}00142\ \ \ \ \ user1\_id\ =\ user\_access.create\_user(}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ email=\textcolor{stringliteral}{'john.doe@example.com'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ full\_name=\textcolor{stringliteral}{'John\ Doe'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ role=\textcolor{stringliteral}{'tenant'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ phone=\textcolor{stringliteral}{'555-\/0101'}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00147}00147\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00148}00148\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Created\ user\ 1:\ \{user1\_id\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00149}00149\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00150}00150\ \ \ \ \ user2\_id\ =\ user\_access.create\_user(}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ email=\textcolor{stringliteral}{'jane.smith@example.com'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ full\_name=\textcolor{stringliteral}{'Jane\ Smith'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ role=\textcolor{stringliteral}{'manager'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ phone=\textcolor{stringliteral}{'555-\/0102'}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00155}00155\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00156}00156\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Created\ user\ 2:\ \{user2\_id\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00157}00157\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00158}00158\ \ \ \ \ \textcolor{comment}{\#\ Create\ tenant}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00159}00159\ \ \ \ \ tenant\_id\ =\ tenant\_access.create\_tenant(}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ user\_id=user1\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ unit\_id=unit\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ move\_in\_date=date.today()\ -\/\ timedelta(days=30)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00163}00163\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00164}00164\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Created\ tenant:\ \{tenant\_id\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00165}00165\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00166}00166\ \ \ \ \ \textcolor{comment}{\#\ Create\ service\ type}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00167}00167\ \ \ \ \ service\_data\ =\ \{}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'code'}:\ \textcolor{stringliteral}{'plumbing'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'name'}:\ \textcolor{stringliteral}{'Plumbing\ Service'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'description'}:\ \textcolor{stringliteral}{'General\ plumbing\ repairs\ and\ maintenance'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'default\_duration\_minutes'}:\ 120,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'default\_price\_cents'}:\ 15000\ \ \textcolor{comment}{\#\ \$150.00}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00173}00173\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00174}00174\ \ \ \ \ service\_id\ =\ dal.insert\_record(\textcolor{stringliteral}{'service\_types'},\ service\_data)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00175}00175\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Created\ service\ type:\ \{service\_id\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00176}00176\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00177}00177\ \ \ \ \ \textcolor{comment}{\#\ Create\ booking}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00178}00178\ \ \ \ \ booking\_access\ =\ get\_booking\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00179}00179\ \ \ \ \ booking\_id\ =\ booking\_access.create\_booking(}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ unit\_id=unit\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ service\_type\_id=service\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ tenant\_id=tenant\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ requestor\_user\_id=user1\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ priority=\textcolor{stringliteral}{'normal'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ notes=\textcolor{stringliteral}{'Leaky\ faucet\ in\ kitchen'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ estimated\_duration\_minutes=120,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ price\_cents=15000}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00188}00188\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00189}00189\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Created\ booking:\ \{booking\_id\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00190}00190\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00191}00191\ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00192}00192\ \ \ \ \ \textcolor{keywordflow}{return}\ \{}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'building\_id'}:\ building\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'unit\_id'}:\ unit\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'user1\_id'}:\ user1\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'user2\_id'}:\ user2\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'tenant\_id'}:\ tenant\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'service\_id'}:\ service\_id,}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'booking\_id'}:\ booking\_id}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00200}00200\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00201}00201\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00202}00202\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00203}\doxymbox{\hyperlink{namespaceexample__usage_af6b769b9209aaed4cd71ab3152c5e6dd}{00203}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespaceexample__usage_af6b769b9209aaed4cd71ab3152c5e6dd}{example\_complex\_queries}}(created\_ids):}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00204}00204\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Demonstrate\ complex\ queries\ that\ leverage\ database\ processing."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00205}00205\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00206}00206\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}STEP\ 5:\ COMPLEX\ QUERIES\ (Database-\/side\ processing)"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00207}00207\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00208}00208\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00209}00209\ \ \ \ \ booking\_access\ =\ get\_booking\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00210}00210\ \ \ \ \ tenant\_access\ =\ get\_tenant\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00211}00211\ \ \ \ \ unit\_access\ =\ get\_unit\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00212}00212\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00213}00213\ \ \ \ \ \textcolor{comment}{\#\ Get\ booking\ with\ all\ related\ details\ (JOIN\ query\ processed\ in\ database)}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00214}00214\ \ \ \ \ booking\_details\ =\ booking\_access.get\_booking\_with\_details(created\_ids[\textcolor{stringliteral}{'booking\_id'}])}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00215}00215\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Booking\ with\ details:\ \{booking\_details\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00216}00216\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00217}00217\ \ \ \ \ \textcolor{comment}{\#\ Get\ tenant\ with\ user\ information\ (JOIN\ query)}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00218}00218\ \ \ \ \ tenant\_info\ =\ tenant\_access.get\_tenant\_with\_user\_info(created\_ids[\textcolor{stringliteral}{'tenant\_id'}])}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00219}00219\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Tenant\ with\ user\ info:\ \{tenant\_info\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00220}00220\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00221}00221\ \ \ \ \ \textcolor{comment}{\#\ Get\ vacant\ units\ (subquery\ processed\ in\ database)}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00222}00222\ \ \ \ \ vacant\_ids\ =\ unit\_access.get\_vacant\_unit\_ids()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00223}00223\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Vacant\ units:\ \{vacant\_ids\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00224}00224\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00225}00225\ \ \ \ \ \textcolor{comment}{\#\ Custom\ aggregation\ query}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00226}00226\ \ \ \ \ dal\ =\ get\_dal()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00227}00227\ \ \ \ \ total\_bookings\ =\ dal.execute\_aggregation(}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ table=\textcolor{stringliteral}{'bookings'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ agg\_function=\textcolor{stringliteral}{'COUNT'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ column=\textcolor{stringliteral}{'*'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ where\_clause=\textcolor{stringliteral}{"{}status\ !=\ 'cancelled'"{}},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ params=()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00233}00233\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00234}00234\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Total\ non-\/cancelled\ bookings:\ \{total\_bookings\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00235}00235\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00236}00236\ \ \ \ \ \textcolor{comment}{\#\ Average\ price\ of\ bookings}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00237}00237\ \ \ \ \ avg\_price\ =\ dal.execute\_aggregation(}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ table=\textcolor{stringliteral}{'bookings'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ agg\_function=\textcolor{stringliteral}{'AVG'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ column=\textcolor{stringliteral}{'price\_cents'},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ where\_clause=\textcolor{stringliteral}{"{}price\_cents\ IS\ NOT\ NULL"{}},}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ params=()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00243}00243\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00244}00244\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Average\ booking\ price:\ \$\{avg\_price/100:.2f\}"{}}\ \textcolor{keywordflow}{if}\ avg\_price\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}No\ prices\ set"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00245}00245\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00246}00246\ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00247}00247\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00248}00248\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00249}\doxymbox{\hyperlink{namespaceexample__usage_a8bbac32cfd3035e22ac31bcffdf3f6f9}{00249}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespaceexample__usage_a8bbac32cfd3035e22ac31bcffdf3f6f9}{example\_updates}}(created\_ids):}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00250}00250\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Demonstrate\ updating\ records."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00251}00251\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00252}00252\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}STEP\ 6:\ UPDATE\ OPERATIONS"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00253}00253\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00254}00254\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00255}00255\ \ \ \ \ booking\_access\ =\ get\_booking\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00256}00256\ \ \ \ \ user\_access\ =\ get\_user\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00257}00257\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00258}00258\ \ \ \ \ \textcolor{comment}{\#\ Update\ booking\ status}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00259}00259\ \ \ \ \ success\ =\ booking\_access.update\_booking\_status(}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ created\_ids[\textcolor{stringliteral}{'booking\_id'}],\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{'scheduled'}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00262}00262\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00263}00263\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Booking\ status\ updated:\ \{success\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00264}00264\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00265}00265\ \ \ \ \ \textcolor{comment}{\#\ Update\ booking\ with\ scheduled\ time}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00266}00266\ \ \ \ \ success\ =\ booking\_access.update\_booking(}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ created\_ids[\textcolor{stringliteral}{'booking\_id'}],}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ scheduled\_start=datetime.utcnow()\ +\ timedelta(days=1),}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ scheduled\_end=datetime.utcnow()\ +\ timedelta(days=1,\ hours=2)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00270}00270\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00271}00271\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Booking\ scheduled\ time\ updated:\ \{success\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00272}00272\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00273}00273\ \ \ \ \ \textcolor{comment}{\#\ Update\ user\ information}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00274}00274\ \ \ \ \ success\ =\ user\_access.update\_user(}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ created\_ids[\textcolor{stringliteral}{'user1\_id'}],}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ phone=\textcolor{stringliteral}{'555-\/9999'}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00277}00277\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00278}00278\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}User\ phone\ updated:\ \{success\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00279}00279\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00280}00280\ \ \ \ \ \textcolor{comment}{\#\ Verify\ updates}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00281}00281\ \ \ \ \ booking\_data\ =\ booking\_access.get\_booking\_data(created\_ids[\textcolor{stringliteral}{'booking\_id'}])}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00282}00282\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Updated\ booking\ status:\ \{booking\_data['status']\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00283}00283\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00284}00284\ \ \ \ \ user\_data\ =\ user\_access.get\_user\_data(created\_ids[\textcolor{stringliteral}{'user1\_id'}])}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00285}00285\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Updated\ user\ phone:\ \{user\_data['phone']\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00286}00286\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00287}00287\ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00288}00288\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00289}00289\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00290}\doxymbox{\hyperlink{namespaceexample__usage_aa4c21949c504d0e3e36efcec4677ae0a}{00290}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespaceexample__usage_aa4c21949c504d0e3e36efcec4677ae0a}{example\_lazy\_instantiation}}():}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00291}00291\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Demonstrate\ the\ lazy\ instantiation\ pattern.}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00292}00292\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00293}00293\ \textcolor{stringliteral}{\ \ \ \ Objects\ are\ only\ created\ when\ explicitly\ requested.}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00294}00294\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00295}00295\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00296}00296\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}STEP\ 7:\ LAZY\ INSTANTIATION\ PATTERN"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00297}00297\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00298}00298\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00299}00299\ \ \ \ \ user\_access\ =\ get\_user\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00300}00300\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00301}00301\ \ \ \ \ \textcolor{comment}{\#\ Scenario\ 1:\ GUI\ requests\ list\ of\ user\ IDs\ (no\ objects\ created)}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00302}00302\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}Scenario\ 1:\ Get\ IDs\ only\ (no\ objects)"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00303}00303\ \ \ \ \ user\_ids\ =\ user\_access.get\_all\_user\_ids()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00304}00304\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Retrieved\ \{len(user\_ids)\}\ user\ IDs\ -\/\ NO\ objects\ instantiated"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00305}00305\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00306}00306\ \ \ \ \ \textcolor{comment}{\#\ Scenario\ 2:\ GUI\ requests\ complete\ data\ for\ one\ user\ (still\ no\ object)}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00307}00307\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}\(\backslash\)nScenario\ 2:\ Get\ data\ as\ dictionary\ (still\ no\ object)"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00308}00308\ \ \ \ \ \textcolor{keywordflow}{if}\ user\_ids:}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ user\_dict\ =\ user\_access.get\_user\_data(user\_ids[0])}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Retrieved\ user\ data\ -\/\ returned\ as\ DICTIONARY,\ not\ object"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Type:\ \{type(user\_dict)\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00312}00312\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00313}00313\ \ \ \ \ \textcolor{comment}{\#\ Scenario\ 3:\ GUI\ explicitly\ needs\ an\ object\ (now\ we\ instantiate)}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00314}00314\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}\(\backslash\)nScenario\ 3:\ GUI\ explicitly\ needs\ object"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00315}00315\ \ \ \ \ \textcolor{keywordflow}{if}\ user\_ids:}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00316}00316\ \ \ \ \ \ \ \ \ user\_obj\ =\ user\_access.get\_user(user\_ids[0])}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}NOW\ created\ User\ object:\ \{type(user\_obj)\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00318}00318\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}Object:\ \{user\_obj\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00319}00319\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00320}00320\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}\(\backslash\)nKey\ Point:\ Objects\ are\ only\ created\ when\ explicitly\ requested!"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00321}00321\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}Most\ operations\ work\ with\ IDs\ and\ dictionaries,\ keeping\ memory\ usage\ minimal."{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00322}00322\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00323}00323\ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00324}00324\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00325}00325\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00326}\doxymbox{\hyperlink{namespaceexample__usage_a809fdc914e33cfef0e0f710ec8860dd8}{00326}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespaceexample__usage_a809fdc914e33cfef0e0f710ec8860dd8}{example\_gui\_workflow}}():}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00327}00327\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Simulate\ a\ typical\ GUI\ workflow."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00328}00328\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00329}00329\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}STEP\ 8:\ TYPICAL\ GUI\ WORKFLOW"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00330}00330\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}="{}}*60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00331}00331\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00332}00332\ \ \ \ \ booking\_access\ =\ get\_booking\_access()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00333}00333\ \ \ \ \ booking\_full=\textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00334}00334\ \ \ \ \ unit\_bookings=\textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00335}00335\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00336}00336\ \ \ \ \ \textcolor{comment}{\#\ Step\ 1:\ GUI\ shows\ list\ of\ bookings\ (only\ IDs\ needed)}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00337}00337\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}GUI\ Action:\ Show\ booking\ list"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00338}00338\ \ \ \ \ booking\_ids\ =\ booking\_access.get\_bookings\_by\_status\_ids(\textcolor{stringliteral}{'requested'})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00339}00339\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}\ \ -\/\ Retrieved\ \{len(booking\_ids)\}\ booking\ IDs"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00340}00340\ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}\ \ -\/\ Memory:\ Minimal\ (just\ strings)"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00341}00341\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00342}00342\ \ \ \ \ \textcolor{comment}{\#\ Step\ 2:\ User\ clicks\ on\ a\ booking\ (get\ data\ for\ display)}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00343}00343\ \ \ \ \ \textcolor{keywordflow}{if}\ booking\_ids:}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}\(\backslash\)nGUI\ Action:\ User\ clicks\ on\ booking"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ booking\_data\ =\ booking\_access.get\_booking\_data(booking\_ids[0])}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}\ \ -\/\ Retrieved\ booking\ data\ as\ dictionary"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}\ \ -\/\ Can\ display:\ \{booking\_data.get('notes',\ 'N/A')\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00348}00348\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00349}00349\ \ \ \ \ \textcolor{comment}{\#\ Step\ 3:\ User\ wants\ detailed\ view\ with\ all\ relations\ (complex\ JOIN)}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00350}00350\ \ \ \ \ \textcolor{keywordflow}{if}\ booking\_ids:}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}\(\backslash\)nGUI\ Action:\ Show\ detailed\ view"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ booking\_full\ =\ booking\_access.get\_booking\_with\_details(booking\_ids[0])}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00353}00353\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}\ \ -\/\ Retrieved\ full\ booking\ with\ tenant,\ unit,\ service\ info"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}\ \ -\/\ All\ processing\ done\ in\ database\ (efficient)"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}\ \ -\/\ Tenant:\ \{booking\_full.get('tenant\_name',\ 'N/A')\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}\ \ -\/\ Unit:\ \{booking\_full.get('unit\_number',\ 'N/A')\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}\ \ -\/\ Service:\ \{booking\_full.get('service\_type\_name',\ 'N/A')\}"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00358}00358\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00359}00359\ \ \ \ \ \textcolor{comment}{\#\ Step\ 4:\ User\ filters\ bookings\ (database\ does\ the\ filtering)}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00360}00360\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}\(\backslash\)nGUI\ Action:\ Filter\ by\ unit"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00361}00361\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ booking\_full==\textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ unit\_bookings\ =\ booking\_access.get\_bookings\_by\_unit\_ids(booking\_full[\textcolor{stringliteral}{'unit\_id'}])}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00363}00363\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ unit\_bookings==\textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ logger.info(f\textcolor{stringliteral}{"{}\ \ -\/\ Database\ filtered\ to\ \{len(unit\_bookings)\}\ bookings\ for\ this\ unit"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00365}00365\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00366}00366\ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}\(\backslash\)nWorkflow\ complete\ -\/\ minimal\ objects,\ maximum\ database\ efficiency!"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00367}00367\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00368}00368\ \ \ \ \ print()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00369}00369\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00370}00370\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00371}\doxymbox{\hyperlink{namespaceexample__usage_a2654395fd1b66c6d732090e905c70c9d}{00371}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespaceexample__usage_a2654395fd1b66c6d732090e905c70c9d}{main}}():}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00372}00372\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}!\ @brief\ Run\ all\ examples."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00373}00373\ \ \ \ \ print(\textcolor{stringliteral}{"{}\(\backslash\)n"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00374}00374\ \ \ \ \ print(\textcolor{stringliteral}{"{}*"{}}\ *\ 60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00375}00375\ \ \ \ \ print(\textcolor{stringliteral}{"{}APARTMENT\ MANAGEMENT\ DATABASE\ -\/\ INITIALIZATION\ \&\ DEMO"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00376}00376\ \ \ \ \ print(\textcolor{stringliteral}{"{}*"{}}\ *\ 60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00377}00377\ \ \ \ \ print(\textcolor{stringliteral}{"{}\(\backslash\)n"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00378}00378\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00379}00379\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Initialize\ database}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceexample__usage_a05d2bfa34133b0e49d953c2f68789796}{initialize\_database}}()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Create\ sample\ data}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ created\_ids\ =\ \doxymbox{\hyperlink{namespaceexample__usage_ae1f3d716266f4a8921a3203a3bfaf898}{example\_data\_creation}}()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00385}00385\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Demonstrate\ different\ query\ patterns}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceexample__usage_a4583665cc8a55043e0878b6e2a197022}{example\_simple\_queries}}()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceexample__usage_a6028efbae0ecc6d914a80c6258649fa6}{example\_complete\_data\_queries}}()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceexample__usage_af6b769b9209aaed4cd71ab3152c5e6dd}{example\_complex\_queries}}(created\_ids)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00390}00390\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceexample__usage_a8bbac32cfd3035e22ac31bcffdf3f6f9}{example\_updates}}(created\_ids)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceexample__usage_aa4c21949c504d0e3e36efcec4677ae0a}{example\_lazy\_instantiation}}()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceexample__usage_a809fdc914e33cfef0e0f710ec8860dd8}{example\_gui\_workflow}}()}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}*"{}}\ *\ 60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}ALL\ EXAMPLES\ COMPLETED\ SUCCESSFULLY!"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}*"{}}\ *\ 60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}\(\backslash\)nKey\ Takeaways:"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}1.\ Database\ initialization\ is\ automated\ and\ robust"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00399}00399\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}2.\ Use\ get\_*\_ids()\ methods\ for\ lists\ (no\ object\ instantiation)"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}3.\ Use\ get\_*\_data()\ methods\ for\ complete\ data\ (returns\ dict)"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}4.\ Use\ get\_*()\ methods\ only\ when\ GUI\ needs\ actual\ objects"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}5.\ All\ complex\ processing\ is\ delegated\ to\ PostgreSQL"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}6.\ Memory\ usage\ is\ minimized\ through\ lazy\ instantiation"{}})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}*"{}}\ *\ 60)}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00405}00405\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00406}00406\ \ \ \ \ \textcolor{keywordflow}{except}\ Exception\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ logger.error(f\textcolor{stringliteral}{"{}Error\ during\ execution:\ \{e\}"{}},\ exc\_info=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00408}00408\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00409}00409\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00410}00410\ }
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00411}00411\ \textcolor{keywordflow}{if}\ \_\_name\_\_\ ==\ \textcolor{stringliteral}{'\_\_main\_\_'}:}
+\DoxyCodeLine{\Hypertarget{example__usage_8py_source_l00412}00412\ \ \ \ \ \doxymbox{\hyperlink{namespaceexample__usage_a2654395fd1b66c6d732090e905c70c9d}{main}}()}
+
+\end{DoxyCode}

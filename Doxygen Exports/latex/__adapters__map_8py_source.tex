@@ -1,0 +1,305 @@
+\doxysection{\+\_\+adapters\+\_\+map.\+py}
+\hypertarget{__adapters__map_8py_source}{}\label{__adapters__map_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_adapters\_map.py@{venv/Lib/site-\/packages/psycopg/\_adapters\_map.py}}
+\doxymbox{\hyperlink{__adapters__map_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__adapters__map}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00002}00002\ \textcolor{stringliteral}{Mapping\ from\ types/oids\ to\ Dumpers/Loaders}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00009}00009\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any,\ cast}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00010}00010\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Callable}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00012}00012\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00013}00013\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ pq}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00014}00014\ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ Dumper,\ Loader}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00015}00015\ \textcolor{keyword}{from}\ .\_enums\ \textcolor{keyword}{import}\ PyFormat\ \textcolor{keyword}{as}\ PyFormat}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00016}00016\ \textcolor{keyword}{from}\ .\_compat\ \textcolor{keyword}{import}\ TypeVar}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00017}00017\ \textcolor{keyword}{from}\ .\_cmodule\ \textcolor{keyword}{import}\ \_psycopg}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00018}00018\ \textcolor{keyword}{from}\ .\_typeinfo\ \textcolor{keyword}{import}\ TypesRegistry}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00020}00020\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00021}00021\ \ \ \ \ \textcolor{keyword}{from}\ .\_connection\_base\ \textcolor{keyword}{import}\ BaseConnection}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00023}\doxymbox{\hyperlink{namespacepsycopg_1_1__adapters__map_a17010255e00f726916808b5bd4c1ed39}{00023}}\ RV\ =\ TypeVar(\textcolor{stringliteral}{"{}RV"{}})}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00026}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map}{00026}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map}{AdaptersMap}}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00027}00027\ \ \ \ \ \textcolor{stringliteral}{r"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00028}00028\ \textcolor{stringliteral}{\ \ \ \ Establish\ how\ types\ should\ be\ converted\ between\ Python\ and\ PostgreSQL\ in}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00029}00029\ \textcolor{stringliteral}{\ \ \ \ an\ \`{}\string~psycopg.abc.AdaptContext\`{}.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00030}00030\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00031}00031\ \textcolor{stringliteral}{\ \ \ \ \`{}!AdaptersMap\`{}\ maps\ Python\ types\ to\ \`{}\string~psycopg.adapt.Dumper\`{}\ classes\ to}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00032}00032\ \textcolor{stringliteral}{\ \ \ \ define\ how\ Python\ types\ are\ converted\ to\ PostgreSQL,\ and\ maps\ OIDs\ to}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00033}00033\ \textcolor{stringliteral}{\ \ \ \ \`{}\string~psycopg.adapt.Loader\`{}\ classes\ to\ establish\ how\ query\ results\ are}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00034}00034\ \textcolor{stringliteral}{\ \ \ \ converted\ to\ Python.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00035}00035\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00036}00036\ \textcolor{stringliteral}{\ \ \ \ Every\ \`{}!AdaptContext\`{}\ object\ has\ an\ underlying\ \`{}!AdaptersMap\`{}\ defining\ how}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00037}00037\ \textcolor{stringliteral}{\ \ \ \ types\ are\ converted\ in\ that\ context,\ exposed\ as\ the}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00038}00038\ \textcolor{stringliteral}{\ \ \ \ \`{}\string~psycopg.abc.AdaptContext.adapters\`{}\ attribute:\ changing\ such\ map\ allows}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00039}00039\ \textcolor{stringliteral}{\ \ \ \ to\ customise\ adaptation\ in\ a\ context\ without\ changing\ separated\ contexts.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00040}00040\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00041}00041\ \textcolor{stringliteral}{\ \ \ \ When\ a\ context\ is\ created\ from\ another\ context\ (for\ instance\ when\ a}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00042}00042\ \textcolor{stringliteral}{\ \ \ \ \`{}\string~psycopg.Cursor\`{}\ is\ created\ from\ a\ \`{}\string~psycopg.Connection\`{}),\ the\ parent's}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00043}00043\ \textcolor{stringliteral}{\ \ \ \ \`{}!adapters\`{}\ are\ used\ as\ template\ for\ the\ child's\ \`{}!adapters\`{},\ so\ that\ every}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00044}00044\ \textcolor{stringliteral}{\ \ \ \ cursor\ created\ from\ the\ same\ connection\ use\ the\ connection's\ types}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00045}00045\ \textcolor{stringliteral}{\ \ \ \ configuration,\ but\ separate\ connections\ have\ independent\ mappings.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00046}00046\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00047}00047\ \textcolor{stringliteral}{\ \ \ \ Once\ created,\ \`{}!AdaptersMap\`{}\ are\ independent.\ This\ means\ that\ objects}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00048}00048\ \textcolor{stringliteral}{\ \ \ \ already\ created\ are\ not\ affected\ if\ a\ wider\ scope\ (e.g.\ the\ global\ one)\ is}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00049}00049\ \textcolor{stringliteral}{\ \ \ \ changed.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00050}00050\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00051}00051\ \textcolor{stringliteral}{\ \ \ \ The\ connections\ adapters\ are\ initialised\ using\ a\ global\ \`{}!AdptersMap\`{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00052}00052\ \textcolor{stringliteral}{\ \ \ \ template,\ exposed\ as\ \`{}psycopg.adapters\`{}:\ changing\ such\ mapping\ allows\ to}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00053}00053\ \textcolor{stringliteral}{\ \ \ \ customise\ the\ type\ mapping\ for\ every\ connections\ created\ afterwards.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00054}00054\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00055}00055\ \textcolor{stringliteral}{\ \ \ \ The\ object\ can\ start\ empty\ or\ copy\ from\ another\ object\ of\ the\ same\ class.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00056}00056\ \textcolor{stringliteral}{\ \ \ \ Copies\ are\ copy-\/on-\/write:\ if\ the\ maps\ are\ updated\ make\ a\ copy.\ This\ way}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00057}00057\ \textcolor{stringliteral}{\ \ \ \ extending\ e.g.\ global\ map\ by\ a\ connection\ or\ a\ connection\ map\ from\ a\ cursor}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00058}00058\ \textcolor{stringliteral}{\ \ \ \ is\ cheap:\ a\ copy\ is\ only\ made\ on\ customisation.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00059}00059\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00061}00061\ \ \ \ \ \_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg.adapt"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00062}00062\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00063}00063\ \ \ \ \ types:\ TypesRegistry}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00065}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_acc7e3357d459599228560fe1108afb86}{00065}}\ \ \ \ \ \_dumpers:\ dict[PyFormat,\ dict[type\ |\ str,\ type[Dumper]]]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00066}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a8e562279f338077deb4fe93d723458e1}{00066}}\ \ \ \ \ \_dumpers\_by\_oid:\ list[dict[int,\ type[Dumper]]]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00067}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_af9d1d351a31241772525fc1be17151d6}{00067}}\ \ \ \ \ \_loaders:\ list[dict[int,\ type[Loader]]]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00069}00069\ \ \ \ \ \textcolor{comment}{\#\ Record\ if\ a\ dumper\ or\ loader\ has\ an\ optimised\ version.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00070}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_ab9d2897fe2adabb76676d4b3d58ce226}{00070}}\ \ \ \ \ \_optimised:\ dict[type,\ type]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00071}00071\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00072}00072\ \ \ \ \ \textcolor{comment}{\#\ Callable\ to\ be\ called\ when\ register\_loader()\ is\ called.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00073}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_aee186e869537a4272ca1ac0bf5dc5dca}{00073}}\ \ \ \ \ \_register\_loader\_callback:\ Callable[[int,\ type[Loader]],\ \textcolor{keywordtype}{None}]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00075}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a5e8053d9a9f40aff3b44a7c9a64f8217}{00075}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a5e8053d9a9f40aff3b44a7c9a64f8217}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ self,\ template:\ AdaptersMap\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},\ types:\ TypesRegistry\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00077}00077\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ template:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_acc7e3357d459599228560fe1108afb86}{\_dumpers}}\ =\ template.\_dumpers.copy()}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00080}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a00108be7f3741f6d13a5b162baf6bf94}{00080}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a00108be7f3741f6d13a5b162baf6bf94}{\_own\_dumpers}}\ =\ \_dumpers\_shared.copy()}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \ \ \ \ template.\_own\_dumpers\ =\ \_dumpers\_shared.copy()}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a8e562279f338077deb4fe93d723458e1}{\_dumpers\_by\_oid}}\ =\ template.\_dumpers\_by\_oid[:]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00084}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_aab4b51c3b2ae62642ea78e9a8546b805}{00084}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_aab4b51c3b2ae62642ea78e9a8546b805}{\_own\_dumpers\_by\_oid}}\ =\ [\textcolor{keyword}{False},\ \textcolor{keyword}{False}]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ template.\_own\_dumpers\_by\_oid\ =\ [\textcolor{keyword}{False},\ \textcolor{keyword}{False}]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_af9d1d351a31241772525fc1be17151d6}{\_loaders}}\ =\ template.\_loaders[:]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00088}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_ad13001e4251358d561fc15b0a04b8aec}{00088}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_ad13001e4251358d561fc15b0a04b8aec}{\_own\_loaders}}\ =\ [\textcolor{keyword}{False},\ \textcolor{keyword}{False}]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ template.\_own\_loaders\ =\ [\textcolor{keyword}{False},\ \textcolor{keyword}{False}]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00090}00090\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00091}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a47c747030a9d6ab9217c861f1dac091b}{00091}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a47c747030a9d6ab9217c861f1dac091b}{types}}\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__typeinfo_1_1_types_registry}{TypesRegistry}}(template.types)}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_acc7e3357d459599228560fe1108afb86}{\_dumpers}}\ =\ \{fmt:\ \{\}\ \textcolor{keywordflow}{for}\ fmt\ \textcolor{keywordflow}{in}\ PyFormat\}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a00108be7f3741f6d13a5b162baf6bf94}{\_own\_dumpers}}\ =\ \_dumpers\_owned.copy()}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a8e562279f338077deb4fe93d723458e1}{\_dumpers\_by\_oid}}\ =\ [\{\},\ \{\}]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_aab4b51c3b2ae62642ea78e9a8546b805}{\_own\_dumpers\_by\_oid}}\ =\ [\textcolor{keyword}{True},\ \textcolor{keyword}{True}]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00099}00099\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_af9d1d351a31241772525fc1be17151d6}{\_loaders}}\ =\ [\{\},\ \{\}]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_ad13001e4251358d561fc15b0a04b8aec}{\_own\_loaders}}\ =\ [\textcolor{keyword}{True},\ \textcolor{keyword}{True}]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a47c747030a9d6ab9217c861f1dac091b}{types}}\ =\ types\ \textcolor{keywordflow}{or}\ \doxymbox{\hyperlink{classpsycopg_1_1__typeinfo_1_1_types_registry}{TypesRegistry}}()}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00105}00105\ \ \ \ \ \textcolor{comment}{\#\ implement\ the\ AdaptContext\ protocol\ too}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00106}00106\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00107}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_af50851156e73543017a11b2ee0ff1996}{00107}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_acc2de5016d8f73efa8751639302fdfdc}{adapters}}(self)\ -\/>\ AdaptersMap:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00109}00109\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00110}00110\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00111}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_acf6b736f3f3c72b987f6a2e5246a5761}{00111}}\ \ \ \ \ \textcolor{keyword}{def\ }connection(self)\ -\/>\ BaseConnection[Any]\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00113}00113\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00114}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a6f2a0052695e32117d311782d7e7768e}{00114}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a6f2a0052695e32117d311782d7e7768e}{register\_dumper}}(self,\ cls:\ type\ |\ str\ |\ \textcolor{keywordtype}{None},\ dumper:\ type[Dumper])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00116}00116\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Configure\ the\ context\ to\ use\ \`{}!dumper\`{}\ to\ convert\ objects\ of\ type\ \`{}!cls\`{}.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00117}00117\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00118}00118\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ two\ dumpers\ with\ different\ \`{}\string~Dumper.format\`{}\ are\ registered\ for\ the}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00119}00119\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ same\ type,\ the\ last\ one\ registered\ will\ be\ chosen\ when\ the\ query}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00120}00120\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ doesn't\ specify\ a\ format\ (i.e.\ when\ the\ value\ is\ used\ with\ a\ \`{}\`{}\%s\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00121}00121\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}\`{}\string~PyFormat.AUTO\`{}"{}\ placeholder).}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00122}00122\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00123}00123\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ cls:\ The\ type\ to\ manage.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00124}00124\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ dumper:\ The\ dumper\ to\ register\ for\ \`{}!cls\`{}.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00125}00125\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00126}00126\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ \`{}!cls\`{}\ is\ specified\ as\ string\ it\ will\ be\ lazy-\/loaded,\ so\ that\ it}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00127}00127\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ will\ be\ possible\ to\ register\ it\ without\ importing\ it\ before.\ In\ this}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00128}00128\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ case\ it\ should\ be\ the\ fully\ qualified\ name\ of\ the\ object\ (e.g.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00129}00129\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}\`{}"{}uuid.UUID"{}\`{}\`{}).}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00130}00130\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00131}00131\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ \`{}!cls\`{}\ is\ None,\ only\ use\ the\ dumper\ when\ looking\ up\ using}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00132}00132\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \`{}get\_dumper\_by\_oid()\`{},\ which\ happens\ when\ we\ know\ the\ Postgres\ type\ to}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00133}00133\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ adapt\ to,\ but\ not\ the\ Python\ type\ that\ will\ be\ adapted\ (e.g.\ in\ COPY}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00134}00134\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ after\ using\ \`{}\string~psycopg.Copy.set\_types()\`{}).}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00135}00135\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00136}00136\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (cls\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{or}\ isinstance(cls,\ (str,\ type))):}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}dumpers\ should\ be\ registered\ on\ classes,\ got\ \{cls\}\ instead"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \_psycopg:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ dumper\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a759ed094c8de1ee29aec1df6084e2f55}{\_get\_optimised}}(dumper)}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Register\ the\ dumper\ both\ as\ its\ format\ and\ as\ auto}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ so\ that\ the\ last\ dumper\ registered\ is\ used\ in\ auto\ (\%s)\ format}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cls:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ fmt\ \textcolor{keywordflow}{in}\ (PyFormat.from\_pq(dumper.format),\ PyFormat.AUTO):}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a00108be7f3741f6d13a5b162baf6bf94}{\_own\_dumpers}}[fmt]:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_acc7e3357d459599228560fe1108afb86}{\_dumpers}}[fmt]\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_acc7e3357d459599228560fe1108afb86}{\_dumpers}}[fmt].copy()}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a00108be7f3741f6d13a5b162baf6bf94}{\_own\_dumpers}}[fmt]\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00152}00152\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_acc7e3357d459599228560fe1108afb86}{\_dumpers}}[fmt][cls]\ =\ dumper}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Register\ the\ dumper\ by\ oid,\ if\ the\ oid\ of\ the\ dumper\ is\ fixed}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ dumper.oid:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_aab4b51c3b2ae62642ea78e9a8546b805}{\_own\_dumpers\_by\_oid}}[dumper.format]:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a8e562279f338077deb4fe93d723458e1}{\_dumpers\_by\_oid}}[dumper.format]\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a8e562279f338077deb4fe93d723458e1}{\_dumpers\_by\_oid}}[}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dumper.format}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ].copy()}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_aab4b51c3b2ae62642ea78e9a8546b805}{\_own\_dumpers\_by\_oid}}[dumper.format]\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00162}00162\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a8e562279f338077deb4fe93d723458e1}{\_dumpers\_by\_oid}}[dumper.format][dumper.oid]\ =\ dumper}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00164}00164\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00165}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a7b8bd2984e76f681fc1a371122047864}{00165}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a7b8bd2984e76f681fc1a371122047864}{register\_loader}}(self,\ oid:\ int\ |\ str,\ loader:\ type[Loader])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00167}00167\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Configure\ the\ context\ to\ use\ \`{}!loader\`{}\ to\ convert\ data\ of\ oid\ \`{}!oid\`{}.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00168}00168\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00169}00169\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ oid:\ The\ PostgreSQL\ OID\ or\ type\ name\ to\ manage.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00170}00170\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ loader:\ The\ loar\ to\ register\ for\ \`{}!oid\`{}.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00171}00171\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00172}00172\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ If\ \`{}oid\`{}\ is\ specified\ as\ string,\ it\ refers\ to\ a\ type\ name,\ which\ is}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00173}00173\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ looked\ up\ in\ the\ \`{}types\`{}\ registry.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00174}00174\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00175}00175\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(oid,\ str):}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \ \ \ \ oid\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a47c747030a9d6ab9217c861f1dac091b}{types}}[oid].oid}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(oid,\ int):}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(f\textcolor{stringliteral}{"{}loaders\ should\ be\ registered\ on\ oid,\ got\ \{oid\}\ instead"{}})}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00180}00180\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \_psycopg:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \ \ \ \ loader\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a759ed094c8de1ee29aec1df6084e2f55}{\_get\_optimised}}(loader)}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00183}00183\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_ad13001e4251358d561fc15b0a04b8aec}{\_own\_loaders}}[(fmt\ :=\ loader.format)]:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_af9d1d351a31241772525fc1be17151d6}{\_loaders}}[fmt]\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_af9d1d351a31241772525fc1be17151d6}{\_loaders}}[fmt].copy()}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_ad13001e4251358d561fc15b0a04b8aec}{\_own\_loaders}}[fmt]\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00187}00187\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_af9d1d351a31241772525fc1be17151d6}{\_loaders}}[fmt][oid]\ =\ loader}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_aee186e869537a4272ca1ac0bf5dc5dca}{\_register\_loader\_callback}}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_aee186e869537a4272ca1ac0bf5dc5dca}{\_register\_loader\_callback}}(oid,\ loader)}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00191}00191\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00192}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_af31b049f25083df2e3d240b3a8b3e53a}{00192}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_af31b049f25083df2e3d240b3a8b3e53a}{get\_dumper}}(self,\ cls:\ type,\ format:\ PyFormat)\ -\/>\ type[Dumper]:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00194}00194\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ dumper\ class\ for\ the\ given\ type\ and\ format.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00195}00195\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00196}00196\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Raise\ \`{}\string~psycopg.ProgrammingError\`{}\ if\ a\ class\ is\ not\ available.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00197}00197\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00198}00198\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ cls:\ The\ class\ to\ adapt.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00199}00199\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ format:\ The\ format\ to\ dump\ to.\ If\ \`{}\string~psycopg.adapt.PyFormat.AUTO\`{},}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00200}00200\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ use\ the\ last\ one\ of\ the\ dumpers\ registered\ on\ \`{}!cls\`{}.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00201}00201\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Fast\ path:\ the\ class\ has\ a\ known\ dumper.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_acc7e3357d459599228560fe1108afb86}{\_dumpers}}[format][cls]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ format\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_acc7e3357d459599228560fe1108afb86}{\_dumpers}}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(f\textcolor{stringliteral}{"{}bad\ dumper\ format:\ \{format\}"{}})}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00208}00208\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ KeyError\ was\ caused\ by\ cls\ missing\ from\ dmap,\ let's}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ look\ for\ different\ cases.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \ \ \ \ dmap\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_acc7e3357d459599228560fe1108afb86}{\_dumpers}}[format]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00212}00212\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Look\ for\ the\ right\ class,\ including\ looking\ at\ superclasses}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ scls\ \textcolor{keywordflow}{in}\ cls.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a8f6dd8dfcc4718cd701b580ee06a31e0}{\_\_mro\_\_}}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ scls\ \textcolor{keywordflow}{in}\ dmap:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dmap[scls]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00217}00217\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ the\ adapter\ is\ not\ found,\ look\ for\ its\ name\ as\ a\ string}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ fqn\ =\ scls.\_\_module\_\_\ +\ \textcolor{stringliteral}{"{}."{}}\ +\ scls.\_\_qualname\_\_}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (d\ :=\ dmap.get(fqn))\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Replace\ the\ class\ name\ with\ the\ class\ itself}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dmap[scls]\ =\ d}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dmap.pop(fqn,\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ d}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00225}00225\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ format\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__enums_1_1_py_format}{PyFormat}}(format)}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}cannot\ adapt\ type\ \{cls.\_\_name\_\_!r\}\ using\ placeholder\ '\%\{format.value\}'"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ (format:\ \{format.name\})"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00231}00231\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00232}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a3f2fcecbc9caa0663b130716ca77e5e9}{00232}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a3f2fcecbc9caa0663b130716ca77e5e9}{get\_dumper\_by\_oid}}(self,\ oid:\ int,\ format:\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_format}{pq.Format}})\ -\/>\ type[Dumper]:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00234}00234\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ dumper\ class\ for\ the\ given\ oid\ and\ format.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00235}00235\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00236}00236\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Raise\ \`{}\string~psycopg.ProgrammingError\`{}\ if\ a\ class\ is\ not\ available.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00237}00237\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00238}00238\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ oid:\ The\ oid\ of\ the\ type\ to\ dump\ to.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00239}00239\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ format:\ The\ format\ to\ dump\ to.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00240}00240\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ dmap\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a8e562279f338077deb4fe93d723458e1}{\_dumpers\_by\_oid}}[format]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00243}00243\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(f\textcolor{stringliteral}{"{}bad\ dumper\ format:\ \{format\}"{}})}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00245}00245\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dmap[oid]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \ \ \ \ info\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a47c747030a9d6ab9217c861f1dac091b}{types}}.get(oid)}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ info:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ msg\ =\ (}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}cannot\ find\ a\ dumper\ for\ type\ \{info.name\}\ (oid\ \{oid\})"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ format\ \{pq.Format(format).name\}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ msg\ =\ (}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}cannot\ find\ a\ dumper\ for\ unknown\ type\ with\ oid\ \{oid\}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ format\ \{pq.Format(format).name\}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(msg)}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00261}00261\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00262}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_aa71a026dcfe9e3a3d36dddbbe7339fe0}{00262}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_aa71a026dcfe9e3a3d36dddbbe7339fe0}{get\_loader}}(self,\ oid:\ int,\ format:\ \doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_format}{pq.Format}})\ -\/>\ type[Loader]\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00264}00264\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ loader\ class\ for\ the\ given\ oid\ and\ format.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00265}00265\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00266}00266\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ \`{}!None\`{}\ if\ not\ found.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00267}00267\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00268}00268\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ oid:\ The\ oid\ of\ the\ type\ to\ load.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00269}00269\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ format:\ The\ format\ to\ load\ from.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00270}00270\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_af9d1d351a31241772525fc1be17151d6}{\_loaders}}[format].get(oid)}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00272}00272\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00273}00273\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00274}\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a759ed094c8de1ee29aec1df6084e2f55}{00274}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a759ed094c8de1ee29aec1df6084e2f55}{\_get\_optimised}}(self,\ cls:\ type[RV])\ -\/>\ type[RV]:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ the\ optimised\ version\ of\ a\ Dumper\ or\ Loader\ class.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00276}00276\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00277}00277\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ input\ class\ itself\ if\ there\ is\ no\ optimised\ version.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00278}00278\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_ab9d2897fe2adabb76676d4b3d58ce226}{\_optimised}}[cls]}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00283}00283\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ if\ the\ class\ comes\ from\ psycopg.types\ and\ there\ is\ a\ class}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ with\ the\ same\ name\ in\ psycopg\_c.\_psycopg.}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \textcolor{keyword}{from}\ psycopg\ \textcolor{keyword}{import}\ types}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00287}00287\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cls.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_a7f30b0af66148317b6c98e2e7a53004f}{\_\_module\_\_}}.startswith(types.\_\_name\_\_):}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ new\ :=\ cast(type[RV],\ getattr(\_psycopg,\ cls.\_\_name\_\_,\ \textcolor{keywordtype}{None})):}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00290}00290\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_ab9d2897fe2adabb76676d4b3d58ce226}{\_optimised}}[cls]\ =\ new}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00291}00291\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ new}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00292}00292\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__adapters__map_1_1_adapters_map_ab9d2897fe2adabb76676d4b3d58ce226}{\_optimised}}[cls]\ =\ cls}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00295}00295\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00296}00296\ }
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00297}00297\ \textcolor{comment}{\#\ Micro-\/optimization:\ copying\ these\ objects\ is\ faster\ than\ creating\ new\ dicts}}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00298}\doxymbox{\hyperlink{namespacepsycopg_1_1__adapters__map_a5f05ab13f7205d167f3985275846bbae}{00298}}\ \_dumpers\_owned\ =\ dict.fromkeys(PyFormat,\ \textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{__adapters__map_8py_source_l00299}\doxymbox{\hyperlink{namespacepsycopg_1_1__adapters__map_a0dcab65fd7eee721115dd01bc93a7ef6}{00299}}\ \_dumpers\_shared\ =\ dict.fromkeys(PyFormat,\ \textcolor{keyword}{False})}
+
+\end{DoxyCode}

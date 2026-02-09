@@ -1,0 +1,120 @@
+\doxysection{\+\_\+tpc.\+py}
+\hypertarget{__tpc_8py_source}{}\label{__tpc_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_tpc.py@{venv/Lib/site-\/packages/psycopg/\_tpc.py}}
+\doxymbox{\hyperlink{__tpc_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__tpc}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00002}00002\ \textcolor{stringliteral}{psycopg\ two-\/phase\ commit\ support}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2021\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00009}00009\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00010}00010\ \textcolor{keyword}{import}\ datetime\ \textcolor{keyword}{as}\ dt}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00011}00011\ \textcolor{keyword}{from}\ base64\ \textcolor{keyword}{import}\ b64decode,\ b64encode}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00012}00012\ \textcolor{keyword}{from}\ dataclasses\ \textcolor{keyword}{import}\ dataclass,\ replace}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00014}\doxymbox{\hyperlink{namespacepsycopg_1_1__tpc_acbc6e35c7a7646fbd221c41a30c74974}{00014}}\ \_re\_xid\ =\ re.compile(\textcolor{stringliteral}{r"{}\string^(\(\backslash\)d+)\_([\string^\_]*)\_([\string^\_]*)\$"{}})}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00015}00015\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00016}00016\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00017}00017\ \textcolor{preprocessor}{@dataclass(frozen=True)}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00018}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid}{00018}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid}{Xid}}:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00019}00019\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ two-\/phase\ commit\ transaction\ identifier.}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00020}00020\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00021}00021\ \textcolor{stringliteral}{\ \ \ \ The\ object\ can\ also\ be\ unpacked\ as\ a\ 3-\/item\ tuple\ (\`{}format\_id\`{},\ \`{}gtrid\`{},}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00022}00022\ \textcolor{stringliteral}{\ \ \ \ \`{}bqual\`{}).}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00023}00023\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00024}00024\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00026}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_aa704037b7fdb60b997b4475193667062}{00026}}\ \ \ \ \ format\_id:\ int\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00027}00027\ \ \ \ \ gtrid:\ str}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00028}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ae06c49d5ad54609ab36fa05365a0be3b}{00028}}\ \ \ \ \ bqual:\ str\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00029}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_af591ea3ac0ca29163af924fd5dd7d02a}{00029}}\ \ \ \ \ prepared:\ dt.datetime\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00030}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a50eaa3106d5d0f1acbd5e4de845cfbcd}{00030}}\ \ \ \ \ owner:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00031}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a2c831e95fdcfdb9f93498dd8a372fc2e}{00031}}\ \ \ \ \ database:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00033}00033\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00034}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ac8909f253066f4db3b1e34942a02aa70}{00034}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ac8909f253066f4db3b1e34942a02aa70}{from\_string}}(cls,\ s:\ str)\ -\/>\ Xid:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Try\ to\ parse\ an\ XA\ triple\ from\ the\ string.}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00036}00036\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00037}00037\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ may\ fail\ for\ several\ reasons.\ In\ such\ case\ return\ an\ unparsed\ Xid.}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00038}00038\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls.\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a09b9e9e8e66d5141afd6cd680d07678f}{\_parse\_string}}(s)}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ Exception:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid}{Xid}}(\textcolor{keywordtype}{None},\ s,\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00044}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a3faafda31d57f5867706e2757e573197}{00044}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a3faafda31d57f5867706e2757e573197}{\_\_str\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a8caa7b71b6383d37c8899f38caab5a1b}{\_as\_tid}}()}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00046}00046\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00047}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a44b4c78aff26fc2033447c26a08fc9ac}{00047}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a44b4c78aff26fc2033447c26a08fc9ac}{\_\_len\_\_}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 3}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00050}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ab567e0889daee6dd27d2b53dc462b1b7}{00050}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ab567e0889daee6dd27d2b53dc462b1b7}{\_\_getitem\_\_}}(self,\ index:\ int)\ -\/>\ int\ |\ str\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00051}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ae3c4566ed4e646b2e9e2785fad51af2a}{00051}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (self.\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_aa704037b7fdb60b997b4475193667062}{format\_id}},\ self.\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ae3c4566ed4e646b2e9e2785fad51af2a}{gtrid}},\ self.\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ae06c49d5ad54609ab36fa05365a0be3b}{bqual}})[index]}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00053}00053\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00054}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a09b9e9e8e66d5141afd6cd680d07678f}{00054}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a09b9e9e8e66d5141afd6cd680d07678f}{\_parse\_string}}(cls,\ s:\ str)\ -\/>\ Xid:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (m\ :=\ \_re\_xid.match(s)):}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(\textcolor{stringliteral}{"{}bad\ Xid\ format"{}})}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00057}00057\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ format\_id\ =\ int(m.group(1))}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ gtrid\ =\ b64decode(m.group(2)).decode()}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ bqual\ =\ b64decode(m.group(3)).decode()}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls.\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a1e6041a3346f26965ce65a1342220e0b}{from\_parts}}(format\_id,\ gtrid,\ bqual)}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00062}00062\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00063}00063\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00064}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a1e6041a3346f26965ce65a1342220e0b}{00064}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a1e6041a3346f26965ce65a1342220e0b}{from\_parts}}(cls,\ format\_id:\ int\ |\ \textcolor{keywordtype}{None},\ gtrid:\ str,\ bqual:\ str\ |\ \textcolor{keywordtype}{None})\ -\/>\ Xid:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ format\_id\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ bqual\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(\textcolor{stringliteral}{"{}if\ format\_id\ is\ specified,\ bqual\ must\ be\ too"{}})}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ 0\ <=\ format\_id\ <\ 0x80000000:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(\textcolor{stringliteral}{"{}format\_id\ must\ be\ a\ non-\/negative\ 32-\/bit\ integer"{}})}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(bqual)\ >\ 64:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(\textcolor{stringliteral}{"{}bqual\ must\ be\ not\ longer\ than\ 64\ chars"{}})}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(gtrid)\ >\ 64:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(\textcolor{stringliteral}{"{}gtrid\ must\ be\ not\ longer\ than\ 64\ chars"{}})}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ bqual\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(\textcolor{stringliteral}{"{}if\ format\_id\ is\ None,\ bqual\ must\ be\ None\ too"{}})}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid}{Xid}}(format\_id,\ gtrid,\ bqual)}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00080}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a8caa7b71b6383d37c8899f38caab5a1b}{00080}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_a8caa7b71b6383d37c8899f38caab5a1b}{\_as\_tid}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00082}00082\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ PostgreSQL\ transaction\_id\ for\ this\ XA\ xid.}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00083}00083\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00084}00084\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ PostgreSQL\ wants\ just\ a\ string,\ while\ the\ DBAPI\ supports\ the\ XA}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00085}00085\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ standard\ and\ thus\ a\ triple.\ We\ use\ the\ same\ conversion\ algorithm}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00086}00086\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ implemented\ by\ JDBC\ in\ order\ to\ allow\ some\ form\ of\ interoperation.}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00087}00087\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00088}00088\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ see\ also:\ the\ pgjdbc\ implementation}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00089}00089\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ http://cvs.pgfoundry.org/cgi-\/bin/cvsweb.cgi/jdbc/pgjdbc/org/}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00090}00090\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ postgresql/xa/RecoveredXid.java?rev=1.2}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00091}00091\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_aa704037b7fdb60b997b4475193667062}{format\_id}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{or}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ae06c49d5ad54609ab36fa05365a0be3b}{bqual}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Unparsed\ xid:\ return\ the\ gtrid.}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ae3c4566ed4e646b2e9e2785fad51af2a}{gtrid}}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00095}00095\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ XA\ xid:\ mash\ together\ the\ components.}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ egtrid\ =\ b64encode(self.\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ae3c4566ed4e646b2e9e2785fad51af2a}{gtrid}}.encode()).decode()}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ ebqual\ =\ b64encode(self.\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ae06c49d5ad54609ab36fa05365a0be3b}{bqual}}.encode()).decode()}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00099}00099\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.format\_id\}\_\{egtrid\}\_\{ebqual\}"{}}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00101}00101\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00102}00102\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00103}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_af090cbe5947cdee038ff276cd419e255}{00103}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_af090cbe5947cdee038ff276cd419e255}{\_get\_recover\_query}}(cls)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}SELECT\ gid,\ prepared,\ owner,\ database\ FROM\ pg\_prepared\_xacts"{}}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00106}00106\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00107}\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ab3c7277b3716f9d9e13079282f6d4ed0}{00107}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__tpc_1_1_xid_ab3c7277b3716f9d9e13079282f6d4ed0}{\_from\_record}}(}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ cls,\ gid:\ str,\ prepared:\ dt.datetime,\ owner:\ str,\ database:\ str}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00109}00109\ \ \ \ \ )\ -\/>\ Xid:}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ xid\ =\ Xid.from\_string(gid)}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ replace(xid,\ prepared=prepared,\ owner=owner,\ database=database)}
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00112}00112\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00113}00113\ }
+\DoxyCodeLine{\Hypertarget{__tpc_8py_source_l00114}00114\ Xid.\_\_module\_\_\ =\ \textcolor{stringliteral}{"{}psycopg"{}}}
+
+\end{DoxyCode}

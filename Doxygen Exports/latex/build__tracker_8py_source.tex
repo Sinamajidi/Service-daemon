@@ -1,0 +1,146 @@
+\doxysection{build\+\_\+tracker.\+py}
+\hypertarget{build__tracker_8py_source}{}\label{build__tracker_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/operations/build/build\_tracker.py@{venv/Lib/site-\/packages/pip/\_internal/operations/build/build\_tracker.py}}
+\doxymbox{\hyperlink{build__tracker_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1build__tracker}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00003}00003\ \textcolor{keyword}{import}\ contextlib}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00004}00004\ \textcolor{keyword}{import}\ hashlib}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00005}00005\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00006}00006\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00007}00007\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Generator}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00008}00008\ \textcolor{keyword}{from}\ types\ \textcolor{keyword}{import}\ TracebackType}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00010}00010\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__install}{pip.\_internal.req.req\_install}}\ \textcolor{keyword}{import}\ InstallRequirement}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00011}00011\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1temp__dir}{pip.\_internal.utils.temp\_dir}}\ \textcolor{keyword}{import}\ TempDirectory}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00013}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1build__tracker_abb92c8e33b91e23d3015902299fcd1af}{00013}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00015}00015\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00016}00016\ \textcolor{preprocessor}{@contextlib.contextmanager}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00017}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1build__tracker_af6f51331eeb4d76f9bdc4990ab1b0c57}{00017}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1build__tracker_af6f51331eeb4d76f9bdc4990ab1b0c57}{update\_env\_context\_manager}}(**changes:\ str)\ -\/>\ Generator[\textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00018}00018\ \ \ \ \ target\ =\ os.environ}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00020}00020\ \ \ \ \ \textcolor{comment}{\#\ Save\ values\ from\ the\ target\ and\ change\ them.}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00021}00021\ \ \ \ \ non\_existent\_marker\ =\ object()}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00022}00022\ \ \ \ \ saved\_values:\ dict[str,\ object\ |\ str]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00023}00023\ \ \ \ \ \textcolor{keywordflow}{for}\ name,\ new\_value\ \textcolor{keywordflow}{in}\ changes.items():}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00024}00024\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00025}00025\ \ \ \ \ \ \ \ \ \ \ \ \ saved\_values[name]\ =\ target[name]}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00026}00026\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00027}00027\ \ \ \ \ \ \ \ \ \ \ \ \ saved\_values[name]\ =\ non\_existent\_marker}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00028}00028\ \ \ \ \ \ \ \ \ target[name]\ =\ new\_value}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00030}00030\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00031}00031\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00032}00032\ \ \ \ \ \textcolor{keywordflow}{finally}:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00033}00033\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Restore\ original\ values\ in\ the\ target.}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ name,\ original\_value\ \textcolor{keywordflow}{in}\ saved\_values.items():}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ original\_value\ \textcolor{keywordflow}{is}\ non\_existent\_marker:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ del\ target[name]}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ isinstance(original\_value,\ str)\ \ \textcolor{comment}{\#\ for\ mypy}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ target[name]\ =\ original\_value}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00042}00042\ \textcolor{preprocessor}{@contextlib.contextmanager}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00043}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1build__tracker_a5e4fb453a3494e045c6f8c8ec3c83f3f}{00043}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1build__tracker_a5e4fb453a3494e045c6f8c8ec3c83f3f}{get\_build\_tracker}}()\ -\/>\ Generator[BuildTracker,\ None,\ None]:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00044}00044\ \ \ \ \ root\ =\ os.environ.get(\textcolor{stringliteral}{"{}PIP\_BUILD\_TRACKER"{}})}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00045}00045\ \ \ \ \ \textcolor{keyword}{with}\ contextlib.ExitStack()\ \textcolor{keyword}{as}\ ctx:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ root\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \ \ \ \ root\ =\ ctx.enter\_context(\doxymbox{\hyperlink{classpip_1_1__internal_1_1utils_1_1temp__dir_1_1_temp_directory}{TempDirectory}}(kind=\textcolor{stringliteral}{"{}build-\/tracker"{}})).path}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \ \ \ \ ctx.enter\_context(\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1operations_1_1build_1_1build__tracker_af6f51331eeb4d76f9bdc4990ab1b0c57}{update\_env\_context\_manager}}(PIP\_BUILD\_TRACKER=root))}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Initialized\ build\ tracking\ at\ \%s"{}},\ root)}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker}{BuildTracker}}(root)\ \textcolor{keyword}{as}\ tracker:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ tracker}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00055}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_tracker_id}{00055}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_tracker_id}{TrackerId}}(str):}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00056}00056\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Uniquely\ identifying\ string\ provided\ to\ the\ build\ tracker."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00057}00057\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00059}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker}{00059}}\ \textcolor{keyword}{class\ }BuildTracker:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00060}00060\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Ensure\ that\ an\ sdist\ cannot\ request\ itself\ as\ a\ setup\ requirement.}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00061}00061\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00062}00062\ \textcolor{stringliteral}{\ \ \ \ When\ an\ sdist\ is\ prepared,\ it\ identifies\ its\ setup\ requirements\ in\ the}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00063}00063\ \textcolor{stringliteral}{\ \ \ \ context\ of\ \`{}\`{}BuildTracker.track()\`{}\`{}.\ If\ a\ requirement\ shows\ up\ recursively,\ this}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00064}00064\ \textcolor{stringliteral}{\ \ \ \ raises\ an\ exception.}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00065}00065\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00066}00066\ \textcolor{stringliteral}{\ \ \ \ This\ stops\ fork\ bombs\ embedded\ in\ malicious\ packages."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00068}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ae58f2696bd719f660dec38521d88aca1}{00068}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ae58f2696bd719f660dec38521d88aca1}{\_\_init\_\_}}(self,\ root:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00069}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ad3309c484b0ef5b12ea79f5632e9b452}{00069}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ad3309c484b0ef5b12ea79f5632e9b452}{\_root}}\ =\ root}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00070}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_a264ca306d0c5cd7b68581045551235ad}{00070}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_a264ca306d0c5cd7b68581045551235ad}{\_entries}}:\ dict[TrackerId,\ InstallRequirement]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Created\ build\ tracker:\ \%s"{}},\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ad3309c484b0ef5b12ea79f5632e9b452}{\_root}})}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00072}00072\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00073}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_aad50c6ac81c1d043439eea658fb8aa5f}{00073}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_aad50c6ac81c1d043439eea658fb8aa5f}{\_\_enter\_\_}}(self)\ -\/>\ BuildTracker:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Entered\ build\ tracker:\ \%s"{}},\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ad3309c484b0ef5b12ea79f5632e9b452}{\_root}})}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00076}00076\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00077}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_abe5fb98db972b5fa5bf33fd183c988d2}{00077}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_abe5fb98db972b5fa5bf33fd183c988d2}{\_\_exit\_\_}}(}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ exc\_type:\ type[BaseException]\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ exc\_val:\ BaseException\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ exc\_tb:\ TracebackType\ |\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00082}00082\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ac01ddd6917516ad5c3b069f0bf9904d4}{cleanup}}()}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00085}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_a49935eb591880e326d856d3336f71394}{00085}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_a49935eb591880e326d856d3336f71394}{\_entry\_path}}(self,\ key:\ TrackerId)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ hashed\ =\ hashlib.sha224(key.encode()).hexdigest()}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ os.path.join(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ad3309c484b0ef5b12ea79f5632e9b452}{\_root}},\ hashed)}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00089}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ab715bc8c19ab37450a739be4e72cecf9}{00089}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ab715bc8c19ab37450a739be4e72cecf9}{add}}(self,\ req:\ InstallRequirement,\ key:\ TrackerId)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Add\ an\ InstallRequirement\ to\ build\ tracking."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00091}00091\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Get\ the\ file\ to\ write\ information\ about\ this\ requirement.}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ entry\_path\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_a49935eb591880e326d856d3336f71394}{\_entry\_path}}(key)}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Try\ reading\ from\ the\ file.\ If\ it\ exists\ and\ can\ be\ read\ from,\ a\ build}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ is\ already\ in\ progress,\ so\ a\ LookupError\ is\ raised.}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ open(entry\_path)\ \textcolor{keyword}{as}\ fp:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ contents\ =\ fp.read()}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ FileNotFoundError:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ message\ =\ f\textcolor{stringliteral}{"{}\{req.link\}\ is\ already\ being\ built:\ \{contents\}"{}}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ LookupError(message)}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ we're\ here,\ req\ should\ really\ not\ be\ building\ already.}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ key\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_a264ca306d0c5cd7b68581045551235ad}{\_entries}}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00108}00108\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Start\ tracking\ this\ requirement.}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ open(entry\_path,\ \textcolor{stringliteral}{"{}w"{}},\ encoding=\textcolor{stringliteral}{"{}utf-\/8"{}})\ \textcolor{keyword}{as}\ fp:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \ \ \ \ fp.write(str(req))}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_a264ca306d0c5cd7b68581045551235ad}{\_entries}}[key]\ =\ req}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00113}00113\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Added\ \%s\ to\ build\ tracker\ \%r"{}},\ req,\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ad3309c484b0ef5b12ea79f5632e9b452}{\_root}})}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00115}00115\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00116}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ab7fc92eefa4547345dade100ba40c87d}{00116}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ab7fc92eefa4547345dade100ba40c87d}{remove}}(self,\ req:\ InstallRequirement,\ key:\ TrackerId)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Remove\ an\ InstallRequirement\ from\ build\ tracking."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00118}00118\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Delete\ the\ created\ file\ and\ the\ corresponding\ entry.}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ os.unlink(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_a49935eb591880e326d856d3336f71394}{\_entry\_path}}(key))}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ del\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_a264ca306d0c5cd7b68581045551235ad}{\_entries}}[key]}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00122}00122\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Removed\ \%s\ from\ build\ tracker\ \%r"{}},\ req,\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ad3309c484b0ef5b12ea79f5632e9b452}{\_root}})}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00124}00124\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00125}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ac01ddd6917516ad5c3b069f0bf9904d4}{00125}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ac01ddd6917516ad5c3b069f0bf9904d4}{cleanup}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ key,\ req\ \textcolor{keywordflow}{in}\ list(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_a264ca306d0c5cd7b68581045551235ad}{\_entries}}.items()):}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ab7fc92eefa4547345dade100ba40c87d}{remove}}(req,\ key)}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00128}00128\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Removed\ build\ tracker:\ \%r"{}},\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ad3309c484b0ef5b12ea79f5632e9b452}{\_root}})}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00130}00130\ }
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00131}00131\ \ \ \ \ \textcolor{preprocessor}{@contextlib.contextmanager}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00132}\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_a394d42a69664a5949488bfdfa79a8a1d}{00132}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_a394d42a69664a5949488bfdfa79a8a1d}{track}}(self,\ req:\ InstallRequirement,\ key:\ str)\ -\/>\ Generator[\textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Ensure\ that\ \`{}key\`{}\ cannot\ install\ itself\ as\ a\ setup\ requirement.}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00134}00134\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00135}00135\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :raises\ LookupError:\ If\ \`{}key\`{}\ was\ already\ provided\ in\ a\ parent\ invocation\ of}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00136}00136\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ the\ context\ introduced\ by\ this\ method."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ tracker\_id\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_tracker_id}{TrackerId}}(key)}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ab715bc8c19ab37450a739be4e72cecf9}{add}}(req,\ tracker\_id)}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}}
+\DoxyCodeLine{\Hypertarget{build__tracker_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1operations_1_1build_1_1build__tracker_1_1_build_tracker_ab7fc92eefa4547345dade100ba40c87d}{remove}}(req,\ tracker\_id)}
+
+\end{DoxyCode}

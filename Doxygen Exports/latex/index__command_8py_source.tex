@@ -1,0 +1,201 @@
+\doxysection{index\+\_\+command.\+py}
+\hypertarget{index__command_8py_source}{}\label{index__command_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/cli/index\_command.py@{venv/Lib/site-\/packages/pip/\_internal/cli/index\_command.py}}
+\doxymbox{\hyperlink{index__command_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1index__command}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00002}00002\ \textcolor{stringliteral}{Contains\ command\ classes\ which\ may\ interact\ with\ an\ index\ /\ the\ network.}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00003}00003\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00004}00004\ \textcolor{stringliteral}{Unlike\ its\ sister\ module,\ req\_command,\ this\ module\ still\ uses\ lazy\ imports}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00005}00005\ \textcolor{stringliteral}{so\ commands\ which\ don't\ always\ hit\ the\ network\ (e.g.\ list\ w/o\ -\/-\/outdated\ or}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00006}00006\ \textcolor{stringliteral}{-\/-\/uptodate)\ don't\ need\ waste\ time\ importing\ PipSession\ and\ friends.}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00007}00007\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00009}00009\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00011}00011\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00012}00012\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00013}00013\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00014}00014\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ lru\_cache}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00015}00015\ \textcolor{keyword}{from}\ optparse\ \textcolor{keyword}{import}\ Values}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00016}00016\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00018}00018\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor}{pip.\_vendor}}\ \textcolor{keyword}{import}\ certifi}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00020}00020\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1base__command}{pip.\_internal.cli.base\_command}}\ \textcolor{keyword}{import}\ Command}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00021}00021\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1command__context}{pip.\_internal.cli.command\_context}}\ \textcolor{keyword}{import}\ CommandContextMixIn}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00023}00023\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00024}00024\ \ \ \ \ \textcolor{keyword}{from}\ ssl\ \textcolor{keyword}{import}\ SSLContext}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00026}00026\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1utils}{pip.\_vendor.packaging.utils}}\ \textcolor{keyword}{import}\ NormalizedName}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00028}00028\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1session}{pip.\_internal.network.session}}\ \textcolor{keyword}{import}\ PipSession}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00030}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1index__command_ac28cfcbf929bd2b8c381813a069c6abd}{00030}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00031}00031\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00033}00033\ \textcolor{preprocessor}{@lru\_cache}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00034}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1index__command_a11bc4ae56af1bf6a97c4a9d2958ff8cd}{00034}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1index__command_a11bc4ae56af1bf6a97c4a9d2958ff8cd}{\_create\_truststore\_ssl\_context}}()\ -\/>\ SSLContext\ |\ None:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00035}00035\ \ \ \ \ \textcolor{keywordflow}{if}\ sys.version\_info\ <\ (3,\ 10):}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Disabling\ truststore\ because\ Python\ version\ isn't\ 3.10+"{}})}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00039}00039\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ \textcolor{keyword}{import}\ ssl}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00041}00041\ \ \ \ \ \textcolor{keywordflow}{except}\ ImportError:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}Disabling\ truststore\ since\ ssl\ support\ is\ missing"{}})}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00045}00045\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor}{pip.\_vendor}}\ \textcolor{keyword}{import}\ truststore}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00047}00047\ \ \ \ \ \textcolor{keywordflow}{except}\ ImportError:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}Disabling\ truststore\ because\ platform\ isn't\ supported"{}})}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00051}00051\ \ \ \ \ ctx\ =\ truststore.SSLContext(ssl.PROTOCOL\_TLS\_CLIENT)}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00052}00052\ \ \ \ \ ctx.load\_verify\_locations(certifi.where())}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00053}00053\ \ \ \ \ \textcolor{keywordflow}{return}\ ctx}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00056}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin}{00056}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin}{SessionCommandMixin}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1command__context_1_1_command_context_mix_in}{CommandContextMixIn}}):}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00057}00057\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00058}00058\ \textcolor{stringliteral}{\ \ \ \ A\ class\ mixin\ for\ command\ classes\ needing\ \_build\_session().}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00059}00059\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00061}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a625f98a9f6fc98fffda1a2e2ee68ba2c}{00061}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a625f98a9f6fc98fffda1a2e2ee68ba2c}{\_\_init\_\_}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a625f98a9f6fc98fffda1a2e2ee68ba2c}{\_\_init\_\_}}()}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00063}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a3c3fb211c2f8851ff3ea80b0c9f4e1aa}{00063}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a3c3fb211c2f8851ff3ea80b0c9f4e1aa}{\_session}}:\ PipSession\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00065}00065\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00066}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a3ff33d073659e836e5e9d75d227acfa5}{00066}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a3ff33d073659e836e5e9d75d227acfa5}{\_get\_index\_urls}}(cls,\ options:\ Values)\ -\/>\ list[str]\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ a\ list\ of\ index\ urls\ from\ user-\/provided\ options."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ index\_urls\ =\ []}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ getattr(options,\ \textcolor{stringliteral}{"{}no\_index"{}},\ \textcolor{keyword}{False}):}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \ \ \ \ url\ =\ getattr(options,\ \textcolor{stringliteral}{"{}index\_url"{}},\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ url:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ index\_urls.append(url)}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ urls\ =\ getattr(options,\ \textcolor{stringliteral}{"{}extra\_index\_urls"{}},\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ urls:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ index\_urls.extend(urls)}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Return\ None\ rather\ than\ an\ empty\ list}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ index\_urls\ \textcolor{keywordflow}{or}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00078}00078\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00079}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a0534b58b9b2272a9c287282c3af31a97}{00079}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a0534b58b9b2272a9c287282c3af31a97}{get\_default\_session}}(self,\ options:\ Values)\ -\/>\ PipSession:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ a\ default-\/managed\ session."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a3c3fb211c2f8851ff3ea80b0c9f4e1aa}{\_session}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a3c3fb211c2f8851ff3ea80b0c9f4e1aa}{\_session}}\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1command__context_1_1_command_context_mix_in_a1a4327ab36cea3f5d59ceceecb6fed23}{enter\_context}}(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a5cbbd0f5ebe224336ff2871dc312e571}{\_build\_session}}(options))}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ there's\ no\ type\ annotation\ on\ requests.Session,\ so\ it's}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ automatically\ ContextManager[Any]\ and\ self.\_session\ becomes\ Any,}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ then\ https://github.com/python/mypy/issues/7696\ kicks\ in}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a3c3fb211c2f8851ff3ea80b0c9f4e1aa}{\_session}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a3c3fb211c2f8851ff3ea80b0c9f4e1aa}{\_session}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00089}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a5cbbd0f5ebe224336ff2871dc312e571}{00089}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a5cbbd0f5ebe224336ff2871dc312e571}{\_build\_session}}(}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ options:\ Values,}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ retries:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ timeout:\ int\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00094}00094\ \ \ \ \ )\ -\/>\ PipSession:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1network_1_1session}{pip.\_internal.network.session}}\ \textcolor{keyword}{import}\ PipSession}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ cache\_dir\ =\ options.cache\_dir}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ \textcolor{keywordflow}{not}\ cache\_dir\ \textcolor{keywordflow}{or}\ os.path.isabs(cache\_dir)}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00099}00099\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}legacy-\/certs"{}}\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ options.deprecated\_features\_enabled:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ ssl\_context\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1index__command_a11bc4ae56af1bf6a97c4a9d2958ff8cd}{\_create\_truststore\_ssl\_context}}()}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ ssl\_context\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ session\ =\ PipSession(}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ cache=os.path.join(cache\_dir,\ \textcolor{stringliteral}{"{}http-\/v2"{}})\ \textcolor{keywordflow}{if}\ cache\_dir\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \ \ \ \ retries=retries\ \textcolor{keywordflow}{if}\ retries\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ options.retries,}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \ \ \ \ resume\_retries=options.resume\_retries,}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \ \ \ \ trusted\_hosts=options.trusted\_hosts,}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \ \ \ \ index\_urls=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a3ff33d073659e836e5e9d75d227acfa5}{\_get\_index\_urls}}(options),}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \ \ \ \ ssl\_context=ssl\_context,}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00113}00113\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Handle\ custom\ ca-\/bundles\ from\ the\ user}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.cert:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ session.verify\ =\ options.cert}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00117}00117\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Handle\ SSL\ client\ certificate}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.client\_cert:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \ \ \ \ session.cert\ =\ options.client\_cert}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Handle\ timeouts}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.timeout\ \textcolor{keywordflow}{or}\ timeout:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ session.timeout\ =\ timeout\ \textcolor{keywordflow}{if}\ timeout\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ options.timeout}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00125}00125\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Handle\ configured\ proxies}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.proxy:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ session.proxies\ =\ \{}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}http"{}}:\ options.proxy,}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}https"{}}:\ options.proxy,}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \ \ \ \ session.trust\_env\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ session.pip\_proxy\ =\ options.proxy}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00134}00134\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Determine\ if\ we\ can\ prompt\ the\ user\ for\ authentication\ or\ not}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ session.auth.prompting\ =\ \textcolor{keywordflow}{not}\ options.no\_input}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ session.auth.keyring\_provider\ =\ options.keyring\_provider}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00138}00138\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ session}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00140}00140\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00142}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1index__command_a65b7c1f5dcdd2d849f1569240f2c6700}{00142}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1index__command_a65b7c1f5dcdd2d849f1569240f2c6700}{\_pip\_self\_version\_check}}(session:\ PipSession,\ options:\ Values)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00143}00143\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1self__outdated__check}{pip.\_internal.self\_outdated\_check}}\ \textcolor{keyword}{import}\ pip\_self\_version\_check\ \textcolor{keyword}{as}\ check}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00145}00145\ \ \ \ \ check(session,\ options)}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00147}00147\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00148}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_index_group_command}{00148}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_index_group_command}{IndexGroupCommand}}(\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1base__command_1_1_command}{Command}},\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin}{SessionCommandMixin}}):}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00149}00149\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00150}00150\ \textcolor{stringliteral}{\ \ \ \ Abstract\ base\ class\ for\ commands\ with\ the\ index\_group\ options.}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00151}00151\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00152}00152\ \textcolor{stringliteral}{\ \ \ \ This\ also\ corresponds\ to\ the\ commands\ that\ permit\ the\ pip\ version\ check.}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00153}00153\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00155}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_index_group_command_ab54fd7eb5a5dbf5c20a7445766d22002}{00155}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_index_group_command_ab54fd7eb5a5dbf5c20a7445766d22002}{should\_exclude\_prerelease}}(}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ self,\ options:\ Values,\ package\_name:\ NormalizedName}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00157}00157\ \ \ \ \ )\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00159}00159\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Determine\ if\ pre-\/releases\ should\ be\ excluded\ for\ a\ package.}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00160}00160\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ per-\/package\ release\ control\ settings}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.release\_control:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ allow\_prereleases\ =\ options.release\_control.allows\_prereleases(package\_name)}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ allow\_prereleases\ \textcolor{keywordflow}{is}\ \textcolor{keyword}{True}:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}\ \ \textcolor{comment}{\#\ Include\ pre-\/releases}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ allow\_prereleases\ \textcolor{keywordflow}{is}\ \textcolor{keyword}{False}:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}\ \ \textcolor{comment}{\#\ Exclude\ pre-\/releases}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00168}00168\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ No\ specific\ setting:\ exclude\ prereleases\ by\ default}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00171}00171\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00172}\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_index_group_command_ae01b17d53f344ee63236e4bdf2032135}{00172}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_index_group_command_ae01b17d53f344ee63236e4bdf2032135}{handle\_pip\_version\_check}}(self,\ options:\ Values)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00174}00174\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Do\ the\ pip\ version\ check\ if\ not\ disabled.}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00175}00175\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00176}00176\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ overrides\ the\ default\ behavior\ of\ not\ doing\ the\ check.}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00177}00177\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Make\ sure\ the\ index\_group\ options\ are\ present.}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ hasattr(options,\ \textcolor{stringliteral}{"{}no\_index"{}})}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00180}00180\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.disable\_pip\_version\_check\ \textcolor{keywordflow}{or}\ options.no\_index:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00183}00183\ }
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Otherwise,\ check\ if\ we're\ using\ the\ latest\ version\ of\ pip\ available.}}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \ \ \ \ session\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1cli_1_1index__command_1_1_session_command_mixin_a5cbbd0f5ebe224336ff2871dc312e571}{\_build\_session}}(}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ options,}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ retries=0,}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ timeout=min(5,\ options.timeout),}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ session:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1index__command_a65b7c1f5dcdd2d849f1569240f2c6700}{\_pip\_self\_version\_check}}(session,\ options)}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ Exception:}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}There\ was\ an\ error\ checking\ the\ latest\ version\ of\ pip."{}})}
+\DoxyCodeLine{\Hypertarget{index__command_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}See\ below\ for\ error"{}},\ exc\_info=\textcolor{keyword}{True})}
+
+\end{DoxyCode}

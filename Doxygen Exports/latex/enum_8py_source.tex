@@ -1,0 +1,261 @@
+\doxysection{enum.\+py}
+\hypertarget{enum_8py_source}{}\label{enum_8py_source}\index{venv/Lib/site-\/packages/psycopg/types/enum.py@{venv/Lib/site-\/packages/psycopg/types/enum.py}}
+\doxymbox{\hyperlink{enum_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00002}00002\ \textcolor{stringliteral}{Adapters\ for\ the\ enum\ type.}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00005}00005\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00007}00007\ \textcolor{keyword}{from}\ enum\ \textcolor{keyword}{import}\ Enum}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00008}00008\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any,\ Generic,\ TypeAlias,\ cast}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00009}00009\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ cache}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00010}00010\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Mapping,\ Sequence}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00012}00012\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00013}00013\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ postgres,\ sql}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00014}00014\ \textcolor{keyword}{from}\ ..pq\ \textcolor{keyword}{import}\ Format}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00015}00015\ \textcolor{keyword}{from}\ ..abc\ \textcolor{keyword}{import}\ AdaptContext,\ QueryNoTemplate}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00016}00016\ \textcolor{keyword}{from}\ ..adapt\ \textcolor{keyword}{import}\ Buffer,\ Dumper,\ Loader}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00017}00017\ \textcolor{keyword}{from}\ ..\_compat\ \textcolor{keyword}{import}\ TypeVar}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00018}00018\ \textcolor{keyword}{from}\ ..\_typeinfo\ \textcolor{keyword}{import}\ TypeInfo}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00019}00019\ \textcolor{keyword}{from}\ ..\_encodings\ \textcolor{keyword}{import}\ conn\_encoding}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00020}00020\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00021}00021\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00022}00022\ \ \ \ \ \textcolor{keyword}{from}\ ..\_connection\_base\ \textcolor{keyword}{import}\ BaseConnection}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00024}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a2dec394d5d4f86c4733618d3ce96eea0}{00024}}\ E\ =\ \doxymbox{\hyperlink{classtyping__extensions_1_1_type_var}{TypeVar}}(\textcolor{stringliteral}{"{}E"{}},\ bound=Enum)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00026}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a09441913fc6d701f0e65b32984f2cbfc}{00026}}\ EnumDumpMap:\ TypeAlias\ =\ dict[E,\ bytes]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00027}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_ab55844991102f178f16ab2a0369bbdb1}{00027}}\ EnumLoadMap:\ TypeAlias\ =\ dict[bytes,\ E]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00028}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a2abe254256858165c1f66a29c16ad032}{00028}}\ EnumMapping:\ TypeAlias\ =\ Mapping[E,\ str]\ |\ Sequence[tuple[E,\ str]]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00030}00030\ \textcolor{comment}{\#\ Hashable\ versions}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00031}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a12a5114f76d0a97c7435045af29442f8}{00031}}\ \_HEnumDumpMap:\ TypeAlias\ =\ tuple[tuple[E,\ bytes],\ ...]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00032}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a80386686d5d4e4811990d78135676187}{00032}}\ \_HEnumLoadMap:\ TypeAlias\ =\ tuple[tuple[bytes,\ E],\ ...]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00034}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a48c57cf65e952286bcf957343f85a9d9}{00034}}\ TEXT\ =\ Format.TEXT}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00035}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a19e552ac8d8cdebf0308354d7602612a}{00035}}\ BINARY\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00038}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_info}{00038}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_info}{EnumInfo}}(\doxymbox{\hyperlink{classpsycopg_1_1__typeinfo_1_1_type_info}{TypeInfo}}):}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00039}00039\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Manage\ information\ about\ an\ enum\ type."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00040}00040\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00041}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_info_a73d370a7064f803b42e173f50e892268}{00041}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_info_a73d370a7064f803b42e173f50e892268}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ name:\ str,}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ oid:\ int,}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ array\_oid:\ int,}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ labels:\ Sequence[str],}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00047}00047\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_info_a73d370a7064f803b42e173f50e892268}{\_\_init\_\_}}(name,\ oid,\ array\_oid)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00049}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_info_a13047eb49575a205c17bf1703b347466}{00049}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_info_a13047eb49575a205c17bf1703b347466}{labels}}\ =\ labels}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Will\ be\ set\ by\ register\_enum()}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00051}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_info_a5cb68901a678bdf95f83eaccf3a832b4}{00051}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_info_a5cb68901a678bdf95f83eaccf3a832b4}{enum}}:\ type[Enum]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00053}00053\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00054}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_info_a9c3337b7276ca3506b5642b3627c5035}{00054}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_info_a9c3337b7276ca3506b5642b3627c5035}{\_get\_info\_query}}(cls,\ conn:\ BaseConnection[Any])\ -\/>\ QueryNoTemplate:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{sql.SQL}}(}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}\(\backslash\)}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00057}00057\ \textcolor{stringliteral}{SELECT\ name,\ oid,\ array\_oid,\ array\_agg(label)\ AS\ labels}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00058}00058\ \textcolor{stringliteral}{FROM\ (}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00059}00059\ \textcolor{stringliteral}{\ \ \ \ SELECT}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00060}00060\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ t.typname\ AS\ name,\ t.oid\ AS\ oid,\ t.typarray\ AS\ array\_oid,}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00061}00061\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ e.enumlabel\ AS\ label}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00062}00062\ \textcolor{stringliteral}{\ \ \ \ FROM\ pg\_type\ t}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00063}00063\ \textcolor{stringliteral}{\ \ \ \ LEFT\ JOIN\ \ pg\_enum\ e}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00064}00064\ \textcolor{stringliteral}{\ \ \ \ ON\ e.enumtypid\ =\ t.oid}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00065}00065\ \textcolor{stringliteral}{\ \ \ \ WHERE\ t.oid\ =\ \{regtype\}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00066}00066\ \textcolor{stringliteral}{\ \ \ \ ORDER\ BY\ e.enumsortorder}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00067}00067\ \textcolor{stringliteral}{)\ x}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00068}00068\ \textcolor{stringliteral}{GROUP\ BY\ name,\ oid,\ array\_oid}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00069}00069\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ ).format(regtype=cls.\doxymbox{\hyperlink{classpsycopg_1_1__typeinfo_1_1_type_info_a080015df502949309bc6ab9a9b960aa5}{\_to\_regtype}}(conn))}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00071}00071\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00072}00072\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00073}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_loader}{00073}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_loader}{\_BaseEnumLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader}{Loader}},\ Generic[E]):}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00074}00074\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00075}00075\ \textcolor{stringliteral}{\ \ \ \ Loader\ for\ a\ specific\ Enum\ class}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00076}00076\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00078}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_loader_a480788e07bbd97ba5ae6db5a942903f6}{00078}}\ \ \ \ \ enum:\ type[E]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00079}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_loader_ad381690ede1d99cb863cf66357f25172}{00079}}\ \ \ \ \ \_load\_map:\ EnumLoadMap[E]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00081}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_loader_ad99c8c1655156d95804a9a1b959a4ecc}{00081}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_loader_ad99c8c1655156d95804a9a1b959a4ecc}{load}}(self,\ data:\ Buffer)\ -\/>\ E:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(data,\ bytes):}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \ \ \ \ data\ =\ bytes(data)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_loader_ad381690ede1d99cb863cf66357f25172}{\_load\_map}}[data]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ enc\ =\ conn\_encoding(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_loader_a4c75e76610d267badd8d0015672a9f0f}{connection}})}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ label\ =\ data.decode(enc,\ \textcolor{stringliteral}{"{}replace"{}})}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.DataError(}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}bad\ member\ for\ enum\ \{self.enum.\_\_qualname\_\_\}:\ \{label!r\}"{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00095}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_dumper}{00095}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_dumper}{\_BaseEnumDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}},\ Generic[E]):}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00096}00096\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00097}00097\ \textcolor{stringliteral}{\ \ \ \ Dumper\ for\ a\ specific\ Enum\ class}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00098}00098\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00099}00099\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00100}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_dumper_a0df561531c7c6240ff4b9b8018db89f9}{00100}}\ \ \ \ \ enum:\ type[E]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00101}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_dumper_ab346eceda0c6722ef641877f731de057}{00101}}\ \ \ \ \ \_dump\_map:\ EnumDumpMap[E]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00103}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_dumper_a5539b0822655824e58cb8368c46dd731}{00103}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_dumper_a5539b0822655824e58cb8368c46dd731}{dump}}(self,\ value:\ E)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1___base_enum_dumper_ab346eceda0c6722ef641877f731de057}{\_dump\_map}}[value]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00107}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_dumper}{00107}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_dumper}{EnumDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper}{Dumper}}):}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00108}00108\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00109}00109\ \textcolor{stringliteral}{\ \ \ \ Dumper\ for\ a\ generic\ Enum\ class}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00110}00110\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00111}00111\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00112}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_dumper_a71ea2c60e9805931dc6ff3f9ff1c5b3f}{00112}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_dumper_a71ea2c60e9805931dc6ff3f9ff1c5b3f}{\_\_init\_\_}}(self,\ cls:\ type,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_dumper_a71ea2c60e9805931dc6ff3f9ff1c5b3f}{\_\_init\_\_}}(cls,\ context)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00114}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_dumper_a148acc0f297a83c2b10f5b3da449fa24}{00114}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_dumper_a148acc0f297a83c2b10f5b3da449fa24}{\_encoding}}\ =\ conn\_encoding(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac19516f509822a8161669804c73ca263}{connection}})}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00115}00115\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00116}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_dumper_a9aebc5d9b81b9bb0aa41976dceaf325f}{00116}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_dumper_a9aebc5d9b81b9bb0aa41976dceaf325f}{dump}}(self,\ value:\ E)\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ value.name.encode(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_dumper_a148acc0f297a83c2b10f5b3da449fa24}{\_encoding}})}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00118}00118\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00119}00119\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00120}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_binary_dumper}{00120}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_binary_dumper}{EnumBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_dumper}{EnumDumper}}):}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00121}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1enum_1_1_enum_binary_dumper}{00121}}\ \ \ \ \ format\ =\ BINARY}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00122}00122\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00123}00123\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00124}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a7aa35eb7bed7f3aacb6d0f0e39ec1390}{00124}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a7aa35eb7bed7f3aacb6d0f0e39ec1390}{register\_enum}}(}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00125}00125\ \ \ \ \ info:\ EnumInfo,}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00126}00126\ \ \ \ \ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00127}00127\ \ \ \ \ enum:\ type[E]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00128}00128\ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00129}00129\ \ \ \ \ mapping:\ EnumMapping[E]\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00130}00130\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00131}00131\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Register\ the\ adapters\ to\ load\ and\ dump\ a\ enum\ type.}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00132}00132\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00133}00133\ \textcolor{stringliteral}{\ \ \ \ :param\ info:\ The\ object\ with\ the\ information\ about\ the\ enum\ to\ register.}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00134}00134\ \textcolor{stringliteral}{\ \ \ \ :param\ context:\ The\ context\ where\ to\ register\ the\ adapters.\ If\ \`{}!None\`{},}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00135}00135\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ register\ it\ globally.}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00136}00136\ \textcolor{stringliteral}{\ \ \ \ :param\ enum:\ Python\ enum\ type\ matching\ to\ the\ PostgreSQL\ one.\ If\ \`{}!None\`{},}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00137}00137\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ a\ new\ enum\ will\ be\ generated\ and\ exposed\ as\ \`{}EnumInfo.enum\`{}.}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00138}00138\ \textcolor{stringliteral}{\ \ \ \ :param\ mapping:\ Override\ the\ mapping\ between\ \`{}!enum\`{}\ members\ and\ \`{}!info\`{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00139}00139\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ labels.}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00140}00140\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00142}00142\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ info:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(\textcolor{stringliteral}{"{}no\ info\ passed.\ Is\ the\ requested\ enum\ available?"{}})}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00144}00144\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00145}00145\ \ \ \ \ \textcolor{keywordflow}{if}\ enum\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ enum\ =\ cast(type[E],\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a9a37ebf10e1c94bd976149e5f7ec0e21}{\_make\_enum}}(info.name,\ tuple(info.labels)))}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00147}00147\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00148}00148\ \ \ \ \ info.enum\ =\ enum}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00149}00149\ \ \ \ \ adapters\ =\ context.adapters\ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{else}\ postgres.adapters}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00150}00150\ \ \ \ \ info.register(context)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00151}00151\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00152}00152\ \ \ \ \ load\_map\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_ae9668419161eefc4887d49041480d046}{\_make\_load\_map}}(info,\ enum,\ mapping,\ context)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00153}00153\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00154}00154\ \ \ \ \ loader\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a44f7941e23c0492fcfa73e370083b0e6}{\_make\_loader}}(info.name,\ info.enum,\ load\_map)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00155}00155\ \ \ \ \ adapters.register\_loader(info.oid,\ loader)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00156}00156\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00157}00157\ \ \ \ \ loader\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_ae8e5349df2a70b634f3c957f23568742}{\_make\_binary\_loader}}(info.name,\ info.enum,\ load\_map)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00158}00158\ \ \ \ \ adapters.register\_loader(info.oid,\ loader)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00159}00159\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00160}00160\ \ \ \ \ dump\_map\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_ac1238365a1c7e51839a05c3e2a5ed7ed}{\_make\_dump\_map}}(info,\ enum,\ mapping,\ context)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00161}00161\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00162}00162\ \ \ \ \ dumper\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_aa117c8238a5d9f424517c62824edc063}{\_make\_dumper}}(info.enum,\ info.oid,\ dump\_map)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00163}00163\ \ \ \ \ adapters.register\_dumper(info.enum,\ dumper)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00164}00164\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00165}00165\ \ \ \ \ dumper\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a2fccebb175ad47c6a932dbc67f6da4b2}{\_make\_binary\_dumper}}(info.enum,\ info.oid,\ dump\_map)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00166}00166\ \ \ \ \ adapters.register\_dumper(info.enum,\ dumper)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00167}00167\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00168}00168\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00169}00169\ \textcolor{comment}{\#\ Cache\ all\ dynamically-\/generated\ types\ to\ avoid\ leaks\ in\ case\ the\ types}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00170}00170\ \textcolor{comment}{\#\ cannot\ be\ GC'd.}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00171}00171\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00172}00172\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00173}00173\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00174}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a9a37ebf10e1c94bd976149e5f7ec0e21}{00174}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a9a37ebf10e1c94bd976149e5f7ec0e21}{\_make\_enum}}(name:\ str,\ labels:\ tuple[str,\ ...])\ -\/>\ Enum:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00175}00175\ \ \ \ \ \textcolor{keywordflow}{return}\ Enum(name.title(),\ labels,\ module=\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00176}00176\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00177}00177\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00178}00178\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00179}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a44f7941e23c0492fcfa73e370083b0e6}{00179}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a44f7941e23c0492fcfa73e370083b0e6}{\_make\_loader}}(}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00180}00180\ \ \ \ \ name:\ str,\ enum:\ type[Enum],\ load\_map:\ \_HEnumLoadMap[E]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00181}00181\ )\ -\/>\ type[\_BaseEnumLoader[E]]:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00182}00182\ \ \ \ \ attribs\ =\ \{\textcolor{stringliteral}{"{}enum"{}}:\ enum,\ \textcolor{stringliteral}{"{}\_load\_map"{}}:\ dict(load\_map)\}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00183}00183\ \ \ \ \ \textcolor{keywordflow}{return}\ type(f\textcolor{stringliteral}{"{}\{name.title()\}Loader"{}},\ (\_BaseEnumLoader,),\ attribs)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00184}00184\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00185}00185\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00186}00186\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00187}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_ae8e5349df2a70b634f3c957f23568742}{00187}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_ae8e5349df2a70b634f3c957f23568742}{\_make\_binary\_loader}}(}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00188}00188\ \ \ \ \ name:\ str,\ enum:\ type[Enum],\ load\_map:\ \_HEnumLoadMap[E]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00189}00189\ )\ -\/>\ type[\_BaseEnumLoader[E]]:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00190}00190\ \ \ \ \ attribs\ =\ \{\textcolor{stringliteral}{"{}enum"{}}:\ enum,\ \textcolor{stringliteral}{"{}\_load\_map"{}}:\ dict(load\_map),\ \textcolor{stringliteral}{"{}format"{}}:\ BINARY\}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00191}00191\ \ \ \ \ \textcolor{keywordflow}{return}\ type(f\textcolor{stringliteral}{"{}\{name.title()\}BinaryLoader"{}},\ (\_BaseEnumLoader,),\ attribs)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00193}00193\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00194}00194\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00195}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_aa117c8238a5d9f424517c62824edc063}{00195}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_aa117c8238a5d9f424517c62824edc063}{\_make\_dumper}}(}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00196}00196\ \ \ \ \ enum:\ type[Enum],\ oid:\ int,\ dump\_map:\ \_HEnumDumpMap[E]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00197}00197\ )\ -\/>\ type[\_BaseEnumDumper[E]]:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00198}00198\ \ \ \ \ attribs\ =\ \{\textcolor{stringliteral}{"{}enum"{}}:\ enum,\ \textcolor{stringliteral}{"{}oid"{}}:\ oid,\ \textcolor{stringliteral}{"{}\_dump\_map"{}}:\ dict(dump\_map)\}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00199}00199\ \ \ \ \ \textcolor{keywordflow}{return}\ type(f\textcolor{stringliteral}{"{}\{enum.\_\_name\_\_\}Dumper"{}},\ (\_BaseEnumDumper,),\ attribs)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00200}00200\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00201}00201\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00202}00202\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00203}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a2fccebb175ad47c6a932dbc67f6da4b2}{00203}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a2fccebb175ad47c6a932dbc67f6da4b2}{\_make\_binary\_dumper}}(}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00204}00204\ \ \ \ \ enum:\ type[Enum],\ oid:\ int,\ dump\_map:\ \_HEnumDumpMap[E]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00205}00205\ )\ -\/>\ type[\_BaseEnumDumper[E]]:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00206}00206\ \ \ \ \ attribs\ =\ \{\textcolor{stringliteral}{"{}enum"{}}:\ enum,\ \textcolor{stringliteral}{"{}oid"{}}:\ oid,\ \textcolor{stringliteral}{"{}\_dump\_map"{}}:\ dict(dump\_map),\ \textcolor{stringliteral}{"{}format"{}}:\ BINARY\}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00207}00207\ \ \ \ \ \textcolor{keywordflow}{return}\ type(f\textcolor{stringliteral}{"{}\{enum.\_\_name\_\_\}BinaryDumper"{}},\ (\_BaseEnumDumper,),\ attribs)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00208}00208\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00209}00209\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00210}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_ae9668419161eefc4887d49041480d046}{00210}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_ae9668419161eefc4887d49041480d046}{\_make\_load\_map}}(}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00211}00211\ \ \ \ \ info:\ EnumInfo,\ enum:\ type[E],\ mapping:\ EnumMapping[E],\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00212}00212\ )\ -\/>\ \_HEnumLoadMap[E]:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00213}00213\ \ \ \ \ enc\ =\ conn\_encoding(context.connection\ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00214}00214\ \ \ \ \ rv\ =\ []}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00215}00215\ \ \ \ \ \textcolor{keywordflow}{for}\ label\ \textcolor{keywordflow}{in}\ info.labels:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \ \ \ \ member\ =\ enum[label]}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ tolerate\ a\ missing\ enum,\ assuming\ it\ won't\ be\ used.\ If\ it\ is\ we}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ will\ get\ a\ DataError\ on\ fetch.}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \ \ \ \ rv.append((label.encode(enc),\ member))}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00224}00224\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00225}00225\ \ \ \ \ \textcolor{keywordflow}{if}\ mapping:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(mapping,\ Mapping):}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \ \ \ \ mapping\ =\ list(mapping.items())}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00228}00228\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ member,\ label\ \textcolor{keywordflow}{in}\ mapping:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \ \ \ \ rv.append((label.encode(enc),\ member))}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00231}00231\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00232}00232\ \ \ \ \ \textcolor{keywordflow}{return}\ tuple(rv)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00233}00233\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00234}00234\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00235}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_ac1238365a1c7e51839a05c3e2a5ed7ed}{00235}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_ac1238365a1c7e51839a05c3e2a5ed7ed}{\_make\_dump\_map}}(}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00236}00236\ \ \ \ \ info:\ EnumInfo,\ enum:\ type[E],\ mapping:\ EnumMapping[E],\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00237}00237\ )\ -\/>\ \_HEnumDumpMap[E]:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00238}00238\ \ \ \ \ enc\ =\ conn\_encoding(context.connection\ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{else}\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00239}00239\ \ \ \ \ rv\ =\ []}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00240}00240\ \ \ \ \ \textcolor{keywordflow}{for}\ member\ \textcolor{keywordflow}{in}\ enum:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ rv.append((member,\ member.name.encode(enc)))}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00242}00242\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00243}00243\ \ \ \ \ \textcolor{keywordflow}{if}\ mapping:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(mapping,\ Mapping):}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \ \ \ \ mapping\ =\ list(mapping.items())}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00246}00246\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ member,\ label\ \textcolor{keywordflow}{in}\ mapping:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \ \ \ \ rv.append((member,\ label.encode(enc)))}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00249}00249\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00250}00250\ \ \ \ \ \textcolor{keywordflow}{return}\ tuple(rv)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00251}00251\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00252}00252\ }
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00253}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a2d61fc6fc02af2d7703f2565c03b0432}{00253}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1enum_a2d61fc6fc02af2d7703f2565c03b0432}{register\_default\_adapters}}(context:\ AdaptContext)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00254}00254\ \ \ \ \ context.adapters.register\_dumper(Enum,\ EnumBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{enum_8py_source_l00255}00255\ \ \ \ \ context.adapters.register\_dumper(Enum,\ EnumDumper)}
+
+\end{DoxyCode}

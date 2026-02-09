@@ -1,0 +1,394 @@
+\doxysection{markers.\+py}
+\hypertarget{markers_8py_source}{}\label{markers_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/packaging/markers.py@{venv/Lib/site-\/packages/pip/\_vendor/packaging/markers.py}}
+\doxymbox{\hyperlink{markers_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers}{00001}}\ \textcolor{comment}{\#\ This\ file\ is\ dual\ licensed\ under\ the\ terms\ of\ the\ Apache\ License,\ Version}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00002}00002\ \textcolor{comment}{\#\ 2.0,\ and\ the\ BSD\ License.\ See\ the\ LICENSE\ file\ in\ the\ root\ of\ this\ repository}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00003}00003\ \textcolor{comment}{\#\ for\ complete\ details.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00005}00005\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00007}00007\ \textcolor{keyword}{import}\ operator}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00008}00008\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00009}00009\ \textcolor{keyword}{import}\ platform}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00010}00010\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00011}00011\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ AbstractSet,\ Callable,\ Literal,\ Mapping,\ TypedDict,\ Union,\ cast}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00013}00013\ \textcolor{keyword}{from}\ .\_parser\ \textcolor{keyword}{import}\ MarkerAtom,\ MarkerList,\ Op,\ Value,\ Variable}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00014}00014\ \textcolor{keyword}{from}\ .\_parser\ \textcolor{keyword}{import}\ parse\_marker\ \textcolor{keyword}{as}\ \_parse\_marker}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00015}00015\ \textcolor{keyword}{from}\ .\_tokenizer\ \textcolor{keyword}{import}\ ParserSyntaxError}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00016}00016\ \textcolor{keyword}{from}\ .specifiers\ \textcolor{keyword}{import}\ InvalidSpecifier,\ Specifier}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00017}00017\ \textcolor{keyword}{from}\ .utils\ \textcolor{keyword}{import}\ canonicalize\_name}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00018}00018\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00019}00019\ \_\_all\_\_\ =\ [}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00020}00020\ \ \ \ \ \textcolor{stringliteral}{"{}Environment"{}},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00021}00021\ \ \ \ \ \textcolor{stringliteral}{"{}EvaluateContext"{}},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00022}00022\ \ \ \ \ \textcolor{stringliteral}{"{}InvalidMarker"{}},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00023}00023\ \ \ \ \ \textcolor{stringliteral}{"{}Marker"{}},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00024}00024\ \ \ \ \ \textcolor{stringliteral}{"{}UndefinedComparison"{}},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00025}00025\ \ \ \ \ \textcolor{stringliteral}{"{}UndefinedEnvironmentName"{}},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00026}00026\ \ \ \ \ \textcolor{stringliteral}{"{}default\_environment"{}},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00027}00027\ ]}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00029}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_aa13de8fbc20edb0fc6634417ed8de135}{00029}}\ Operator\ =\ Callable[[str,\ Union[str,\ AbstractSet[str]]],\ bool]}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00030}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_af4998772f0a0452b88158cd75766382a}{00030}}\ EvaluateContext\ =\ Literal[\textcolor{stringliteral}{"{}metadata"{}},\ \textcolor{stringliteral}{"{}lock\_file"{}},\ \textcolor{stringliteral}{"{}requirement"{}}]}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00031}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a70b81dc1d04e0cd40343d8183af44193}{00031}}\ MARKERS\_ALLOWING\_SET\ =\ \{\textcolor{stringliteral}{"{}extras"{}},\ \textcolor{stringliteral}{"{}dependency\_groups"{}}\}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00032}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a182c93491fc9cb3d7991111678a4d3ce}{00032}}\ MARKERS\_REQUIRING\_VERSION\ =\ \{}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00033}00033\ \ \ \ \ \textcolor{stringliteral}{"{}implementation\_version"{}},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00034}00034\ \ \ \ \ \textcolor{stringliteral}{"{}platform\_release"{}},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00035}00035\ \ \ \ \ \textcolor{stringliteral}{"{}python\_full\_version"{}},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00036}00036\ \ \ \ \ \textcolor{stringliteral}{"{}python\_version"{}},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00037}00037\ \}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00040}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_invalid_marker}{00040}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_invalid_marker}{InvalidMarker}}(ValueError):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00041}00041\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00042}00042\ \textcolor{stringliteral}{\ \ \ \ An\ invalid\ marker\ was\ found,\ users\ should\ refer\ to\ PEP\ 508.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00043}00043\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00045}00045\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00046}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_undefined_comparison}{00046}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_undefined_comparison}{UndefinedComparison}}(ValueError):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00047}00047\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00048}00048\ \textcolor{stringliteral}{\ \ \ \ An\ invalid\ operation\ was\ attempted\ on\ a\ value\ that\ doesn't\ support\ it.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00049}00049\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00052}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_undefined_environment_name}{00052}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_undefined_environment_name}{UndefinedEnvironmentName}}(ValueError):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00053}00053\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00054}00054\ \textcolor{stringliteral}{\ \ \ \ A\ name\ was\ attempted\ to\ be\ used\ that\ does\ not\ exist\ inside\ of\ the}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00055}00055\ \textcolor{stringliteral}{\ \ \ \ environment.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00056}00056\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00057}00057\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00059}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_environment}{00059}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_environment}{Environment}}(TypedDict):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00060}00060\ \ \ \ \ implementation\_name:\ str}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00061}00061\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ implementation's\ identifier,\ e.g.\ \`{}\`{}'cpython'\`{}\`{}."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00062}00062\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00063}00063\ \ \ \ \ implementation\_version:\ str}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00064}00064\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00065}00065\ \textcolor{stringliteral}{\ \ \ \ The\ implementation's\ version,\ e.g.\ \`{}\`{}'3.13.0a2'\`{}\`{}\ for\ CPython\ 3.13.0a2,\ or}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00066}00066\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}'7.3.13'\`{}\`{}\ for\ PyPy3.10\ v7.3.13.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00067}00067\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00069}00069\ \ \ \ \ os\_name:\ str}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00070}00070\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00071}00071\ \textcolor{stringliteral}{\ \ \ \ The\ value\ of\ :py:data:\`{}os.name\`{}.\ The\ name\ of\ the\ operating\ system\ dependent\ module}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ imported,\ e.g.\ \`{}\`{}'posix'\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00073}00073\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00075}00075\ \ \ \ \ platform\_machine:\ str}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00076}00076\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00077}00077\ \textcolor{stringliteral}{\ \ \ \ Returns\ the\ machine\ type,\ e.g.\ \`{}\`{}'i386'\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00078}00078\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ An\ empty\ string\ if\ the\ value\ cannot\ be\ determined.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00080}00080\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00082}00082\ \ \ \ \ platform\_release:\ str}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00083}00083\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00084}00084\ \textcolor{stringliteral}{\ \ \ \ The\ system's\ release,\ e.g.\ \`{}\`{}'2.2.0'\`{}\`{}\ or\ \`{}\`{}'NT'\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00085}00085\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00086}00086\ \textcolor{stringliteral}{\ \ \ \ An\ empty\ string\ if\ the\ value\ cannot\ be\ determined.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00087}00087\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00089}00089\ \ \ \ \ platform\_system:\ str}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00090}00090\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00091}00091\ \textcolor{stringliteral}{\ \ \ \ The\ system/OS\ name,\ e.g.\ \`{}\`{}'Linux'\`{}\`{},\ \`{}\`{}'Windows'\`{}\`{}\ or\ \`{}\`{}'Java'\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00092}00092\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00093}00093\ \textcolor{stringliteral}{\ \ \ \ An\ empty\ string\ if\ the\ value\ cannot\ be\ determined.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00094}00094\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00095}00095\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00096}00096\ \ \ \ \ platform\_version:\ str}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00097}00097\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00098}00098\ \textcolor{stringliteral}{\ \ \ \ The\ system's\ release\ version,\ e.g.\ \`{}\`{}'\#3\ on\ degas'\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00099}00099\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00100}00100\ \textcolor{stringliteral}{\ \ \ \ An\ empty\ string\ if\ the\ value\ cannot\ be\ determined.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00101}00101\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00103}00103\ \ \ \ \ python\_full\_version:\ str}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00104}00104\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00105}00105\ \textcolor{stringliteral}{\ \ \ \ The\ Python\ version\ as\ string\ \`{}\`{}'major.minor.patchlevel'\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00106}00106\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00107}00107\ \textcolor{stringliteral}{\ \ \ \ Note\ that\ unlike\ the\ Python\ :py:data:\`{}sys.version\`{},\ this\ value\ will\ always\ include}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00108}00108\ \textcolor{stringliteral}{\ \ \ \ the\ patchlevel\ (it\ defaults\ to\ 0).}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00109}00109\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00110}00110\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00111}00111\ \ \ \ \ platform\_python\_implementation:\ str}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00112}00112\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00113}00113\ \textcolor{stringliteral}{\ \ \ \ A\ string\ identifying\ the\ Python\ implementation,\ e.g.\ \`{}\`{}'CPython'\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00114}00114\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00115}00115\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00116}00116\ \ \ \ \ python\_version:\ str}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00117}00117\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}The\ Python\ version\ as\ string\ \`{}\`{}'major.minor'\`{}\`{}."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00118}00118\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00119}00119\ \ \ \ \ sys\_platform:\ str}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00120}00120\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00121}00121\ \textcolor{stringliteral}{\ \ \ \ This\ string\ contains\ a\ platform\ identifier\ that\ can\ be\ used\ to\ append}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00122}00122\ \textcolor{stringliteral}{\ \ \ \ platform-\/specific\ components\ to\ :py:data:\`{}sys.path\`{},\ for\ instance.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00123}00123\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00124}00124\ \textcolor{stringliteral}{\ \ \ \ For\ Unix\ systems,\ except\ on\ Linux\ and\ AIX,\ this\ is\ the\ lowercased\ OS\ name\ as}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00125}00125\ \textcolor{stringliteral}{\ \ \ \ returned\ by\ \`{}\`{}uname\ -\/s\`{}\`{}\ with\ the\ first\ part\ of\ the\ version\ as\ returned\ by}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00126}00126\ \textcolor{stringliteral}{\ \ \ \ \`{}\`{}uname\ -\/r\`{}\`{}\ appended,\ e.g.\ \`{}\`{}'sunos5'\`{}\`{}\ or\ \`{}\`{}'freebsd8'\`{}\`{},\ at\ the\ time\ when\ Python}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00127}00127\ \textcolor{stringliteral}{\ \ \ \ was\ built.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00128}00128\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00129}00129\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00130}00130\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00131}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_ad35e3f79f848e16ad66f447c4cf90b8e}{00131}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_ad35e3f79f848e16ad66f447c4cf90b8e}{\_normalize\_extras}}(}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00132}00132\ \ \ \ \ result:\ MarkerList\ |\ MarkerAtom\ |\ str,}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00133}00133\ )\ -\/>\ MarkerList\ |\ MarkerAtom\ |\ str:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00134}00134\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(result,\ tuple):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ result}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00136}00136\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00137}00137\ \ \ \ \ lhs,\ op,\ rhs\ =\ result}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00138}00138\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(lhs,\ Variable)\ \textcolor{keywordflow}{and}\ lhs.value\ ==\ \textcolor{stringliteral}{"{}extra"{}}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ normalized\_extra\ =\ canonicalize\_name(rhs.value)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ rhs\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__parser_1_1_value}{Value}}(normalized\_extra)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00141}00141\ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(rhs,\ Variable)\ \textcolor{keywordflow}{and}\ rhs.value\ ==\ \textcolor{stringliteral}{"{}extra"{}}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ normalized\_extra\ =\ canonicalize\_name(lhs.value)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ lhs\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__parser_1_1_value}{Value}}(normalized\_extra)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00144}00144\ \ \ \ \ \textcolor{keywordflow}{return}\ lhs,\ op,\ rhs}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00145}00145\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00147}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_ac95310edabc4f27782156d8c12aebe7d}{00147}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_ac95310edabc4f27782156d8c12aebe7d}{\_normalize\_extra\_values}}(results:\ MarkerList)\ -\/>\ MarkerList:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00148}00148\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00149}00149\ \textcolor{stringliteral}{\ \ \ \ Normalize\ extra\ values.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00150}00150\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00151}00151\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00152}00152\ \ \ \ \ \textcolor{keywordflow}{return}\ [\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_ad35e3f79f848e16ad66f447c4cf90b8e}{\_normalize\_extras}}(r)\ \textcolor{keywordflow}{for}\ r\ \textcolor{keywordflow}{in}\ results]}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00153}00153\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00155}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a1cfec7dd18a0620bb76c318778e55ecd}{00155}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a1cfec7dd18a0620bb76c318778e55ecd}{\_format\_marker}}(}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00156}00156\ \ \ \ \ marker:\ list[str]\ |\ MarkerAtom\ |\ str,\ first:\ bool\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00157}00157\ )\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00158}00158\ \ \ \ \ \textcolor{keyword}{assert}\ isinstance(marker,\ (list,\ tuple,\ str))}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00159}00159\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00160}00160\ \ \ \ \ \textcolor{comment}{\#\ Sometimes\ we\ have\ a\ structure\ like\ [[...]]\ which\ is\ a\ single\ item\ list}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00161}00161\ \ \ \ \ \textcolor{comment}{\#\ where\ the\ single\ item\ is\ itself\ it's\ own\ list.\ In\ that\ case\ we\ want\ skip}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00162}00162\ \ \ \ \ \textcolor{comment}{\#\ the\ rest\ of\ this\ function\ so\ that\ we\ don't\ get\ extraneous\ ()\ on\ the}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00163}00163\ \ \ \ \ \textcolor{comment}{\#\ outside.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00164}00164\ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ isinstance(marker,\ list)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ len(marker)\ ==\ 1}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ isinstance(marker[0],\ (list,\ tuple))}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00168}00168\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a1cfec7dd18a0620bb76c318778e55ecd}{\_format\_marker}}(marker[0])}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00170}00170\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00171}00171\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(marker,\ list):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ inner\ =\ (\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a1cfec7dd18a0620bb76c318778e55ecd}{\_format\_marker}}(m,\ first=\textcolor{keyword}{False})\ \textcolor{keywordflow}{for}\ m\ \textcolor{keywordflow}{in}\ marker)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ first:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}\ "{}}.join(inner)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}("{}}\ +\ \textcolor{stringliteral}{"{}\ "{}}.join(inner)\ +\ \textcolor{stringliteral}{"{})"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00177}00177\ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(marker,\ tuple):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}\ "{}}.join([m.serialize()\ \textcolor{keywordflow}{for}\ m\ \textcolor{keywordflow}{in}\ marker])}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00179}00179\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ marker}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00181}00181\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00182}00182\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00183}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a01ac9418c8e6d1aa6214c8f730415562}{00183}}\ \_operators:\ dict[str,\ Operator]\ =\ \{}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00184}00184\ \ \ \ \ \textcolor{stringliteral}{"{}in"{}}:\ \textcolor{keyword}{lambda}\ lhs,\ rhs:\ lhs\ \textcolor{keywordflow}{in}\ rhs,}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00185}00185\ \ \ \ \ \textcolor{stringliteral}{"{}not\ in"{}}:\ \textcolor{keyword}{lambda}\ lhs,\ rhs:\ lhs\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ rhs,}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00186}00186\ \ \ \ \ \textcolor{stringliteral}{"{}<"{}}:\ \textcolor{keyword}{lambda}\ \_lhs,\ \_rhs:\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00187}00187\ \ \ \ \ \textcolor{stringliteral}{"{}<="{}}:\ operator.eq,}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00188}00188\ \ \ \ \ \textcolor{stringliteral}{"{}=="{}}:\ operator.eq,}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00189}00189\ \ \ \ \ \textcolor{stringliteral}{"{}!="{}}:\ operator.ne,}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00190}00190\ \ \ \ \ \textcolor{stringliteral}{"{}>="{}}:\ operator.eq,}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00191}00191\ \ \ \ \ \textcolor{stringliteral}{"{}>"{}}:\ \textcolor{keyword}{lambda}\ \_lhs,\ \_rhs:\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00192}00192\ \}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00193}00193\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00194}00194\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00195}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a0c1359806fcc7db9eb2837089b2f044b}{00195}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a0c1359806fcc7db9eb2837089b2f044b}{\_eval\_op}}(lhs:\ str,\ op:\ Op,\ rhs:\ str\ |\ AbstractSet[str],\ *,\ key:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00196}00196\ \ \ \ \ op\_str\ =\ op.serialize()}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00197}00197\ \ \ \ \ \textcolor{keywordflow}{if}\ key\ \textcolor{keywordflow}{in}\ MARKERS\_REQUIRING\_VERSION:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ spec\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1specifiers_1_1_specifier}{Specifier}}(f\textcolor{stringliteral}{"{}\{op\_str\}\{rhs\}"{}})}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ InvalidSpecifier:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ spec.contains(lhs,\ prereleases=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00204}00204\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00205}00205\ \ \ \ \ oper:\ Operator\ |\ \textcolor{keywordtype}{None}\ =\ \_operators.get(op\_str)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00206}00206\ \ \ \ \ \textcolor{keywordflow}{if}\ oper\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_undefined_comparison}{UndefinedComparison}}(f\textcolor{stringliteral}{"{}Undefined\ \{op!r\}\ on\ \{lhs!r\}\ and\ \{rhs!r\}."{}})}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00208}00208\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00209}00209\ \ \ \ \ \textcolor{keywordflow}{return}\ oper(lhs,\ rhs)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00210}00210\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00211}00211\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00212}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a04066ad18cb4593204a48309aa0d5c87}{00212}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a04066ad18cb4593204a48309aa0d5c87}{\_normalize}}(}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00213}00213\ \ \ \ \ lhs:\ str,\ rhs:\ str\ |\ AbstractSet[str],\ key:\ str}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00214}00214\ )\ -\/>\ tuple[str,\ str\ |\ AbstractSet[str]]:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00215}00215\ \ \ \ \ \textcolor{comment}{\#\ PEP\ 685\ -\/\ Comparison\ of\ extra\ names\ for\ optional\ distribution\ dependencies}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00216}00216\ \ \ \ \ \textcolor{comment}{\#\ https://peps.python.org/pep-\/0685/}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00217}00217\ \ \ \ \ \textcolor{comment}{\#\ >\ When\ comparing\ extra\ names,\ tools\ MUST\ normalize\ the\ names\ being}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00218}00218\ \ \ \ \ \textcolor{comment}{\#\ >\ compared\ using\ the\ semantics\ outlined\ in\ PEP\ 503\ for\ names}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00219}00219\ \ \ \ \ \textcolor{keywordflow}{if}\ key\ ==\ \textcolor{stringliteral}{"{}extra"{}}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ isinstance(rhs,\ str),\ \textcolor{stringliteral}{"{}extra\ value\ must\ be\ a\ string"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Both\ sides\ are\ normalized\ at\ this\ point\ already}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (lhs,\ rhs)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00223}00223\ \ \ \ \ \textcolor{keywordflow}{if}\ key\ \textcolor{keywordflow}{in}\ MARKERS\_ALLOWING\_SET:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(rhs,\ str):\ \ \textcolor{comment}{\#\ pragma:\ no\ cover}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (canonicalize\_name(lhs),\ canonicalize\_name(rhs))}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (canonicalize\_name(lhs),\ \{canonicalize\_name(v)\ \textcolor{keywordflow}{for}\ v\ \textcolor{keywordflow}{in}\ rhs\})}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00228}00228\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00229}00229\ \ \ \ \ \textcolor{comment}{\#\ other\ environment\ markers\ don't\ have\ such\ standards}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00230}00230\ \ \ \ \ \textcolor{keywordflow}{return}\ lhs,\ rhs}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00231}00231\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00232}00232\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00233}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_aa71059f41991201c5f25a1611468b386}{00233}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_aa71059f41991201c5f25a1611468b386}{\_evaluate\_markers}}(}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00234}00234\ \ \ \ \ markers:\ MarkerList,\ environment:\ dict[str,\ str\ |\ AbstractSet[str]]}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00235}00235\ )\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00236}00236\ \ \ \ \ groups:\ list[list[bool]]\ =\ [[]]}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00237}00237\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00238}00238\ \ \ \ \ \textcolor{keywordflow}{for}\ marker\ \textcolor{keywordflow}{in}\ markers:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(marker,\ list):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ \ \ \ \ groups[-\/1].append(\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_aa71059f41991201c5f25a1611468b386}{\_evaluate\_markers}}(marker,\ environment))}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(marker,\ tuple):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ lhs,\ op,\ rhs\ =\ marker}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00243}00243\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(lhs,\ Variable):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ environment\_key\ =\ lhs.value}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ lhs\_value\ =\ environment[environment\_key]}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rhs\_value\ =\ rhs.value}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00248}00248\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ lhs\_value\ =\ lhs.value}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ environment\_key\ =\ rhs.value}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rhs\_value\ =\ environment[environment\_key]}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00252}00252\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ isinstance(lhs\_value,\ str),\ \textcolor{stringliteral}{"{}lhs\ must\ be\ a\ string"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ lhs\_value,\ rhs\_value\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a04066ad18cb4593204a48309aa0d5c87}{\_normalize}}(lhs\_value,\ rhs\_value,\ key=environment\_key)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ groups[-\/1].append(\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a0c1359806fcc7db9eb2837089b2f044b}{\_eval\_op}}(lhs\_value,\ op,\ rhs\_value,\ key=environment\_key))}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ marker\ ==\ \textcolor{stringliteral}{"{}or"{}}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ groups.append([])}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ marker\ ==\ \textcolor{stringliteral}{"{}and"{}}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:\ \ \textcolor{comment}{\#\ pragma:\ nocover}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(f\textcolor{stringliteral}{"{}Unexpected\ marker\ \{marker!r\}"{}})}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00262}00262\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00263}00263\ \ \ \ \ \textcolor{keywordflow}{return}\ any(all(item)\ \textcolor{keywordflow}{for}\ item\ \textcolor{keywordflow}{in}\ groups)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00264}00264\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00265}00265\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00266}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a6057d2fc7d7978f4c7dd561b2efcba4b}{00266}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a6057d2fc7d7978f4c7dd561b2efcba4b}{format\_full\_version}}(info:\ sys.\_version\_info)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00267}00267\ \ \ \ \ version\ =\ f\textcolor{stringliteral}{"{}\{info.major\}.\{info.minor\}.\{info.micro\}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00268}00268\ \ \ \ \ kind\ =\ info.releaselevel}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00269}00269\ \ \ \ \ \textcolor{keywordflow}{if}\ kind\ !=\ \textcolor{stringliteral}{"{}final"{}}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ version\ +=\ kind[0]\ +\ str(info.serial)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00271}00271\ \ \ \ \ \textcolor{keywordflow}{return}\ version}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00272}00272\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00273}00273\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00274}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_ad5f6b88c316c7bc8d90cd5eb96c88249}{00274}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_ad5f6b88c316c7bc8d90cd5eb96c88249}{default\_environment}}()\ -\/>\ Environment:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00275}00275\ \ \ \ \ iver\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a6057d2fc7d7978f4c7dd561b2efcba4b}{format\_full\_version}}(sys.implementation.version)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00276}00276\ \ \ \ \ implementation\_name\ =\ sys.implementation.name}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00277}00277\ \ \ \ \ \textcolor{keywordflow}{return}\ \{}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}implementation\_name"{}}:\ implementation\_name,}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}implementation\_version"{}}:\ iver,}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}os\_name"{}}:\ os.name,}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}platform\_machine"{}}:\ platform.machine(),}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}platform\_release"{}}:\ platform.release(),}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}platform\_system"{}}:\ platform.system(),}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}platform\_version"{}}:\ platform.version(),}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}python\_full\_version"{}}:\ platform.python\_version(),}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}platform\_python\_implementation"{}}:\ platform.python\_implementation(),}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}python\_version"{}}:\ \textcolor{stringliteral}{"{}."{}}.join(platform.python\_version\_tuple()[:2]),}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00288}00288\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}sys\_platform"{}}:\ sys.platform,}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00289}00289\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00290}00290\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00291}00291\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00292}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker}{00292}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker}{Marker}}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00293}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_a04ea910c93165d5f3068b3a3c5db71a5}{00293}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_a04ea910c93165d5f3068b3a3c5db71a5}{\_\_init\_\_}}(self,\ marker:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00294}00294\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Note:\ We\ create\ a\ Marker\ object\ without\ calling\ this\ constructor\ in}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00295}00295\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ \ \ packaging.requirements.Requirement.\ If\ any\ additional\ logic\ is}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00296}00296\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ \ \ added\ here,\ make\ sure\ to\ mirror/adapt\ Requirement.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00297}00297\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00298}00298\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ this\ fails\ and\ throws\ an\ error,\ the\ repr\ still\ expects\ \_markers\ to}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ be\ defined.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00300}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_abe6d753a4b920f607f4fc184e1866da3}{00300}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_abe6d753a4b920f607f4fc184e1866da3}{\_markers}}:\ MarkerList\ =\ []}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00301}00301\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_abe6d753a4b920f607f4fc184e1866da3}{\_markers}}\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_ac95310edabc4f27782156d8c12aebe7d}{\_normalize\_extra\_values}}(\_parse\_marker(marker))}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ attribute\ \`{}\_markers`\ can\ be\ described\ in\ terms\ of\ a\ recursive\ type:}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00305}00305\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ MarkerList\ =\ List[Union[Tuple[Node,\ ...],\ str,\ MarkerList]]}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ For\ example,\ the\ following\ expression:}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ python\_version\ >\ "{}3.6"{}\ or\ (python\_version\ ==\ "{}3.6"{}\ and\ os\_name\ ==\ "{}unix"{})}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ is\ parsed\ into:}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ [}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00312}00312\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ (<Variable('python\_version')>,\ <Op('>')>,\ <Value('3.6')>),}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ 'and',}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00314}00314\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ [}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00315}00315\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ \ \ \ \ (<Variable('python\_version')>,\ <Op('==')>,\ <Value('3.6')>),}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00316}00316\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ \ \ \ \ 'or',}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ \ \ \ \ (<Variable('os\_name')>,\ <Op('==')>,\ <Value('unix')>)}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00318}00318\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ \ \ \ \ ]}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00319}00319\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ ]}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ParserSyntaxError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_invalid_marker}{InvalidMarker}}(str(e))\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00322}00322\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00323}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_aea9d4d973c20ede4169f50858fae4add}{00323}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_aea9d4d973c20ede4169f50858fae4add}{\_\_str\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_a1cfec7dd18a0620bb76c318778e55ecd}{\_format\_marker}}(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_abe6d753a4b920f607f4fc184e1866da3}{\_markers}})}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00325}00325\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00326}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_a7b1436a08d5dcb3ca6b7568edcf0afcb}{00326}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_a7b1436a08d5dcb3ca6b7568edcf0afcb}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00327}00327\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}<\{self.\_\_class\_\_.\_\_name\_\_\}('\{self\}')>"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00328}00328\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00329}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_af10a842de8672c263ceae554f0de73f4}{00329}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_af10a842de8672c263ceae554f0de73f4}{\_\_hash\_\_}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hash(str(self))}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00331}00331\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00332}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_a27def5a661be72f07a3218ea4721e867}{00332}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_a27def5a661be72f07a3218ea4721e867}{\_\_eq\_\_}}(self,\ other:\ object)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(other,\ Marker):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00334}00334\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00335}00335\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00336}00336\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ str(self)\ ==\ str(other)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00337}00337\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00338}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_ae62883507a5165204d88716524af128e}{00338}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_ae62883507a5165204d88716524af128e}{evaluate}}(}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00339}00339\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ environment:\ Mapping[str,\ str\ |\ AbstractSet[str]]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00341}00341\ \ \ \ \ \ \ \ \ context:\ EvaluateContext\ =\ \textcolor{stringliteral}{"{}metadata"{}},}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00342}00342\ \ \ \ \ )\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Evaluate\ a\ marker.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00344}00344\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00345}00345\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ boolean\ from\ evaluating\ the\ given\ marker\ against\ the}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00346}00346\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ environment.\ environment\ is\ an\ optional\ argument\ to\ override\ all\ or}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00347}00347\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ part\ of\ the\ determined\ environment.\ The\ *context*\ parameter\ specifies\ what}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00348}00348\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ context\ the\ markers\ are\ being\ evaluated\ for,\ which\ influences\ what\ markers}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00349}00349\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ are\ considered\ valid.\ Acceptable\ values\ are\ "{}metadata"{}\ (for\ core\ metadata;}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00350}00350\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ default),\ "{}lock\_file"{},\ and\ "{}requirement"{}\ (i.e.\ all\ other\ situations).}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00351}00351\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00352}00352\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ environment\ is\ determined\ from\ the\ current\ Python\ process.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00353}00353\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ current\_environment\ =\ cast(}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}dict[str,\ str\ |\ AbstractSet[str]]"{}},\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_ad5f6b88c316c7bc8d90cd5eb96c88249}{default\_environment}}()}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ context\ ==\ \textcolor{stringliteral}{"{}lock\_file"{}}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00358}00358\ \ \ \ \ \ \ \ \ \ \ \ \ current\_environment.update(}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ extras=frozenset(),\ dependency\_groups=frozenset()}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00360}00360\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00361}00361\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ context\ ==\ \textcolor{stringliteral}{"{}metadata"{}}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00362}00362\ \ \ \ \ \ \ \ \ \ \ \ \ current\_environment[\textcolor{stringliteral}{"{}extra"{}}]\ =\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00363}00363\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00364}00364\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ environment\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00365}00365\ \ \ \ \ \ \ \ \ \ \ \ \ current\_environment.update(environment)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00366}00366\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}extra"{}}\ \textcolor{keywordflow}{in}\ current\_environment:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00367}00367\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ API\ used\ to\ allow\ setting\ extra\ to\ None.\ We\ need\ to\ handle}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00368}00368\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ this\ case\ for\ backwards\ compatibility.\ Also\ skip\ running}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ normalize\ name\ if\ extra\ is\ empty.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ extra\ =\ cast(\textcolor{stringliteral}{"{}str\ |\ None"{}},\ current\_environment[\textcolor{stringliteral}{"{}extra"{}}])}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ current\_environment[\textcolor{stringliteral}{"{}extra"{}}]\ =\ canonicalize\_name(extra)\ \textcolor{keywordflow}{if}\ extra\ \textcolor{keywordflow}{else}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00372}00372\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00373}00373\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_aa71059f41991201c5f25a1611468b386}{\_evaluate\_markers}}(}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1markers_1_1_marker_abe6d753a4b920f607f4fc184e1866da3}{\_markers}},\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_adef15dc9ed2e12e3fa0900b81d853357}{\_repair\_python\_full\_version}}(current\_environment)}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00375}00375\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00376}00376\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00377}00377\ }
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00378}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_adef15dc9ed2e12e3fa0900b81d853357}{00378}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1markers_adef15dc9ed2e12e3fa0900b81d853357}{\_repair\_python\_full\_version}}(}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00379}00379\ \ \ \ \ env:\ dict[str,\ str\ |\ AbstractSet[str]],}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00380}00380\ )\ -\/>\ dict[str,\ str\ |\ AbstractSet[str]]:}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00381}00381\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00382}00382\ \textcolor{stringliteral}{\ \ \ \ Work\ around\ platform.python\_version()\ returning\ something\ that\ is\ not\ PEP\ 440}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00383}00383\ \textcolor{stringliteral}{\ \ \ \ compliant\ for\ non-\/tagged\ Python\ builds.}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00384}00384\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00385}00385\ \ \ \ \ python\_full\_version\ =\ cast(\textcolor{stringliteral}{"{}str"{}},\ env[\textcolor{stringliteral}{"{}python\_full\_version"{}}])}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00386}00386\ \ \ \ \ \textcolor{keywordflow}{if}\ python\_full\_version.endswith(\textcolor{stringliteral}{"{}+"{}}):}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ env[\textcolor{stringliteral}{"{}python\_full\_version"{}}]\ =\ f\textcolor{stringliteral}{"{}\{python\_full\_version\}local"{}}}
+\DoxyCodeLine{\Hypertarget{markers_8py_source_l00388}00388\ \ \ \ \ \textcolor{keywordflow}{return}\ env}
+
+\end{DoxyCode}

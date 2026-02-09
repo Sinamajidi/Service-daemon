@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['tables_0',['Optional task tables',['../md_docs_2_q_u_i_c_k___s_t_a_r_t.html#autotoc_md7',1,'']]],
+  ['task_20tables_1',['Optional task tables',['../md_docs_2_q_u_i_c_k___s_t_a_r_t.html#autotoc_md7',1,'']]],
+  ['team_20members_2',['For Team Members',['../md__g_e_t_t_i_n_g___s_t_a_r_t_e_d.html#autotoc_md37',1,'']]],
+  ['template_3',['.env.example (Template)',['../md__g_e_t_t_i_n_g___s_t_a_r_t_e_d.html#autotoc_md41',1,'']]],
+  ['test_4',['Test 2: Run diagnostic test',['../md__p_o_s_t_g_r_e_s_q_l___s_e_t_u_p___g_u_i_d_e.html#autotoc_md89',1,'']]],
+  ['test_201_3a_20can_20you_20connect_5',['Test 1: Can you connect?',['../md__p_o_s_t_g_r_e_s_q_l___s_e_t_u_p___g_u_i_d_e.html#autotoc_md88',1,'']]],
+  ['test_202_3a_20run_20diagnostic_20test_6',['Test 2: Run diagnostic test',['../md__p_o_s_t_g_r_e_s_q_l___s_e_t_u_p___g_u_i_d_e.html#autotoc_md89',1,'']]],
+  ['test_203_3a_20initialize_20database_7',['Test 3: Initialize database',['../md__p_o_s_t_g_r_e_s_q_l___s_e_t_u_p___g_u_i_d_e.html#autotoc_md90',1,'']]],
+  ['test_204_3a_20run_20example_8',['Test 4: Run example',['../md__p_o_s_t_g_r_e_s_q_l___s_e_t_u_p___g_u_i_d_e.html#autotoc_md91',1,'']]],
+  ['test_20connection_9',['Step 4: Test Connection',['../md__p_o_s_t_g_r_e_s_q_l___s_e_t_u_p___g_u_i_d_e.html#autotoc_md56',1,'']]],
+  ['testing_20your_20changes_10',['Testing Your Changes',['../md__g_e_t_t_i_n_g___s_t_a_r_t_e_d.html#autotoc_md29',1,'']]],
+  ['testing_20your_20setup_11',['Testing Your Setup',['../md__p_o_s_t_g_r_e_s_q_l___s_e_t_u_p___g_u_i_d_e.html#autotoc_md87',1,'']]],
+  ['the_20code_12',['Step 1: Get the Code',['../md__g_e_t_t_i_n_g___s_t_a_r_t_e_d.html#autotoc_md12',1,'']]],
+  ['the_20code_13',['2) Get the code',['../md__r_e_a_d_m_e.html#autotoc_md100',1,'']]],
+  ['the_20database_20schema_14',['7) Initialize the database schema',['../md__r_e_a_d_m_e.html#autotoc_md105',1,'']]],
+  ['the_20example_15',['4) Run the example',['../md_docs_2_q_u_i_c_k___s_t_a_r_t.html#autotoc_md4',1,'']]],
+  ['the_20example_20usage_16',['8) (optional for developers) Try the example usage',['../md__r_e_a_d_m_e.html#autotoc_md106',1,'']]],
+  ['the_20gui_17',['10) (Optional) Run the GUI',['../md__r_e_a_d_m_e.html#autotoc_md108',1,'']]],
+  ['the_20gui_20optional_18',['5) Launch the GUI (optional)',['../md_docs_2_q_u_i_c_k___s_t_a_r_t.html#autotoc_md5',1,'']]],
+  ['the_20schema_19',['3) Initialize the schema',['../md_docs_2_q_u_i_c_k___s_t_a_r_t.html#autotoc_md3',1,'']]],
+  ['to_20install_20and_20run_20postgresql_20',['How to Install and Run PostgreSQL',['../md__p_o_s_t_g_r_e_s_q_l___s_e_t_u_p___g_u_i_d_e.html',1,'']]],
+  ['to_20server_21',['&quot;Could not connect to server&quot;',['../md__p_o_s_t_g_r_e_s_q_l___s_e_t_u_p___g_u_i_d_e.html#autotoc_md81',1,'']]],
+  ['troubleshooting_22',['Quick Troubleshooting',['../md__g_e_t_t_i_n_g___s_t_a_r_t_e_d.html#autotoc_md20',1,'']]],
+  ['try_20the_20example_20usage_23',['8) (optional for developers) Try the example usage',['../md__r_e_a_d_m_e.html#autotoc_md106',1,'']]]
+];

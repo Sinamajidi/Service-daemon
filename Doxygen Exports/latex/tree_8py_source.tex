@@ -1,0 +1,263 @@
+\doxysection{tree.\+py}
+\hypertarget{tree_8py_source}{}\label{tree_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/rich/tree.py@{venv/Lib/site-\/packages/pip/\_vendor/rich/tree.py}}
+\doxymbox{\hyperlink{tree_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree}{00001}}\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Iterator,\ List,\ Optional,\ Tuple}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00003}00003\ \textcolor{keyword}{from}\ .\_loop\ \textcolor{keyword}{import}\ loop\_first,\ loop\_last}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00004}00004\ \textcolor{keyword}{from}\ .console\ \textcolor{keyword}{import}\ Console,\ ConsoleOptions,\ RenderableType,\ RenderResult}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00005}00005\ \textcolor{keyword}{from}\ .jupyter\ \textcolor{keyword}{import}\ JupyterMixin}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00006}00006\ \textcolor{keyword}{from}\ .measure\ \textcolor{keyword}{import}\ Measurement}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00007}00007\ \textcolor{keyword}{from}\ .segment\ \textcolor{keyword}{import}\ Segment}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00008}00008\ \textcolor{keyword}{from}\ .style\ \textcolor{keyword}{import}\ Style,\ StyleStack,\ StyleType}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00009}00009\ \textcolor{keyword}{from}\ .styled\ \textcolor{keyword}{import}\ Styled}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00011}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_ae05e614d4e1b300930a78536db0b7af0}{00011}}\ GuideType\ =\ Tuple[str,\ str,\ str,\ str]}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00014}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree}{00014}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree}{Tree}}(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1jupyter_1_1_jupyter_mixin}{JupyterMixin}}):}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00015}00015\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}A\ renderable\ for\ a\ tree\ structure.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00016}00016\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00017}00017\ \textcolor{stringliteral}{\ \ \ \ Attributes:}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00018}00018\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ASCII\_GUIDES\ (GuideType):\ Guide\ lines\ used\ when\ Console.ascii\_only\ is\ True.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00019}00019\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ TREE\_GUIDES\ (List[GuideType,\ GuideType,\ GuideType]):\ Default\ guide\ lines.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00020}00020\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00021}00021\ \textcolor{stringliteral}{\ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00022}00022\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ label\ (RenderableType):\ The\ renderable\ or\ str\ for\ the\ tree\ label.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00023}00023\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ style\ (StyleType,\ optional):\ Style\ of\ this\ tree.\ Defaults\ to\ "{}tree"{}.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00024}00024\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ guide\_style\ (StyleType,\ optional):\ Style\ of\ the\ guide\ lines.\ Defaults\ to\ "{}tree.line"{}.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00025}00025\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ expanded\ (bool,\ optional):\ Also\ display\ children.\ Defaults\ to\ True.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00026}00026\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ highlight\ (bool,\ optional):\ Highlight\ renderable\ (if\ str).\ Defaults\ to\ False.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00027}00027\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ hide\_root\ (bool,\ optional):\ Hide\ the\ root\ node.\ Defaults\ to\ False.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00028}00028\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00030}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_ac6539db590b1c7c8cd9a49758459a3bb}{00030}}\ \ \ \ \ ASCII\_GUIDES\ =\ (\textcolor{stringliteral}{"{}\ \ \ \ "{}},\ \textcolor{stringliteral}{"{}|\ \ \ "{}},\ \textcolor{stringliteral}{"{}+-\/-\/\ "{}},\ \textcolor{stringliteral}{"{}\`{}-\/-\/\ "{}})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00031}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_af57d7566c1d6d4b83dbf89e9707c17a4}{00031}}\ \ \ \ \ TREE\_GUIDES\ =\ [}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00032}00032\ \ \ \ \ \ \ \ \ (\textcolor{stringliteral}{"{}\ \ \ \ "{}},\ \textcolor{stringliteral}{"{}│\ \ \ "{}},\ \textcolor{stringliteral}{"{}├──\ "{}},\ \textcolor{stringliteral}{"{}└──\ "{}}),}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00033}00033\ \ \ \ \ \ \ \ \ (\textcolor{stringliteral}{"{}\ \ \ \ "{}},\ \textcolor{stringliteral}{"{}┃\ \ \ "{}},\ \textcolor{stringliteral}{"{}┣━━\ "{}},\ \textcolor{stringliteral}{"{}┗━━\ "{}}),}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ (\textcolor{stringliteral}{"{}\ \ \ \ "{}},\ \textcolor{stringliteral}{"{}║\ \ \ "{}},\ \textcolor{stringliteral}{"{}╠══\ "{}},\ \textcolor{stringliteral}{"{}╚══\ "{}}),}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00035}00035\ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00037}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a42e84bd9813a73bae698521494aec0ab}{00037}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a42e84bd9813a73bae698521494aec0ab}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ label:\ RenderableType,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ style:\ StyleType\ =\ \textcolor{stringliteral}{"{}tree"{}},}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ guide\_style:\ StyleType\ =\ \textcolor{stringliteral}{"{}tree.line"{}},}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ expanded:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ highlight:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ hide\_root:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00046}00046\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00047}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a81c50c3725054d6641d40265e394e108}{00047}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a81c50c3725054d6641d40265e394e108}{label}}\ =\ label}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00048}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_aa638c59bc270b85debd5c259a55bf184}{00048}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_aa638c59bc270b85debd5c259a55bf184}{style}}\ =\ style}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00049}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a2d36e14772a33a5fce1e792ea9d2a81b}{00049}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a2d36e14772a33a5fce1e792ea9d2a81b}{guide\_style}}\ =\ guide\_style}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00050}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a81447aa3df8fde521718181feee80815}{00050}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a81447aa3df8fde521718181feee80815}{children}}:\ List[Tree]\ =\ []}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00051}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a10d094e69a4188c578e03dc55c97a52d}{00051}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a10d094e69a4188c578e03dc55c97a52d}{expanded}}\ =\ expanded}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00052}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a33e2010f4435d9a84ece01f90faa283e}{00052}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a33e2010f4435d9a84ece01f90faa283e}{highlight}}\ =\ highlight}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00053}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a267be0a891a2f09335c0933cb31858bf}{00053}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a267be0a891a2f09335c0933cb31858bf}{hide\_root}}\ =\ hide\_root}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00055}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a0ce550864757b1ee2756237b6e754aae}{00055}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a0ce550864757b1ee2756237b6e754aae}{add}}(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ label:\ RenderableType,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ style:\ Optional[StyleType]\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ guide\_style:\ Optional[StyleType]\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ expanded:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ highlight:\ Optional[bool]\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00063}00063\ \ \ \ \ )\ -\/>\ \textcolor{stringliteral}{"{}Tree"{}}:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00064}00064\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Add\ a\ child\ tree.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00065}00065\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00066}00066\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00067}00067\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ label\ (RenderableType):\ The\ renderable\ or\ str\ for\ the\ tree\ label.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00068}00068\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ style\ (StyleType,\ optional):\ Style\ of\ this\ tree.\ Defaults\ to\ "{}tree"{}.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00069}00069\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ guide\_style\ (StyleType,\ optional):\ Style\ of\ the\ guide\ lines.\ Defaults\ to\ "{}tree.line"{}.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00070}00070\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ expanded\ (bool,\ optional):\ Also\ display\ children.\ Defaults\ to\ True.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00071}00071\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ highlight\ (Optional[bool],\ optional):\ Highlight\ renderable\ (if\ str).\ Defaults\ to\ False.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00072}00072\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00073}00073\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Returns:}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00074}00074\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ Tree:\ A\ new\ child\ Tree,\ which\ may\ be\ further\ modified.}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00075}00075\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ node\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree}{Tree}}(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \ \ \ \ label,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \ \ \ \ style=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_aa638c59bc270b85debd5c259a55bf184}{style}}\ \textcolor{keywordflow}{if}\ style\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ style,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \ \ \ \ guide\_style=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a2d36e14772a33a5fce1e792ea9d2a81b}{guide\_style}}\ \textcolor{keywordflow}{if}\ guide\_style\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ guide\_style,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \ \ \ \ expanded=expanded,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \ \ \ \ highlight=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a33e2010f4435d9a84ece01f90faa283e}{highlight}}\ \textcolor{keywordflow}{if}\ highlight\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ highlight,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a81447aa3df8fde521718181feee80815}{children}}.append(node)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ node}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00085}00085\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00086}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_aa8555c7e43b4f8c34c62d797fc40f3a8}{00086}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_aa8555c7e43b4f8c34c62d797fc40f3a8}{\_\_rich\_console\_\_}}(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ self,\ console:\ \textcolor{stringliteral}{"{}Console"{}},\ options:\ \textcolor{stringliteral}{"{}ConsoleOptions"{}}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00088}00088\ \ \ \ \ )\ -\/>\ \textcolor{stringliteral}{"{}RenderResult"{}}:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ stack:\ List[Iterator[Tuple[bool,\ Tree]]]\ =\ []}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ pop\ =\ stack.pop}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ push\ =\ stack.append}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ new\_line\ =\ Segment.line()}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ get\_style\ =\ console.get\_style}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ null\_style\ =\ Style.null()}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ guide\_style\ =\ get\_style(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a2d36e14772a33a5fce1e792ea9d2a81b}{guide\_style}},\ default=\textcolor{stringliteral}{"{}"{}})\ \textcolor{keywordflow}{or}\ null\_style}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ SPACE,\ CONTINUE,\ FORK,\ END\ =\ range(4)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00098}00098\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00099}00099\ \ \ \ \ \ \ \ \ \_Segment\ =\ Segment}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00100}00100\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }make\_guide(index:\ int,\ style:\ Style)\ -\/>\ Segment:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Make\ a\ Segment\ for\ a\ level\ of\ the\ guide\ lines."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ options.ascii\_only:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_ac6539db590b1c7c8cd9a49758459a3bb}{ASCII\_GUIDES}}[index]}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ guide\ =\ 1\ \textcolor{keywordflow}{if}\ style.bold\ \textcolor{keywordflow}{else}\ (2\ \textcolor{keywordflow}{if}\ style.underline2\ \textcolor{keywordflow}{else}\ 0)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\ =\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_af57d7566c1d6d4b83dbf89e9707c17a4}{TREE\_GUIDES}}[0\ \textcolor{keywordflow}{if}\ options.legacy\_windows\ \textcolor{keywordflow}{else}\ guide][index]}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \_Segment(line,\ style)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00109}00109\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ levels:\ List[Segment]\ =\ [make\_guide(CONTINUE,\ guide\_style)]}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ push(iter(loop\_last([self])))}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00112}00112\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ guide\_style\_stack\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1style_1_1_style_stack}{StyleStack}}(get\_style(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a2d36e14772a33a5fce1e792ea9d2a81b}{guide\_style}}))}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ style\_stack\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1style_1_1_style_stack}{StyleStack}}(get\_style(self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_aa638c59bc270b85debd5c259a55bf184}{style}}))}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ remove\_guide\_styles\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1style_1_1_style}{Style}}(bold=\textcolor{keyword}{False},\ underline2=\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00116}00116\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ depth\ =\ 0}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00118}00118\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ stack:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \ \ \ \ stack\_node\ =\ pop()}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ last,\ node\ =\ next(stack\_node)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ StopIteration:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ levels.pop()}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ levels:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ guide\_style\ =\ levels[-\/1].style\ \textcolor{keywordflow}{or}\ null\_style}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ levels[-\/1]\ =\ make\_guide(FORK,\ guide\_style)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ guide\_style\_stack.pop()}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00129}00129\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ style\_stack.pop()}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \ \ \ \ push(stack\_node)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ last:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ levels[-\/1]\ =\ make\_guide(END,\ levels[-\/1].style\ \textcolor{keywordflow}{or}\ null\_style)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00134}00134\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \ \ \ \ guide\_style\ =\ guide\_style\_stack.current\ +\ get\_style(node.guide\_style)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \ \ \ \ style\ =\ style\_stack.current\ +\ get\_style(node.style)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \ \ \ \ prefix\ =\ levels[(2\ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a267be0a891a2f09335c0933cb31858bf}{hide\_root}}\ \textcolor{keywordflow}{else}\ 1)\ :]}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \ \ \ \ renderable\_lines\ =\ console.render\_lines(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1styled_1_1_styled}{Styled}}(node.label,\ style),}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ options.update(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ width=options.max\_width}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/\ sum(level.cell\_length\ \textcolor{keywordflow}{for}\ level\ \textcolor{keywordflow}{in}\ prefix),}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ highlight=self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a33e2010f4435d9a84ece01f90faa283e}{highlight}},}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ height=\textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ),}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ pad=options.justify\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00148}00148\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ (depth\ ==\ 0\ \textcolor{keywordflow}{and}\ self.\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_a267be0a891a2f09335c0933cb31858bf}{hide\_root}}):}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ first,\ line\ \textcolor{keywordflow}{in}\ loop\_first(renderable\_lines):}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ prefix:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ \_Segment.apply\_style(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ prefix,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ style.background\_style,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ post\_style=remove\_guide\_styles,}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ line}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00158}00158\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ new\_line}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ first\ \textcolor{keywordflow}{and}\ prefix:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ prefix[-\/1]\ =\ make\_guide(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ SPACE\ \textcolor{keywordflow}{if}\ last\ \textcolor{keywordflow}{else}\ CONTINUE,\ prefix[-\/1].style\ \textcolor{keywordflow}{or}\ null\_style}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00163}00163\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ node.expanded\ \textcolor{keywordflow}{and}\ node.children:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ levels[-\/1]\ =\ make\_guide(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ SPACE\ \textcolor{keywordflow}{if}\ last\ \textcolor{keywordflow}{else}\ CONTINUE,\ levels[-\/1].style\ \textcolor{keywordflow}{or}\ null\_style}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ levels.append(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ make\_guide(END\ \textcolor{keywordflow}{if}\ len(node.children)\ ==\ 1\ \textcolor{keywordflow}{else}\ FORK,\ guide\_style)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ style\_stack.push(get\_style(node.style))}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00172}00172\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ guide\_style\_stack.push(get\_style(node.guide\_style))}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ push(iter(loop\_last(node.children)))}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ depth\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00175}00175\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00176}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_abaf95c84b25f939b6c791a0af80eb1a6}{00176}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree_abaf95c84b25f939b6c791a0af80eb1a6}{\_\_rich\_measure\_\_}}(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ self,\ console:\ \textcolor{stringliteral}{"{}Console"{}},\ options:\ \textcolor{stringliteral}{"{}ConsoleOptions"{}}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00178}00178\ \ \ \ \ )\ -\/>\ \textcolor{stringliteral}{"{}Measurement"{}}:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ stack:\ List[Iterator[Tree]]\ =\ [iter([self])]}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ pop\ =\ stack.pop}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ push\ =\ stack.append}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ minimum\ =\ 0}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ maximum\ =\ 0}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ measure\ =\ Measurement.get}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ level\ =\ 0}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ stack:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ \ \ \ \ iter\_tree\ =\ pop()}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ tree\ =\ next(iter\_tree)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ StopIteration:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ level\ -\/=\ 1}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \ \ \ \ push(iter\_tree)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ min\_measure,\ max\_measure\ =\ measure(console,\ options,\ tree.label)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ indent\ =\ level\ *\ 4}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ minimum\ =\ max(min\_measure\ +\ indent,\ minimum)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ maximum\ =\ max(max\_measure\ +\ indent,\ maximum)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ tree.expanded\ \textcolor{keywordflow}{and}\ tree.children:}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ push(iter(tree.children))}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ level\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1measure_1_1_measurement}{Measurement}}(minimum,\ maximum)}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00202}00202\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00203}00203\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00204}00204\ \textcolor{keywordflow}{if}\ \_\_name\_\_\ ==\ \textcolor{stringliteral}{"{}\_\_main\_\_"{}}:\ \ \textcolor{comment}{\#\ pragma:\ no\ cover}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00205}00205\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1console}{pip.\_vendor.rich.console}}\ \textcolor{keyword}{import}\ Group}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00206}00206\ \ \ \ \ \textcolor{keyword}{from}\ pip.\_vendor.rich.markdown\ \textcolor{keyword}{import}\ Markdown}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00207}00207\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1panel}{pip.\_vendor.rich.panel}}\ \textcolor{keyword}{import}\ Panel}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00208}00208\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1syntax}{pip.\_vendor.rich.syntax}}\ \textcolor{keyword}{import}\ Syntax}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00209}00209\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1table}{pip.\_vendor.rich.table}}\ \textcolor{keyword}{import}\ Table}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00210}00210\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00211}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_acb46cc5dab092ae032d46f3c5de484c4}{00211}}\ \ \ \ \ table\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1table_1_1_table}{Table}}(row\_styles=[\textcolor{stringliteral}{"{}"{}},\ \textcolor{stringliteral}{"{}dim"{}}])}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00212}00212\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00213}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_acc135ab10323430a9590ebe17bde1b21}{00213}}\ \ \ \ \ table.add\_column(\textcolor{stringliteral}{"{}Released"{}},\ style=\textcolor{stringliteral}{"{}cyan"{}},\ no\_wrap=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00214}00214\ \ \ \ \ table.add\_column(\textcolor{stringliteral}{"{}Title"{}},\ style=\textcolor{stringliteral}{"{}magenta"{}})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00215}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_aab4da3bc45c48c48e788a9423d235784}{00215}}\ \ \ \ \ table.add\_column(\textcolor{stringliteral}{"{}Box\ Office"{}},\ justify=\textcolor{stringliteral}{"{}right"{}},\ style=\textcolor{stringliteral}{"{}green"{}})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00216}00216\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00217}00217\ \ \ \ \ table.add\_row(\textcolor{stringliteral}{"{}Dec\ 20,\ 2019"{}},\ \textcolor{stringliteral}{"{}Star\ Wars:\ The\ Rise\ of\ Skywalker"{}},\ \textcolor{stringliteral}{"{}\$952,110,690"{}})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00218}00218\ \ \ \ \ table.add\_row(\textcolor{stringliteral}{"{}May\ 25,\ 2018"{}},\ \textcolor{stringliteral}{"{}Solo:\ A\ Star\ Wars\ Story"{}},\ \textcolor{stringliteral}{"{}\$393,151,347"{}})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00219}00219\ \ \ \ \ table.add\_row(\textcolor{stringliteral}{"{}Dec\ 15,\ 2017"{}},\ \textcolor{stringliteral}{"{}Star\ Wars\ Ep.\ V111:\ The\ Last\ Jedi"{}},\ \textcolor{stringliteral}{"{}\$1,332,539,889"{}})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00220}00220\ \ \ \ \ table.add\_row(\textcolor{stringliteral}{"{}Dec\ 16,\ 2016"{}},\ \textcolor{stringliteral}{"{}Rogue\ One:\ A\ Star\ Wars\ Story"{}},\ \textcolor{stringliteral}{"{}\$1,332,439,889"{}})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00221}00221\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00222}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_afc74396202a77c728cbf75a8ada7875c}{00222}}\ \ \ \ \ code\ =\ \textcolor{stringliteral}{"{}"{}"{}\(\backslash\)}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00223}00223\ \textcolor{stringliteral}{class\ Segment(NamedTuple):}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00224}00224\ \textcolor{stringliteral}{\ \ \ \ text:\ str\ =\ "{}"{}}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00225}00225\ \textcolor{stringliteral}{\ \ \ \ style:\ Optional[Style]\ =\ None}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00226}00226\ \textcolor{stringliteral}{\ \ \ \ is\_control:\ bool\ =\ False}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00227}00227\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00228}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_a4a3361737dd1241ad5082093721c9c73}{00228}}\ \ \ \ \ syntax\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1syntax_1_1_syntax}{Syntax}}(code,\ \textcolor{stringliteral}{"{}python"{}},\ theme=\textcolor{stringliteral}{"{}monokai"{}},\ line\_numbers=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00229}00229\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00230}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_a8026b526eb40c1c808c65905a87b3ff3}{00230}}\ \ \ \ \ markdown\ =\ Markdown(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}\(\backslash\)}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00232}00232\ \textcolor{stringliteral}{\#\#\#\ example.md}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00233}00233\ \textcolor{stringliteral}{>\ Hello,\ World!}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00234}00234\ \textcolor{stringliteral}{>}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00235}00235\ \textcolor{stringliteral}{>\ Markdown\ \_all\_\ the\ things}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00236}00236\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00237}00237\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00238}00238\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00239}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_ab072c19362fb9dac5d37cb4cbcfec93c}{00239}}\ \ \ \ \ root\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1tree_1_1_tree}{Tree}}(\textcolor{stringliteral}{"{}🌲\ [b\ green]Rich\ Tree"{}},\ highlight=\textcolor{keyword}{True},\ hide\_root=\textcolor{keyword}{True})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00240}00240\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00241}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_ae10439ff67b5052e0a0c773a49dbf245}{00241}}\ \ \ \ \ node\ =\ root.add(\textcolor{stringliteral}{"{}:file\_folder:\ Renderables"{}},\ guide\_style=\textcolor{stringliteral}{"{}red"{}})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00242}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_a488dafe77c106fa01d710700b5eb869c}{00242}}\ \ \ \ \ simple\_node\ =\ node.add(\textcolor{stringliteral}{"{}:file\_folder:\ [bold\ yellow]Atomic"{}},\ guide\_style=\textcolor{stringliteral}{"{}uu\ green"{}})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00243}00243\ \ \ \ \ simple\_node.add(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1console_1_1_group}{Group}}(\textcolor{stringliteral}{"{}📄\ Syntax"{}},\ syntax))}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00244}00244\ \ \ \ \ simple\_node.add(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1console_1_1_group}{Group}}(\textcolor{stringliteral}{"{}📄\ Markdown"{}},\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1panel_1_1_panel}{Panel}}(markdown,\ border\_style=\textcolor{stringliteral}{"{}green"{}})))}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00245}00245\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00246}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_abe8075b79759b26f893a92354c4c2747}{00246}}\ \ \ \ \ containers\_node\ =\ node.add(}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}:file\_folder:\ [bold\ magenta]Containers"{}},\ guide\_style=\textcolor{stringliteral}{"{}bold\ magenta"{}}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00248}00248\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00249}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_a95051e5543bf16e3f30cb09c4ba75915}{00249}}\ \ \ \ \ containers\_node.expanded\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00250}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_ac87b9f75bec28c3de95fadc35f5724e6}{00250}}\ \ \ \ \ panel\ =\ Panel.fit(\textcolor{stringliteral}{"{}Just\ a\ panel"{}},\ border\_style=\textcolor{stringliteral}{"{}red"{}})}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00251}00251\ \ \ \ \ containers\_node.add(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1console_1_1_group}{Group}}(\textcolor{stringliteral}{"{}📄\ Panels"{}},\ panel))}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00252}00252\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00253}00253\ \ \ \ \ containers\_node.add(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1console_1_1_group}{Group}}(\textcolor{stringliteral}{"{}📄\ [b\ magenta]Table"{}},\ table))}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00254}00254\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00255}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1rich_1_1tree_add363f96e39d22d370e2aef79ab47d2b}{00255}}\ \ \ \ \ console\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1rich_1_1console_1_1_console}{Console}}()}
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00256}00256\ }
+\DoxyCodeLine{\Hypertarget{tree_8py_source_l00257}00257\ \ \ \ \ console.print(root)}
+
+\end{DoxyCode}

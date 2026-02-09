@@ -1,0 +1,291 @@
+\doxysection{provider.\+py}
+\hypertarget{provider_8py_source}{}\label{provider_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/resolution/resolvelib/provider.py@{venv/Lib/site-\/packages/pip/\_internal/resolution/resolvelib/provider.py}}
+\doxymbox{\hyperlink{provider_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00003}00003\ \textcolor{keyword}{import}\ math}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00004}00004\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterable,\ Iterator,\ Mapping,\ Sequence}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00005}00005\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ cache}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00006}00006\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00007}00007\ \ \ \ \ TYPE\_CHECKING,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00008}00008\ \ \ \ \ TypeVar,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00009}00009\ )}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00011}00011\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1resolvelib_1_1providers}{pip.\_vendor.resolvelib.providers}}\ \textcolor{keyword}{import}\ AbstractProvider}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00013}00013\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__install}{pip.\_internal.req.req\_install}}\ \textcolor{keyword}{import}\ InstallRequirement}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00015}00015\ \textcolor{keyword}{from}\ .base\ \textcolor{keyword}{import}\ Candidate,\ Constraint,\ Requirement}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00016}00016\ \textcolor{keyword}{from}\ .candidates\ \textcolor{keyword}{import}\ REQUIRES\_PYTHON\_IDENTIFIER}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00017}00017\ \textcolor{keyword}{from}\ .factory\ \textcolor{keyword}{import}\ Factory}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00018}00018\ \textcolor{keyword}{from}\ .requirements\ \textcolor{keyword}{import}\ ExplicitRequirement}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00020}00020\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00021}00021\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1resolvelib_1_1providers}{pip.\_vendor.resolvelib.providers}}\ \textcolor{keyword}{import}\ Preference}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00022}00022\ \ \ \ \ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1resolvelib_1_1resolvers}{pip.\_vendor.resolvelib.resolvers}}\ \textcolor{keyword}{import}\ RequirementInformation}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00024}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_ac943d10f26d9871d3aa1be0bb0ec1271}{00024}}\ \ \ \ \ PreferenceInformation\ =\ RequirementInformation[Requirement,\ Candidate]}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00025}00025\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00026}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_a4bc2a6a159a790da8151c7024fd6c61e}{00026}}\ \ \ \ \ \_ProviderBase\ =\ AbstractProvider[Requirement,\ Candidate,\ str]}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00027}00027\ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00028}00028\ \ \ \ \ \_ProviderBase\ =\ AbstractProvider}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00030}00030\ \textcolor{comment}{\#\ Notes\ on\ the\ relationship\ between\ the\ provider,\ the\ factory,\ and\ the}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00031}00031\ \textcolor{comment}{\#\ candidate\ and\ requirement\ classes.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00032}00032\ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00033}00033\ \textcolor{comment}{\#\ The\ provider\ is\ a\ direct\ implementation\ of\ the\ resolvelib\ class.\ Its\ role}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00034}00034\ \textcolor{comment}{\#\ is\ to\ deliver\ the\ API\ that\ resolvelib\ expects.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00035}00035\ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00036}00036\ \textcolor{comment}{\#\ Rather\ than\ work\ with\ completely\ abstract\ "{}requirement"{}\ and\ "{}candidate"{}}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00037}00037\ \textcolor{comment}{\#\ concepts\ as\ resolvelib\ does,\ pip\ has\ concrete\ classes\ implementing\ these\ two}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00038}00038\ \textcolor{comment}{\#\ ideas.\ The\ API\ of\ Requirement\ and\ Candidate\ objects\ are\ defined\ in\ the\ base}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00039}00039\ \textcolor{comment}{\#\ classes,\ but\ essentially\ map\ fairly\ directly\ to\ the\ equivalent\ provider}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00040}00040\ \textcolor{comment}{\#\ methods.\ In\ particular,\ \`{}find\_matches`\ and\ \`{}is\_satisfied\_by`\ are}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00041}00041\ \textcolor{comment}{\#\ requirement\ methods,\ and\ \`{}get\_dependencies`\ is\ a\ candidate\ method.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00042}00042\ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00043}00043\ \textcolor{comment}{\#\ The\ factory\ is\ the\ interface\ to\ pip's\ internal\ mechanisms.\ It\ is\ stateless,}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00044}00044\ \textcolor{comment}{\#\ and\ is\ created\ by\ the\ resolver\ and\ held\ as\ a\ property\ of\ the\ provider.\ It\ is}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00045}00045\ \textcolor{comment}{\#\ responsible\ for\ creating\ Requirement\ and\ Candidate\ objects,\ and\ provides}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00046}00046\ \textcolor{comment}{\#\ services\ to\ those\ objects\ (access\ to\ pip's\ finder\ and\ preparer).}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00047}00047\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00048}00048\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00049}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_a0a77ec5a3876400603c1f899afe363a4}{00049}}\ D\ =\ TypeVar(\textcolor{stringliteral}{"{}D"{}})}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00050}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_ab8b1f187099d8a97c1f5b45f0309400c}{00050}}\ V\ =\ TypeVar(\textcolor{stringliteral}{"{}V"{}})}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00053}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_a829e451ebffb3a12aea2ef476f8338fe}{00053}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_a829e451ebffb3a12aea2ef476f8338fe}{\_get\_with\_identifier}}(}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00054}00054\ \ \ \ \ mapping:\ Mapping[str,\ V],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00055}00055\ \ \ \ \ identifier:\ str,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00056}00056\ \ \ \ \ default:\ D,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00057}00057\ )\ -\/>\ D\ |\ V:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00058}00058\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Get\ item\ from\ a\ package\ name\ lookup\ mapping\ with\ a\ resolver\ identifier.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00059}00059\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00060}00060\ \textcolor{stringliteral}{\ \ \ \ This\ extra\ logic\ is\ needed\ when\ the\ target\ mapping\ is\ keyed\ by\ package}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00061}00061\ \textcolor{stringliteral}{\ \ \ \ name,\ which\ cannot\ be\ directly\ looked\ up\ with\ an\ identifier\ (which\ may}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00062}00062\ \textcolor{stringliteral}{\ \ \ \ contain\ requested\ extras).\ Additional\ logic\ is\ added\ to\ also\ look\ up\ a\ value}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00063}00063\ \textcolor{stringliteral}{\ \ \ \ by\ "{}cleaning\ up"{}\ the\ extras\ from\ the\ identifier.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00064}00064\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00065}00065\ \ \ \ \ \textcolor{keywordflow}{if}\ identifier\ \textcolor{keywordflow}{in}\ mapping:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ mapping[identifier]}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00067}00067\ \ \ \ \ \textcolor{comment}{\#\ HACK:\ Theoretically\ we\ should\ check\ whether\ this\ identifier\ is\ a\ valid}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00068}00068\ \ \ \ \ \textcolor{comment}{\#\ "{}NAME[EXTRAS]"{}\ format,\ and\ parse\ out\ the\ name\ part\ with\ packaging\ or}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00069}00069\ \ \ \ \ \textcolor{comment}{\#\ some\ regular\ expression.\ But\ since\ pip's\ resolver\ only\ spits\ out\ three}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00070}00070\ \ \ \ \ \textcolor{comment}{\#\ kinds\ of\ identifiers:\ normalized\ PEP\ 503\ names,\ normalized\ names\ plus}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00071}00071\ \ \ \ \ \textcolor{comment}{\#\ extras,\ and\ Requires-\/Python,\ we\ can\ cheat\ a\ bit\ here.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00072}00072\ \ \ \ \ name,\ open\_bracket,\ \_\ =\ identifier.partition(\textcolor{stringliteral}{"{}["{}})}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00073}00073\ \ \ \ \ \textcolor{keywordflow}{if}\ open\_bracket\ \textcolor{keywordflow}{and}\ name\ \textcolor{keywordflow}{in}\ mapping:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ mapping[name]}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00075}00075\ \ \ \ \ \textcolor{keywordflow}{return}\ default}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00076}00076\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00078}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider}{00078}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider}{PipProvider}}(\_ProviderBase):}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00079}00079\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Pip's\ provider\ implementation\ for\ resolvelib.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00080}00080\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00081}00081\ \textcolor{stringliteral}{\ \ \ \ :params\ constraints:\ A\ mapping\ of\ constraints\ specified\ by\ the\ user.\ Keys}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00082}00082\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ are\ canonicalized\ project\ names.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00083}00083\ \textcolor{stringliteral}{\ \ \ \ :params\ ignore\_dependencies:\ Whether\ the\ user\ specified\ \`{}\`{}-\/-\/no-\/deps\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00084}00084\ \textcolor{stringliteral}{\ \ \ \ :params\ upgrade\_strategy:\ The\ user-\/specified\ upgrade\ strategy.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00085}00085\ \textcolor{stringliteral}{\ \ \ \ :params\ user\_requested:\ A\ set\ of\ canonicalized\ package\ names\ that\ the\ user}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00086}00086\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ supplied\ for\ pip\ to\ install/upgrade.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00087}00087\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00088}00088\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00089}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ab7227e26238215744d0e4012732c4336}{00089}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ab7227e26238215744d0e4012732c4336}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ factory:\ Factory,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ constraints:\ dict[str,\ Constraint],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ ignore\_dependencies:\ bool,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ upgrade\_strategy:\ str,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ user\_requested:\ dict[str,\ int],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00096}00096\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00097}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ae32eb0583ab6ead38f0902d5d3b471ba}{00097}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ae32eb0583ab6ead38f0902d5d3b471ba}{\_factory}}\ =\ factory}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00098}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ab7693606b9d18af3b75bac36849f5060}{00098}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ab7693606b9d18af3b75bac36849f5060}{\_constraints}}\ =\ constraints}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00099}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a78eb4438f386d08675cf1e96b0cd19ff}{00099}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a78eb4438f386d08675cf1e96b0cd19ff}{\_ignore\_dependencies}}\ =\ ignore\_dependencies}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00100}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ab883cdf8b8ee555e77a85471b4251703}{00100}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ab883cdf8b8ee555e77a85471b4251703}{\_upgrade\_strategy}}\ =\ upgrade\_strategy}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00101}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a5852f84f66319ef479a14e99172c3076}{00101}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a5852f84f66319ef479a14e99172c3076}{\_user\_requested}}\ =\ user\_requested}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00103}00103\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00104}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a075f3bec686753cebbb2d6cd9efe0170}{00104}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a075f3bec686753cebbb2d6cd9efe0170}{constraints}}(self)\ -\/>\ dict[str,\ Constraint]:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Public\ view\ of\ user-\/specified\ constraints.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00106}00106\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00107}00107\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Exposes\ the\ provider's\ constraints\ mapping\ without\ encouraging}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00108}00108\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ external\ callers\ to\ reach\ into\ private\ attributes.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00109}00109\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ab7693606b9d18af3b75bac36849f5060}{\_constraints}}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00111}00111\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00112}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a3fd83b30e8a423ba502ad078020f5999}{00112}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a3fd83b30e8a423ba502ad078020f5999}{identify}}(self,\ requirement\_or\_candidate:\ Requirement\ |\ Candidate)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ requirement\_or\_candidate.name}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00114}00114\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00115}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a8d955b1a8b146b4b1c78327212581828}{00115}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a8d955b1a8b146b4b1c78327212581828}{narrow\_requirement\_selection}}(}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ identifiers:\ Iterable[str],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ resolutions:\ Mapping[str,\ Candidate],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ candidates:\ Mapping[str,\ Iterator[Candidate]],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ information:\ Mapping[str,\ Iterator[PreferenceInformation]],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ backtrack\_causes:\ Sequence[PreferenceInformation],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00122}00122\ \ \ \ \ )\ -\/>\ Iterable[str]:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Produce\ a\ subset\ of\ identifiers\ that\ should\ be\ considered\ before\ others.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00124}00124\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00125}00125\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Currently\ pip\ narrows\ the\ following\ selection:}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00126}00126\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ *\ Requires-\/Python,\ if\ present\ is\ always\ returned\ by\ itself}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00127}00127\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ *\ Backtrack\ causes\ are\ considered\ next\ because\ they\ can\ be\ identified}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00128}00128\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ in\ linear\ time\ here,\ whereas\ because\ get\_preference()\ is\ called}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00129}00129\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ for\ each\ identifier,\ it\ would\ be\ quadratic\ to\ check\ for\ them\ there.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00130}00130\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ Further,\ the\ current\ backtrack\ causes\ likely\ need\ to\ be\ resolved}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00131}00131\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ before\ other\ requirements\ as\ a\ resolution\ can't\ be\ found\ while}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00132}00132\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ there\ is\ a\ conflict.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00133}00133\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ backtrack\_identifiers\ =\ set()}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ info\ \textcolor{keywordflow}{in}\ backtrack\_causes:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \ \ \ \ backtrack\_identifiers.add(info.requirement.name)}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ info.parent\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ backtrack\_identifiers.add(info.parent.name)}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00139}00139\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ current\_backtrack\_causes\ =\ []}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ identifier\ \textcolor{keywordflow}{in}\ identifiers:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Requires-\/Python\ has\ only\ one\ candidate\ and\ the\ check\ is\ basically}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ free,\ so\ we\ always\ do\ it\ first\ to\ avoid\ needless\ work\ if\ it\ fails.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ This\ skips\ calling\ get\_preference()\ for\ all\ other\ identifiers.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ identifier\ ==\ REQUIRES\_PYTHON\_IDENTIFIER:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ [identifier]}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00147}00147\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Check\ if\ this\ identifier\ is\ a\ backtrack\ cause}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ identifier\ \textcolor{keywordflow}{in}\ backtrack\_identifiers:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ current\_backtrack\_causes.append(identifier)}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00152}00152\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ current\_backtrack\_causes:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ current\_backtrack\_causes}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ identifiers}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00157}00157\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00158}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a3c64b8d85313e2ea99abf4155e55cce7}{00158}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a3c64b8d85313e2ea99abf4155e55cce7}{get\_preference}}(}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ identifier:\ str,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ resolutions:\ Mapping[str,\ Candidate],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ candidates:\ Mapping[str,\ Iterator[Candidate]],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ information:\ Mapping[str,\ Iterable[PreferenceInformation]],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ backtrack\_causes:\ Sequence[PreferenceInformation],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00165}00165\ \ \ \ \ )\ -\/>\ Preference:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Produce\ a\ sort\ key\ for\ given\ requirement\ based\ on\ preference.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00167}00167\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00168}00168\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ lower\ the\ return\ value\ is,\ the\ more\ preferred\ this\ group\ of}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00169}00169\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ arguments\ is.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00170}00170\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00171}00171\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Currently\ pip\ considers\ the\ following\ in\ order:}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00172}00172\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00173}00173\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ Any\ requirement\ that\ is\ "{}direct"{},\ e.g.,\ points\ to\ an\ explicit\ URL.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00174}00174\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ Any\ requirement\ that\ is\ "{}pinned"{},\ i.e.,\ contains\ the\ operator\ \`{}\`{}===\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00175}00175\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ or\ \`{}\`{}==\`{}\`{}\ without\ a\ wildcard.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00176}00176\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ Any\ requirement\ that\ imposes\ an\ upper\ version\ limit,\ i.e.,\ contains\ the}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00177}00177\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ operator\ \`{}\`{}<\`{}\`{},\ \`{}\`{}<=\`{}\`{},\ \`{}\`{}\string~=\`{}\`{},\ or\ \`{}\`{}==\`{}\`{}\ with\ a\ wildcard.\ Because}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00178}00178\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ pip\ prioritizes\ the\ latest\ version,\ preferring\ explicit\ upper\ bounds}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00179}00179\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ can\ rule\ out\ infeasible\ candidates\ sooner.\ This\ does\ not\ imply\ that}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00180}00180\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ upper\ bounds\ are\ good\ practice;\ they\ can\ make\ dependency\ management}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00181}00181\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ and\ resolution\ harder.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00182}00182\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ Order\ user-\/specified\ requirements\ as\ they\ are\ specified,\ placing}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00183}00183\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ other\ requirements\ afterward.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00184}00184\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ Any\ "{}non-\/free"{}\ requirement,\ i.e.,\ one\ that\ contains\ at\ least\ one}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00185}00185\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ operator,\ such\ as\ \`{}\`{}>=\`{}\`{}\ or\ \`{}\`{}!=\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00186}00186\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ *\ Alphabetical\ order\ for\ consistency\ (aids\ debuggability).}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00187}00187\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \ \ \ \ next(iter(information[identifier]))}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ StopIteration:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ There\ is\ no\ information\ for\ this\ identifier,\ so\ there's\ no\ known}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ candidates.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \ \ \ \ has\_information\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ has\_information\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00196}00196\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ has\_information:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ direct\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ ireqs:\ tuple[InstallRequirement\ |\ \textcolor{keywordtype}{None},\ ...]\ =\ ()}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Go\ through\ the\ information\ and\ for\ each\ requirement,}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ check\ if\ it's\ explicit\ (e.g.,\ a\ direct\ link)\ and\ get\ the}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ InstallRequirement\ (the\ second\ element)\ from\ get\_candidate\_lookup()}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ directs,\ ireqs\ =\ zip(}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ *(}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (isinstance(r,\ ExplicitRequirement),\ r.get\_candidate\_lookup()[1])}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00207}00207\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ r,\ \_\ \textcolor{keywordflow}{in}\ information[identifier]}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ direct\ =\ any(directs)}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00211}00211\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ operators:\ list[tuple[str,\ str]]\ =\ [}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \ \ \ \ (specifier.operator,\ specifier.version)}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ specifier\_set\ \textcolor{keywordflow}{in}\ (ireq.specifier\ \textcolor{keywordflow}{for}\ ireq\ \textcolor{keywordflow}{in}\ ireqs\ \textcolor{keywordflow}{if}\ ireq)}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ specifier\ \textcolor{keywordflow}{in}\ specifier\_set}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ ]}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00217}00217\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ pinned\ =\ any(((op[:2]\ ==\ \textcolor{stringliteral}{"{}=="{}})\ \textcolor{keywordflow}{and}\ (\textcolor{stringliteral}{"{}*"{}}\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ ver))\ \textcolor{keywordflow}{for}\ op,\ ver\ \textcolor{keywordflow}{in}\ operators)}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ upper\_bounded\ =\ any(}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ ((op\ \textcolor{keywordflow}{in}\ (\textcolor{stringliteral}{"{}<"{}},\ \textcolor{stringliteral}{"{}<="{}},\ \textcolor{stringliteral}{"{}\string~="{}}))\ \textcolor{keywordflow}{or}\ (op\ ==\ \textcolor{stringliteral}{"{}=="{}}\ \textcolor{keywordflow}{and}\ \textcolor{stringliteral}{"{}*"{}}\ \textcolor{keywordflow}{in}\ ver))}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ op,\ ver\ \textcolor{keywordflow}{in}\ operators}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ unfree\ =\ bool(operators)}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ requested\_order\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a5852f84f66319ef479a14e99172c3076}{\_user\_requested}}.get(identifier,\ math.inf)}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00225}00225\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{not}\ direct,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{not}\ pinned,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{not}\ upper\_bounded,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \ \ \ \ requested\_order,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{not}\ unfree,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \ \ \ \ identifier,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00234}00234\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00235}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a81ff891c3a391bf1716e1bd6738c1283}{00235}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a81ff891c3a391bf1716e1bd6738c1283}{find\_matches}}(}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ identifier:\ str,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ requirements:\ Mapping[str,\ Iterator[Requirement]],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ incompatibilities:\ Mapping[str,\ Iterator[Candidate]],}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00240}00240\ \ \ \ \ )\ -\/>\ Iterable[Candidate]:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{keyword}{def\ }\_eligible\_for\_upgrade(identifier:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Are\ upgrades\ allowed\ for\ this\ project?}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00243}00243\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00244}00244\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ This\ checks\ the\ upgrade\ strategy,\ and\ whether\ the\ project\ was\ one}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00245}00245\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ that\ the\ user\ specified\ in\ the\ command\ line,\ in\ order\ to\ decide}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00246}00246\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ whether\ we\ should\ upgrade\ if\ there's\ a\ newer\ version\ available.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00247}00247\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00248}00248\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (Note\ that\ we\ don't\ need\ access\ to\ the\ \`{}-\/-\/upgrade\`{}\ flag,\ because}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00249}00249\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ an\ upgrade\ strategy\ of\ "{}to-\/satisfy-\/only"{}\ means\ that\ \`{}-\/-\/upgrade\`{}}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00250}00250\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ was\ not\ specified).}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00251}00251\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ab883cdf8b8ee555e77a85471b4251703}{\_upgrade\_strategy}}\ ==\ \textcolor{stringliteral}{"{}eager"{}}:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ab883cdf8b8ee555e77a85471b4251703}{\_upgrade\_strategy}}\ ==\ \textcolor{stringliteral}{"{}only-\/if-\/needed"{}}:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ user\_order\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_a829e451ebffb3a12aea2ef476f8338fe}{\_get\_with\_identifier}}(}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a5852f84f66319ef479a14e99172c3076}{\_user\_requested}},}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ identifier,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ default=\textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ user\_order\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00262}00262\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ constraint\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_a829e451ebffb3a12aea2ef476f8338fe}{\_get\_with\_identifier}}(}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ab7693606b9d18af3b75bac36849f5060}{\_constraints}},}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \ \ \ \ identifier,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ default=Constraint.empty(),}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_ae32eb0583ab6ead38f0902d5d3b471ba}{\_factory}}.find\_candidates(}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \ \ \ \ identifier=identifier,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \ \ \ \ requirements=requirements,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \ \ \ \ constraint=constraint,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00272}00272\ \ \ \ \ \ \ \ \ \ \ \ \ prefers\_installed=(\textcolor{keywordflow}{not}\ \_eligible\_for\_upgrade(identifier)),}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ \ \ \ \ incompatibilities=incompatibilities,}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \ \ \ \ is\_satisfied\_by=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a25dad3fac85733deb4953b4b2320fb9d}{is\_satisfied\_by}},}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00276}00276\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00277}00277\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00278}00278\ \ \ \ \ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00279}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a25dad3fac85733deb4953b4b2320fb9d}{00279}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a25dad3fac85733deb4953b4b2320fb9d}{is\_satisfied\_by}}(requirement:\ Requirement,\ candidate:\ Candidate)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ requirement.is\_satisfied\_by(candidate)}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00281}00281\ }
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00282}\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a00174aee5ad5b5c34de6408459ffce1a}{00282}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a00174aee5ad5b5c34de6408459ffce1a}{get\_dependencies}}(self,\ candidate:\ Candidate)\ -\/>\ Iterable[Requirement]:}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ with\_requires\ =\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1resolution_1_1resolvelib_1_1provider_1_1_pip_provider_a78eb4438f386d08675cf1e96b0cd19ff}{\_ignore\_dependencies}}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ iter\_dependencies()\ can\ perform\ nontrivial\ work\ so\ delay\ until\ needed.}}
+\DoxyCodeLine{\Hypertarget{provider_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (r\ \textcolor{keywordflow}{for}\ r\ \textcolor{keywordflow}{in}\ candidate.iter\_dependencies(with\_requires)\ \textcolor{keywordflow}{if}\ r\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None})}
+
+\end{DoxyCode}

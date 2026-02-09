@@ -1,0 +1,98 @@
+\doxysection{release\+\_\+control.\+py}
+\hypertarget{release__control_8py_source}{}\label{release__control_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/models/release\_control.py@{venv/Lib/site-\/packages/pip/\_internal/models/release\_control.py}}
+\doxymbox{\hyperlink{release__control_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1models_1_1release__control}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00003}00003\ \textcolor{keyword}{from}\ dataclasses\ \textcolor{keyword}{import}\ dataclass,\ field}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00005}00005\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1utils}{pip.\_vendor.packaging.utils}}\ \textcolor{keyword}{import}\ NormalizedName,\ canonicalize\_name}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ CommandError}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00010}00010\ \textcolor{comment}{\#\ TODO:\ add\ slots=True\ when\ Python\ 3.9\ is\ dropped}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00011}00011\ \textcolor{preprocessor}{@dataclass}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00012}\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control}{00012}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control}{ReleaseControl}}:}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00013}00013\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Helper\ for\ managing\ which\ release\ types\ can\ be\ installed."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00015}\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_a37c80ad8145400f1fba802c4a5140d9b}{00015}}\ \ \ \ \ all\_releases:\ set[str]\ =\ field(default\_factory=set)}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00016}\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_a9d8d28adda5a5a7a1f05dc11dd21c12e}{00016}}\ \ \ \ \ only\_final:\ set[str]\ =\ field(default\_factory=set)}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00017}\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_ad0746e1e6a6872c0fb3afa2bb7e9cc86}{00017}}\ \ \ \ \ \_order:\ list[tuple[str,\ str]]\ =\ field(}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00018}00018\ \ \ \ \ \ \ \ \ init=\textcolor{keyword}{False},\ default\_factory=list,\ compare=\textcolor{keyword}{False},\ repr=\textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00019}00019\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00020}00020\ }
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00021}\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_ae465410948892d2ca367b57c345c6794}{00021}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_ae465410948892d2ca367b57c345c6794}{handle\_mutual\_excludes}}(}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00022}00022\ \ \ \ \ \ \ \ \ self,\ value:\ str,\ target:\ set[str],\ other:\ set[str],\ attr\_name:\ str}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00023}00023\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00024}00024\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Parse\ and\ apply\ release\ control\ option\ value.}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00025}00025\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00026}00026\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Processes\ comma-\/separated\ package\ names\ or\ special\ values\ \`{}:all:\`{}\ and\ \`{}:none:\`{}.}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00027}00027\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00028}00028\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ When\ adding\ packages\ to\ target,\ they're\ removed\ from\ other\ to\ maintain\ mutual}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00029}00029\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ exclusivity\ between\ all\_releases\ and\ only\_final.\ All\ operations\ are\ tracked\ in}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00030}00030\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ order\ so\ that\ the\ original\ command-\/line\ argument\ sequence\ can\ be\ reconstructed}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00031}00031\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ when\ passing\ options\ to\ build\ subprocesses.}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00032}00032\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00033}00033\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ value.startswith(\textcolor{stringliteral}{"{}-\/"{}}):}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_command_error}{CommandError}}(}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}-\/-\/all-\/releases\ /\ -\/-\/only-\/final\ option\ requires\ 1\ argument."{}}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ new\ =\ value.split(\textcolor{stringliteral}{"{},"{}})}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ \textcolor{stringliteral}{"{}:all:"{}}\ \textcolor{keywordflow}{in}\ new:}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ \ \ \ \ other.clear()}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ \ \ \ \ target.clear()}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ \ \ \ \ target.add(\textcolor{stringliteral}{"{}:all:"{}})}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Track\ :all:\ in\ order}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00043}00043\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_ad0746e1e6a6872c0fb3afa2bb7e9cc86}{\_order}}.append((attr\_name,\ \textcolor{stringliteral}{"{}:all:"{}}))}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ \ \ \ \ del\ new[:\ new.index(\textcolor{stringliteral}{"{}:all:"{}})\ +\ 1]}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Without\ a\ none,\ we\ want\ to\ discard\ everything\ as\ :all:\ covers\ it}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}:none:"{}}\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ new:}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ name\ \textcolor{keywordflow}{in}\ new:}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ name\ ==\ \textcolor{stringliteral}{"{}:none:"{}}:}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ target.clear()}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Track\ :none:\ in\ order}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_ad0746e1e6a6872c0fb3afa2bb7e9cc86}{\_order}}.append((attr\_name,\ \textcolor{stringliteral}{"{}:none:"{}}))}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \ \ \ \ name\ =\ canonicalize\_name(name)}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \ \ \ \ other.discard(name)}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00056}00056\ \ \ \ \ \ \ \ \ \ \ \ \ target.add(name)}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Track\ package-\/specific\ setting\ in\ order}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_ad0746e1e6a6872c0fb3afa2bb7e9cc86}{\_order}}.append((attr\_name,\ name))}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00060}\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_a5181cbfbf413fbfaada7e6dc7fc2fb0f}{00060}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_a5181cbfbf413fbfaada7e6dc7fc2fb0f}{get\_ordered\_args}}(self)\ -\/>\ list[tuple[str,\ str]]:}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00062}00062\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Get\ ordered\ list\ of\ (flag\_name,\ value)\ tuples\ for\ reconstructing\ CLI\ args.}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00063}00063\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00064}00064\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Returns:}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00065}00065\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ List\ of\ tuples\ where\ each\ tuple\ is\ (attribute\_name,\ value).}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00066}00066\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ The\ attribute\_name\ is\ either\ 'all\_releases'\ or\ 'only\_final'.}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00067}00067\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00068}00068\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Example:}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00069}00069\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ [("{}all\_releases"{},\ "{}:all:"{}),\ ("{}only\_final"{},\ "{}simple"{})]}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00070}00070\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ would\ be\ reconstructed\ as:}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00071}00071\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ ["{}-\/-\/all-\/releases"{},\ "{}:all:"{},\ "{}-\/-\/only-\/final"{},\ "{}simple"{}]}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00072}00072\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_ad0746e1e6a6872c0fb3afa2bb7e9cc86}{\_order}}[:]}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00074}00074\ }
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00075}\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_ada24f81a5ca2038be5cf4eb6d533d430}{00075}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_ada24f81a5ca2038be5cf4eb6d533d430}{allows\_prereleases}}(self,\ canonical\_name:\ NormalizedName)\ -\/>\ bool\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00077}00077\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Determine\ if\ pre-\/releases\ are\ allowed\ for\ a\ package.}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00078}00078\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Returns:}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00080}00080\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ True:\ Pre-\/releases\ are\ allowed\ (package\ in\ all\_releases)}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00081}00081\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ False:\ Only\ final\ releases\ allowed\ (package\ in\ only\_final)}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00082}00082\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ None:\ No\ specific\ setting,\ use\ default\ behavior}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00083}00083\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ canonical\_name\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_a37c80ad8145400f1fba802c4a5140d9b}{all\_releases}}:}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ canonical\_name\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_a9d8d28adda5a5a7a1f05dc11dd21c12e}{only\_final}}:}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ \textcolor{stringliteral}{"{}:all:"{}}\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_a37c80ad8145400f1fba802c4a5140d9b}{all\_releases}}:}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ \textcolor{stringliteral}{"{}:all:"{}}\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1models_1_1release__control_1_1_release_control_a9d8d28adda5a5a7a1f05dc11dd21c12e}{only\_final}}:}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{release__control_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+
+\end{DoxyCode}

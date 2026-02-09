@@ -1,0 +1,268 @@
+\doxysection{\+\_\+manylinux.\+py}
+\hypertarget{__manylinux_8py_source}{}\label{__manylinux_8py_source}\index{venv/Lib/site-\/packages/pip/\_vendor/packaging/\_manylinux.py@{venv/Lib/site-\/packages/pip/\_vendor/packaging/\_manylinux.py}}
+\doxymbox{\hyperlink{__manylinux_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux}{00001}}\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00003}00003\ \textcolor{keyword}{import}\ collections}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00004}00004\ \textcolor{keyword}{import}\ contextlib}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00005}00005\ \textcolor{keyword}{import}\ functools}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00006}00006\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00007}00007\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00008}00008\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00009}00009\ \textcolor{keyword}{import}\ warnings}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00010}00010\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Generator,\ Iterator,\ NamedTuple,\ Sequence}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00012}00012\ \textcolor{keyword}{from}\ .\_elffile\ \textcolor{keyword}{import}\ EIClass,\ EIData,\ ELFFile,\ EMachine}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00014}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a5fd19195b7745483386b93e8d2d45459}{00014}}\ EF\_ARM\_ABIMASK\ =\ 0xFF000000}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00015}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a19e7c1f0064a27604f44144a79c6937a}{00015}}\ EF\_ARM\_ABI\_VER5\ =\ 0x05000000}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00016}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_aa784a6e581287449ae1a4507f440cea2}{00016}}\ EF\_ARM\_ABI\_FLOAT\_HARD\ =\ 0x00000400}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00018}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a122a4273706fae00eb385b3693264e12}{00018}}\ \_ALLOWED\_ARCHS\ =\ \{}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00019}00019\ \ \ \ \ \textcolor{stringliteral}{"{}x86\_64"{}},}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00020}00020\ \ \ \ \ \textcolor{stringliteral}{"{}aarch64"{}},}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00021}00021\ \ \ \ \ \textcolor{stringliteral}{"{}ppc64"{}},}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00022}00022\ \ \ \ \ \textcolor{stringliteral}{"{}ppc64le"{}},}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00023}00023\ \ \ \ \ \textcolor{stringliteral}{"{}s390x"{}},}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00024}00024\ \ \ \ \ \textcolor{stringliteral}{"{}loongarch64"{}},}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00025}00025\ \ \ \ \ \textcolor{stringliteral}{"{}riscv64"{}},}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00026}00026\ \}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00029}00029\ \textcolor{comment}{\#\ \`{}os.PathLike`\ not\ a\ generic\ type\ until\ Python\ 3.9,\ so\ sticking\ with\ \`{}str`}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00030}00030\ \textcolor{comment}{\#\ as\ the\ type\ for\ \`{}path`\ until\ then.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00031}00031\ \textcolor{preprocessor}{@contextlib.contextmanager}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00032}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a8e8fd3ff1bf639dee1381d04f8d2581a}{00032}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a8e8fd3ff1bf639dee1381d04f8d2581a}{\_parse\_elf}}(path:\ str)\ -\/>\ Generator[ELFFile\ |\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None}]:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00033}00033\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ open(path,\ \textcolor{stringliteral}{"{}rb"{}})\ \textcolor{keyword}{as}\ f:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__elffile_1_1_e_l_f_file}{ELFFile}}(f)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00036}00036\ \ \ \ \ \textcolor{keywordflow}{except}\ (OSError,\ TypeError,\ ValueError):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00040}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a91878b64e582fc90f1342cc05e4a1ab9}{00040}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a91878b64e582fc90f1342cc05e4a1ab9}{\_is\_linux\_armhf}}(executable:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00041}00041\ \ \ \ \ \textcolor{comment}{\#\ hard-\/float\ ABI\ can\ be\ detected\ from\ the\ ELF\ header\ of\ the\ running}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00042}00042\ \ \ \ \ \textcolor{comment}{\#\ process}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00043}00043\ \ \ \ \ \textcolor{comment}{\#\ https://static.docs.arm.com/ihi0044/g/aaelf32.pdf}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00044}00044\ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a8e8fd3ff1bf639dee1381d04f8d2581a}{\_parse\_elf}}(executable)\ \textcolor{keyword}{as}\ f:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ \ \ \ \ f\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ f.capacity\ ==\ EIClass.C32}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ f.encoding\ ==\ EIData.Lsb}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ f.machine\ ==\ EMachine.Arm}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ f.flags\ \&\ EF\_ARM\_ABIMASK\ ==\ EF\_ARM\_ABI\_VER5}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ f.flags\ \&\ EF\_ARM\_ABI\_FLOAT\_HARD\ ==\ EF\_ARM\_ABI\_FLOAT\_HARD}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00055}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a4fb71447887c9279dbc51978bc3e1f05}{00055}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a4fb71447887c9279dbc51978bc3e1f05}{\_is\_linux\_i686}}(executable:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00056}00056\ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a8e8fd3ff1bf639dee1381d04f8d2581a}{\_parse\_elf}}(executable)\ \textcolor{keyword}{as}\ f:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00058}00058\ \ \ \ \ \ \ \ \ \ \ \ \ f\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00059}00059\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ f.capacity\ ==\ EIClass.C32}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ f.encoding\ ==\ EIData.Lsb}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00061}00061\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ f.machine\ ==\ EMachine.I386}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00062}00062\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00063}00063\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00065}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a74fb6bd0dc9c426df67e2e84c7870567}{00065}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a74fb6bd0dc9c426df67e2e84c7870567}{\_have\_compatible\_abi}}(executable:\ str,\ archs:\ Sequence[str])\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00066}00066\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}armv7l"{}}\ \textcolor{keywordflow}{in}\ archs:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a91878b64e582fc90f1342cc05e4a1ab9}{\_is\_linux\_armhf}}(executable)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00068}00068\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}i686"{}}\ \textcolor{keywordflow}{in}\ archs:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a4fb71447887c9279dbc51978bc3e1f05}{\_is\_linux\_i686}}(executable)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00070}00070\ \ \ \ \ \textcolor{keywordflow}{return}\ any(arch\ \textcolor{keywordflow}{in}\ \_ALLOWED\_ARCHS\ \textcolor{keywordflow}{for}\ arch\ \textcolor{keywordflow}{in}\ archs)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00071}00071\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00072}00072\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00073}00073\ \textcolor{comment}{\#\ If\ glibc\ ever\ changes\ its\ major\ version,\ we\ need\ to\ know\ what\ the\ last}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00074}00074\ \textcolor{comment}{\#\ minor\ version\ was,\ so\ we\ can\ build\ the\ complete\ list\ of\ all\ versions.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00075}00075\ \textcolor{comment}{\#\ For\ now,\ guess\ what\ the\ highest\ minor\ version\ might\ be,\ assume\ it\ will}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00076}00076\ \textcolor{comment}{\#\ be\ 50\ for\ testing.\ Once\ this\ actually\ happens,\ update\ the\ dictionary}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00077}00077\ \textcolor{comment}{\#\ with\ the\ actual\ value.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00078}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a36c6af9d627320872bdd6851db586c9c}{00078}}\ \_LAST\_GLIBC\_MINOR:\ dict[int,\ int]\ =\ collections.defaultdict(\textcolor{keyword}{lambda}:\ 50)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00081}\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{00081}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(NamedTuple):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00082}00082\ \ \ \ \ major:\ int}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00083}00083\ \ \ \ \ minor:\ int}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00085}00085\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00086}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a84cd19dcc935732f9d5b8b3e95375bc9}{00086}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a84cd19dcc935732f9d5b8b3e95375bc9}{\_glibc\_version\_string\_confstr}}()\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00087}00087\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00088}00088\ \textcolor{stringliteral}{\ \ \ \ Primary\ implementation\ of\ glibc\_version\_string\ using\ os.confstr.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00089}00089\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00090}00090\ \ \ \ \ \textcolor{comment}{\#\ os.confstr\ is\ quite\ a\ bit\ faster\ than\ ctypes.DLL.\ It's\ also\ less\ likely}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00091}00091\ \ \ \ \ \textcolor{comment}{\#\ to\ be\ broken\ or\ missing.\ This\ strategy\ is\ used\ in\ the\ standard\ library}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00092}00092\ \ \ \ \ \textcolor{comment}{\#\ platform\ module.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00093}00093\ \ \ \ \ \textcolor{comment}{\#\ https://github.com/python/cpython/blob/fcf1d003bf4f0100c/Lib/platform.py\#L175-\/L183}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00094}00094\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Should\ be\ a\ string\ like\ "{}glibc\ 2.17"{}.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ version\_string:\ str\ |\ \textcolor{keywordtype}{None}\ =\ os.confstr(\textcolor{stringliteral}{"{}CS\_GNU\_LIBC\_VERSION"{}})}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ version\_string\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \_,\ version\ =\ version\_string.rsplit()}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00099}00099\ \ \ \ \ \textcolor{keywordflow}{except}\ (AssertionError,\ AttributeError,\ OSError,\ ValueError):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ os.confstr()\ or\ CS\_GNU\_LIBC\_VERSION\ not\ available\ (or\ a\ bad\ value)...}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00102}00102\ \ \ \ \ \textcolor{keywordflow}{return}\ version}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00103}00103\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00105}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a5fc7cbc3227e56b1df6413f71c3d3da3}{00105}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a5fc7cbc3227e56b1df6413f71c3d3da3}{\_glibc\_version\_string\_ctypes}}()\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00106}00106\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00107}00107\ \textcolor{stringliteral}{\ \ \ \ Fallback\ implementation\ of\ glibc\_version\_string\ using\ ctypes.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00108}00108\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00109}00109\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \textcolor{keyword}{import}\ ctypes\ \ \textcolor{comment}{\#\ noqa:\ PLC0415}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00111}00111\ \ \ \ \ \textcolor{keywordflow}{except}\ ImportError:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00112}00112\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00113}00113\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00114}00114\ \ \ \ \ \textcolor{comment}{\#\ ctypes.CDLL(None)\ internally\ calls\ dlopen(NULL),\ and\ as\ the\ dlopen}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00115}00115\ \ \ \ \ \textcolor{comment}{\#\ manpage\ says,\ "{}If\ filename\ is\ NULL,\ then\ the\ returned\ handle\ is\ for\ the}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00116}00116\ \ \ \ \ \textcolor{comment}{\#\ main\ program"{}.\ This\ way\ we\ can\ let\ the\ linker\ do\ the\ work\ to\ figure\ out}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00117}00117\ \ \ \ \ \textcolor{comment}{\#\ which\ libc\ our\ process\ is\ actually\ using.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00118}00118\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00119}00119\ \ \ \ \ \textcolor{comment}{\#\ We\ must\ also\ handle\ the\ special\ case\ where\ the\ executable\ is\ not\ a}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00120}00120\ \ \ \ \ \textcolor{comment}{\#\ dynamically\ linked\ executable.\ This\ can\ occur\ when\ using\ musl\ libc,}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00121}00121\ \ \ \ \ \textcolor{comment}{\#\ for\ example.\ In\ this\ situation,\ dlopen()\ will\ error,\ leading\ to\ an}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00122}00122\ \ \ \ \ \textcolor{comment}{\#\ OSError.\ Interestingly,\ at\ least\ in\ the\ case\ of\ musl,\ there\ is\ no}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00123}00123\ \ \ \ \ \textcolor{comment}{\#\ errno\ set\ on\ the\ OSError.\ The\ single\ string\ argument\ used\ to\ construct}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00124}00124\ \ \ \ \ \textcolor{comment}{\#\ OSError\ comes\ from\ libc\ itself\ and\ is\ therefore\ not\ portable\ to}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00125}00125\ \ \ \ \ \textcolor{comment}{\#\ hard\ code\ here.\ In\ any\ case,\ failure\ to\ call\ dlopen()\ means\ we}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00126}00126\ \ \ \ \ \textcolor{comment}{\#\ can\ proceed,\ so\ we\ bail\ on\ our\ attempt.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00127}00127\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ process\_namespace\ =\ ctypes.CDLL(\textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00129}00129\ \ \ \ \ \textcolor{keywordflow}{except}\ OSError:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00132}00132\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ gnu\_get\_libc\_version\ =\ process\_namespace.gnu\_get\_libc\_version}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00134}00134\ \ \ \ \ \textcolor{keywordflow}{except}\ AttributeError:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Symbol\ doesn't\ exist\ -\/>\ therefore,\ we\ are\ not\ linked\ to}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ glibc.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00137}00137\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00138}00138\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00139}00139\ \ \ \ \ \textcolor{comment}{\#\ Call\ gnu\_get\_libc\_version,\ which\ returns\ a\ string\ like\ "{}2.5"{}}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00140}00140\ \ \ \ \ gnu\_get\_libc\_version.restype\ =\ ctypes.c\_char\_p}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00141}00141\ \ \ \ \ version\_str:\ str\ =\ gnu\_get\_libc\_version()}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00142}00142\ \ \ \ \ \textcolor{comment}{\#\ py2\ /\ py3\ compatibility:}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00143}00143\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(version\_str,\ str):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ version\_str\ =\ version\_str.decode(\textcolor{stringliteral}{"{}ascii"{}})}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00145}00145\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00146}00146\ \ \ \ \ \textcolor{keywordflow}{return}\ version\_str}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00147}00147\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00148}00148\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00149}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_abaed518eaebba9fdf1489c4c4b318aca}{00149}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_abaed518eaebba9fdf1489c4c4b318aca}{\_glibc\_version\_string}}()\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00150}00150\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Returns\ glibc\ version\ string,\ or\ None\ if\ not\ using\ glibc."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00151}00151\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a84cd19dcc935732f9d5b8b3e95375bc9}{\_glibc\_version\_string\_confstr}}()\ \textcolor{keywordflow}{or}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a5fc7cbc3227e56b1df6413f71c3d3da3}{\_glibc\_version\_string\_ctypes}}()}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00152}00152\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00153}00153\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00154}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a13889c02ec40e00efe03d926f39fb981}{00154}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a13889c02ec40e00efe03d926f39fb981}{\_parse\_glibc\_version}}(version\_str:\ str)\ -\/>\ \_GLibCVersion:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00155}00155\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Parse\ glibc\ version.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00156}00156\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00157}00157\ \textcolor{stringliteral}{\ \ \ \ We\ use\ a\ regexp\ instead\ of\ str.split\ because\ we\ want\ to\ discard\ any}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00158}00158\ \textcolor{stringliteral}{\ \ \ \ random\ junk\ that\ might\ come\ after\ the\ minor\ version\ -\/-\/\ this\ might\ happen}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00159}00159\ \textcolor{stringliteral}{\ \ \ \ in\ patched/forked\ versions\ of\ glibc\ (e.g.\ Linaro's\ version\ of\ glibc}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00160}00160\ \textcolor{stringliteral}{\ \ \ \ uses\ version\ strings\ like\ "{}2.20-\/2014.11"{}).\ See\ gh-\/3588.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00161}00161\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00162}00162\ \ \ \ \ m\ =\ re.match(\textcolor{stringliteral}{r"{}(?P<major>[0-\/9]+)\(\backslash\).(?P<minor>[0-\/9]+)"{}},\ version\_str)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00163}00163\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ m:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00164}00164\ \ \ \ \ \ \ \ \ warnings.warn(}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Expected\ glibc\ version\ with\ 2\ components\ major.minor,\ got:\ \{version\_str\}"{}},}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \ \ \ \ RuntimeWarning,}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ stacklevel=2,}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(-\/1,\ -\/1)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00170}00170\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(int(m.group(\textcolor{stringliteral}{"{}major"{}})),\ int(m.group(\textcolor{stringliteral}{"{}minor"{}})))}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00171}00171\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00172}00172\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00173}00173\ \textcolor{preprocessor}{@functools.lru\_cache}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00174}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a9dd74f1e05ff8e4a3b845e598412db5f}{00174}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a9dd74f1e05ff8e4a3b845e598412db5f}{\_get\_glibc\_version}}()\ -\/>\ \_GLibCVersion:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00175}00175\ \ \ \ \ version\_str\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_abaed518eaebba9fdf1489c4c4b318aca}{\_glibc\_version\_string}}()}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00176}00176\ \ \ \ \ \textcolor{keywordflow}{if}\ version\_str\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(-\/1,\ -\/1)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00178}00178\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a13889c02ec40e00efe03d926f39fb981}{\_parse\_glibc\_version}}(version\_str)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00179}00179\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00180}00180\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00181}00181\ \textcolor{comment}{\#\ From\ PEP\ 513,\ PEP\ 600}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00182}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_ad43de7d618e40bc9d0d67c52a4834fd9}{00182}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_ad43de7d618e40bc9d0d67c52a4834fd9}{\_is\_compatible}}(arch:\ str,\ version:\ \_GLibCVersion)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00183}00183\ \ \ \ \ sys\_glibc\ =\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a9dd74f1e05ff8e4a3b845e598412db5f}{\_get\_glibc\_version}}()}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00184}00184\ \ \ \ \ \textcolor{keywordflow}{if}\ sys\_glibc\ <\ version:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00186}00186\ \ \ \ \ \textcolor{comment}{\#\ Check\ for\ presence\ of\ \_manylinux\ module.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00187}00187\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \textcolor{keyword}{import}\ \_manylinux\ \ \textcolor{comment}{\#\ noqa:\ PLC0415}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00189}00189\ \ \ \ \ \textcolor{keywordflow}{except}\ ImportError:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00191}00191\ \ \ \ \ \textcolor{keywordflow}{if}\ hasattr(\_manylinux,\ \textcolor{stringliteral}{"{}manylinux\_compatible"{}}):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ result\ =\ \_manylinux.manylinux\_compatible(version[0],\ version[1],\ arch)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ result\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ bool(result)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00196}00196\ \ \ \ \ \textcolor{keywordflow}{if}\ version\ ==\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(2,\ 5)\ \textcolor{keywordflow}{and}\ hasattr(\_manylinux,\ \textcolor{stringliteral}{"{}manylinux1\_compatible"{}}):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ bool(\_manylinux.manylinux1\_compatible)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00198}00198\ \ \ \ \ \textcolor{keywordflow}{if}\ version\ ==\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(2,\ 12)\ \textcolor{keywordflow}{and}\ hasattr(}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \_manylinux,\ \textcolor{stringliteral}{"{}manylinux2010\_compatible"{}}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00200}00200\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ bool(\_manylinux.manylinux2010\_compatible)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00202}00202\ \ \ \ \ \textcolor{keywordflow}{if}\ version\ ==\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(2,\ 17)\ \textcolor{keywordflow}{and}\ hasattr(}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \_manylinux,\ \textcolor{stringliteral}{"{}manylinux2014\_compatible"{}}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00204}00204\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ bool(\_manylinux.manylinux2014\_compatible)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00206}00206\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00207}00207\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00208}00208\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00209}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_aed3e3d2085a5af930cebc8d3da7e5911}{00209}}\ \_LEGACY\_MANYLINUX\_MAP:\ dict[\_GLibCVersion,\ str]\ =\ \{}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00210}00210\ \ \ \ \ \textcolor{comment}{\#\ CentOS\ 7\ w/\ glibc\ 2.17\ (PEP\ 599)}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00211}00211\ \ \ \ \ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(2,\ 17):\ \textcolor{stringliteral}{"{}manylinux2014"{}},}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00212}00212\ \ \ \ \ \textcolor{comment}{\#\ CentOS\ 6\ w/\ glibc\ 2.12\ (PEP\ 571)}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00213}00213\ \ \ \ \ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(2,\ 12):\ \textcolor{stringliteral}{"{}manylinux2010"{}},}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00214}00214\ \ \ \ \ \textcolor{comment}{\#\ CentOS\ 5\ w/\ glibc\ 2.5\ (PEP\ 513)}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00215}00215\ \ \ \ \ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(2,\ 5):\ \textcolor{stringliteral}{"{}manylinux1"{}},}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00216}00216\ \}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00217}00217\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00218}00218\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00219}\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a3e278c444ec08f841f06a4083885e3fb}{00219}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a3e278c444ec08f841f06a4083885e3fb}{platform\_tags}}(archs:\ Sequence[str])\ -\/>\ Iterator[str]:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00220}00220\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Generate\ manylinux\ tags\ compatible\ to\ the\ current\ platform.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00221}00221\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00222}00222\ \textcolor{stringliteral}{\ \ \ \ :param\ archs:\ Sequence\ of\ compatible\ architectures.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00223}00223\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ first\ one\ shall\ be\ the\ closest\ to\ the\ actual\ architecture\ and\ be\ the\ part\ of}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00224}00224\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ platform\ tag\ after\ the\ \`{}\`{}linux\_\`{}\`{}\ prefix,\ e.g.\ \`{}\`{}x86\_64\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00225}00225\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ \`{}\`{}linux\_\`{}\`{}\ prefix\ is\ assumed\ as\ a\ prerequisite\ for\ the\ current\ platform\ to}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00226}00226\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ be\ manylinux-\/compatible.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00227}00227\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00228}00228\ \textcolor{stringliteral}{\ \ \ \ :returns:\ An\ iterator\ of\ compatible\ manylinux\ tags.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00229}00229\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00230}00230\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a74fb6bd0dc9c426df67e2e84c7870567}{\_have\_compatible\_abi}}(sys.executable,\ archs):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00232}00232\ \ \ \ \ \textcolor{comment}{\#\ Oldest\ glibc\ to\ be\ supported\ regardless\ of\ architecture\ is\ (2,\ 17).}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00233}00233\ \ \ \ \ too\_old\_glibc2\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(2,\ 16)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00234}00234\ \ \ \ \ \textcolor{keywordflow}{if}\ set(archs)\ \&\ \{\textcolor{stringliteral}{"{}x86\_64"{}},\ \textcolor{stringliteral}{"{}i686"{}}\}:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ On\ x86/i686\ also\ oldest\ glibc\ to\ be\ supported\ is\ (2,\ 5).}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ too\_old\_glibc2\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(2,\ 4)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00237}00237\ \ \ \ \ current\_glibc\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(*\doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_a9dd74f1e05ff8e4a3b845e598412db5f}{\_get\_glibc\_version}}())}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00238}00238\ \ \ \ \ glibc\_max\_list\ =\ [current\_glibc]}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00239}00239\ \ \ \ \ \textcolor{comment}{\#\ We\ can\ assume\ compatibility\ across\ glibc\ major\ versions.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00240}00240\ \ \ \ \ \textcolor{comment}{\#\ https://sourceware.org/bugzilla/show\_bug.cgi?id=24636}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00241}00241\ \ \ \ \ \textcolor{comment}{\#}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00242}00242\ \ \ \ \ \textcolor{comment}{\#\ Build\ a\ list\ of\ maximum\ glibc\ versions\ so\ that\ we\ can}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00243}00243\ \ \ \ \ \textcolor{comment}{\#\ output\ the\ canonical\ list\ of\ all\ glibc\ from\ current\_glibc}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00244}00244\ \ \ \ \ \textcolor{comment}{\#\ down\ to\ too\_old\_glibc2,\ including\ all\ intermediary\ versions.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00245}00245\ \ \ \ \ \textcolor{keywordflow}{for}\ glibc\_major\ \textcolor{keywordflow}{in}\ range(current\_glibc.major\ -\/\ 1,\ 1,\ -\/1):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00246}00246\ \ \ \ \ \ \ \ \ glibc\_minor\ =\ \_LAST\_GLIBC\_MINOR[glibc\_major]}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00247}00247\ \ \ \ \ \ \ \ \ glibc\_max\_list.append(\doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(glibc\_major,\ glibc\_minor))}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00248}00248\ \ \ \ \ \textcolor{keywordflow}{for}\ arch\ \textcolor{keywordflow}{in}\ archs:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00249}00249\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ glibc\_max\ \textcolor{keywordflow}{in}\ glibc\_max\_list:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00250}00250\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ glibc\_max.major\ ==\ too\_old\_glibc2.major:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ min\_minor\ =\ too\_old\_glibc2.minor}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ For\ other\ glibc\ major\ versions\ oldest\ supported\ is\ (x,\ 0).}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ min\_minor\ =\ -\/1}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ glibc\_minor\ \textcolor{keywordflow}{in}\ range(glibc\_max.minor,\ min\_minor,\ -\/1):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ glibc\_version\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1packaging_1_1__manylinux_1_1___g_lib_c_version}{\_GLibCVersion}}(glibc\_max.major,\ glibc\_minor)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1packaging_1_1__manylinux_ad43de7d618e40bc9d0d67c52a4834fd9}{\_is\_compatible}}(arch,\ glibc\_version):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{stringliteral}{"{}manylinux\_\{\}\_\{\}\_\{\}"{}}.format(*glibc\_version,\ arch)}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00259}00259\ }
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Handle\ the\ legacy\ manylinux1,\ manylinux2010,\ manylinux2014\ tags.}}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ legacy\_tag\ :=\ \_LEGACY\_MANYLINUX\_MAP.get(glibc\_version):}
+\DoxyCodeLine{\Hypertarget{__manylinux_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ f\textcolor{stringliteral}{"{}\{legacy\_tag\}\_\{arch\}"{}}}
+
+\end{DoxyCode}

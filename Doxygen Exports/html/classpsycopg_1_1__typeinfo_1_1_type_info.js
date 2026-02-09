@@ -1,0 +1,26 @@
+var classpsycopg_1_1__typeinfo_1_1_type_info =
+[
+    [ "__init__", "classpsycopg_1_1__typeinfo_1_1_type_info.html#aac211abf499ad1a94f7a6e4f6cd6af39", null ],
+    [ "__repr__", "classpsycopg_1_1__typeinfo_1_1_type_info.html#abe129918dfd324c25ec746b5404c4157", null ],
+    [ "_added", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a3b223d7f3f6019a444342a3f99490d5d", null ],
+    [ "_fetch", "classpsycopg_1_1__typeinfo_1_1_type_info.html#ae21655dbd42b796781ceacbb2a1c1bf9", null ],
+    [ "_fetch_async", "classpsycopg_1_1__typeinfo_1_1_type_info.html#aa2c16968b2c77b71d3a07f0394273699", null ],
+    [ "_from_records", "classpsycopg_1_1__typeinfo_1_1_type_info.html#aabc14008edd68774529a4abd27ebc55b", null ],
+    [ "_get_info_query", "classpsycopg_1_1__typeinfo_1_1_type_info.html#ab9189743d8f839ca8cba2d84a4ec8248", null ],
+    [ "_has_to_regtype_function", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a1d4fc83d04a0f771b376bad24171795f", null ],
+    [ "_to_regtype", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a080015df502949309bc6ab9a9b960aa5", null ],
+    [ "fetch", "classpsycopg_1_1__typeinfo_1_1_type_info.html#ac12ceeefd11c70494a5d8b654e2f5efa", null ],
+    [ "fetch", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a94896e5f18bb04dac5b7694e236ab4a2", null ],
+    [ "fetch", "classpsycopg_1_1__typeinfo_1_1_type_info.html#ae503b274a7a17a2a83a93a4894e2f170", null ],
+    [ "get_display_size", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a94be3c026e7fbcac49ab88a8be6f6944", null ],
+    [ "get_precision", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a307418cc731b7fd5b43247958fd3af04", null ],
+    [ "get_scale", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a797ce56a94be7eadcb0aba18823b14a2", null ],
+    [ "get_type_display", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a77ba10e1d4937410093a2bf0bb022dd2", null ],
+    [ "register", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a0337339581369f6e8d86a886befcb983", null ],
+    [ "array_oid", "classpsycopg_1_1__typeinfo_1_1_type_info.html#aa273935a0ca3ce8bdac34ef6621d03d0", null ],
+    [ "delimiter", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a39be5a9ea55589aae9af12399ae3635a", null ],
+    [ "name", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a29987789f550fc8305aed9719706b30c", null ],
+    [ "oid", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a4a145424a6ed0943bba3a33ffc7c942b", null ],
+    [ "regtype", "classpsycopg_1_1__typeinfo_1_1_type_info.html#ab82bf7eff1f2b98f527ca3972f29cbb2", null ],
+    [ "typemod", "classpsycopg_1_1__typeinfo_1_1_type_info.html#a9b47360f5461188696730bcca7babdae", null ]
+];

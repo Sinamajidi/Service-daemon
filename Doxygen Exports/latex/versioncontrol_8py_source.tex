@@ -1,0 +1,701 @@
+\doxysection{versioncontrol.\+py}
+\hypertarget{versioncontrol_8py_source}{}\label{versioncontrol_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/vcs/versioncontrol.py@{venv/Lib/site-\/packages/pip/\_internal/vcs/versioncontrol.py}}
+\doxymbox{\hyperlink{versioncontrol_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs_1_1versioncontrol}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}Handles\ all\ VCS\ (version\ control)\ support"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00003}00003\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00005}00005\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00006}00006\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00007}00007\ \textcolor{keyword}{import}\ shutil}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00008}00008\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00009}00009\ \textcolor{keyword}{import}\ urllib.parse}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00010}00010\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterable,\ Iterator,\ Mapping}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00011}00011\ \textcolor{keyword}{from}\ dataclasses\ \textcolor{keyword}{import}\ dataclass,\ field}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00012}00012\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00013}00013\ \ \ \ \ Any,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00014}00014\ \ \ \ \ Literal,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00015}00015\ \ \ \ \ Optional,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00016}00016\ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00018}00018\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1cli_1_1spinners}{pip.\_internal.cli.spinners}}\ \textcolor{keyword}{import}\ SpinnerInterface}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00019}00019\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ BadCommand,\ InstallationError}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00020}00020\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1misc}{pip.\_internal.utils.misc}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00021}00021\ \ \ \ \ HiddenText,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00022}00022\ \ \ \ \ ask\_path\_exists,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00023}00023\ \ \ \ \ backup\_dir,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00024}00024\ \ \ \ \ display\_path,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00025}00025\ \ \ \ \ hide\_url,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00026}00026\ \ \ \ \ hide\_value,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00027}00027\ \ \ \ \ is\_installable\_dir,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00028}00028\ \ \ \ \ rmtree,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00029}00029\ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00030}00030\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1subprocess}{pip.\_internal.utils.subprocess}}\ \textcolor{keyword}{import}\ (}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00031}00031\ \ \ \ \ CommandArgs,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00032}00032\ \ \ \ \ call\_subprocess,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00033}00033\ \ \ \ \ format\_command\_args,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00034}00034\ \ \ \ \ make\_command,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00035}00035\ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00037}00037\ \_\_all\_\_\ =\ [\textcolor{stringliteral}{"{}vcs"{}}]}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00040}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs_1_1versioncontrol_a5985b711475a83d999df91dc2d1a992d}{00040}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00042}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs_1_1versioncontrol_abd1a73ed07725a5cd6bd41f2e288be76}{00042}}\ AuthInfo\ =\ tuple[Optional[str],\ Optional[str]]}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00045}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs_1_1versioncontrol_aba02c788fdb3473fc1103a4894e7c2d8}{00045}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs_1_1versioncontrol_aba02c788fdb3473fc1103a4894e7c2d8}{is\_url}}(name:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00046}00046\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00047}00047\ \textcolor{stringliteral}{\ \ \ \ Return\ true\ if\ the\ name\ looks\ like\ a\ URL.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00048}00048\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00049}00049\ \ \ \ \ scheme\ =\ urllib.parse.urlsplit(name).scheme}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00050}00050\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ scheme:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00052}00052\ \ \ \ \ \textcolor{keywordflow}{return}\ scheme\ \textcolor{keywordflow}{in}\ [\textcolor{stringliteral}{"{}http"{}},\ \textcolor{stringliteral}{"{}https"{}},\ \textcolor{stringliteral}{"{}file"{}},\ \textcolor{stringliteral}{"{}ftp"{}}]\ +\ vcs.all\_schemes}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00055}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs_1_1versioncontrol_a6e41d4121394fd65433a885aa5077d26}{00055}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs_1_1versioncontrol_a6e41d4121394fd65433a885aa5077d26}{make\_vcs\_requirement\_url}}(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00056}00056\ \ \ \ \ repo\_url:\ str,\ rev:\ str,\ project\_name:\ str,\ subdir:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00057}00057\ )\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00058}00058\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00059}00059\ \textcolor{stringliteral}{\ \ \ \ Return\ the\ URL\ for\ a\ VCS\ requirement.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00060}00060\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00061}00061\ \textcolor{stringliteral}{\ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00062}00062\ \textcolor{stringliteral}{\ \ \ \ \ \ repo\_url:\ the\ remote\ VCS\ url,\ with\ any\ needed\ VCS\ prefix\ (e.g.\ "{}git+"{}).}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00063}00063\ \textcolor{stringliteral}{\ \ \ \ \ \ project\_name:\ the\ (unescaped)\ project\ name.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00064}00064\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00065}00065\ \ \ \ \ quoted\_rev\ =\ urllib.parse.quote(rev,\ \textcolor{stringliteral}{"{}/"{}})}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00066}00066\ \ \ \ \ egg\_project\_name\ =\ project\_name.replace(\textcolor{stringliteral}{"{}-\/"{}},\ \textcolor{stringliteral}{"{}\_"{}})}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00067}00067\ \ \ \ \ req\ =\ f\textcolor{stringliteral}{"{}\{repo\_url\}@\{quoted\_rev\}\#egg=\{egg\_project\_name\}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00068}00068\ \ \ \ \ \textcolor{keywordflow}{if}\ subdir:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ req\ +=\ f\textcolor{stringliteral}{"{}\&subdirectory=\{subdir\}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00071}00071\ \ \ \ \ \textcolor{keywordflow}{return}\ req}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00072}00072\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00073}00073\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00074}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs_1_1versioncontrol_a50ec8d5fb104a58edbd80f41ba56063e}{00074}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs_1_1versioncontrol_a50ec8d5fb104a58edbd80f41ba56063e}{find\_path\_to\_project\_root\_from\_repo\_root}}(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00075}00075\ \ \ \ \ location:\ str,\ repo\_root:\ str}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00076}00076\ )\ -\/>\ str\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00077}00077\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00078}00078\ \textcolor{stringliteral}{\ \ \ \ Find\ the\ the\ Python\ project's\ root\ by\ searching\ up\ the\ filesystem\ from}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00079}00079\ \textcolor{stringliteral}{\ \ \ \ \`{}location\`{}.\ Return\ the\ path\ to\ project\ root\ relative\ to\ \`{}repo\_root\`{}.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00080}00080\ \textcolor{stringliteral}{\ \ \ \ Return\ None\ if\ the\ project\ root\ is\ \`{}repo\_root\`{},\ or\ cannot\ be\ found.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00081}00081\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00082}00082\ \ \ \ \ \textcolor{comment}{\#\ find\ project\ root.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00083}00083\ \ \ \ \ orig\_location\ =\ location}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00084}00084\ \ \ \ \ \textcolor{keywordflow}{while}\ \textcolor{keywordflow}{not}\ is\_installable\_dir(location):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ last\_location\ =\ location}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ location\ =\ os.path.dirname(location)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ location\ ==\ last\_location:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ We've\ traversed\ up\ to\ the\ root\ of\ the\ filesystem\ without}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ finding\ a\ Python\ project.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Could\ not\ find\ a\ Python\ project\ for\ directory\ \%s\ (tried\ all\ "{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}parent\ directories)"{}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00093}00093\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ orig\_location,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00094}00094\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00097}00097\ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.samefile(repo\_root,\ location):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00099}00099\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00100}00100\ \ \ \ \ \textcolor{keywordflow}{return}\ os.path.relpath(location,\ repo\_root)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00101}00101\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00102}00102\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00103}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_remote_not_found_error}{00103}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_remote_not_found_error}{RemoteNotFoundError}}(Exception):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00104}00104\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00105}00105\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00107}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_remote_not_valid_error}{00107}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_remote_not_valid_error}{RemoteNotValidError}}(Exception):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00108}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_remote_not_valid_error_a941dc6efc6572eebf4dab5a52d9f6561}{00108}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_remote_not_valid_error_a941dc6efc6572eebf4dab5a52d9f6561}{\_\_init\_\_}}(self,\ url:\ str):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_remote_not_valid_error_a941dc6efc6572eebf4dab5a52d9f6561}{\_\_init\_\_}}(url)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00110}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_remote_not_valid_error_a46f9dd59bb833cef4f8fa6011995acd6}{00110}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_remote_not_valid_error_a46f9dd59bb833cef4f8fa6011995acd6}{url}}\ =\ url}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00111}00111\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00112}00112\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00113}00113\ \textcolor{preprocessor}{@dataclass(frozen=True)}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00114}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options}{00114}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options}{RevOptions}}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00115}00115\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00116}00116\ \textcolor{stringliteral}{\ \ \ \ Encapsulates\ a\ VCS-\/specific\ revision\ to\ install,\ along\ with\ any\ VCS}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00117}00117\ \textcolor{stringliteral}{\ \ \ \ install\ options.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00118}00118\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00119}00119\ \textcolor{stringliteral}{\ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00120}00120\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ vc\_class:\ a\ VersionControl\ subclass.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00121}00121\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ rev:\ the\ name\ of\ the\ revision\ to\ install.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00122}00122\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ extra\_args:\ a\ list\ of\ extra\ options.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00123}00123\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00124}00124\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00125}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a0350ddefdb4e3482f119753c3d8f4ac6}{00125}}\ \ \ \ \ vc\_class:\ type[VersionControl]}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00126}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a80bc89c488781a513fa9160257d91270}{00126}}\ \ \ \ \ rev:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00127}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a0d026f5ec6b61371dc2c68b57c3ac519}{00127}}\ \ \ \ \ extra\_args:\ CommandArgs\ =\ field(default\_factory=list)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00128}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a2e4ca31532633249f76f55bf7f37ce6f}{00128}}\ \ \ \ \ branch\_name:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00129}00129\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00130}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_ad81b4bcc2cba883f44904ebcee0d931e}{00130}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_ad81b4bcc2cba883f44904ebcee0d931e}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00131}00131\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}<RevOptions\ \{self.vc\_class.name\}:\ rev=\{self.rev!r\}>"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00132}00132\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00133}00133\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00134}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_aa6e46baee16d225529aba75bcfb2f901}{00134}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_aa6e46baee16d225529aba75bcfb2f901}{arg\_rev}}(self)\ -\/>\ str\ |\ None:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a80bc89c488781a513fa9160257d91270}{rev}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00136}00136\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a0350ddefdb4e3482f119753c3d8f4ac6}{vc\_class}}.default\_arg\_rev}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00137}00137\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a80bc89c488781a513fa9160257d91270}{rev}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00139}00139\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00140}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_acb01da495fcdf6b6d4ca3cb8cb526084}{00140}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_acb01da495fcdf6b6d4ca3cb8cb526084}{to\_args}}(self)\ -\/>\ CommandArgs:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00142}00142\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ VCS-\/specific\ command\ arguments.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00143}00143\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ args:\ CommandArgs\ =\ []}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ rev\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_aa6e46baee16d225529aba75bcfb2f901}{arg\_rev}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ rev\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00147}00147\ \ \ \ \ \ \ \ \ \ \ \ \ args\ +=\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a0350ddefdb4e3482f119753c3d8f4ac6}{vc\_class}}.get\_base\_rev\_args(rev)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ args\ +=\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a0d026f5ec6b61371dc2c68b57c3ac519}{extra\_args}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00149}00149\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ args}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00151}00151\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00152}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a91a4bd197b68fcf7d84b291e05513d80}{00152}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a91a4bd197b68fcf7d84b291e05513d80}{to\_display}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a80bc89c488781a513fa9160257d91270}{rev}}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\ (to\ revision\ \{self.rev\})"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00157}00157\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00158}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a7177ce4daf0fd896bde96a9ee62836c7}{00158}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a7177ce4daf0fd896bde96a9ee62836c7}{make\_new}}(self,\ rev:\ str)\ -\/>\ RevOptions:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00160}00160\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Make\ a\ copy\ of\ the\ current\ instance,\ but\ with\ a\ new\ rev.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00161}00161\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00162}00162\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00163}00163\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ rev:\ the\ name\ of\ the\ revision\ for\ the\ new\ object.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00164}00164\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00165}00165\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a0350ddefdb4e3482f119753c3d8f4ac6}{vc\_class}}.make\_rev\_options(rev,\ extra\_args=self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options_a0d026f5ec6b61371dc2c68b57c3ac519}{extra\_args}})}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00167}00167\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00168}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support}{00168}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support}{VcsSupport}}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00169}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_adc8bb591115cc0ed818528ea3189f05a}{00169}}\ \ \ \ \ \_registry:\ dict[str,\ VersionControl]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00170}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_ae193e78e4092756691e32f6772bec171}{00170}}\ \ \ \ \ schemes\ =\ [\textcolor{stringliteral}{"{}ssh"{}},\ \textcolor{stringliteral}{"{}git"{}},\ \textcolor{stringliteral}{"{}hg"{}},\ \textcolor{stringliteral}{"{}bzr"{}},\ \textcolor{stringliteral}{"{}sftp"{}},\ \textcolor{stringliteral}{"{}svn"{}}]}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00171}00171\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00172}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_aa1cad7795a248d00cd5f3761283b79d8}{00172}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_aa1cad7795a248d00cd5f3761283b79d8}{\_\_init\_\_}}(self)\ -\/>\ None:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00173}00173\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Register\ more\ schemes\ with\ urlparse\ for\ various\ version\ control}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ systems}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ urllib.parse.uses\_netloc.extend(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_ae193e78e4092756691e32f6772bec171}{schemes}})}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_aa1cad7795a248d00cd5f3761283b79d8}{\_\_init\_\_}}()}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00177}00177\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00178}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a766147aa9749edda31f9fd1204972819}{00178}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a766147aa9749edda31f9fd1204972819}{\_\_iter\_\_}}(self)\ -\/>\ Iterator[str]:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_adc8bb591115cc0ed818528ea3189f05a}{\_registry}}.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a766147aa9749edda31f9fd1204972819}{\_\_iter\_\_}}()}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00180}00180\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00181}00181\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00182}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a27d5760ea9e3b2c460256b1f832c7dd7}{00182}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a0d3109884afce3cf7072d451d8260675}{backends}}(self)\ -\/>\ list[VersionControl]:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ list(self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_adc8bb591115cc0ed818528ea3189f05a}{\_registry}}.values())}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00184}00184\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00185}00185\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00186}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a953d1a55c3a6d695a6fa4736f5898c57}{00186}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a953d1a55c3a6d695a6fa4736f5898c57}{dirnames}}(self)\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ [backend.dirname\ \textcolor{keywordflow}{for}\ backend\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a0d3109884afce3cf7072d451d8260675}{backends}}]}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00188}00188\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00189}00189\ \ \ \ \ \textcolor{preprocessor}{@property}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00190}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a0747679404947b7700e59f8d9b5bc027}{00190}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a0747679404947b7700e59f8d9b5bc027}{all\_schemes}}(self)\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ schemes:\ list[str]\ =\ []}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00192}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a0d3109884afce3cf7072d451d8260675}{00192}}\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ backend\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a0d3109884afce3cf7072d451d8260675}{backends}}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00193}00193\ \ \ \ \ \ \ \ \ \ \ \ \ schemes.extend(backend.schemes)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ schemes}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00195}00195\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00196}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a062e7334e6ab8fbcf85199cec2af9a2d}{00196}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a062e7334e6ab8fbcf85199cec2af9a2d}{register}}(self,\ cls:\ type[VersionControl])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ hasattr(cls,\ \textcolor{stringliteral}{"{}name"{}}):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}Cannot\ register\ VCS\ \%s"{}},\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a26b6d68966fc2f472969497867b243ff}{\_\_name\_\_}})}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a9104e12d7b36ceb79a63a9faf17824c3}{name}}\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_adc8bb591115cc0ed818528ea3189f05a}{\_registry}}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_adc8bb591115cc0ed818528ea3189f05a}{\_registry}}[cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a9104e12d7b36ceb79a63a9faf17824c3}{name}}]\ =\ cls()}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00202}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a9104e12d7b36ceb79a63a9faf17824c3}{00202}}\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Registered\ VCS\ backend:\ \%s"{}},\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a9104e12d7b36ceb79a63a9faf17824c3}{name}})}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00203}00203\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00204}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_aec258649428b69dd4bfe3737a131df3c}{00204}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_aec258649428b69dd4bfe3737a131df3c}{unregister}}(self,\ name:\ str)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ name\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_adc8bb591115cc0ed818528ea3189f05a}{\_registry}}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ del\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_adc8bb591115cc0ed818528ea3189f05a}{\_registry}}[name]}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00207}00207\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00208}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a35d4a61e00e039eb0bfc40a446b4e8ca}{00208}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a35d4a61e00e039eb0bfc40a446b4e8ca}{get\_backend\_for\_dir}}(self,\ location:\ str)\ -\/>\ VersionControl\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00210}00210\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ a\ VersionControl\ object\ if\ a\ repository\ of\ that\ type\ is\ found}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00211}00211\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ at\ the\ given\ directory.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00212}00212\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ vcs\_backends\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ vcs\_backend\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_adc8bb591115cc0ed818528ea3189f05a}{\_registry}}.values():}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ repo\_path\ =\ vcs\_backend.get\_repository\_root(location)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ repo\_path:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Determine\ that\ \%s\ uses\ VCS:\ \%s"{}},\ location,\ vcs\_backend.name)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ vcs\_backends[repo\_path]\ =\ vcs\_backend}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00220}00220\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ vcs\_backends:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00223}00223\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Choose\ the\ VCS\ in\ the\ inner-\/most\ directory.\ Since\ all\ repository}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ roots\ found\ here\ would\ be\ either\ \`{}location`\ or\ one\ of\ its}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ parents,\ the\ longest\ path\ should\ have\ the\ most\ path\ components,}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ i.e.\ the\ backend\ representing\ the\ inner-\/most\ repository.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ inner\_most\_repo\_path\ =\ max(vcs\_backends,\ key=len)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ vcs\_backends[inner\_most\_repo\_path]}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00230}00230\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00231}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a2b1d5bd925612e3393c8c06b6c7a63b2}{00231}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_a2b1d5bd925612e3393c8c06b6c7a63b2}{get\_backend\_for\_scheme}}(self,\ scheme:\ str)\ -\/>\ VersionControl\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00233}00233\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ a\ VersionControl\ object\ or\ None.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00234}00234\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ vcs\_backend\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_adc8bb591115cc0ed818528ea3189f05a}{\_registry}}.values():}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ scheme\ \textcolor{keywordflow}{in}\ vcs\_backend.schemes:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ vcs\_backend}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00239}00239\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00240}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_ad0db7f95cece1f2b318f8dc6277d52fa}{00240}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_ad0db7f95cece1f2b318f8dc6277d52fa}{get\_backend}}(self,\ name:\ str)\ -\/>\ VersionControl\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00242}00242\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ a\ VersionControl\ object\ or\ None.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00243}00243\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ name\ =\ name.lower()}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support_adc8bb591115cc0ed818528ea3189f05a}{\_registry}}.get(name)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00246}00246\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00247}00247\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00248}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs_1_1versioncontrol_abe0917d729e813375fa39966f4eea0f3}{00248}}\ vcs\ =\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_vcs_support}{VcsSupport}}()}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00249}00249\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00250}00250\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00251}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control}{00251}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control}{VersionControl}}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00252}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ad4d195fdcc6f01601aa267ae571b4732}{00252}}\ \ \ \ \ name\ =\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00253}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_acc3c666f2e569f1b0f925a9d595c06ba}{00253}}\ \ \ \ \ dirname\ =\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00254}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ab75c1eedb3b7ac7881aefb09b1b70416}{00254}}\ \ \ \ \ repo\_name\ =\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00255}00255\ \ \ \ \ \textcolor{comment}{\#\ List\ of\ supported\ schemes\ for\ this\ Version\ Control}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00256}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a8dda8785f57d5daa870d7c1c31193f88}{00256}}\ \ \ \ \ schemes:\ tuple[str,\ ...]\ =\ ()}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00257}00257\ \ \ \ \ \textcolor{comment}{\#\ Iterable\ of\ environment\ variable\ names\ to\ pass\ to\ call\_subprocess().}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00258}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a881a5bb321544be026633f1a331bbcef}{00258}}\ \ \ \ \ unset\_environ:\ tuple[str,\ ...]\ =\ ()}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00259}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_abd68587494cb8c8958ae8e9e9ea113fd}{00259}}\ \ \ \ \ default\_arg\_rev:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00260}00260\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00261}00261\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00262}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_af5e43341d1de615d015346d5e355c825}{00262}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_af5e43341d1de615d015346d5e355c825}{should\_add\_vcs\_url\_prefix}}(cls,\ remote\_url:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00263}00263\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00264}00264\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ whether\ the\ vcs\ prefix\ (e.g.\ "{}git+"{})\ should\ be\ added\ to\ a}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00265}00265\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ repository's\ remote\ url\ when\ used\ in\ a\ requirement.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00266}00266\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordflow}{not}\ remote\_url.lower().startswith(f\textcolor{stringliteral}{"{}\{cls.name\}:"{}})}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00268}00268\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00269}00269\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00270}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ae8b07965356f0513be24a7a51c7cd5e7}{00270}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ae8b07965356f0513be24a7a51c7cd5e7}{get\_subdirectory}}(cls,\ location:\ str)\ -\/>\ str\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00272}00272\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ path\ to\ Python\ project\ root,\ relative\ to\ the\ repo\ root.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00273}00273\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ None\ if\ the\ project\ root\ is\ in\ the\ repo\ root.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00274}00274\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00276}00276\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00277}00277\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00278}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a5116b53ba150897ab9b840158fd43d6c}{00278}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a5116b53ba150897ab9b840158fd43d6c}{get\_requirement\_revision}}(cls,\ repo\_dir:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00280}00280\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ revision\ string\ that\ should\ be\ used\ in\ a\ requirement.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00281}00281\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a86efe4cde4c29f73bf01c10b2634963c}{get\_revision}}(repo\_dir)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00283}00283\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00284}00284\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00285}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a31e358b8b6c13d391d0965bc214a1013}{00285}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a31e358b8b6c13d391d0965bc214a1013}{get\_src\_requirement}}(cls,\ repo\_dir:\ str,\ project\_name:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00287}00287\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ requirement\ string\ to\ use\ to\ redownload\ the\ files}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00288}00288\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ currently\ at\ the\ given\ repository\ directory.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00289}00289\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00290}00290\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00291}00291\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ project\_name:\ the\ (unescaped)\ project\ name.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00292}00292\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00293}00293\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ return\ value\ has\ a\ form\ similar\ to\ the\ following:}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00294}00294\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00295}00295\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \{repository\_url\}@\{revision\}\#egg=\{project\_name\}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00296}00296\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00297}00297\ \ \ \ \ \ \ \ \ repo\_url\ =\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ae07b1cc6ff4b9d1a5afaa7d28cbcd4ab}{get\_remote\_url}}(repo\_dir)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00298}00298\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_af5e43341d1de615d015346d5e355c825}{should\_add\_vcs\_url\_prefix}}(repo\_url):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ \ \ \ \ repo\_url\ =\ f\textcolor{stringliteral}{"{}\{cls.name\}+\{repo\_url\}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00301}00301\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ revision\ =\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a5116b53ba150897ab9b840158fd43d6c}{get\_requirement\_revision}}(repo\_dir)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ subdir\ =\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ae8b07965356f0513be24a7a51c7cd5e7}{get\_subdirectory}}(repo\_dir)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ req\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1vcs_1_1versioncontrol_a6e41d4121394fd65433a885aa5077d26}{make\_vcs\_requirement\_url}}(repo\_url,\ revision,\ project\_name,\ subdir=subdir)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00305}00305\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ req}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00307}00307\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00308}00308\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00309}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_abe51d65ad6c0a8f62150742345da3c17}{00309}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_abe51d65ad6c0a8f62150742345da3c17}{get\_base\_rev\_args}}(rev:\ str)\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00311}00311\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ base\ revision\ arguments\ for\ a\ vcs\ command.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00312}00312\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00313}00313\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00314}00314\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ rev:\ the\ name\ of\ a\ revision\ to\ install.\ \ Cannot\ be\ None.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00315}00315\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00316}00316\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00317}00317\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00318}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a9bca3b09cf35fefb70308a1386ee1f5d}{00318}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a9bca3b09cf35fefb70308a1386ee1f5d}{is\_immutable\_rev\_checkout}}(self,\ url:\ str,\ dest:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00319}00319\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00320}00320\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ true\ if\ the\ commit\ hash\ checked\ out\ at\ dest\ matches}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00321}00321\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ the\ revision\ in\ url.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00322}00322\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00323}00323\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Always\ return\ False,\ if\ the\ VCS\ does\ not\ support\ immutable\ commit}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00324}00324\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ hashes.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00325}00325\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00326}00326\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ method\ does\ not\ check\ if\ there\ are\ local\ uncommitted\ changes}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00327}00327\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ in\ dest\ after\ checkout,\ as\ pip\ currently\ has\ no\ use\ case\ for\ that.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00328}00328\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00330}00330\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00331}00331\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00332}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_aaea202ba41adb72ef0fc26e26f390e5a}{00332}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_aaea202ba41adb72ef0fc26e26f390e5a}{make\_rev\_options}}(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ cls,\ rev:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},\ extra\_args:\ CommandArgs\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00334}00334\ \ \ \ \ )\ -\/>\ RevOptions:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00335}00335\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00336}00336\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ a\ RevOptions\ object.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00337}00337\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00338}00338\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00339}00339\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ rev:\ the\ name\ of\ a\ revision\ to\ install.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00340}00340\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ extra\_args:\ a\ list\ of\ extra\ options.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00341}00341\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_rev_options}{RevOptions}}(cls,\ rev,\ extra\_args=extra\_args\ \textcolor{keywordflow}{or}\ [])}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00343}00343\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00344}00344\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00345}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a54dc852cc52b8fb0429aa2cbc652b048}{00345}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a54dc852cc52b8fb0429aa2cbc652b048}{\_is\_local\_repository}}(cls,\ repo:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00347}00347\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ posix\ absolute\ paths\ start\ with\ os.path.sep,}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00348}00348\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ win32\ ones\ start\ with\ drive\ (like\ c:\(\backslash\)\(\backslash\)folder)}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00349}00349\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ drive,\ tail\ =\ os.path.splitdrive(repo)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ repo.startswith(os.path.sep)\ \textcolor{keywordflow}{or}\ bool(drive)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00352}00352\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00353}00353\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00354}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ade305a3d3fa39f65549808fc74323735}{00354}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ade305a3d3fa39f65549808fc74323735}{get\_netloc\_and\_auth}}(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00355}00355\ \ \ \ \ \ \ \ \ cls,\ netloc:\ str,\ scheme:\ str}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00356}00356\ \ \ \ \ )\ -\/>\ tuple[str,\ tuple[str\ |\ \textcolor{keywordtype}{None},\ str\ |\ \textcolor{keywordtype}{None}]]:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00358}00358\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Parse\ the\ repository\ URL's\ netloc,\ and\ return\ the\ new\ netloc\ to\ use}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00359}00359\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ along\ with\ auth\ information.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00360}00360\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00361}00361\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00362}00362\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ netloc:\ the\ original\ repository\ URL\ netloc.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00363}00363\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ scheme:\ the\ repository\ URL's\ scheme\ without\ the\ vcs\ prefix.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00364}00364\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00365}00365\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ is\ mainly\ for\ the\ Subversion\ class\ to\ override,\ so\ that\ auth}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00366}00366\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ information\ can\ be\ provided\ via\ the\ -\/-\/username\ and\ -\/-\/password\ options}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00367}00367\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ instead\ of\ through\ the\ URL.\ \ For\ other\ subclasses\ like\ Git\ without}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00368}00368\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ such\ an\ option,\ auth\ information\ must\ stay\ in\ the\ URL.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00369}00369\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00370}00370\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Returns:\ (netloc,\ (username,\ password)).}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00371}00371\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00372}00372\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ netloc,\ (\textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None})}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00373}00373\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00374}00374\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00375}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_acae468be41fe5106013b5c0c2a28425e}{00375}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_acae468be41fe5106013b5c0c2a28425e}{get\_url\_rev\_and\_auth}}(cls,\ url:\ str)\ -\/>\ tuple[str,\ str\ |\ \textcolor{keywordtype}{None},\ AuthInfo]:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00376}00376\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00377}00377\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Parse\ the\ repository\ URL\ to\ use,\ and\ return\ the\ URL,\ revision,}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00378}00378\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ and\ auth\ info\ to\ use.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00379}00379\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00380}00380\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Returns:\ (url,\ rev,\ (username,\ password)).}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00381}00381\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ scheme,\ netloc,\ path,\ query,\ frag\ =\ urllib.parse.urlsplit(url)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00383}00383\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}+"{}}\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ scheme:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00385}00385\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Sorry,\ \{url!r\}\ is\ a\ malformed\ VCS\ url.\ "{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00386}00386\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}The\ format\ is\ <vcs>+<protocol>://<url>,\ "{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}e.g.\ svn+http://myrepo/svn/MyApp\#egg=MyApp"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Remove\ the\ vcs\ prefix.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00390}00390\ \ \ \ \ \ \ \ \ scheme\ =\ scheme.split(\textcolor{stringliteral}{"{}+"{}},\ 1)[1]}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ netloc,\ user\_pass\ =\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ade305a3d3fa39f65549808fc74323735}{get\_netloc\_and\_auth}}(netloc,\ scheme)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00392}00392\ \ \ \ \ \ \ \ \ rev\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}@"{}}\ \textcolor{keywordflow}{in}\ path:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00394}00394\ \ \ \ \ \ \ \ \ \ \ \ \ path,\ rev\ =\ path.rsplit(\textcolor{stringliteral}{"{}@"{}},\ 1)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00395}00395\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ rev:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00396}00396\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00397}00397\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}The\ URL\ \{url!r\}\ has\ an\ empty\ revision\ (after\ @)\ "{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00398}00398\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}which\ is\ not\ supported.\ Include\ a\ revision\ after\ @\ "{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00399}00399\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}or\ remove\ @\ from\ the\ URL."{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00400}00400\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ \ \ \ \ rev\ =\ urllib.parse.unquote(rev)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ url\ =\ urllib.parse.urlunsplit((scheme,\ netloc,\ path,\ query,\ \textcolor{stringliteral}{"{}"{}}))}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ url,\ rev,\ user\_pass}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00404}00404\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00405}00405\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00406}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a672a4b3c73cf2dff7456fa345719bbca}{00406}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a672a4b3c73cf2dff7456fa345719bbca}{make\_rev\_args}}(username:\ str\ |\ \textcolor{keywordtype}{None},\ password:\ HiddenText\ |\ \textcolor{keywordtype}{None})\ -\/>\ CommandArgs:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00408}00408\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ RevOptions\ "{}extra\ arguments"{}\ to\ use\ in\ obtain().}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00409}00409\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ []}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00411}00411\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00412}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a0f7cd777b7d4faebaf82f009db5a14cd}{00412}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a0f7cd777b7d4faebaf82f009db5a14cd}{get\_url\_rev\_options}}(self,\ url:\ HiddenText)\ -\/>\ tuple[HiddenText,\ RevOptions]:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00413}00413\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00414}00414\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ URL\ and\ RevOptions\ object\ to\ use\ in\ obtain(),}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00415}00415\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ as\ a\ tuple\ (url,\ rev\_options).}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00416}00416\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ secret\_url,\ rev,\ user\_pass\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_acae468be41fe5106013b5c0c2a28425e}{get\_url\_rev\_and\_auth}}(url.secret)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ username,\ secret\_password\ =\ user\_pass}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ password:\ HiddenText\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00420}00420\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ secret\_password\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00421}00421\ \ \ \ \ \ \ \ \ \ \ \ \ password\ =\ hide\_value(secret\_password)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ extra\_args\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a672a4b3c73cf2dff7456fa345719bbca}{make\_rev\_args}}(username,\ password)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ rev\_options\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_aaea202ba41adb72ef0fc26e26f390e5a}{make\_rev\_options}}(rev,\ extra\_args=extra\_args)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00424}00424\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ hide\_url(secret\_url),\ rev\_options}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00426}00426\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00427}00427\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00428}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a39cdf68998be531ba1bc25147f022958}{00428}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a39cdf68998be531ba1bc25147f022958}{normalize\_url}}(url:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00429}00429\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00430}00430\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Normalize\ a\ URL\ for\ comparison\ by\ unquoting\ it\ and\ removing\ any}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00431}00431\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ trailing\ slash.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00432}00432\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00433}00433\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ urllib.parse.unquote(url).rstrip(\textcolor{stringliteral}{"{}/"{}})}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00434}00434\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00435}00435\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00436}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ad9e09e8deebbc75f5afa6808843b9c7c}{00436}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ad9e09e8deebbc75f5afa6808843b9c7c}{compare\_urls}}(cls,\ url1:\ str,\ url2:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00437}00437\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00438}00438\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Compare\ two\ repo\ URLs\ for\ identity,\ ignoring\ incidental\ differences.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00439}00439\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a39cdf68998be531ba1bc25147f022958}{normalize\_url}}(url1)\ ==\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a39cdf68998be531ba1bc25147f022958}{normalize\_url}}(url2)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00441}00441\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00442}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ab78371da4657e5a7b652fb600c1459aa}{00442}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ab78371da4657e5a7b652fb600c1459aa}{fetch\_new}}(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00443}00443\ \ \ \ \ \ \ \ \ self,\ dest:\ str,\ url:\ HiddenText,\ rev\_options:\ RevOptions,\ verbosity:\ int}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00444}00444\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00446}00446\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Fetch\ a\ revision\ from\ a\ repository,\ in\ the\ case\ that\ this\ is\ the}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00447}00447\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ first\ fetch\ from\ the\ repository.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00448}00448\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00449}00449\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00450}00450\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ dest:\ the\ directory\ to\ fetch\ the\ repository\ to.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00451}00451\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ rev\_options:\ a\ RevOptions\ object.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00452}00452\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ verbosity:\ verbosity\ level.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00453}00453\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00454}00454\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00455}00455\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00456}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a581fbf8d60ca3335cd7eded7069648e2}{00456}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a581fbf8d60ca3335cd7eded7069648e2}{switch}}(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00457}00457\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00458}00458\ \ \ \ \ \ \ \ \ dest:\ str,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00459}00459\ \ \ \ \ \ \ \ \ url:\ HiddenText,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00460}00460\ \ \ \ \ \ \ \ \ rev\_options:\ RevOptions,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ verbosity:\ int\ =\ 0,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00462}00462\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00463}00463\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00464}00464\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Switch\ the\ repo\ at\ \`{}\`{}dest\`{}\`{}\ to\ point\ to\ \`{}\`{}URL\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00465}00465\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00466}00466\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00467}00467\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ rev\_options:\ a\ RevOptions\ object.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00468}00468\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00469}00469\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00470}00470\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00471}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a4f639af0d322777d0893375f40e4ad3f}{00471}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a4f639af0d322777d0893375f40e4ad3f}{update}}(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00472}00472\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00473}00473\ \ \ \ \ \ \ \ \ dest:\ str,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00474}00474\ \ \ \ \ \ \ \ \ url:\ HiddenText,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00475}00475\ \ \ \ \ \ \ \ \ rev\_options:\ RevOptions,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00476}00476\ \ \ \ \ \ \ \ \ verbosity:\ int\ =\ 0,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00477}00477\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00478}00478\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00479}00479\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Update\ an\ already-\/existing\ repo\ to\ the\ given\ \`{}\`{}rev\_options\`{}\`{}.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00480}00480\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00481}00481\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00482}00482\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ rev\_options:\ a\ RevOptions\ object.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00483}00483\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00485}00485\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00486}00486\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00487}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a3ec70f6841afc9a99ca4cb0e32bfa40c}{00487}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a3ec70f6841afc9a99ca4cb0e32bfa40c}{is\_commit\_id\_equal}}(cls,\ dest:\ str,\ name:\ str\ |\ \textcolor{keywordtype}{None})\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00488}00488\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00489}00489\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ whether\ the\ id\ of\ the\ current\ commit\ equals\ the\ given\ name.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00490}00490\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00491}00491\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Args:}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00492}00492\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ dest:\ the\ repository\ directory.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00493}00493\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ name:\ a\ string\ name.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00494}00494\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00495}00495\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00496}00496\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00497}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a88bf8b3128ce08ceb24315bbd86e6791}{00497}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a88bf8b3128ce08ceb24315bbd86e6791}{obtain}}(self,\ dest:\ str,\ url:\ HiddenText,\ verbosity:\ int)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00498}00498\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00499}00499\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Install\ or\ update\ in\ editable\ mode\ the\ package\ represented\ by\ this}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00500}00500\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ VersionControl\ object.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00501}00501\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00502}00502\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ dest:\ the\ repository\ directory\ in\ which\ to\ install\ or\ update.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00503}00503\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ url:\ the\ repository\ URL\ starting\ with\ a\ vcs\ prefix.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00504}00504\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ verbosity:\ verbosity\ level.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00505}00505\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00506}00506\ \ \ \ \ \ \ \ \ url,\ rev\_options\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a0f7cd777b7d4faebaf82f009db5a14cd}{get\_url\_rev\_options}}(url)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00507}00507\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00508}00508\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ os.path.exists(dest):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00509}00509\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ab78371da4657e5a7b652fb600c1459aa}{fetch\_new}}(dest,\ url,\ rev\_options,\ verbosity=verbosity)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00510}00510\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00511}00511\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00512}00512\ \ \ \ \ \ \ \ \ rev\_display\ =\ rev\_options.to\_display()}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00513}00513\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ada4ef1f0198c17e4772bfbdb2cfd2a60}{is\_repository\_directory}}(dest):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00514}00514\ \ \ \ \ \ \ \ \ \ \ \ \ existing\_url\ =\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ae07b1cc6ff4b9d1a5afaa7d28cbcd4ab}{get\_remote\_url}}(dest)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00515}00515\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ad9e09e8deebbc75f5afa6808843b9c7c}{compare\_urls}}(existing\_url,\ url.secret):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00516}00516\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00517}00517\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\%s\ in\ \%s\ exists,\ and\ has\ correct\ URL\ (\%s)"{}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00518}00518\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ab75c1eedb3b7ac7881aefb09b1b70416}{repo\_name}}.title(),}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00519}00519\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ display\_path(dest),}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00520}00520\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ url,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00521}00521\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00522}00522\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a3ec70f6841afc9a99ca4cb0e32bfa40c}{is\_commit\_id\_equal}}(dest,\ rev\_options.rev):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00523}00523\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00524}00524\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Updating\ \%s\ \%s\%s"{}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00525}00525\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ display\_path(dest),}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00526}00526\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ab75c1eedb3b7ac7881aefb09b1b70416}{repo\_name}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00527}00527\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rev\_display,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00528}00528\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00529}00529\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a4f639af0d322777d0893375f40e4ad3f}{update}}(dest,\ url,\ rev\_options,\ verbosity=verbosity)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00530}00530\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00531}00531\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(\textcolor{stringliteral}{"{}Skipping\ because\ already\ up-\/to-\/date."{}})}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00532}00532\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00533}00533\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00534}00534\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00535}00535\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\%s\ \%s\ in\ \%s\ exists\ with\ URL\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00536}00536\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ad4d195fdcc6f01601aa267ae571b4732}{name}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00537}00537\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ab75c1eedb3b7ac7881aefb09b1b70416}{repo\_name}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00538}00538\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ display\_path(dest),}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00539}00539\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ existing\_url,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00540}00540\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00541}00541\ \ \ \ \ \ \ \ \ \ \ \ \ prompt\ =\ (\textcolor{stringliteral}{"{}(s)witch,\ (i)gnore,\ (w)ipe,\ (b)ackup\ "{}},\ (\textcolor{stringliteral}{"{}s"{}},\ \textcolor{stringliteral}{"{}i"{}},\ \textcolor{stringliteral}{"{}w"{}},\ \textcolor{stringliteral}{"{}b"{}}))}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00542}00542\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00543}00543\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00544}00544\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Directory\ \%s\ already\ exists,\ and\ is\ not\ a\ \%s\ \%s."{}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00545}00545\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dest,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00546}00546\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ad4d195fdcc6f01601aa267ae571b4732}{name}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00547}00547\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ab75c1eedb3b7ac7881aefb09b1b70416}{repo\_name}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00548}00548\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00549}00549\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ https://github.com/python/mypy/issues/1174}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00550}00550\ \ \ \ \ \ \ \ \ \ \ \ \ prompt\ =\ (\textcolor{stringliteral}{"{}(i)gnore,\ (w)ipe,\ (b)ackup\ "{}},\ (\textcolor{stringliteral}{"{}i"{}},\ \textcolor{stringliteral}{"{}w"{}},\ \textcolor{stringliteral}{"{}b"{}}))\ \ \textcolor{comment}{\#\ type:\ ignore}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00551}00551\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00552}00552\ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00553}00553\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}The\ plan\ is\ to\ install\ the\ \%s\ repository\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00554}00554\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ad4d195fdcc6f01601aa267ae571b4732}{name}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00555}00555\ \ \ \ \ \ \ \ \ \ \ \ \ url,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00556}00556\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00557}00557\ \ \ \ \ \ \ \ \ response\ =\ ask\_path\_exists(f\textcolor{stringliteral}{"{}What\ to\ do?\ \ \{prompt[0]\}"{}},\ prompt[1])}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00558}00558\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00559}00559\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ response\ ==\ \textcolor{stringliteral}{"{}a"{}}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00560}00560\ \ \ \ \ \ \ \ \ \ \ \ \ sys.exit(-\/1)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00561}00561\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00562}00562\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ response\ ==\ \textcolor{stringliteral}{"{}w"{}}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00563}00563\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}Deleting\ \%s"{}},\ display\_path(dest))}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00564}00564\ \ \ \ \ \ \ \ \ \ \ \ \ rmtree(dest)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00565}00565\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ab78371da4657e5a7b652fb600c1459aa}{fetch\_new}}(dest,\ url,\ rev\_options,\ verbosity=verbosity)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00566}00566\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00567}00567\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00568}00568\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ response\ ==\ \textcolor{stringliteral}{"{}b"{}}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00569}00569\ \ \ \ \ \ \ \ \ \ \ \ \ dest\_dir\ =\ backup\_dir(dest)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00570}00570\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}Backing\ up\ \%s\ to\ \%s"{}},\ display\_path(dest),\ dest\_dir)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00571}00571\ \ \ \ \ \ \ \ \ \ \ \ \ shutil.move(dest,\ dest\_dir)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00572}00572\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ab78371da4657e5a7b652fb600c1459aa}{fetch\_new}}(dest,\ url,\ rev\_options,\ verbosity=verbosity)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00573}00573\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00574}00574\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00575}00575\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Do\ nothing\ if\ the\ response\ is\ "{}i"{}.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00576}00576\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ response\ ==\ \textcolor{stringliteral}{"{}s"{}}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00577}00577\ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00578}00578\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Switching\ \%s\ \%s\ to\ \%s\%s"{}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00579}00579\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ab75c1eedb3b7ac7881aefb09b1b70416}{repo\_name}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00580}00580\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ display\_path(dest),}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00581}00581\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ url,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00582}00582\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ rev\_display,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00583}00583\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00584}00584\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a581fbf8d60ca3335cd7eded7069648e2}{switch}}(dest,\ url,\ rev\_options,\ verbosity=verbosity)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00585}00585\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00586}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a93e11974b6af32c11398cba87d007074}{00586}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a93e11974b6af32c11398cba87d007074}{unpack}}(self,\ location:\ str,\ url:\ HiddenText,\ verbosity:\ int)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00587}00587\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00588}00588\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Clean\ up\ current\ location\ and\ download\ the\ url\ repository}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00589}00589\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (and\ vcs\ infos)\ into\ location}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00590}00590\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00591}00591\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ url:\ the\ repository\ URL\ starting\ with\ a\ vcs\ prefix.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00592}00592\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ :param\ verbosity:\ verbosity\ level.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00593}00593\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00594}00594\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.exists(location):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00595}00595\ \ \ \ \ \ \ \ \ \ \ \ \ rmtree(location)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00596}00596\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a88bf8b3128ce08ceb24315bbd86e6791}{obtain}}(location,\ url=url,\ verbosity=verbosity)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00597}00597\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00598}00598\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00599}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ae07b1cc6ff4b9d1a5afaa7d28cbcd4ab}{00599}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ae07b1cc6ff4b9d1a5afaa7d28cbcd4ab}{get\_remote\_url}}(cls,\ location:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00600}00600\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00601}00601\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ url\ used\ at\ location}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00602}00602\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00603}00603\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Raises\ RemoteNotFoundError\ if\ the\ repository\ does\ not\ have\ a\ remote}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00604}00604\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ url\ configured.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00605}00605\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00606}00606\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00607}00607\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00608}00608\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00609}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a86efe4cde4c29f73bf01c10b2634963c}{00609}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a86efe4cde4c29f73bf01c10b2634963c}{get\_revision}}(cls,\ location:\ str)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00610}00610\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00611}00611\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ current\ commit\ id\ of\ the\ files\ at\ the\ given\ location.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00612}00612\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00613}00613\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ NotImplementedError}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00614}00614\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00615}00615\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00616}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_af51f8f8391faf3cbbe38fee09d1c89d1}{00616}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_af51f8f8391faf3cbbe38fee09d1c89d1}{run\_command}}(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00617}00617\ \ \ \ \ \ \ \ \ cls,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00618}00618\ \ \ \ \ \ \ \ \ cmd:\ list[str]\ |\ CommandArgs,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00619}00619\ \ \ \ \ \ \ \ \ show\_stdout:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00620}00620\ \ \ \ \ \ \ \ \ cwd:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00621}00621\ \ \ \ \ \ \ \ \ on\_returncode:\ Literal[\textcolor{stringliteral}{"{}raise"{}},\ \textcolor{stringliteral}{"{}warn"{}},\ \textcolor{stringliteral}{"{}ignore"{}}]\ =\ \textcolor{stringliteral}{"{}raise"{}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00622}00622\ \ \ \ \ \ \ \ \ extra\_ok\_returncodes:\ Iterable[int]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00623}00623\ \ \ \ \ \ \ \ \ command\_desc:\ str\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00624}00624\ \ \ \ \ \ \ \ \ extra\_environ:\ Mapping[str,\ Any]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00625}00625\ \ \ \ \ \ \ \ \ spinner:\ SpinnerInterface\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00626}00626\ \ \ \ \ \ \ \ \ log\_failed\_cmd:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00627}00627\ \ \ \ \ \ \ \ \ stdout\_only:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00628}00628\ \ \ \ \ )\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00629}00629\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00630}00630\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Run\ a\ VCS\ subcommand}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00631}00631\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ is\ simply\ a\ wrapper\ around\ call\_subprocess\ that\ adds\ the\ VCS}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00632}00632\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ command\ name,\ and\ checks\ that\ the\ VCS\ is\ available}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00633}00633\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00634}00634\ \ \ \ \ \ \ \ \ cmd\ =\ make\_command(cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ad4d195fdcc6f01601aa267ae571b4732}{name}},\ *cmd)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00635}00635\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ command\_desc\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00636}00636\ \ \ \ \ \ \ \ \ \ \ \ \ command\_desc\ =\ format\_command\_args(cmd)}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00637}00637\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00638}00638\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ call\_subprocess(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00639}00639\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cmd,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00640}00640\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ show\_stdout,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00641}00641\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ cwd,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00642}00642\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ on\_returncode=on\_returncode,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00643}00643\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ extra\_ok\_returncodes=extra\_ok\_returncodes,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00644}00644\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ command\_desc=command\_desc,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00645}00645\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ extra\_environ=extra\_environ,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00646}00646\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ unset\_environ=cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a881a5bb321544be026633f1a331bbcef}{unset\_environ}},}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00647}00647\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ spinner=spinner,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00648}00648\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ log\_failed\_cmd=log\_failed\_cmd,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00649}00649\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ stdout\_only=stdout\_only,}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00650}00650\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00651}00651\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ NotADirectoryError:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00652}00652\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_bad_command}{BadCommand}}(f\textcolor{stringliteral}{"{}Cannot\ find\ command\ \{cls.name!r\}\ -\/\ invalid\ PATH"{}})}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00653}00653\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ FileNotFoundError:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00654}00654\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ errno.ENOENT\ =\ no\ such\ file\ or\ directory}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00655}00655\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ In\ other\ words,\ the\ VCS\ executable\ isn't\ available}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00656}00656\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_bad_command}{BadCommand}}(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00657}00657\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Cannot\ find\ command\ \{cls.name!r\}\ -\/\ do\ you\ have\ "{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00658}00658\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{cls.name!r\}\ installed\ and\ in\ your\ PATH?"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00659}00659\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00660}00660\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ PermissionError:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00661}00661\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ errno.EACCES\ =\ Permission\ denied}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00662}00662\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ This\ error\ occurs,\ for\ instance,\ when\ the\ command\ is\ installed}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00663}00663\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ only\ for\ another\ user.\ So,\ the\ current\ user\ don't\ have}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00664}00664\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ permission\ to\ call\ the\ other\ user\ command.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00665}00665\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_bad_command}{BadCommand}}(}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00666}00666\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}No\ permission\ to\ execute\ \{cls.name!r\}\ -\/\ install\ it\ "{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00667}00667\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}locally,\ globally\ (ask\ admin),\ or\ check\ your\ PATH.\ "{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00668}00668\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}See\ possible\ solutions\ at\ "{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00669}00669\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}https://pip.pypa.io/en/latest/reference/pip\_freeze/"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00670}00670\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\#fixing-\/permission-\/denied."{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00671}00671\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00672}00672\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00673}00673\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00674}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ada4ef1f0198c17e4772bfbdb2cfd2a60}{00674}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ada4ef1f0198c17e4772bfbdb2cfd2a60}{is\_repository\_directory}}(cls,\ path:\ str)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00675}00675\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00676}00676\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ whether\ a\ directory\ path\ is\ a\ repository\ directory.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00677}00677\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00678}00678\ \ \ \ \ \ \ \ \ logger.debug(\textcolor{stringliteral}{"{}Checking\ in\ \%s\ for\ \%s\ (\%s)..."{}},\ path,\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_acc3c666f2e569f1b0f925a9d595c06ba}{dirname}},\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ad4d195fdcc6f01601aa267ae571b4732}{name}})}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00679}00679\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ os.path.exists(os.path.join(path,\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_acc3c666f2e569f1b0f925a9d595c06ba}{dirname}}))}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00680}00680\ }
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00681}00681\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00682}\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a2866787d84215e24ed1f119d3f0a905f}{00682}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_a2866787d84215e24ed1f119d3f0a905f}{get\_repository\_root}}(cls,\ location:\ str)\ -\/>\ str\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00683}00683\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00684}00684\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ "{}root"{}\ (top-\/level)\ directory\ controlled\ by\ the\ vcs,}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00685}00685\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ or\ \`{}None\`{}\ if\ the\ directory\ is\ not\ in\ any.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00686}00686\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00687}00687\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ It\ is\ meant\ to\ be\ overridden\ to\ implement\ smarter\ detection}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00688}00688\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ mechanisms\ for\ specific\ vcs.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00689}00689\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00690}00690\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ can\ do\ more\ than\ is\_repository\_directory()\ alone.\ For}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00691}00691\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ example,\ the\ Git\ override\ checks\ that\ Git\ is\ actually\ available.}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00692}00692\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00693}00693\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ cls.\doxymbox{\hyperlink{classpip_1_1__internal_1_1vcs_1_1versioncontrol_1_1_version_control_ada4ef1f0198c17e4772bfbdb2cfd2a60}{is\_repository\_directory}}(location):}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00694}00694\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ location}
+\DoxyCodeLine{\Hypertarget{versioncontrol_8py_source_l00695}00695\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+
+\end{DoxyCode}

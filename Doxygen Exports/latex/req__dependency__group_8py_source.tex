@@ -1,0 +1,81 @@
+\doxysection{req\+\_\+dependency\+\_\+group.\+py}
+\hypertarget{req__dependency__group_8py_source}{}\label{req__dependency__group_8py_source}\index{venv/Lib/site-\/packages/pip/\_internal/req/req\_dependency\_group.py@{venv/Lib/site-\/packages/pip/\_internal/req/req\_dependency\_group.py}}
+\doxymbox{\hyperlink{req__dependency__group_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00001}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group}{00001}}\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterable,\ Iterator}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00002}00002\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ Any}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00003}00003\ }
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00004}00004\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__vendor_1_1dependency__groups}{pip.\_vendor.dependency\_groups}}\ \textcolor{keyword}{import}\ DependencyGroupResolver}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00005}00005\ }
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00006}00006\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1exceptions}{pip.\_internal.exceptions}}\ \textcolor{keyword}{import}\ InstallationError}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1utils_1_1compat}{pip.\_internal.utils.compat}}\ \textcolor{keyword}{import}\ tomllib}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00010}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group_a529d03a4289fa04e31dde9837a811975}{00010}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group_a529d03a4289fa04e31dde9837a811975}{parse\_dependency\_groups}}(groups:\ list[tuple[str,\ str]])\ -\/>\ list[str]:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00011}00011\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00012}00012\ \textcolor{stringliteral}{\ \ \ \ Parse\ dependency\ groups\ data\ as\ provided\ via\ the\ CLI,\ in\ a\ \`{}[path:]group\`{}\ syntax.}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00013}00013\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00014}00014\ \textcolor{stringliteral}{\ \ \ \ Raises\ InstallationErrors\ if\ anything\ goes\ wrong.}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00015}00015\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00016}00016\ \ \ \ \ resolvers\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group_ad91817a10a12e2b9ab292946b2d3f34a}{\_build\_resolvers}}(path\ \textcolor{keywordflow}{for}\ (path,\ \_)\ \textcolor{keywordflow}{in}\ groups)}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00017}00017\ \ \ \ \ \textcolor{keywordflow}{return}\ list(\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group_a326588ee785244c7ae300efb59b04a46}{\_resolve\_all\_groups}}(resolvers,\ groups))}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00018}00018\ }
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00020}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group_a326588ee785244c7ae300efb59b04a46}{00020}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group_a326588ee785244c7ae300efb59b04a46}{\_resolve\_all\_groups}}(}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00021}00021\ \ \ \ \ resolvers:\ dict[str,\ DependencyGroupResolver],\ groups:\ list[tuple[str,\ str]]}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00022}00022\ )\ -\/>\ Iterator[str]:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00023}00023\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00024}00024\ \textcolor{stringliteral}{\ \ \ \ Run\ all\ resolution,\ converting\ any\ error\ from\ \`{}DependencyGroupResolver\`{}\ into}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00025}00025\ \textcolor{stringliteral}{\ \ \ \ an\ InstallationError.}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00026}00026\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00027}00027\ \ \ \ \ \textcolor{keywordflow}{for}\ path,\ groupname\ \textcolor{keywordflow}{in}\ groups:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00028}00028\ \ \ \ \ \ \ \ \ resolver\ =\ resolvers[path]}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00029}00029\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00030}00030\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ \textcolor{keyword}{from}\ (str(req)\ \textcolor{keywordflow}{for}\ req\ \textcolor{keywordflow}{in}\ resolver.resolve(groupname))}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00031}00031\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ (ValueError,\ TypeError,\ LookupError)\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00032}00032\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00033}00033\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}[dependency-\/groups]\ resolution\ failed\ for\ '\{groupname\}'\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00034}00034\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}from\ '\{path\}':\ \{e\}"{}}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ \ \ \ \ )\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00038}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group_ad91817a10a12e2b9ab292946b2d3f34a}{00038}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group_ad91817a10a12e2b9ab292946b2d3f34a}{\_build\_resolvers}}(paths:\ Iterable[str])\ -\/>\ dict[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00039}00039\ \ \ \ \ resolvers\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00040}00040\ \ \ \ \ \textcolor{keywordflow}{for}\ path\ \textcolor{keywordflow}{in}\ paths:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ path\ \textcolor{keywordflow}{in}\ resolvers:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ pyproject\ =\ \doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group_a8bcc8ba2e586d0585a21d37baf2942d4}{\_load\_pyproject}}(path)}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00045}00045\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}dependency-\/groups"{}}\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ pyproject:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00046}00046\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}[dependency-\/groups]\ table\ was\ missing\ from\ '\{path\}'.\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Cannot\ resolve\ '-\/-\/group'\ option."{}}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ raw\_dependency\_groups\ =\ pyproject[\textcolor{stringliteral}{"{}dependency-\/groups"{}}]}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(raw\_dependency\_groups,\ dict):}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}[dependency-\/groups]\ table\ was\ malformed\ in\ \{path\}.\ "{}}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Cannot\ resolve\ '-\/-\/group'\ option."{}}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00057}00057\ \ \ \ \ \ \ \ \ resolvers[path]\ =\ \doxymbox{\hyperlink{classpip_1_1__vendor_1_1dependency__groups_1_1__implementation_1_1_dependency_group_resolver}{DependencyGroupResolver}}(raw\_dependency\_groups)}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00058}00058\ \ \ \ \ \textcolor{keywordflow}{return}\ resolvers}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00061}\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group_a8bcc8ba2e586d0585a21d37baf2942d4}{00061}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepip_1_1__internal_1_1req_1_1req__dependency__group_a8bcc8ba2e586d0585a21d37baf2942d4}{\_load\_pyproject}}(path:\ str)\ -\/>\ dict[str,\ Any]:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00062}00062\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00063}00063\ \textcolor{stringliteral}{\ \ \ \ This\ helper\ loads\ a\ pyproject.toml\ as\ TOML.}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00064}00064\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00065}00065\ \textcolor{stringliteral}{\ \ \ \ It\ raises\ an\ InstallationError\ if\ the\ operation\ fails.}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00066}00066\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00067}00067\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ open(path,\ \textcolor{stringliteral}{"{}rb"{}})\ \textcolor{keyword}{as}\ fp:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tomllib.load(fp)}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00070}00070\ \ \ \ \ \textcolor{keywordflow}{except}\ FileNotFoundError:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(f\textcolor{stringliteral}{"{}\{path\}\ not\ found.\ Cannot\ resolve\ '-\/-\/group'\ option."{}})}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00072}00072\ \ \ \ \ \textcolor{keywordflow}{except}\ tomllib.TOMLDecodeError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(f\textcolor{stringliteral}{"{}Error\ parsing\ \{path\}:\ \{e\}"{}})\ \textcolor{keyword}{from}\ e}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00074}00074\ \ \ \ \ \textcolor{keywordflow}{except}\ OSError\ \textcolor{keyword}{as}\ e:}
+\DoxyCodeLine{\Hypertarget{req__dependency__group_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ \doxymbox{\hyperlink{classpip_1_1__internal_1_1exceptions_1_1_installation_error}{InstallationError}}(f\textcolor{stringliteral}{"{}Error\ reading\ \{path\}:\ \{e\}"{}})\ \textcolor{keyword}{from}\ e}
+
+\end{DoxyCode}

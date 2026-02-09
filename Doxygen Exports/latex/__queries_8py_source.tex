@@ -1,0 +1,490 @@
+\doxysection{\+\_\+queries.\+py}
+\hypertarget{__queries_8py_source}{}\label{__queries_8py_source}\index{venv/Lib/site-\/packages/psycopg/\_queries.py@{venv/Lib/site-\/packages/psycopg/\_queries.py}}
+\doxymbox{\hyperlink{__queries_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1__queries}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00002}00002\ \textcolor{stringliteral}{Utility\ module\ to\ manipulate\ queries}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2020\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00009}00009\ \textcolor{keyword}{import}\ re}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00010}00010\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any,\ NamedTuple,\ TypeAlias,\ TypeGuard}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00011}00011\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ lru\_cache}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00012}00012\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Callable,\ Mapping,\ Sequence}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00014}00014\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00015}00015\ \textcolor{keyword}{from}\ .\ \textcolor{keyword}{import}\ pq,\ sql}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00016}00016\ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ Buffer,\ Params,\ Query,\ QueryNoTemplate}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00017}00017\ \textcolor{keyword}{from}\ .\_enums\ \textcolor{keyword}{import}\ PyFormat}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00018}00018\ \textcolor{keyword}{from}\ .\_compat\ \textcolor{keyword}{import}\ Template}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00019}00019\ \textcolor{keyword}{from}\ .\_tstrings\ \textcolor{keyword}{import}\ TemplateProcessor}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00020}00020\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00021}00021\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00022}00022\ \ \ \ \ \textcolor{keyword}{from}\ .abc\ \textcolor{keyword}{import}\ Transformer}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00024}\doxymbox{\hyperlink{namespacepsycopg_1_1__queries_af0b58fa1a69bf86b6ec7ef4230b08c08}{00024}}\ MAX\_CACHED\_STATEMENT\_LENGTH\ =\ 4096}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00025}\doxymbox{\hyperlink{namespacepsycopg_1_1__queries_abeb0f0c4a731adeea89a1a901db9c56a}{00025}}\ MAX\_CACHED\_STATEMENT\_PARAMS\ =\ 50}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00028}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_query_part}{00028}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_query_part}{QueryPart}}(NamedTuple):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00029}00029\ \ \ \ \ pre:\ bytes}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00030}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_query_part_ab906f05084b2fb45054908635e208b86}{00030}}\ \ \ \ \ item:\ int\ |\ str}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00031}00031\ \ \ \ \ format:\ PyFormat}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00034}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query}{00034}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query}{PostgresQuery}}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00035}00035\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00036}00036\ \textcolor{stringliteral}{\ \ \ \ Helper\ to\ convert\ a\ Python\ query\ and\ parameters\ into\ Postgres\ format.}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00037}00037\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00039}00039\ \ \ \ \ \_\_slots\_\_\ =\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00040}00040\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ query\ params\ types\ formats}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00041}00041\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \_tx\ \_want\_formats\ \_parts\ \_encoding\ \_order}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00042}00042\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}.split()}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00044}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a27f68fa424cb17e700bfadd0bf9dd1ed}{00044}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a27f68fa424cb17e700bfadd0bf9dd1ed}{\_\_init\_\_}}(self,\ transformer:\ Transformer):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00045}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{00045}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}\ =\ transformer}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00046}00046\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00047}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ad00649e458c02c8616291433ec287ce7}{00047}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ad00649e458c02c8616291433ec287ce7}{params}}:\ Sequence[Buffer\ |\ \textcolor{keywordtype}{None}]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ these\ are\ tuples\ so\ they\ can\ be\ used\ as\ keys\ e.g.\ in\ prepared\ stmts}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00049}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a00bfcb903be456c23c04a0d29889a0da}{00049}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a00bfcb903be456c23c04a0d29889a0da}{types}}:\ tuple[int,\ ...]\ =\ ()}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00050}00050\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ The\ format\ requested\ by\ the\ user\ and\ the\ ones\ to\ really\ pass\ Postgres}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00052}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a7a772b1e53731e90b2f84f4eee90440a}{00052}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a7a772b1e53731e90b2f84f4eee90440a}{\_want\_formats}}:\ list[PyFormat]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00053}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac86a7cc7f716c94e0a3a5a6a0a6542d7}{00053}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac86a7cc7f716c94e0a3a5a6a0a6542d7}{formats}}:\ Sequence[\doxymbox{\hyperlink{classpsycopg_1_1pq_1_1__enums_1_1_format}{pq.Format}}]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00054}00054\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00055}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac45be61492f386eb98c58ffd9f3b284a}{00055}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac45be61492f386eb98c58ffd9f3b284a}{\_parts}}:\ list[QueryPart]}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00056}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a6126758fe417917a423025ae4a43f43c}{00056}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a6126758fe417917a423025ae4a43f43c}{query}}\ =\ b\textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00057}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_aad924f67a37bfb6bcfaa4fedf52bc3c8}{00057}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_aad924f67a37bfb6bcfaa4fedf52bc3c8}{\_order}}:\ list[str]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00059}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab240242692b7017cd7a92669a16cb436}{00059}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab240242692b7017cd7a92669a16cb436}{convert}}(self,\ query:\ Query,\ vars:\ Params\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00060}00060\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00061}00061\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Set\ up\ the\ query\ and\ parameters\ to\ convert.}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00062}00062\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00063}00063\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ results\ of\ this\ function\ can\ be\ obtained\ accessing\ the\ object}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00064}00064\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ attributes\ (\`{}query\`{},\ \`{}params\`{},\ \`{}types\`{},\ \`{}formats\`{}).}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00065}00065\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(query,\ Template):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ae535c9ef3e0f8d7a2356a6bc994c37dc}{\_convert\_template}}(query,\ vars)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00068}00068\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ query\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a1ecf65c76f1aa3015eca1e536bea6992}{\_ensure\_bytes}}(query)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ vars\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Avoid\ caching\ queries\ extremely\ long\ or\ with\ a\ huge\ number\ of}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ parameters.\ They\ are\ usually\ generated\ by\ ORMs\ and\ have\ poor}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ cacheablility\ (e.g.\ INSERT\ ...\ VALUES\ (...),\ (...)\ with\ varying}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ numbers\ of\ tuples.}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ see\ https://github.com/psycopg/psycopg/discussions/628}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00077}00077\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00078}00078\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ len(query)\ <=\ MAX\_CACHED\_STATEMENT\_LENGTH}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ len(vars)\ <=\ MAX\_CACHED\_STATEMENT\_PARAMS}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f:\ \_Query2Pg\ =\ \_query2pg}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\ =\ \_query2pg\_nocache}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \ \ \ \ (self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a6126758fe417917a423025ae4a43f43c}{query}},\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a7a772b1e53731e90b2f84f4eee90440a}{\_want\_formats}},\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_aad924f67a37bfb6bcfaa4fedf52bc3c8}{\_order}},\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac45be61492f386eb98c58ffd9f3b284a}{\_parts}})\ =\ f(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ query,\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.encoding}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a6126758fe417917a423025ae4a43f43c}{query}}\ =\ query}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a7a772b1e53731e90b2f84f4eee90440a}{\_want\_formats}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_aad924f67a37bfb6bcfaa4fedf52bc3c8}{\_order}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00091}00091\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ae549e71db1078aec1b47017a2a45d809}{dump}}(vars)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00094}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ae549e71db1078aec1b47017a2a45d809}{00094}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ae549e71db1078aec1b47017a2a45d809}{dump}}(self,\ vars:\ Params\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00096}00096\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Process\ a\ new\ set\ of\ variables\ on\ the\ query\ processed\ by\ \`{}convert()\`{}.}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00097}00097\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00098}00098\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ method\ updates\ \`{}params\`{}\ and\ \`{}types\`{}.}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00099}00099\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ vars\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ params\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a2e17c45bb3d465b5d75bd1541014d914}{validate\_and\_reorder\_params}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac45be61492f386eb98c58ffd9f3b284a}{\_parts}},\ vars,\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_aad924f67a37bfb6bcfaa4fedf52bc3c8}{\_order}})}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a7a772b1e53731e90b2f84f4eee90440a}{\_want\_formats}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ad00649e458c02c8616291433ec287ce7}{params}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.dump\_sequence(params,\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a7a772b1e53731e90b2f84f4eee90440a}{\_want\_formats}})}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a00bfcb903be456c23c04a0d29889a0da}{types}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.types\ \textcolor{keywordflow}{or}\ ()}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac86a7cc7f716c94e0a3a5a6a0a6542d7}{formats}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.formats}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ad00649e458c02c8616291433ec287ce7}{params}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a00bfcb903be456c23c04a0d29889a0da}{types}}\ =\ ()}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac86a7cc7f716c94e0a3a5a6a0a6542d7}{formats}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00110}00110\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00111}00111\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00112}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab0d23a3aec4e3e058ce8164f4482ade6}{00112}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab0d23a3aec4e3e058ce8164f4482ade6}{is\_params\_sequence}}(vars:\ Params)\ -\/>\ TypeGuard[Sequence[Any]]:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Try\ concrete\ types,\ then\ abstract\ types}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00114}00114\ \ \ \ \ \ \ \ \ t\ =\ type(vars)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ t\ \textcolor{keywordflow}{is}\ list\ \textcolor{keywordflow}{or}\ t\ \textcolor{keywordflow}{is}\ tuple:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \ \ \ \ sequence\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ t\ \textcolor{keywordflow}{is}\ dict:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \ \ \ \ sequence\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(vars,\ Sequence)\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ isinstance(vars,\ (bytes,\ str)):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \ \ \ \ sequence\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(vars,\ Mapping):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \ \ \ \ sequence\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}query\ parameters\ should\ be\ a\ sequence\ or\ a\ mapping,"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00126}00126\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ got\ \{type(vars).\_\_qualname\_\_\}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00128}00128\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ sequence}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00129}00129\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00130}00130\ \ \ \ \ \textcolor{preprocessor}{@staticmethod}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00131}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a2e17c45bb3d465b5d75bd1541014d914}{00131}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a2e17c45bb3d465b5d75bd1541014d914}{validate\_and\_reorder\_params}}(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00132}00132\ \ \ \ \ \ \ \ \ parts:\ list[QueryPart],\ vars:\ Params,\ order:\ list[str]\ |\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00133}00133\ \ \ \ \ )\ -\/>\ Sequence[Any]:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00135}00135\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Verify\ the\ compatibility\ between\ a\ query\ and\ a\ set\ of\ params.}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00136}00136\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00137}00137\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00138}00138\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ PostgresQuery.is\_params\_sequence(vars):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00139}00139\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(vars)\ !=\ len(parts)\ -\/\ 1:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}the\ query\ has\ \{len(parts)\ -\/\ 1\}\ placeholders\ but"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ \{len(vars)\}\ parameters\ were\ passed"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00143}00143\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00144}00144\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ vars\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ isinstance(parts[0].item,\ int):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(\textcolor{stringliteral}{"{}named\ placeholders\ require\ a\ mapping\ of\ parameters"{}})}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00146}00146\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ vars}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00147}00147\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ vars\ \textcolor{keywordflow}{and}\ len(parts)\ >\ 1\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ isinstance(parts[0][1],\ str):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}positional\ placeholders\ (\%s)\ require\ a\ sequence\ of\ parameters"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ order:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00155}00155\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ [vars[item]\ \textcolor{keywordflow}{for}\ item\ \textcolor{keywordflow}{in}\ order]\ \ \textcolor{comment}{\#\ type:\ ignore[call-\/overload]}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00156}00156\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ ()}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00158}00158\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ KeyError:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00161}00161\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}query\ parameter\ missing:"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00162}00162\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ \{',\ '.join(sorted(i\ for\ i\ in\ order\ or\ ()\ if\ i\ not\ in\ vars))\}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00164}00164\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00165}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a1ecf65c76f1aa3015eca1e536bea6992}{00165}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a1ecf65c76f1aa3015eca1e536bea6992}{\_ensure\_bytes}}(self,\ query:\ QueryNoTemplate)\ -\/>\ bytes:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00166}00166\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(query,\ str):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ query.encode(self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.encoding)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00168}00168\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(query,\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_composable}{sql.Composable}}):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00169}00169\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ query.as\_bytes(self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}})}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00170}00170\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00171}00171\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ query}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00172}00172\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00173}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ae535c9ef3e0f8d7a2356a6bc994c37dc}{00173}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ae535c9ef3e0f8d7a2356a6bc994c37dc}{\_convert\_template}}(self,\ query:\ Template,\ vars:\ Params\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00174}00174\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ vars\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00175}00175\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00176}00176\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}'execute()'\ with\ string\ template\ query\ doesn't\ support\ parameters"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00177}00177\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00178}00178\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00179}00179\ \ \ \ \ \ \ \ \ tp\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor}{TemplateProcessor}}(query,\ server\_params=\textcolor{keyword}{True},\ tx=self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}})}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00180}00180\ \ \ \ \ \ \ \ \ tp.process()}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a6126758fe417917a423025ae4a43f43c}{query}}\ =\ tp.query}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00182}00182\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ tp.params:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00183}00183\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ad00649e458c02c8616291433ec287ce7}{params}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.dump\_sequence(tp.params,\ tp.formats)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00184}00184\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a00bfcb903be456c23c04a0d29889a0da}{types}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.types\ \textcolor{keywordflow}{or}\ ()}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac86a7cc7f716c94e0a3a5a6a0a6542d7}{formats}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.formats}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00186}00186\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ad00649e458c02c8616291433ec287ce7}{params}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00188}00188\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a00bfcb903be456c23c04a0d29889a0da}{types}}\ =\ ()}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac86a7cc7f716c94e0a3a5a6a0a6542d7}{formats}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00190}00190\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00191}00191\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00192}00192\ \textcolor{comment}{\#\ The\ type\ of\ the\ \_query2pg()\ and\ \_query2pg\_nocache()\ methods}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00193}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_af584a191459d4ddc913572e15c772037}{00193}}\ \_Query2Pg:\ TypeAlias\ =\ Callable[}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00194}00194\ \ \ \ \ [bytes,\ str],\ \textcolor{stringliteral}{"{}tuple[bytes,\ list[PyFormat],\ list[str]\ |\ None,\ list[QueryPart]]"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00195}00195\ ]}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00196}00196\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00197}00197\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00198}\doxymbox{\hyperlink{namespacepsycopg_1_1__queries_a63f443964de699122a2470a15126ebf7}{00198}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__queries_a63f443964de699122a2470a15126ebf7}{\_query2pg\_nocache}}(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00199}00199\ \ \ \ \ query:\ bytes,\ encoding:\ str}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00200}00200\ )\ -\/>\ tuple[bytes,\ list[PyFormat],\ list[str]\ |\ \textcolor{keywordtype}{None},\ list[QueryPart]]:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00201}00201\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00202}00202\ \textcolor{stringliteral}{\ \ \ \ Convert\ Python\ query\ and\ params\ into\ something\ Postgres\ understands.}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00203}00203\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00204}00204\ \textcolor{stringliteral}{\ \ \ \ -\/\ Convert\ Python\ placeholders\ (\`{}\`{}\%s\`{}\`{},\ \`{}\`{}\%(name)s\`{}\`{})\ into\ Postgres}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00205}00205\ \textcolor{stringliteral}{\ \ \ \ \ \ format\ (\`{}\`{}\$1\`{}\`{},\ \`{}\`{}\$2\`{}\`{})}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00206}00206\ \textcolor{stringliteral}{\ \ \ \ -\/\ placeholders\ can\ be\ \%s,\ \%t,\ or\ \%b\ (auto,\ text\ or\ binary)}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00207}00207\ \textcolor{stringliteral}{\ \ \ \ -\/\ return\ \`{}\`{}query\`{}\`{}\ (bytes),\ \`{}\`{}formats\`{}\`{}\ (list\ of\ formats)\ \`{}\`{}order\`{}\`{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00208}00208\ \textcolor{stringliteral}{\ \ \ \ \ \ (sequence\ of\ names\ used\ in\ the\ query,\ in\ the\ position\ they\ appear)}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00209}00209\ \textcolor{stringliteral}{\ \ \ \ \ \ \`{}\`{}parts\`{}\`{}\ (splits\ of\ queries\ and\ placeholders).}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00210}00210\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00211}00211\ \ \ \ \ parts\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1__queries_a4c9529e1ae117f80fc5c737da608687e}{\_split\_query}}(query,\ encoding)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00212}00212\ \ \ \ \ order:\ list[str]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00213}00213\ \ \ \ \ chunks:\ list[bytes]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00214}00214\ \ \ \ \ formats\ =\ []}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00215}00215\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00216}00216\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(parts[0].item,\ int):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00217}00217\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ part\ \textcolor{keywordflow}{in}\ parts[:-\/1]:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ isinstance(part.item,\ int)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ \ \ \ \ chunks.append(part.pre)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ \ \ \ \ chunks.append(b\textcolor{stringliteral}{"{}\$\%d"{}}\ \%\ (part.item\ +\ 1))}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \ \ \ \ formats.append(part.format)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00222}00222\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00223}00223\ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(parts[0].item,\ str):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ seen:\ dict[str,\ tuple[bytes,\ PyFormat]]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ order\ =\ []}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00226}00226\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ part\ \textcolor{keywordflow}{in}\ parts[:-\/1]:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ isinstance(part.item,\ str)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00228}00228\ \ \ \ \ \ \ \ \ \ \ \ \ chunks.append(part.pre)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ part.item\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ seen:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ph\ =\ b\textcolor{stringliteral}{"{}\$\%d"{}}\ \%\ (len(seen)\ +\ 1)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ seen[part.item]\ =\ (ph,\ part.format)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ order.append(part.item)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ chunks.append(ph)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ formats.append(part.format)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ seen[part.item][1]\ !=\ part.format:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}placeholder\ '\{part.item\}'\ cannot\ have\ different\ formats"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00240}00240\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ chunks.append(seen[part.item][0])}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00241}00241\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00242}00242\ \ \ \ \ \textcolor{comment}{\#\ last\ part}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00243}00243\ \ \ \ \ chunks.append(parts[-\/1].pre)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00244}00244\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00245}00245\ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}"{}}.join(chunks),\ formats,\ order,\ parts}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00246}00246\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00247}00247\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00248}00248\ \textcolor{comment}{\#\ Note:\ the\ cache\ size\ is\ 128\ items,\ but\ someone\ has\ reported\ throwing\ \string~12k}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00249}00249\ \textcolor{comment}{\#\ queries\ (of\ type\ \`{}INSERT\ ...\ VALUES\ (...),\ (...)`\ with\ a\ varying\ amount\ of}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00250}00250\ \textcolor{comment}{\#\ records),\ and\ the\ resulting\ cache\ size\ is\ >100Mb.\ So,\ we\ will\ avoid\ to\ cache}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00251}00251\ \textcolor{comment}{\#\ large\ queries\ or\ queries\ with\ a\ large\ number\ of\ params.\ See}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00252}00252\ \textcolor{comment}{\#\ https://github.com/sqlalchemy/sqlalchemy/discussions/10270}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00253}\doxymbox{\hyperlink{namespacepsycopg_1_1__queries_ad691666a9e404dc41057c40a77f6c325}{00253}}\ \_query2pg\ =\ lru\_cache(\_query2pg\_nocache)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00254}00254\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00255}00255\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00256}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query}{00256}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query}{PostgresClientQuery}}(\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query}{PostgresQuery}}):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00257}00257\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00258}00258\ \textcolor{stringliteral}{\ \ \ \ PostgresQuery\ subclass\ merging\ query\ and\ arguments\ client-\/side.}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00259}00259\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00260}00260\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00261}00261\ \ \ \ \ \_\_slots\_\_\ =\ (\textcolor{stringliteral}{"{}template"{}},)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00262}00262\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00263}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query_abed90d6d92613a73f38601cbd0afe371}{00263}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query_abed90d6d92613a73f38601cbd0afe371}{convert}}(self,\ query:\ Query,\ vars:\ Params\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00265}00265\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Set\ up\ the\ query\ and\ parameters\ to\ convert.}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00266}00266\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00267}00267\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ The\ results\ of\ this\ function\ can\ be\ obtained\ accessing\ the\ object}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00268}00268\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ attributes\ (\`{}query\`{},\ \`{}params\`{},\ \`{}types\`{},\ \`{}formats\`{}).}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00269}00269\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00270}00270\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(query,\ Template):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00271}00271\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ae535c9ef3e0f8d7a2356a6bc994c37dc}{\_convert\_template}}(query,\ vars)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00272}00272\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00273}00273\ \ \ \ \ \ \ \ \ query\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a1ecf65c76f1aa3015eca1e536bea6992}{\_ensure\_bytes}}(query)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00274}00274\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00275}00275\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ vars\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ len(query)\ <=\ MAX\_CACHED\_STATEMENT\_LENGTH}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{and}\ len(vars)\ <=\ MAX\_CACHED\_STATEMENT\_PARAMS}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00280}00280\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f:\ \_Query2PgClient\ =\ \_query2pg\_client}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\ =\ \_query2pg\_client\_nocache}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00283}00283\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00284}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query}{00284}}\ \ \ \ \ \ \ \ \ \ \ \ \ (self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query_a0ae4e81c4a9862464e757941350be4c5}{template}},\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_aad924f67a37bfb6bcfaa4fedf52bc3c8}{\_order}},\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac45be61492f386eb98c58ffd9f3b284a}{\_parts}})\ =\ f(query,\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.encoding)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00286}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query}{00286}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a6126758fe417917a423025ae4a43f43c}{query}}\ =\ query}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00287}00287\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_aad924f67a37bfb6bcfaa4fedf52bc3c8}{\_order}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00288}00288\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00289}00289\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ae549e71db1078aec1b47017a2a45d809}{dump}}(vars)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00290}00290\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00291}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query_a414df4c9d73290c9f7d1b43b981767dc}{00291}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query_a414df4c9d73290c9f7d1b43b981767dc}{dump}}(self,\ vars:\ Params\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00292}00292\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00293}00293\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Process\ a\ new\ set\ of\ variables\ on\ the\ query\ processed\ by\ \`{}convert()\`{}.}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00294}00294\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00295}00295\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ This\ method\ updates\ \`{}params\`{}\ and\ \`{}types\`{}.}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00296}00296\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00297}00297\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ vars\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00298}00298\ \ \ \ \ \ \ \ \ \ \ \ \ params\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a2e17c45bb3d465b5d75bd1541014d914}{validate\_and\_reorder\_params}}(self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac45be61492f386eb98c58ffd9f3b284a}{\_parts}},\ vars,\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_aad924f67a37bfb6bcfaa4fedf52bc3c8}{\_order}})}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00299}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query}{00299}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ad00649e458c02c8616291433ec287ce7}{params}}\ =\ tuple(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.as\_literal(p)\ \textcolor{keywordflow}{if}\ p\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{else}\ b\textcolor{stringliteral}{"{}NULL"{}}\ \textcolor{keywordflow}{for}\ p\ \textcolor{keywordflow}{in}\ params}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a6126758fe417917a423025ae4a43f43c}{query}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query_a0ae4e81c4a9862464e757941350be4c5}{template}}\ \%\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ad00649e458c02c8616291433ec287ce7}{params}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ad00649e458c02c8616291433ec287ce7}{params}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00305}00305\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00306}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query_a81d7d5eaa87242ada43897eec0551234}{00306}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query_a81d7d5eaa87242ada43897eec0551234}{\_convert\_template}}(self,\ query:\ Template,\ vars:\ Params\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ vars\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00308}00308\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}'execute()'\ with\ string\ template\ query\ doesn't\ support\ parameters"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00311}00311\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00312}00312\ \ \ \ \ \ \ \ \ tp\ =\ \doxymbox{\hyperlink{classpsycopg_1_1__tstrings_1_1_template_processor}{TemplateProcessor}}(query,\ server\_params=\textcolor{keyword}{False},\ tx=self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}})}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ tp.process()}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00314}00314\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a6126758fe417917a423025ae4a43f43c}{query}}\ =\ tp.query}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00315}00315\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ad00649e458c02c8616291433ec287ce7}{params}}\ =\ tp.params}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00316}00316\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00317}00317\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00318}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_client_query_a72e0876a1f5d6e4ecf32136ab7fee400}{00318}}\ \_Query2PgClient:\ TypeAlias\ =\ Callable[}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00319}00319\ \ \ \ \ [bytes,\ str],\ \textcolor{stringliteral}{"{}tuple[bytes,\ list[str]\ |\ None,\ list[QueryPart]]"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00320}00320\ ]}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00321}00321\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00322}00322\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00323}\doxymbox{\hyperlink{namespacepsycopg_1_1__queries_abe7d21df0505ca1c5b9b7a6d89427181}{00323}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__queries_abe7d21df0505ca1c5b9b7a6d89427181}{\_query2pg\_client\_nocache}}(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00324}00324\ \ \ \ \ query:\ bytes,\ encoding:\ str}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00325}00325\ )\ -\/>\ tuple[bytes,\ list[str]\ |\ \textcolor{keywordtype}{None},\ list[QueryPart]]:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00326}00326\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00327}00327\ \textcolor{stringliteral}{\ \ \ \ Convert\ Python\ query\ and\ params\ into\ a\ template\ to\ perform\ client-\/side\ binding}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00328}00328\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00329}00329\ \ \ \ \ parts\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1__queries_a4c9529e1ae117f80fc5c737da608687e}{\_split\_query}}(query,\ encoding,\ collapse\_double\_percent=\textcolor{keyword}{False})}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00330}00330\ \ \ \ \ order:\ list[str]\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00331}00331\ \ \ \ \ chunks:\ list[bytes]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00332}00332\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00333}00333\ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(parts[0].item,\ int):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00334}00334\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ part\ \textcolor{keywordflow}{in}\ parts[:-\/1]:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00335}00335\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ isinstance(part.item,\ int)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00336}00336\ \ \ \ \ \ \ \ \ \ \ \ \ chunks.append(part.pre)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00337}00337\ \ \ \ \ \ \ \ \ \ \ \ \ chunks.append(b\textcolor{stringliteral}{"{}\%s"{}})}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00338}00338\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00339}00339\ \ \ \ \ \textcolor{keywordflow}{elif}\ isinstance(parts[0].item,\ str):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00340}00340\ \ \ \ \ \ \ \ \ seen:\ dict[str,\ tuple[bytes,\ PyFormat]]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00341}00341\ \ \ \ \ \ \ \ \ order\ =\ []}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00342}00342\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ part\ \textcolor{keywordflow}{in}\ parts[:-\/1]:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00343}00343\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ isinstance(part.item,\ str)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00344}00344\ \ \ \ \ \ \ \ \ \ \ \ \ chunks.append(part.pre)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00345}00345\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ part.item\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ seen:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00346}00346\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ph\ =\ b\textcolor{stringliteral}{"{}\%s"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ seen[part.item]\ =\ (ph,\ part.format)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ order.append(part.item)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ chunks.append(ph)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ chunks.append(seen[part.item][0])}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ order.append(part.item)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00353}00353\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00354}00354\ \ \ \ \ \textcolor{comment}{\#\ last\ part}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00355}00355\ \ \ \ \ chunks.append(parts[-\/1].pre)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00356}00356\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00357}00357\ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}"{}}.join(chunks),\ order,\ parts}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00358}00358\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00359}00359\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00360}\doxymbox{\hyperlink{namespacepsycopg_1_1__queries_a556d16ed135454f28b12ce2d83f4d61f}{00360}}\ \_query2pg\_client\ =\ lru\_cache(\_query2pg\_client\_nocache)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00361}00361\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00362}00362\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00363}\doxymbox{\hyperlink{namespacepsycopg_1_1__queries_a5dd95b6f7da01ce6b0a3daaa137dd52a}{00363}}\ \_re\_placeholder\ =\ re.compile(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00364}00364\ \ \ \ \ rb\textcolor{stringliteral}{"{}"{}"{}(?x)}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00365}00365\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ a\ literal\ \%}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00366}00366\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ (?:}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00367}00367\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (?:}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00368}00368\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)(\ ([\string^)]+)\ \(\backslash\))\ \ \ \#\ or\ a\ name\ in\ (braces)}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00369}00369\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ .\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ followed\ by\ a\ format}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00370}00370\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ )}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00371}00371\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ |}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00372}00372\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ (?:.)\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ or\ any\ char,\ really}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00373}00373\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ )}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00374}00374\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00375}00375\ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00376}00376\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00377}00377\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00378}\doxymbox{\hyperlink{namespacepsycopg_1_1__queries_a4c9529e1ae117f80fc5c737da608687e}{00378}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1__queries_a4c9529e1ae117f80fc5c737da608687e}{\_split\_query}}(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00379}00379\ \ \ \ \ query:\ bytes,\ encoding:\ str\ =\ \textcolor{stringliteral}{"{}ascii"{}},\ collapse\_double\_percent:\ bool\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00380}00380\ )\ -\/>\ list[QueryPart]:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00381}00381\ \ \ \ \ parts:\ list[tuple[bytes,\ re.Match[bytes]\ |\ \textcolor{keywordtype}{None}]]\ =\ []}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00382}00382\ \ \ \ \ cur\ =\ 0}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00383}00383\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00384}00384\ \ \ \ \ \textcolor{comment}{\#\ pairs\ [(fragment,\ match],\ with\ the\ last\ match\ None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00385}00385\ \ \ \ \ m\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00386}00386\ \ \ \ \ \textcolor{keywordflow}{for}\ m\ \textcolor{keywordflow}{in}\ \_re\_placeholder.finditer(query):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00387}00387\ \ \ \ \ \ \ \ \ pre\ =\ query[cur\ :\ m.span(0)[0]]}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00388}00388\ \ \ \ \ \ \ \ \ parts.append((pre,\ m))}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00389}00389\ \ \ \ \ \ \ \ \ cur\ =\ m.span(0)[1]}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00390}00390\ \ \ \ \ \textcolor{keywordflow}{if}\ m:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00391}00391\ \ \ \ \ \ \ \ \ parts.append((query[cur:],\ \textcolor{keywordtype}{None}))}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00392}00392\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00393}00393\ \ \ \ \ \ \ \ \ parts.append((query,\ \textcolor{keywordtype}{None}))}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00394}00394\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00395}00395\ \ \ \ \ rv\ =\ []}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00396}00396\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00397}00397\ \ \ \ \ \textcolor{comment}{\#\ drop\ the\ "{}\%\%"{},\ validate}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00398}00398\ \ \ \ \ i\ =\ 0}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00399}00399\ \ \ \ \ phtype\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00400}00400\ \ \ \ \ \textcolor{keywordflow}{while}\ i\ <\ len(parts):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00401}00401\ \ \ \ \ \ \ \ \ pre,\ m\ =\ parts[i]}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00402}00402\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ m\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00403}00403\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ last\ part}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00404}00404\ \ \ \ \ \ \ \ \ \ \ \ \ rv.append(\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_query_part}{QueryPart}}(pre,\ 0,\ PyFormat.AUTO))}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00405}00405\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00406}00406\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00407}00407\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (ph\ :=\ m.group(0))\ ==\ b\textcolor{stringliteral}{"{}\%\%"{}}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00408}00408\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ unescape\ '\%\%'\ to\ '\%'\ if\ necessary,\ then\ merge\ the\ parts}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00409}00409\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ collapse\_double\_percent:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00410}00410\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ph\ =\ b\textcolor{stringliteral}{"{}\%"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00411}00411\ \ \ \ \ \ \ \ \ \ \ \ \ pre1,\ m1\ =\ parts[i\ +\ 1]}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00412}00412\ \ \ \ \ \ \ \ \ \ \ \ \ parts[i\ +\ 1]\ =\ (pre\ +\ ph\ +\ pre1,\ m1)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00413}00413\ \ \ \ \ \ \ \ \ \ \ \ \ del\ parts[i]}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00414}00414\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00415}00415\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00416}00416\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ ph\ ==\ b\textcolor{stringliteral}{"{}\%("{}}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}incomplete\ placeholder:"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ '\{query[m.span(0)[0]:].split()[0].decode(encoding)\}'"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00420}00420\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00421}00421\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ ph\ ==\ b\textcolor{stringliteral}{"{}\%\ "{}}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00422}00422\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ explicit\ message\ for\ a\ typical\ error}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00423}00423\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00424}00424\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}incomplete\ placeholder:\ '\%';\ if\ you\ want\ to\ use\ '\%'\ as\ an"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00425}00425\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}\ operator\ you\ can\ double\ it\ up,\ i.e.\ use\ '\%\%'"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00426}00426\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00427}00427\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ ph[-\/1:]\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ b\textcolor{stringliteral}{"{}sbt"{}}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00428}00428\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00429}00429\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}only\ '\%s',\ '\%b',\ '\%t'\ are\ allowed\ as\ placeholders,\ got"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00430}00430\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ '\{m.group(0).decode(encoding)\}'"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00431}00431\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00432}00432\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00433}00433\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Index\ or\ name}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00434}00434\ \ \ \ \ \ \ \ \ item:\ int\ |\ str}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00435}00435\ \ \ \ \ \ \ \ \ item\ =\ m.group(1).decode(encoding)\ \textcolor{keywordflow}{if}\ m.group(1)\ \textcolor{keywordflow}{else}\ i}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00436}00436\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00437}00437\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ phtype:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00438}00438\ \ \ \ \ \ \ \ \ \ \ \ \ phtype\ =\ type(item)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00439}00439\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ phtype\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ type(item):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00440}00440\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.ProgrammingError(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00441}00441\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}positional\ and\ named\ placeholders\ cannot\ be\ mixed"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00442}00442\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00443}00443\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00444}00444\ \ \ \ \ \ \ \ \ format\ =\ \_ph\_to\_fmt[ph[-\/1:]]}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00445}00445\ \ \ \ \ \ \ \ \ rv.append(\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_query_part}{QueryPart}}(pre,\ item,\ format))}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00446}00446\ \ \ \ \ \ \ \ \ i\ +=\ 1}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00447}00447\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00448}00448\ \ \ \ \ \textcolor{keywordflow}{return}\ rv}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00449}00449\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00450}00450\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00451}\doxymbox{\hyperlink{namespacepsycopg_1_1__queries_abbf21b54c782c928650051d4a8d4294e}{00451}}\ \_ph\_to\_fmt\ =\ \{}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00452}00452\ \ \ \ \ b\textcolor{stringliteral}{"{}s"{}}:\ PyFormat.AUTO,}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00453}00453\ \ \ \ \ b\textcolor{stringliteral}{"{}t"{}}:\ PyFormat.TEXT,}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00454}00454\ \ \ \ \ b\textcolor{stringliteral}{"{}b"{}}:\ PyFormat.BINARY,}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00455}00455\ \}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00456}00456\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00457}00457\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00458}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query}{00458}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query}{PostgresRawQuery}}(\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query}{PostgresQuery}}):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00459}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query_ae59dca7d283f1d9bb8be8acd20250b69}{00459}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query_ae59dca7d283f1d9bb8be8acd20250b69}{convert}}(self,\ query:\ Query,\ vars:\ Params\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00460}00460\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(query,\ Template):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00461}00461\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ae535c9ef3e0f8d7a2356a6bc994c37dc}{\_convert\_template}}(query,\ vars)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00462}00462\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00463}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query}{00463}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a6126758fe417917a423025ae4a43f43c}{query}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a1ecf65c76f1aa3015eca1e536bea6992}{\_ensure\_bytes}}(query)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00464}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query}{00464}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a7a772b1e53731e90b2f84f4eee90440a}{\_want\_formats}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_aad924f67a37bfb6bcfaa4fedf52bc3c8}{\_order}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00465}00465\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ae549e71db1078aec1b47017a2a45d809}{dump}}(vars)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00466}00466\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00467}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query_abb9b6521f4567ae338e17744817a2b00}{00467}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query_abb9b6521f4567ae338e17744817a2b00}{dump}}(self,\ vars:\ Params\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00468}00468\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ vars\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00469}00469\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ PostgresQuery.is\_params\_sequence(vars):}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00470}00470\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(\textcolor{stringliteral}{"{}raw\ queries\ require\ a\ sequence\ of\ parameters"{}})}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00471}00471\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a7a772b1e53731e90b2f84f4eee90440a}{\_want\_formats}}\ =\ [PyFormat.AUTO]\ *\ len(vars)}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00472}00472\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00473}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query}{00473}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ad00649e458c02c8616291433ec287ce7}{params}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.dump\_sequence(vars,\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a7a772b1e53731e90b2f84f4eee90440a}{\_want\_formats}})}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00474}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query}{00474}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a00bfcb903be456c23c04a0d29889a0da}{types}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.types\ \textcolor{keywordflow}{or}\ ()}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00475}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query}{00475}}\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac86a7cc7f716c94e0a3a5a6a0a6542d7}{formats}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ab5f26a3d010b51afa30a236f9f5ff26c}{\_tx}}.formats}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00476}00476\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00477}00477\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ad00649e458c02c8616291433ec287ce7}{params}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00478}00478\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_a00bfcb903be456c23c04a0d29889a0da}{types}}\ =\ ()}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00479}00479\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_query_ac86a7cc7f716c94e0a3a5a6a0a6542d7}{formats}}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00480}00480\ }
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00481}\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query_acdb1b84a5b62421aa1c2b846c26a3df0}{00481}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1__queries_1_1_postgres_raw_query_acdb1b84a5b62421aa1c2b846c26a3df0}{\_convert\_template}}(self,\ query:\ Template,\ vars:\ Params\ |\ \textcolor{keywordtype}{None})\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00482}00482\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.NotSupportedError(}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00483}00483\ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{type(self).\_\_name\_\_\}\ doesn't\ support\ template\ strings"{}}}
+\DoxyCodeLine{\Hypertarget{__queries_8py_source_l00484}00484\ \ \ \ \ \ \ \ \ )}
+
+\end{DoxyCode}

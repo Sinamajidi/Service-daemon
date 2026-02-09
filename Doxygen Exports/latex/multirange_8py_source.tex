@@ -1,0 +1,562 @@
+\doxysection{multirange.\+py}
+\hypertarget{multirange_8py_source}{}\label{multirange_8py_source}\index{venv/Lib/site-\/packages/psycopg/types/multirange.py@{venv/Lib/site-\/packages/psycopg/types/multirange.py}}
+\doxymbox{\hyperlink{multirange_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00001}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange}{00001}}\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00002}00002\ \textcolor{stringliteral}{Support\ for\ multirange\ types\ adaptation.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00003}00003\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00005}00005\ \textcolor{comment}{\#\ Copyright\ (C)\ 2021\ The\ Psycopg\ Team}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00007}00007\ \textcolor{keyword}{from}\ \_\_future\_\_\ \textcolor{keyword}{import}\ annotations}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00009}00009\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ TYPE\_CHECKING,\ Any,\ Generic,\ overload}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00010}00010\ \textcolor{keyword}{from}\ decimal\ \textcolor{keyword}{import}\ Decimal}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00011}00011\ \textcolor{keyword}{from}\ datetime\ \textcolor{keyword}{import}\ date,\ datetime}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00012}00012\ \textcolor{keyword}{from}\ functools\ \textcolor{keyword}{import}\ cache}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00013}00013\ \textcolor{keyword}{from}\ collections.abc\ \textcolor{keyword}{import}\ Iterable,\ MutableSequence}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00014}00014\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00015}00015\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ \_oids}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00016}00016\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ errors\ \textcolor{keyword}{as}\ e}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00017}00017\ \textcolor{keyword}{from}\ ..\ \textcolor{keyword}{import}\ postgres,\ sql}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00018}00018\ \textcolor{keyword}{from}\ ..pq\ \textcolor{keyword}{import}\ Format}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00019}00019\ \textcolor{keyword}{from}\ ..abc\ \textcolor{keyword}{import}\ AdaptContext,\ Buffer,\ Dumper,\ DumperKey,\ QueryNoTemplate}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00020}00020\ \textcolor{keyword}{from}\ .range\ \textcolor{keyword}{import}\ Range,\ T,\ dump\_range\_binary,\ dump\_range\_text,\ fail\_dump}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00021}00021\ \textcolor{keyword}{from}\ .range\ \textcolor{keyword}{import}\ load\_range\_binary,\ load\_range\_text}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00022}00022\ \textcolor{keyword}{from}\ ..\_oids\ \textcolor{keyword}{import}\ INVALID\_OID,\ TEXT\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00023}00023\ \textcolor{keyword}{from}\ ..adapt\ \textcolor{keyword}{import}\ PyFormat,\ RecursiveDumper,\ RecursiveLoader}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00024}00024\ \textcolor{keyword}{from}\ ..\_struct\ \textcolor{keyword}{import}\ pack\_len,\ unpack\_len}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00025}00025\ \textcolor{keyword}{from}\ ..\_typeinfo\ \textcolor{keyword}{import}\ TypeInfo,\ TypesRegistry}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00026}00026\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00027}00027\ \textcolor{keywordflow}{if}\ TYPE\_CHECKING:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00028}00028\ \ \ \ \ \textcolor{keyword}{from}\ ..\_connection\_base\ \textcolor{keyword}{import}\ BaseConnection}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00031}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info}{00031}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info}{MultirangeInfo}}(\doxymbox{\hyperlink{classpsycopg_1_1__typeinfo_1_1_type_info}{TypeInfo}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00032}00032\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Manage\ information\ about\ a\ multirange\ type."{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00034}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_ad099146348d36bce44459dae3670bb15}{00034}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_ad099146348d36bce44459dae3670bb15}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00035}00035\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00036}00036\ \ \ \ \ \ \ \ \ name:\ str,}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ oid:\ int,}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ array\_oid:\ int,}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ *,}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ regtype:\ str\ =\ \textcolor{stringliteral}{"{}"{}},}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ range\_oid:\ int,}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ subtype\_oid:\ int,}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00043}00043\ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00044}00044\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_ad099146348d36bce44459dae3670bb15}{\_\_init\_\_}}(name,\ oid,\ array\_oid,\ regtype=regtype)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00045}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_aed09074d09cd64eaafa4e9fbbf154b71}{00045}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_aed09074d09cd64eaafa4e9fbbf154b71}{range\_oid}}\ =\ range\_oid}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00046}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_a4b98e966deeebe3956d3f216729ac3a6}{00046}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_a4b98e966deeebe3956d3f216729ac3a6}{subtype\_oid}}\ =\ subtype\_oid}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00047}00047\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00048}00048\ \ \ \ \ \textcolor{preprocessor}{@classmethod}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00049}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_a13abe40f5350b0454d6d28a3b7446900}{00049}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_a13abe40f5350b0454d6d28a3b7446900}{\_get\_info\_query}}(cls,\ conn:\ BaseConnection[Any])\ -\/>\ QueryNoTemplate:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ conn.info.server\_version\ <\ 140000:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.NotSupportedError(}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}multirange\ types\ are\ only\ available\ from\ PostgreSQL\ 14"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00054}00054\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1sql_1_1_s_q_l}{sql.SQL}}(}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00055}00055\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}\(\backslash\)}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00056}00056\ \textcolor{stringliteral}{SELECT\ t.typname\ AS\ name,\ t.oid\ AS\ oid,\ t.typarray\ AS\ array\_oid,}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00057}00057\ \textcolor{stringliteral}{\ \ \ \ t.oid::regtype::text\ AS\ regtype,}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00058}00058\ \textcolor{stringliteral}{\ \ \ \ r.rngtypid\ AS\ range\_oid,\ r.rngsubtype\ AS\ subtype\_oid}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00059}00059\ \textcolor{stringliteral}{FROM\ pg\_type\ t}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00060}00060\ \textcolor{stringliteral}{JOIN\ pg\_range\ r\ ON\ t.oid\ =\ r.rngmultitypid}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00061}00061\ \textcolor{stringliteral}{WHERE\ t.oid\ =\ \{regtype\}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00062}00062\ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00063}00063\ \ \ \ \ \ \ \ \ ).format(regtype=cls.\doxymbox{\hyperlink{classpsycopg_1_1__typeinfo_1_1_type_info_a080015df502949309bc6ab9a9b960aa5}{\_to\_regtype}}(conn))}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00064}00064\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00065}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_aa4c36049556c79d7610aeaf57223b3e1}{00065}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_aa4c36049556c79d7610aeaf57223b3e1}{\_added}}(self,\ registry:\ TypesRegistry)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Map\ multiranges\ ranges\ and\ subtypes\ to\ info}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ registry.\_registry[MultirangeInfo,\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_aed09074d09cd64eaafa4e9fbbf154b71}{range\_oid}}]\ =\ self}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ registry.\_registry[MultirangeInfo,\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_info_a4b98e966deeebe3956d3f216729ac3a6}{subtype\_oid}}]\ =\ self}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00069}00069\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00071}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange}{00071}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange}{Multirange}}(MutableSequence[Range[T]]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00072}00072\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Python\ representation\ for\ a\ PostgreSQL\ multirange\ type.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00073}00073\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00074}00074\ \textcolor{stringliteral}{\ \ \ \ :param\ items:\ Sequence\ of\ ranges\ to\ initialise\ the\ object.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00075}00075\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00076}00076\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00077}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a7738bcaed1bdabfe9197e0e988e594e6}{00077}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a7738bcaed1bdabfe9197e0e988e594e6}{\_\_init\_\_}}(self,\ items:\ Iterable[Range[T]]\ =\ ()):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00078}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aad7cfd38b6fd049a5e5e86cce5216dd3}{00078}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aad7cfd38b6fd049a5e5e86cce5216dd3}{\_ranges}}:\ list[Range[T]]\ =\ list(map(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a71e4406c3c5caa557b8dc01820bc9225}{\_check\_type}},\ items))}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00080}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a71e4406c3c5caa557b8dc01820bc9225}{00080}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a71e4406c3c5caa557b8dc01820bc9225}{\_check\_type}}(self,\ item:\ Any)\ -\/>\ Range[Any]:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(item,\ Range):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00082}00082\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}Multirange\ is\ a\ sequence\ of\ Range,\ got\ \{type(item).\_\_name\_\_\}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00084}00084\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ item}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00086}00086\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00087}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a87e2619f0f0d02c36ad3207acefc6306}{00087}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a87e2619f0f0d02c36ad3207acefc6306}{\_\_repr\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{self.\_\_class\_\_.\_\_name\_\_\}(\{self.\_ranges!r\})"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00089}00089\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00090}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_ab121140118361a833d3e458db055bb4c}{00090}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_ab121140118361a833d3e458db055bb4c}{\_\_str\_\_}}(self)\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00091}00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ f\textcolor{stringliteral}{"{}\{\{\{',\ '.join(map(str,\ self.\_ranges))\}\}\}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00093}00093\ \ \ \ \ \textcolor{preprocessor}{@overload}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00094}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a43ffaa2cd2493fdc7f0bc36dfe9fb2c6}{00094}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a43ffaa2cd2493fdc7f0bc36dfe9fb2c6}{\_\_getitem\_\_}}(self,\ index:\ int)\ -\/>\ Range[T]:\ ...}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00095}00095\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00096}00096\ \ \ \ \ \textcolor{preprocessor}{@overload}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00097}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_ad7c68c8332329902ec770c6d39ba4e80}{00097}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a43ffaa2cd2493fdc7f0bc36dfe9fb2c6}{\_\_getitem\_\_}}(self,\ index:\ slice)\ -\/>\ Multirange[T]:\ ...}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00098}00098\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00099}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a824374a692d7a085c79f41cca42c7996}{00099}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a43ffaa2cd2493fdc7f0bc36dfe9fb2c6}{\_\_getitem\_\_}}(self,\ index:\ int\ |\ slice)\ -\/>\ Range[T]\ |\ Multirange[T]:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00100}00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(index,\ int):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aad7cfd38b6fd049a5e5e86cce5216dd3}{\_ranges}}[index]}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00102}00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00103}00103\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange}{Multirange}}(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aad7cfd38b6fd049a5e5e86cce5216dd3}{\_ranges}}[index])}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00104}00104\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00105}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a4beffeeb7f78296067100958933ca146}{00105}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a4beffeeb7f78296067100958933ca146}{\_\_len\_\_}}(self)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00106}00106\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ len(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aad7cfd38b6fd049a5e5e86cce5216dd3}{\_ranges}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00107}00107\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00108}00108\ \ \ \ \ \textcolor{preprocessor}{@overload}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00109}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_ace5500b1ca9fbe3e760d74e3a3523083}{00109}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_ace5500b1ca9fbe3e760d74e3a3523083}{\_\_setitem\_\_}}(self,\ index:\ int,\ value:\ Range[T])\ -\/>\ \textcolor{keywordtype}{None}:\ ...}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00110}00110\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00111}00111\ \ \ \ \ \textcolor{preprocessor}{@overload}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00112}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aa3c16d4f76df413a15b8a5cd4dd9b095}{00112}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_ace5500b1ca9fbe3e760d74e3a3523083}{\_\_setitem\_\_}}(self,\ index:\ slice,\ value:\ Iterable[Range[T]])\ -\/>\ \textcolor{keywordtype}{None}:\ ...}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00113}00113\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00114}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a6e70353d8d6b330cae195fa3e3018b9c}{00114}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_ace5500b1ca9fbe3e760d74e3a3523083}{\_\_setitem\_\_}}(}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00115}00115\ \ \ \ \ \ \ \ \ self,\ index:\ int\ |\ slice,\ value:\ Range[T]\ |\ Iterable[Range[T]]}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00116}00116\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ isinstance(index,\ int):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00118}00118\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a71e4406c3c5caa557b8dc01820bc9225}{\_check\_type}}(value)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aad7cfd38b6fd049a5e5e86cce5216dd3}{\_ranges}}[index]\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a71e4406c3c5caa557b8dc01820bc9225}{\_check\_type}}(value)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ \textcolor{keywordflow}{not}\ isinstance(value,\ Iterable):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00121}00121\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(\textcolor{stringliteral}{"{}can\ only\ assign\ an\ iterable"{}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \ \ \ \ value\ =\ map(self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a71e4406c3c5caa557b8dc01820bc9225}{\_check\_type}},\ value)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00124}00124\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aad7cfd38b6fd049a5e5e86cce5216dd3}{\_ranges}}[index]\ =\ value}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00125}00125\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00126}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a155a53baaf02a4c94aa54e2bf7702fe4}{00126}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a155a53baaf02a4c94aa54e2bf7702fe4}{\_\_delitem\_\_}}(self,\ index:\ int\ |\ slice)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00127}00127\ \ \ \ \ \ \ \ \ del\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aad7cfd38b6fd049a5e5e86cce5216dd3}{\_ranges}}[index]}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00128}00128\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00129}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_ab882b6ff8add7516d52407753f7b53e5}{00129}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_ab882b6ff8add7516d52407753f7b53e5}{insert}}(self,\ index:\ int,\ value:\ Range[T])\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00130}00130\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aad7cfd38b6fd049a5e5e86cce5216dd3}{\_ranges}}.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_ab882b6ff8add7516d52407753f7b53e5}{insert}}(index,\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a71e4406c3c5caa557b8dc01820bc9225}{\_check\_type}}(value))}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00132}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aebbaacc8bc0cf44cb09bb0b3a9103c05}{00132}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aebbaacc8bc0cf44cb09bb0b3a9103c05}{\_\_eq\_\_}}(self,\ other:\ Any)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00133}00133\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(other,\ Multirange):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00134}00134\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00135}00135\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aad7cfd38b6fd049a5e5e86cce5216dd3}{\_ranges}}\ ==\ other.\_ranges}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00136}00136\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00137}00137\ \ \ \ \ \textcolor{comment}{\#\ Order\ is\ arbitrary\ but\ consistent}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00138}00138\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00139}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a425412c0263e3143f0589405f09c9414}{00139}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a425412c0263e3143f0589405f09c9414}{\_\_lt\_\_}}(self,\ other:\ Any)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00140}00140\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(other,\ Multirange):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00141}00141\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00142}00142\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aad7cfd38b6fd049a5e5e86cce5216dd3}{\_ranges}}\ <\ other.\_ranges}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00143}00143\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00144}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_af4b592969858976e5479c3c3f086de40}{00144}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_af4b592969858976e5479c3c3f086de40}{\_\_le\_\_}}(self,\ other:\ Any)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00145}00145\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self\ ==\ other\ \textcolor{keywordflow}{or}\ self\ <\ other\ \ \textcolor{comment}{\#\ type:\ ignore}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00147}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_ab537060ad80989efb2809860a2eafdd1}{00147}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_ab537060ad80989efb2809860a2eafdd1}{\_\_gt\_\_}}(self,\ other:\ Any)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00148}00148\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ isinstance(other,\ Multirange):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ NotImplemented}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_aad7cfd38b6fd049a5e5e86cce5216dd3}{\_ranges}}\ >\ other.\_ranges}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00151}00151\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00152}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a0be31ff3530b833931f9b01607204cd1}{00152}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_a0be31ff3530b833931f9b01607204cd1}{\_\_ge\_\_}}(self,\ other:\ Any)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self\ ==\ other\ \textcolor{keywordflow}{or}\ self\ >\ other\ \ \textcolor{comment}{\#\ type:\ ignore}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00154}00154\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00156}00156\ \textcolor{comment}{\#\ Subclasses\ to\ specify\ a\ specific\ subtype.\ Usually\ not\ needed}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00157}00157\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00158}00158\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00159}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange}{00159}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange}{Int4Multirange}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange}{Multirange}}[int]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00160}00160\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00161}00161\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00162}00162\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00163}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange}{00163}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange}{Int8Multirange}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange}{Multirange}}[int]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00164}00164\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00165}00165\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00166}00166\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00167}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange}{00167}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange}{NumericMultirange}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange}{Multirange}}[Decimal]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00168}00168\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00169}00169\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00170}00170\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00171}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange}{00171}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange}{DateMultirange}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange}{Multirange}}[date]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00172}00172\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00173}00173\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00174}00174\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00175}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange}{00175}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange}{TimestampMultirange}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange}{Multirange}}[datetime]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00176}00176\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00177}00177\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00178}00178\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00179}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamptz_multirange}{00179}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamptz_multirange}{TimestamptzMultirange}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange}{Multirange}}[datetime]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00180}00180\ \ \ \ \ \textcolor{keywordflow}{pass}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00181}00181\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00182}00182\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00183}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper}{00183}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper}{BaseMultirangeDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper}{RecursiveDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00184}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_ad25b1d1adcd76c058169c0249107aca8}{00184}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_ad25b1d1adcd76c058169c0249107aca8}{\_\_init\_\_}}(self,\ cls:\ type,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_ad25b1d1adcd76c058169c0249107aca8}{\_\_init\_\_}}(cls,\ context)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00186}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_aa9995d0dea62a9670e7b07e4ca406a8d}{00186}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_aa9995d0dea62a9670e7b07e4ca406a8d}{sub\_dumper}}:\ Dumper\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00187}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_a906ff462dfd2a0a89fdba502d77cfc0c}{00187}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_a906ff462dfd2a0a89fdba502d77cfc0c}{\_adapt\_format}}\ =\ PyFormat.from\_pq(self.\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_dumper_ac9d983458aaab925283752b945a00784}{format}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00188}00188\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00189}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_a75f496c2ba73a77880292f26a3a62eca}{00189}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_a75f496c2ba73a77880292f26a3a62eca}{get\_key}}(self,\ obj:\ Multirange[Any],\ format:\ PyFormat)\ -\/>\ DumperKey:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00190}00190\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ we\ are\ a\ subclass\ whose\ oid\ is\ specified\ we\ don't\ need\ upgrade}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ Multirange:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00192}00192\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00193}00193\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (item\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_aeabfa4e1d9ce2d7cb8f658fa1d6b8443}{\_get\_item}}(obj))\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ sd\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper_a021855189cbb42b31f1d11fb00ea07bb}{\_tx}}.get\_dumper(item,\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_a906ff462dfd2a0a89fdba502d77cfc0c}{\_adapt\_format}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00196}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper}{00196}}\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}},\ sd.get\_key(item,\ format))}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ (self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}},)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00199}00199\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00200}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_a5a9c88634744f827509fee9fb048a668}{00200}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_a5a9c88634744f827509fee9fb048a668}{upgrade}}(self,\ obj:\ Multirange[Any],\ format:\ PyFormat)\ -\/>\ BaseMultirangeDumper:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ If\ we\ are\ a\ subclass\ whose\ oid\ is\ specified\ we\ don't\ need\ upgrade}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ Multirange:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00204}00204\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (item\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_aeabfa4e1d9ce2d7cb8f658fa1d6b8443}{\_get\_item}}(obj))\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00207}00207\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00208}00208\ \ \ \ \ \ \ \ \ dumper:\ BaseMultirangeDumper}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00209}00209\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ type(item)\ \textcolor{keywordflow}{is}\ int:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ postgres\ won't\ cast\ int4range\ -\/>\ int8range\ so\ we\ must\ use}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00211}00211\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ text\ format\ and\ unknown\ oid\ here}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00212}00212\ \ \ \ \ \ \ \ \ \ \ \ \ sd\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper_a021855189cbb42b31f1d11fb00ea07bb}{\_tx}}.get\_dumper(item,\ PyFormat.TEXT)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00213}00213\ \ \ \ \ \ \ \ \ \ \ \ \ dumper\ =\ \doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_dumper}{MultirangeDumper}}(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}},\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper_a021855189cbb42b31f1d11fb00ea07bb}{\_tx}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00214}00214\ \ \ \ \ \ \ \ \ \ \ \ \ dumper.sub\_dumper\ =\ sd}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ dumper.oid\ =\ INVALID\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00216}00216\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dumper}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00217}00217\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00218}00218\ \ \ \ \ \ \ \ \ sd\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper_a021855189cbb42b31f1d11fb00ea07bb}{\_tx}}.get\_dumper(item,\ format)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00219}00219\ \ \ \ \ \ \ \ \ dumper\ =\ type(self)(self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_dumper_ac98951067cff8572453e986caa5c8e6b}{cls}},\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper_a021855189cbb42b31f1d11fb00ea07bb}{\_tx}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00220}00220\ \ \ \ \ \ \ \ \ dumper.sub\_dumper\ =\ sd}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00221}00221\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ sd.oid\ ==\ INVALID\_OID\ \textcolor{keywordflow}{and}\ isinstance(item,\ str):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00222}00222\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Work\ around\ the\ normal\ mapping\ where\ text\ is\ dumped\ as\ unknown}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00223}00223\ \ \ \ \ \ \ \ \ \ \ \ \ dumper.oid\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_acac4fc0e8fd3b2ffb3adf7e6a3954286}{\_get\_multirange\_oid}}(TEXT\_OID)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \ \ \ \ dumper.oid\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_acac4fc0e8fd3b2ffb3adf7e6a3954286}{\_get\_multirange\_oid}}(sd.oid)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00226}00226\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00227}00227\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dumper}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00228}00228\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00229}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_aeabfa4e1d9ce2d7cb8f658fa1d6b8443}{00229}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_aeabfa4e1d9ce2d7cb8f658fa1d6b8443}{\_get\_item}}(self,\ obj:\ Multirange[Any])\ -\/>\ Any:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00231}00231\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ a\ member\ representative\ of\ the\ multirange}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00232}00232\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ r\ \textcolor{keywordflow}{in}\ obj:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00234}00234\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ r.lower\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00235}00235\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ r.lower}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ r.upper\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ r.upper}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00239}00239\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00240}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_acac4fc0e8fd3b2ffb3adf7e6a3954286}{00240}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_acac4fc0e8fd3b2ffb3adf7e6a3954286}{\_get\_multirange\_oid}}(self,\ sub\_oid:\ int)\ -\/>\ int:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00241}00241\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00242}00242\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Return\ the\ oid\ of\ the\ range\ from\ the\ oid\ of\ its\ elements.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00243}00243\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00244}00244\ \ \ \ \ \ \ \ \ info\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper_a021855189cbb42b31f1d11fb00ea07bb}{\_tx}}.adapters.types.get\_by\_subtype(MultirangeInfo,\ sub\_oid)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00245}00245\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ info.oid\ \textcolor{keywordflow}{if}\ info\ \textcolor{keywordflow}{else}\ INVALID\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00246}00246\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00247}00247\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00248}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_dumper}{00248}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_dumper}{MultirangeDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper}{BaseMultirangeDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00249}00249\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00250}00250\ \textcolor{stringliteral}{\ \ \ \ Dumper\ for\ multirange\ types.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00251}00251\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00252}00252\ \textcolor{stringliteral}{\ \ \ \ The\ dumper\ can\ upgrade\ to\ one\ specific\ for\ a\ different\ range\ type.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00253}00253\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00254}00254\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00255}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_dumper_aba9cf14dc18aaf358746de08138d6e5b}{00255}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_dumper_aba9cf14dc18aaf358746de08138d6e5b}{dump}}(self,\ obj:\ Multirange[Any])\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ obj:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}\{\}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00258}00258\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (item\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_aeabfa4e1d9ce2d7cb8f658fa1d6b8443}{\_get\_item}}(obj))\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ dump\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper_a021855189cbb42b31f1d11fb00ea07bb}{\_tx}}.get\_dumper(item,\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_a906ff462dfd2a0a89fdba502d77cfc0c}{\_adapt\_format}}).dump}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ dump\ =\ fail\_dump}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00263}00263\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ out:\ list[Buffer]\ =\ [b\textcolor{stringliteral}{"{}\{"{}}]}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00265}00265\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ r\ \textcolor{keywordflow}{in}\ obj:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00266}00266\ \ \ \ \ \ \ \ \ \ \ \ \ out.append(dump\_range\_text(r,\ dump))}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00267}00267\ \ \ \ \ \ \ \ \ \ \ \ \ out.append(b\textcolor{stringliteral}{"{},"{}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00268}00268\ \ \ \ \ \ \ \ \ out[-\/1]\ =\ b\textcolor{stringliteral}{"{}\}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00269}00269\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}"{}}.join(out)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00270}00270\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00271}00271\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00272}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_dumper}{00272}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_dumper}{MultirangeBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper}{BaseMultirangeDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00273}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_dumper}{00273}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00274}00274\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00275}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_dumper_a9ed0a10e4feddae0f66b7f3862b29c3f}{00275}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_dumper_a9ed0a10e4feddae0f66b7f3862b29c3f}{dump}}(self,\ obj:\ Multirange[Any])\ -\/>\ Buffer\ |\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00276}00276\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (item\ :=\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_aeabfa4e1d9ce2d7cb8f658fa1d6b8443}{\_get\_item}}(obj))\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ \ \ \ \ dump\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_dumper_a021855189cbb42b31f1d11fb00ea07bb}{\_tx}}.get\_dumper(item,\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_dumper_a906ff462dfd2a0a89fdba502d77cfc0c}{\_adapt\_format}}).dump}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00278}00278\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00279}00279\ \ \ \ \ \ \ \ \ \ \ \ \ dump\ =\ fail\_dump}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00280}00280\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00281}00281\ \ \ \ \ \ \ \ \ out:\ list[Buffer]\ =\ [pack\_len(len(obj))]}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ r\ \textcolor{keywordflow}{in}\ obj:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ \ \ \ \ data\ =\ dump\_range\_binary(r,\ dump)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ \ \ \ \ out.append(pack\_len(len(data)))}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00285}00285\ \ \ \ \ \ \ \ \ \ \ \ \ out.append(data)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00286}00286\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ b\textcolor{stringliteral}{"{}"{}}.join(out)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00287}00287\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00288}00288\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00289}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_loader}{00289}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_loader}{BaseMultirangeLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_loader}{RecursiveLoader}},\ Generic[T]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00290}00290\ \ \ \ \ subtype\_oid:\ int}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00291}00291\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00292}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_loader_ac4763f002e21a697b2fc9866d6ad27ce}{00292}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_loader_ac4763f002e21a697b2fc9866d6ad27ce}{\_\_init\_\_}}(self,\ oid:\ int,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00293}00293\ \ \ \ \ \ \ \ \ super().\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_loader_ac4763f002e21a697b2fc9866d6ad27ce}{\_\_init\_\_}}(oid,\ context)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00294}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_loader_a2599c587bf13cbebbc3979de017e4651}{00294}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_loader_a2599c587bf13cbebbc3979de017e4651}{\_load}}\ =\ self.\doxymbox{\hyperlink{classpsycopg_1_1adapt_1_1_recursive_loader_a4dcd8c5ee39af9c60dcf6191321992f0}{\_tx}}.get\_loader(self.subtype\_oid,\ format=self.\doxymbox{\hyperlink{classpsycopg_1_1abc_1_1_loader_a553af3dff71f160dafaa4265aabd0e40}{format}}).load}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00295}00295\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00296}00296\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00297}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_loader}{00297}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_loader}{MultirangeLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_loader}{BaseMultirangeLoader}}[T]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00298}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_loader_a6ed7f1f81805a12837bfe2acfb524a7f}{00298}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_loader_a6ed7f1f81805a12837bfe2acfb524a7f}{load}}(self,\ data:\ Buffer)\ -\/>\ Multirange[T]:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ data\ \textcolor{keywordflow}{or}\ data[0]\ !=\ \_START\_INT:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.DataError(}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}malformed\ multirange\ starting\ with"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\ \{bytes(data[:1]).decode('utf8',\ 'replace')\}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00304}00304\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00305}00305\ \ \ \ \ \ \ \ \ out\ =\ Multirange[T]()}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ data\ ==\ b\textcolor{stringliteral}{"{}\{\}"{}}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00307}00307\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ out}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00308}00308\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ pos\ =\ 1}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00310}00310\ \ \ \ \ \ \ \ \ data\ =\ data[pos:]}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00311}00311\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00312}00312\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ \textcolor{keyword}{True}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ r,\ pos\ =\ load\_range\_text(data,\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_loader_a2599c587bf13cbebbc3979de017e4651}{\_load}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00314}00314\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ out.append(r)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00315}00315\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00316}00316\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ sep\ =\ data[pos]\ \ \textcolor{comment}{\#\ can\ raise\ IndexError}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ sep\ ==\ \_SEP\_INT:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00318}00318\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ data\ =\ data[pos\ +\ 1\ :]}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00319}00319\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ sep\ ==\ \_END\_INT:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ len(data)\ ==\ pos\ +\ 1:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ out}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00323}00323\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.DataError(}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00325}00325\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}malformed\ multirange:\ data\ after\ closing\ brace"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00326}00326\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00327}00327\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.DataError(}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}malformed\ multirange:\ found\ unexpected\ \{chr(sep)\}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00331}00331\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00332}00332\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ IndexError:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.DataError(\textcolor{stringliteral}{"{}malformed\ multirange:\ separator\ missing"{}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00334}00334\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00335}00335\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ out}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00336}00336\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00337}00337\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00338}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_abc01cef6c6448f77e8b13ff67a2d12b8}{00338}}\ \_SEP\_INT\ =\ ord(\textcolor{stringliteral}{"{},"{}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00339}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_ad8ab746d7cfc30bbcb020ee02c927671}{00339}}\ \_START\_INT\ =\ ord(\textcolor{stringliteral}{"{}\{"{}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00340}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_a9ced7d2eec8d1db3d3775237c4339c4d}{00340}}\ \_END\_INT\ =\ ord(\textcolor{stringliteral}{"{}\}"{}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00341}00341\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00342}00342\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00343}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_loader}{00343}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_loader}{MultirangeBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_loader}{BaseMultirangeLoader}}[T]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00344}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_loader}{00344}}\ \ \ \ \ format\ =\ Format.BINARY}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00345}00345\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00346}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_loader_a6444528c163dd6ca0496ab2e3814b080}{00346}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_loader_a6444528c163dd6ca0496ab2e3814b080}{load}}(self,\ data:\ Buffer)\ -\/>\ Multirange[T]:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00347}00347\ \ \ \ \ \ \ \ \ nelems\ =\ unpack\_len(data,\ 0)[0]}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00348}00348\ \ \ \ \ \ \ \ \ pos\ =\ 4}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00349}00349\ \ \ \ \ \ \ \ \ out\ =\ Multirange[T]()}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00350}00350\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ i\ \textcolor{keywordflow}{in}\ range(nelems):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00351}00351\ \ \ \ \ \ \ \ \ \ \ \ \ length\ =\ unpack\_len(data,\ pos)[0]}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00352}00352\ \ \ \ \ \ \ \ \ \ \ \ \ pos\ +=\ 4}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00353}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_loader}{00353}}\ \ \ \ \ \ \ \ \ \ \ \ \ out.append(load\_range\_binary(data[pos\ :\ pos\ +\ length],\ self.\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_base_multirange_loader_a2599c587bf13cbebbc3979de017e4651}{\_load}}))}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00354}00354\ \ \ \ \ \ \ \ \ \ \ \ \ pos\ +=\ length}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00355}00355\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00356}00356\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ pos\ !=\ len(data):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00357}00357\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ e.DataError(\textcolor{stringliteral}{"{}unexpected\ trailing\ data\ in\ multirange"{}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00358}00358\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00359}00359\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ out}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00360}00360\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00361}00361\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00362}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_a21de6ec1b32fc450da6d7c138d93078a}{00362}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_a21de6ec1b32fc450da6d7c138d93078a}{register\_multirange}}(}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00363}00363\ \ \ \ \ info:\ MultirangeInfo,\ context:\ AdaptContext\ |\ \textcolor{keywordtype}{None}\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00364}00364\ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00365}00365\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Register\ the\ adapters\ to\ load\ and\ dump\ a\ multirange\ type.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00366}00366\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00367}00367\ \textcolor{stringliteral}{\ \ \ \ :param\ info:\ The\ object\ with\ the\ information\ about\ the\ range\ to\ register.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00368}00368\ \textcolor{stringliteral}{\ \ \ \ :param\ context:\ The\ context\ where\ to\ register\ the\ adapters.\ If\ \`{}!None\`{},}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00369}00369\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ register\ it\ globally.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00370}00370\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00371}00371\ \textcolor{stringliteral}{\ \ \ \ Register\ loaders\ so\ that\ loading\ data\ of\ this\ type\ will\ result\ in\ a\ \`{}Range\`{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00372}00372\ \textcolor{stringliteral}{\ \ \ \ with\ bounds\ parsed\ as\ the\ right\ subtype.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00373}00373\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00374}00374\ \textcolor{stringliteral}{\ \ \ \ ..\ note::}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00375}00375\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00376}00376\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Registering\ the\ adapters\ doesn't\ affect\ objects\ already\ created,\ even}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00377}00377\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ if\ they\ are\ children\ of\ the\ registered\ context.\ For\ instance,}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00378}00378\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ registering\ the\ adapter\ globally\ doesn't\ affect\ already\ existing}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00379}00379\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ connections.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00380}00380\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00381}00381\ \ \ \ \ \textcolor{comment}{\#\ A\ friendly\ error\ warning\ instead\ of\ an\ AttributeError\ in\ case\ fetch()}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00382}00382\ \ \ \ \ \textcolor{comment}{\#\ failed\ and\ it\ wasn't\ noticed.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00383}00383\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ info:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00384}00384\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ TypeError(\textcolor{stringliteral}{"{}no\ info\ passed.\ Is\ the\ requested\ multirange\ available?"{}})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00385}00385\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00386}00386\ \ \ \ \ \textcolor{comment}{\#\ Register\ arrays\ and\ type\ info}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00387}00387\ \ \ \ \ info.register(context)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00388}00388\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00389}00389\ \ \ \ \ adapters\ =\ context.adapters\ \textcolor{keywordflow}{if}\ context\ \textcolor{keywordflow}{else}\ postgres.adapters}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00390}00390\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00391}00391\ \ \ \ \ \textcolor{comment}{\#\ generate\ and\ register\ a\ customized\ text\ loader}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00392}00392\ \ \ \ \ loader:\ type[BaseMultirangeLoader[Any]]}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00393}00393\ \ \ \ \ loader\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_a1d624ee32ee88f297d84701afc353984}{\_make\_loader}}(info.name,\ info.subtype\_oid)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00394}00394\ \ \ \ \ adapters.register\_loader(info.oid,\ loader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00395}00395\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00396}00396\ \ \ \ \ \textcolor{comment}{\#\ generate\ and\ register\ a\ customized\ binary\ loader}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00397}00397\ \ \ \ \ loader\ =\ \doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_aff1db7bc543220edab0a4952a424c9d7}{\_make\_binary\_loader}}(info.name,\ info.subtype\_oid)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00398}00398\ \ \ \ \ adapters.register\_loader(info.oid,\ loader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00399}00399\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00400}00400\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00401}00401\ \textcolor{comment}{\#\ Cache\ all\ dynamically-\/generated\ types\ to\ avoid\ leaks\ in\ case\ the\ types}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00402}00402\ \textcolor{comment}{\#\ cannot\ be\ GC'd.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00403}00403\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00404}00404\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00405}00405\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00406}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_a1d624ee32ee88f297d84701afc353984}{00406}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_a1d624ee32ee88f297d84701afc353984}{\_make\_loader}}(name:\ str,\ oid:\ int)\ -\/>\ type[MultirangeLoader[Any]]:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00407}00407\ \ \ \ \ \textcolor{keywordflow}{return}\ type(f\textcolor{stringliteral}{"{}\{name.title()\}Loader"{}},\ (MultirangeLoader,),\ \{\textcolor{stringliteral}{"{}subtype\_oid"{}}:\ oid\})}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00408}00408\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00409}00409\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00410}00410\ \textcolor{preprocessor}{@cache}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00411}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_aff1db7bc543220edab0a4952a424c9d7}{00411}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_aff1db7bc543220edab0a4952a424c9d7}{\_make\_binary\_loader}}(name:\ str,\ oid:\ int)\ -\/>\ type[MultirangeBinaryLoader[Any]]:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00412}00412\ \ \ \ \ \textcolor{keywordflow}{return}\ type(}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00413}00413\ \ \ \ \ \ \ \ \ f\textcolor{stringliteral}{"{}\{name.title()\}BinaryLoader"{}},\ (MultirangeBinaryLoader,),\ \{\textcolor{stringliteral}{"{}subtype\_oid"{}}:\ oid\}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00414}00414\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00415}00415\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00416}00416\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00417}00417\ \textcolor{comment}{\#\ Text\ dumpers\ for\ builtin\ multirange\ types\ wrappers}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00418}00418\ \textcolor{comment}{\#\ These\ are\ registered\ on\ specific\ subtypes\ so\ that\ the\ upgrade\ mechanism}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00419}00419\ \textcolor{comment}{\#\ doesn't\ kick\ in.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00420}00420\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00421}00421\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00422}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange_dumper}{00422}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange_dumper}{Int4MultirangeDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_dumper}{MultirangeDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00423}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange_dumper}{00423}}\ \ \ \ \ oid\ =\ \_oids.INT4MULTIRANGE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00424}00424\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00425}00425\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00426}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange_dumper}{00426}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange_dumper}{Int8MultirangeDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_dumper}{MultirangeDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00427}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange_dumper}{00427}}\ \ \ \ \ oid\ =\ \_oids.INT8MULTIRANGE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00428}00428\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00429}00429\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00430}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange_dumper}{00430}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange_dumper}{NumericMultirangeDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_dumper}{MultirangeDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00431}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange_dumper}{00431}}\ \ \ \ \ oid\ =\ \_oids.NUMMULTIRANGE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00432}00432\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00433}00433\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00434}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange_dumper}{00434}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange_dumper}{DateMultirangeDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_dumper}{MultirangeDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00435}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange_dumper}{00435}}\ \ \ \ \ oid\ =\ \_oids.DATEMULTIRANGE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00436}00436\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00437}00437\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00438}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange_dumper}{00438}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange_dumper}{TimestampMultirangeDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_dumper}{MultirangeDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00439}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange_dumper}{00439}}\ \ \ \ \ oid\ =\ \_oids.TSMULTIRANGE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00440}00440\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00441}00441\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00442}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamptz_multirange_dumper}{00442}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamptz_multirange_dumper}{TimestamptzMultirangeDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_dumper}{MultirangeDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00443}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamptz_multirange_dumper}{00443}}\ \ \ \ \ oid\ =\ \_oids.TSTZMULTIRANGE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00444}00444\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00445}00445\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00446}00446\ \textcolor{comment}{\#\ Binary\ dumpers\ for\ builtin\ multirange\ types\ wrappers}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00447}00447\ \textcolor{comment}{\#\ These\ are\ registered\ on\ specific\ subtypes\ so\ that\ the\ upgrade\ mechanism}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00448}00448\ \textcolor{comment}{\#\ doesn't\ kick\ in.}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00449}00449\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00450}00450\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00451}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange_binary_dumper}{00451}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange_binary_dumper}{Int4MultirangeBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_dumper}{MultirangeBinaryDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00452}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange_binary_dumper}{00452}}\ \ \ \ \ oid\ =\ \_oids.INT4MULTIRANGE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00453}00453\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00454}00454\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00455}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange_binary_dumper}{00455}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange_binary_dumper}{Int8MultirangeBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_dumper}{MultirangeBinaryDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00456}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange_binary_dumper}{00456}}\ \ \ \ \ oid\ =\ \_oids.INT8MULTIRANGE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00457}00457\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00458}00458\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00459}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange_binary_dumper}{00459}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange_binary_dumper}{NumericMultirangeBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_dumper}{MultirangeBinaryDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00460}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange_binary_dumper}{00460}}\ \ \ \ \ oid\ =\ \_oids.NUMMULTIRANGE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00461}00461\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00462}00462\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00463}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange_binary_dumper}{00463}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange_binary_dumper}{DateMultirangeBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_dumper}{MultirangeBinaryDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00464}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange_binary_dumper}{00464}}\ \ \ \ \ oid\ =\ \_oids.DATEMULTIRANGE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00465}00465\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00466}00466\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00467}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange_binary_dumper}{00467}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange_binary_dumper}{TimestampMultirangeBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_dumper}{MultirangeBinaryDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00468}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange_binary_dumper}{00468}}\ \ \ \ \ oid\ =\ \_oids.TSMULTIRANGE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00469}00469\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00470}00470\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00471}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamptz_multirange_binary_dumper}{00471}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamptz_multirange_binary_dumper}{TimestamptzMultirangeBinaryDumper}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_dumper}{MultirangeBinaryDumper}}):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00472}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamptz_multirange_binary_dumper}{00472}}\ \ \ \ \ oid\ =\ \_oids.TSTZMULTIRANGE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00473}00473\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00474}00474\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00475}00475\ \textcolor{comment}{\#\ Text\ loaders\ for\ builtin\ multirange\ types}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00476}00476\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00477}00477\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00478}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange_loader}{00478}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange_loader}{Int4MultirangeLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_loader}{MultirangeLoader}}[int]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00479}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange_loader_ac7c75d116f2abc6bbe83308385649b08}{00479}}\ \ \ \ \ subtype\_oid\ =\ \_oids.INT4\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00480}00480\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00481}00481\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00482}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange_loader}{00482}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange_loader}{Int8MultirangeLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_loader}{MultirangeLoader}}[int]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00483}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange_loader_a7cfd756fd9d2cba18b2dede3f0ed32dc}{00483}}\ \ \ \ \ subtype\_oid\ =\ \_oids.INT8\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00484}00484\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00485}00485\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00486}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange_loader}{00486}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange_loader}{NumericMultirangeLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_loader}{MultirangeLoader}}[Decimal]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00487}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange_loader_a551cbf8746ab3131a6ae9546f516773f}{00487}}\ \ \ \ \ subtype\_oid\ =\ \_oids.NUMERIC\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00488}00488\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00489}00489\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00490}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange_loader}{00490}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange_loader}{DateMultirangeLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_loader}{MultirangeLoader}}[date]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00491}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange_loader_aa2837a811ec426d1333a6f702bbb2dc6}{00491}}\ \ \ \ \ subtype\_oid\ =\ \_oids.DATE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00492}00492\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00493}00493\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00494}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange_loader}{00494}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange_loader}{TimestampMultirangeLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_loader}{MultirangeLoader}}[datetime]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00495}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange_loader_ad40972220f12c965846e6eab12c01d4e}{00495}}\ \ \ \ \ subtype\_oid\ =\ \_oids.TIMESTAMP\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00496}00496\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00497}00497\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00498}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_t_z_multirange_loader}{00498}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_t_z_multirange_loader}{TimestampTZMultirangeLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_loader}{MultirangeLoader}}[datetime]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00499}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_t_z_multirange_loader_a296221d8026dd67c36c4c66ae2039580}{00499}}\ \ \ \ \ subtype\_oid\ =\ \_oids.TIMESTAMPTZ\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00500}00500\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00501}00501\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00502}00502\ \textcolor{comment}{\#\ Binary\ loaders\ for\ builtin\ multirange\ types}}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00503}00503\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00504}00504\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00505}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange_binary_loader}{00505}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange_binary_loader}{Int4MultirangeBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_loader}{MultirangeBinaryLoader}}[int]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00506}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int4_multirange_binary_loader_a8a308f82bec52a7dd133c4cab4426d55}{00506}}\ \ \ \ \ subtype\_oid\ =\ \_oids.INT4\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00507}00507\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00508}00508\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00509}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange_binary_loader}{00509}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange_binary_loader}{Int8MultirangeBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_loader}{MultirangeBinaryLoader}}[int]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00510}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_int8_multirange_binary_loader_a0332ad1c73b3358d20da7e6342b526ef}{00510}}\ \ \ \ \ subtype\_oid\ =\ \_oids.INT8\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00511}00511\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00512}00512\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00513}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange_binary_loader}{00513}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange_binary_loader}{NumericMultirangeBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_loader}{MultirangeBinaryLoader}}[Decimal]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00514}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_numeric_multirange_binary_loader_a2b928c7b22c2d7d892ff236f3c2aa039}{00514}}\ \ \ \ \ subtype\_oid\ =\ \_oids.NUMERIC\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00515}00515\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00516}00516\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00517}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange_binary_loader}{00517}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange_binary_loader}{DateMultirangeBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_loader}{MultirangeBinaryLoader}}[date]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00518}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_date_multirange_binary_loader_a41b16581f6daf6e38ffa65c8a5092a0d}{00518}}\ \ \ \ \ subtype\_oid\ =\ \_oids.DATE\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00519}00519\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00520}00520\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00521}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange_binary_loader}{00521}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange_binary_loader}{TimestampMultirangeBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_loader}{MultirangeBinaryLoader}}[datetime]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00522}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_multirange_binary_loader_a015899b795262a7c5aba87d2ca61defd}{00522}}\ \ \ \ \ subtype\_oid\ =\ \_oids.TIMESTAMP\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00523}00523\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00524}00524\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00525}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_t_z_multirange_binary_loader}{00525}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_t_z_multirange_binary_loader}{TimestampTZMultirangeBinaryLoader}}(\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_multirange_binary_loader}{MultirangeBinaryLoader}}[datetime]):}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00526}\doxymbox{\hyperlink{classpsycopg_1_1types_1_1multirange_1_1_timestamp_t_z_multirange_binary_loader_a1371329436c83cce1a2094135824dd6b}{00526}}\ \ \ \ \ subtype\_oid\ =\ \_oids.TIMESTAMPTZ\_OID}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00527}00527\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00528}00528\ }
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00529}\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_aed69c49de889ecbffb5ed2ebea9778b9}{00529}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacepsycopg_1_1types_1_1multirange_aed69c49de889ecbffb5ed2ebea9778b9}{register\_default\_adapters}}(context:\ AdaptContext)\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00530}00530\ \ \ \ \ adapters\ =\ context.adapters}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00531}00531\ \ \ \ \ adapters.register\_dumper(Multirange,\ MultirangeBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00532}00532\ \ \ \ \ adapters.register\_dumper(Multirange,\ MultirangeDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00533}00533\ \ \ \ \ adapters.register\_dumper(Int4Multirange,\ Int4MultirangeDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00534}00534\ \ \ \ \ adapters.register\_dumper(Int8Multirange,\ Int8MultirangeDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00535}00535\ \ \ \ \ adapters.register\_dumper(NumericMultirange,\ NumericMultirangeDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00536}00536\ \ \ \ \ adapters.register\_dumper(DateMultirange,\ DateMultirangeDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00537}00537\ \ \ \ \ adapters.register\_dumper(TimestampMultirange,\ TimestampMultirangeDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00538}00538\ \ \ \ \ adapters.register\_dumper(TimestamptzMultirange,\ TimestamptzMultirangeDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00539}00539\ \ \ \ \ adapters.register\_dumper(Int4Multirange,\ Int4MultirangeBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00540}00540\ \ \ \ \ adapters.register\_dumper(Int8Multirange,\ Int8MultirangeBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00541}00541\ \ \ \ \ adapters.register\_dumper(NumericMultirange,\ NumericMultirangeBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00542}00542\ \ \ \ \ adapters.register\_dumper(DateMultirange,\ DateMultirangeBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00543}00543\ \ \ \ \ adapters.register\_dumper(TimestampMultirange,\ TimestampMultirangeBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00544}00544\ \ \ \ \ adapters.register\_dumper(TimestamptzMultirange,\ TimestamptzMultirangeBinaryDumper)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00545}00545\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}int4multirange"{}},\ Int4MultirangeLoader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00546}00546\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}int8multirange"{}},\ Int8MultirangeLoader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00547}00547\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}nummultirange"{}},\ NumericMultirangeLoader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00548}00548\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}datemultirange"{}},\ DateMultirangeLoader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00549}00549\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}tsmultirange"{}},\ TimestampMultirangeLoader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00550}00550\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}tstzmultirange"{}},\ TimestampTZMultirangeLoader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00551}00551\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}int4multirange"{}},\ Int4MultirangeBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00552}00552\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}int8multirange"{}},\ Int8MultirangeBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00553}00553\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}nummultirange"{}},\ NumericMultirangeBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00554}00554\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}datemultirange"{}},\ DateMultirangeBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00555}00555\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}tsmultirange"{}},\ TimestampMultirangeBinaryLoader)}
+\DoxyCodeLine{\Hypertarget{multirange_8py_source_l00556}00556\ \ \ \ \ adapters.register\_loader(\textcolor{stringliteral}{"{}tstzmultirange"{}},\ TimestampTZMultirangeBinaryLoader)}
+
+\end{DoxyCode}

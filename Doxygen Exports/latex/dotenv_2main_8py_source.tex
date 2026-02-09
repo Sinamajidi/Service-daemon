@@ -1,0 +1,441 @@
+\doxysection{main.\+py}
+\hypertarget{dotenv_2main_8py_source}{}\label{dotenv_2main_8py_source}\index{venv/Lib/site-\/packages/dotenv/main.py@{venv/Lib/site-\/packages/dotenv/main.py}}
+\doxymbox{\hyperlink{dotenv_2main_8py}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00001}\doxymbox{\hyperlink{namespacedotenv_1_1main}{00001}}\ \textcolor{keyword}{import}\ io}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00002}00002\ \textcolor{keyword}{import}\ logging}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00003}00003\ \textcolor{keyword}{import}\ os}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00004}00004\ \textcolor{keyword}{import}\ pathlib}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00005}00005\ \textcolor{keyword}{import}\ shutil}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00006}00006\ \textcolor{keyword}{import}\ stat}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00007}00007\ \textcolor{keyword}{import}\ sys}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00008}00008\ \textcolor{keyword}{import}\ tempfile}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00009}00009\ \textcolor{keyword}{from}\ collections\ \textcolor{keyword}{import}\ OrderedDict}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00010}00010\ \textcolor{keyword}{from}\ contextlib\ \textcolor{keyword}{import}\ contextmanager}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00011}00011\ \textcolor{keyword}{from}\ typing\ \textcolor{keyword}{import}\ IO,\ Dict,\ Iterable,\ Iterator,\ Mapping,\ Optional,\ Tuple,\ Union}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00013}00013\ \textcolor{keyword}{from}\ .parser\ \textcolor{keyword}{import}\ Binding,\ parse\_stream}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00014}00014\ \textcolor{keyword}{from}\ .variables\ \textcolor{keyword}{import}\ parse\_variables}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00015}00015\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00016}00016\ \textcolor{comment}{\#\ A\ type\ alias\ for\ a\ string\ path\ to\ be\ used\ for\ the\ paths\ in\ this\ file.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00017}00017\ \textcolor{comment}{\#\ These\ paths\ may\ flow\ to\ \`{}open()`\ and\ \`{}shutil.move()`;\ \`{}shutil.move()`}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00018}00018\ \textcolor{comment}{\#\ only\ accepts\ string\ paths,\ not\ byte\ paths\ or\ file\ descriptors.\ See}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00019}00019\ \textcolor{comment}{\#\ https://github.com/python/typeshed/pull/6832.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00020}\doxymbox{\hyperlink{namespacedotenv_1_1main_af39f7fdaa07349edcc675749154daff2}{00020}}\ StrPath\ =\ Union[str,\ \textcolor{stringliteral}{"{}os.PathLike[str]"{}}]}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00022}\doxymbox{\hyperlink{namespacedotenv_1_1main_a39d464eefdd9dd018d2af2ea382ea07d}{00022}}\ logger\ =\ logging.getLogger(\_\_name\_\_)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00025}\doxymbox{\hyperlink{namespacedotenv_1_1main_aad56c29f2201906b93a02e062ee11d2c}{00025}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1main_aad56c29f2201906b93a02e062ee11d2c}{\_load\_dotenv\_disabled}}()\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00026}00026\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00027}00027\ \textcolor{stringliteral}{\ \ \ \ Determine\ if\ dotenv\ loading\ has\ been\ disabled.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00028}00028\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00029}00029\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{stringliteral}{"{}PYTHON\_DOTENV\_DISABLED"{}}\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ os.environ:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00030}00030\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00031}00031\ \ \ \ \ value\ =\ os.environ[\textcolor{stringliteral}{"{}PYTHON\_DOTENV\_DISABLED"{}}].casefold()}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00032}00032\ \ \ \ \ \textcolor{keywordflow}{return}\ value\ \textcolor{keywordflow}{in}\ \{\textcolor{stringliteral}{"{}1"{}},\ \textcolor{stringliteral}{"{}true"{}},\ \textcolor{stringliteral}{"{}t"{}},\ \textcolor{stringliteral}{"{}yes"{}},\ \textcolor{stringliteral}{"{}y"{}}\}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00035}\doxymbox{\hyperlink{namespacedotenv_1_1main_aade1e3c3f17afe4a355c196deb639329}{00035}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1main_aade1e3c3f17afe4a355c196deb639329}{with\_warn\_for\_invalid\_lines}}(mappings:\ Iterator[Binding])\ -\/>\ Iterator[Binding]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00036}00036\ \ \ \ \ \textcolor{keywordflow}{for}\ mapping\ \textcolor{keywordflow}{in}\ mappings:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00037}00037\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ mapping.error:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00038}00038\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00039}00039\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}python-\/dotenv\ could\ not\ parse\ statement\ starting\ at\ line\ \%s"{}},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00040}00040\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ mapping.original.line,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00041}00041\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00042}00042\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ mapping}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00043}00043\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00044}00044\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00045}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env}{00045}}\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env}{DotEnv}}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00046}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a773c558c7edaa9c9593262cedfeae118}{00046}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a773c558c7edaa9c9593262cedfeae118}{\_\_init\_\_}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00047}00047\ \ \ \ \ \ \ \ \ self,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00048}00048\ \ \ \ \ \ \ \ \ dotenv\_path:\ Optional[StrPath],}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00049}00049\ \ \ \ \ \ \ \ \ stream:\ Optional[IO[str]]\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00050}00050\ \ \ \ \ \ \ \ \ verbose:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00051}00051\ \ \ \ \ \ \ \ \ encoding:\ Optional[str]\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00052}00052\ \ \ \ \ \ \ \ \ interpolate:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00053}00053\ \ \ \ \ \ \ \ \ override:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00054}00054\ \ \ \ \ )\ -\/>\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00055}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a855d7e3a51331a42b81707bdcd8f2f15}{00055}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a855d7e3a51331a42b81707bdcd8f2f15}{dotenv\_path}}:\ Optional[StrPath]\ =\ dotenv\_path}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00056}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a3338466ccc5857497c9fa817483d26cd}{00056}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a3338466ccc5857497c9fa817483d26cd}{stream}}:\ Optional[IO[str]]\ =\ stream}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00057}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ae8d70b46a9de270e0ac049411eac2c5d}{00057}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ae8d70b46a9de270e0ac049411eac2c5d}{\_dict}}:\ Optional[Dict[str,\ Optional[str]]]\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00058}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a9bb26839e4dd8bbfb9ef2d6d1c43848a}{00058}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a9bb26839e4dd8bbfb9ef2d6d1c43848a}{verbose}}:\ bool\ =\ verbose}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00059}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ab565ec3b5abe7121b507ebe2c91a03a2}{00059}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ab565ec3b5abe7121b507ebe2c91a03a2}{encoding}}:\ Optional[str]\ =\ encoding}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00060}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a6cee2af7f3cc2166195d9b89695d3a2d}{00060}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a6cee2af7f3cc2166195d9b89695d3a2d}{interpolate}}:\ bool\ =\ interpolate}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00061}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ab49754e72018e810a51c22506ad35460}{00061}}\ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ab49754e72018e810a51c22506ad35460}{override}}:\ bool\ =\ override}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00062}00062\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00063}00063\ \ \ \ \ \textcolor{preprocessor}{@contextmanager}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00064}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a7f81134d193366824625999089092b51}{00064}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a7f81134d193366824625999089092b51}{\_get\_stream}}(self)\ -\/>\ Iterator[IO[str]]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00065}00065\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a855d7e3a51331a42b81707bdcd8f2f15}{dotenv\_path}}\ \textcolor{keywordflow}{and}\ \doxymbox{\hyperlink{namespacedotenv_1_1main_a22dcc78630931ed8c59805c2806763c2}{\_is\_file\_or\_fifo}}(self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a855d7e3a51331a42b81707bdcd8f2f15}{dotenv\_path}}):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ open(self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a855d7e3a51331a42b81707bdcd8f2f15}{dotenv\_path}},\ encoding=self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ab565ec3b5abe7121b507ebe2c91a03a2}{encoding}})\ \textcolor{keyword}{as}\ stream:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00067}00067\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ stream}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00068}00068\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{elif}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a3338466ccc5857497c9fa817483d26cd}{stream}}\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00069}00069\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a3338466ccc5857497c9fa817483d26cd}{stream}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00070}00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00071}00071\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a9bb26839e4dd8bbfb9ef2d6d1c43848a}{verbose}}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00072}00072\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ logger.info(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00073}00073\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}python-\/dotenv\ could\ not\ find\ configuration\ file\ \%s."{}},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00074}00074\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a855d7e3a51331a42b81707bdcd8f2f15}{dotenv\_path}}\ \textcolor{keywordflow}{or}\ \textcolor{stringliteral}{"{}.env"{}},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00075}00075\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00076}00076\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ io.StringIO(\textcolor{stringliteral}{"{}"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00077}00077\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00078}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_af5d79a7bd47549e62d52d1fd82256728}{00078}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_af5d79a7bd47549e62d52d1fd82256728}{dict}}(self)\ -\/>\ Dict[str,\ Optional[str]]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00079}00079\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Return\ dotenv\ as\ dict"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00080}00080\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ae8d70b46a9de270e0ac049411eac2c5d}{\_dict}}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00081}00081\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ae8d70b46a9de270e0ac049411eac2c5d}{\_dict}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00083}00083\ \ \ \ \ \ \ \ \ raw\_values\ =\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a0689decdf0a8e2fbace88f38b0046c84}{parse}}()}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00085}00085\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a6cee2af7f3cc2166195d9b89695d3a2d}{interpolate}}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00086}00086\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ae8d70b46a9de270e0ac049411eac2c5d}{\_dict}}\ =\ OrderedDict(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00087}00087\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacedotenv_1_1main_a4cf437fc83373925a070bec997eaa612}{resolve\_variables}}(raw\_values,\ override=self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ab49754e72018e810a51c22506ad35460}{override}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00088}00088\ \ \ \ \ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00089}00089\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00090}00090\ \ \ \ \ \ \ \ \ \ \ \ \ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ae8d70b46a9de270e0ac049411eac2c5d}{\_dict}}\ =\ OrderedDict(raw\_values)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00091}00091\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00092}00092\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ae8d70b46a9de270e0ac049411eac2c5d}{\_dict}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00093}00093\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00094}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a0689decdf0a8e2fbace88f38b0046c84}{00094}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a0689decdf0a8e2fbace88f38b0046c84}{parse}}(self)\ -\/>\ Iterator[Tuple[str,\ Optional[str]]]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00095}00095\ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a7f81134d193366824625999089092b51}{\_get\_stream}}()\ \textcolor{keyword}{as}\ stream:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00096}00096\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ mapping\ \textcolor{keywordflow}{in}\ \doxymbox{\hyperlink{namespacedotenv_1_1main_aade1e3c3f17afe4a355c196deb639329}{with\_warn\_for\_invalid\_lines}}(parse\_stream(stream)):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00097}00097\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ mapping.key\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00098}00098\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ mapping.key,\ mapping.value}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00099}00099\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00100}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a15870cb69ab993d7cbe9c39f44deed41}{00100}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a15870cb69ab993d7cbe9c39f44deed41}{set\_as\_environment\_variables}}(self)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00101}00101\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00102}00102\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Load\ the\ current\ dotenv\ as\ system\ environment\ variable.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00103}00103\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00104}00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_af5d79a7bd47549e62d52d1fd82256728}{dict}}():}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00105}00105\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00107}00107\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ k,\ v\ \textcolor{keywordflow}{in}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_af5d79a7bd47549e62d52d1fd82256728}{dict}}().items():}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00108}00108\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ k\ \textcolor{keywordflow}{in}\ os.environ\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ab49754e72018e810a51c22506ad35460}{override}}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00109}00109\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{continue}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00110}00110\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ v\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00111}00111\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ os.environ[k]\ =\ v}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00112}00112\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00113}00113\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00114}00114\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00115}\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ab37b03ec8bfcfeb348abf5b28dfced0a}{00115}}\ \ \ \ \ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_ab37b03ec8bfcfeb348abf5b28dfced0a}{get}}(self,\ key:\ str)\ -\/>\ Optional[str]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00116}00116\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}\ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00117}00117\ \ \ \ \ \ \ \ \ data\ =\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_af5d79a7bd47549e62d52d1fd82256728}{dict}}()}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00118}00118\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00119}00119\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ key\ \textcolor{keywordflow}{in}\ data:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00120}00120\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ data[key]}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00122}00122\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a9bb26839e4dd8bbfb9ef2d6d1c43848a}{verbose}}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00123}00123\ \ \ \ \ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}Key\ \%s\ not\ found\ in\ \%s."{}},\ key,\ self.\doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env_a855d7e3a51331a42b81707bdcd8f2f15}{dotenv\_path}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00124}00124\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00125}00125\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00126}00126\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00127}00127\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00128}\doxymbox{\hyperlink{namespacedotenv_1_1main_a49ef9099eb85903aaa093dea8dc3049c}{00128}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1main_a49ef9099eb85903aaa093dea8dc3049c}{get\_key}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00129}00129\ \ \ \ \ dotenv\_path:\ StrPath,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00130}00130\ \ \ \ \ key\_to\_get:\ str,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00131}00131\ \ \ \ \ encoding:\ Optional[str]\ =\ \textcolor{stringliteral}{"{}utf-\/8"{}},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00132}00132\ )\ -\/>\ Optional[str]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00133}00133\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00134}00134\ \textcolor{stringliteral}{\ \ \ \ Get\ the\ value\ of\ a\ given\ key\ from\ the\ given\ .env.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00135}00135\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00136}00136\ \textcolor{stringliteral}{\ \ \ \ Returns\ \`{}None\`{}\ if\ the\ key\ isn't\ found\ or\ doesn't\ have\ a\ value.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00137}00137\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00138}00138\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env}{DotEnv}}(dotenv\_path,\ verbose=\textcolor{keyword}{True},\ encoding=encoding).get(key\_to\_get)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00139}00139\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00140}00140\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00141}00141\ \textcolor{preprocessor}{@contextmanager}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00142}\doxymbox{\hyperlink{namespacedotenv_1_1main_acd83bbfc9100907cc2ebc39cf338e36a}{00142}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1main_acd83bbfc9100907cc2ebc39cf338e36a}{rewrite}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00143}00143\ \ \ \ \ path:\ StrPath,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00144}00144\ \ \ \ \ encoding:\ Optional[str],}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00145}00145\ )\ -\/>\ Iterator[Tuple[IO[str],\ IO[str]]]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00146}00146\ \ \ \ \ pathlib.Path(path).touch()}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00147}00147\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00148}00148\ \ \ \ \ \textcolor{keyword}{with}\ tempfile.NamedTemporaryFile(mode=\textcolor{stringliteral}{"{}w"{}},\ encoding=encoding,\ delete=\textcolor{keyword}{False})\ \textcolor{keyword}{as}\ dest:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00149}00149\ \ \ \ \ \ \ \ \ error\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00150}00150\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00151}00151\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{with}\ open(path,\ encoding=encoding)\ \textcolor{keyword}{as}\ source:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00152}00152\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ (source,\ dest)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00153}00153\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ BaseException\ \textcolor{keyword}{as}\ err:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00154}00154\ \ \ \ \ \ \ \ \ \ \ \ \ error\ =\ err}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00155}00155\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00156}00156\ \ \ \ \ \textcolor{keywordflow}{if}\ error\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00157}00157\ \ \ \ \ \ \ \ \ shutil.move(dest.name,\ path)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00158}00158\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00159}00159\ \ \ \ \ \ \ \ \ os.unlink(dest.name)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00160}00160\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ error\ \textcolor{keyword}{from}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00161}00161\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00162}00162\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00163}\doxymbox{\hyperlink{namespacedotenv_1_1main_a1288fc2cc3d8dde78bedd4449ed1ae47}{00163}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1main_a1288fc2cc3d8dde78bedd4449ed1ae47}{set\_key}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00164}00164\ \ \ \ \ dotenv\_path:\ StrPath,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00165}00165\ \ \ \ \ key\_to\_set:\ str,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00166}00166\ \ \ \ \ value\_to\_set:\ str,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00167}00167\ \ \ \ \ quote\_mode:\ str\ =\ \textcolor{stringliteral}{"{}always"{}},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00168}00168\ \ \ \ \ export:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00169}00169\ \ \ \ \ encoding:\ Optional[str]\ =\ \textcolor{stringliteral}{"{}utf-\/8"{}},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00170}00170\ )\ -\/>\ Tuple[Optional[bool],\ str,\ str]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00171}00171\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00172}00172\ \textcolor{stringliteral}{\ \ \ \ Adds\ or\ Updates\ a\ key/value\ to\ the\ given\ .env}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00173}00173\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00174}00174\ \textcolor{stringliteral}{\ \ \ \ If\ the\ .env\ path\ given\ doesn't\ exist,\ fails\ instead\ of\ risking\ creating}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00175}00175\ \textcolor{stringliteral}{\ \ \ \ an\ orphan\ .env\ somewhere\ in\ the\ filesystem}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00176}00176\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00177}00177\ \ \ \ \ \textcolor{keywordflow}{if}\ quote\_mode\ \textcolor{keywordflow}{not}\ \textcolor{keywordflow}{in}\ (\textcolor{stringliteral}{"{}always"{}},\ \textcolor{stringliteral}{"{}auto"{}},\ \textcolor{stringliteral}{"{}never"{}}):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00178}00178\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ ValueError(f\textcolor{stringliteral}{"{}Unknown\ quote\_mode:\ \{quote\_mode\}"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00179}00179\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00180}00180\ \ \ \ \ quote\ =\ quote\_mode\ ==\ \textcolor{stringliteral}{"{}always"{}}\ \textcolor{keywordflow}{or}\ (}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00181}00181\ \ \ \ \ \ \ \ \ quote\_mode\ ==\ \textcolor{stringliteral}{"{}auto"{}}\ \textcolor{keywordflow}{and}\ \textcolor{keywordflow}{not}\ value\_to\_set.isalnum()}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00182}00182\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00183}00183\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00184}00184\ \ \ \ \ \textcolor{keywordflow}{if}\ quote:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00185}00185\ \ \ \ \ \ \ \ \ value\_out\ =\ \textcolor{stringliteral}{"{}'\{\}'"{}}.format(value\_to\_set.replace(\textcolor{stringliteral}{"{}'"{}},\ \textcolor{stringliteral}{"{}\(\backslash\)\(\backslash\)'"{}}))}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00186}00186\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00187}00187\ \ \ \ \ \ \ \ \ value\_out\ =\ value\_to\_set}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00188}00188\ \ \ \ \ \textcolor{keywordflow}{if}\ export:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00189}00189\ \ \ \ \ \ \ \ \ line\_out\ =\ f\textcolor{stringliteral}{"{}export\ \{key\_to\_set\}=\{value\_out\}\(\backslash\)n"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00190}00190\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00191}00191\ \ \ \ \ \ \ \ \ line\_out\ =\ f\textcolor{stringliteral}{"{}\{key\_to\_set\}=\{value\_out\}\(\backslash\)n"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00193}00193\ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{namespacedotenv_1_1main_acd83bbfc9100907cc2ebc39cf338e36a}{rewrite}}(dotenv\_path,\ encoding=encoding)\ \textcolor{keyword}{as}\ (source,\ dest):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00194}00194\ \ \ \ \ \ \ \ \ replaced\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00195}00195\ \ \ \ \ \ \ \ \ missing\_newline\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00196}00196\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ mapping\ \textcolor{keywordflow}{in}\ \doxymbox{\hyperlink{namespacedotenv_1_1main_aade1e3c3f17afe4a355c196deb639329}{with\_warn\_for\_invalid\_lines}}(parse\_stream(source)):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00197}00197\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ mapping.key\ ==\ key\_to\_set:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dest.write(line\_out)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ replaced\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00200}00200\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dest.write(mapping.original.string)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00202}00202\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ missing\_newline\ =\ \textcolor{keywordflow}{not}\ mapping.original.string.endswith(\textcolor{stringliteral}{"{}\(\backslash\)n"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00203}00203\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ replaced:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ missing\_newline:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dest.write(\textcolor{stringliteral}{"{}\(\backslash\)n"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00206}00206\ \ \ \ \ \ \ \ \ \ \ \ \ dest.write(line\_out)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00207}00207\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00208}00208\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True},\ key\_to\_set,\ value\_to\_set}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00209}00209\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00210}00210\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00211}\doxymbox{\hyperlink{namespacedotenv_1_1main_aef0039f5028b7e87cc98c766986c443e}{00211}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1main_aef0039f5028b7e87cc98c766986c443e}{unset\_key}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00212}00212\ \ \ \ \ dotenv\_path:\ StrPath,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00213}00213\ \ \ \ \ key\_to\_unset:\ str,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00214}00214\ \ \ \ \ quote\_mode:\ str\ =\ \textcolor{stringliteral}{"{}always"{}},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00215}00215\ \ \ \ \ encoding:\ Optional[str]\ =\ \textcolor{stringliteral}{"{}utf-\/8"{}},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00216}00216\ )\ -\/>\ Tuple[Optional[bool],\ str]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00217}00217\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00218}00218\ \textcolor{stringliteral}{\ \ \ \ Removes\ a\ given\ key\ from\ the\ given\ \`{}.env\`{}\ file.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00219}00219\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00220}00220\ \textcolor{stringliteral}{\ \ \ \ If\ the\ .env\ path\ given\ doesn't\ exist,\ fails.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00221}00221\ \textcolor{stringliteral}{\ \ \ \ If\ the\ given\ key\ doesn't\ exist\ in\ the\ .env,\ fails.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00222}00222\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00223}00223\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ os.path.exists(dotenv\_path):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00224}00224\ \ \ \ \ \ \ \ \ logger.warning(\textcolor{stringliteral}{"{}Can't\ delete\ from\ \%s\ -\/\ it\ doesn't\ exist."{}},\ dotenv\_path)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00225}00225\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None},\ key\_to\_unset}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00226}00226\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00227}00227\ \ \ \ \ removed\ =\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00228}00228\ \ \ \ \ \textcolor{keyword}{with}\ \doxymbox{\hyperlink{namespacedotenv_1_1main_acd83bbfc9100907cc2ebc39cf338e36a}{rewrite}}(dotenv\_path,\ encoding=encoding)\ \textcolor{keyword}{as}\ (source,\ dest):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00229}00229\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ mapping\ \textcolor{keywordflow}{in}\ \doxymbox{\hyperlink{namespacedotenv_1_1main_aade1e3c3f17afe4a355c196deb639329}{with\_warn\_for\_invalid\_lines}}(parse\_stream(source)):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00230}00230\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ mapping.key\ ==\ key\_to\_unset:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00231}00231\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ removed\ =\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00232}00232\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00233}00233\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dest.write(mapping.original.string)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00234}00234\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00235}00235\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ removed:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00236}00236\ \ \ \ \ \ \ \ \ logger.warning(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}Key\ \%s\ not\ removed\ from\ \%s\ -\/\ key\ doesn't\ exist."{}},\ key\_to\_unset,\ dotenv\_path}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00238}00238\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00239}00239\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{None},\ key\_to\_unset}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00240}00240\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00241}00241\ \ \ \ \ \textcolor{keywordflow}{return}\ removed,\ key\_to\_unset}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00242}00242\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00243}00243\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00244}\doxymbox{\hyperlink{namespacedotenv_1_1main_a4cf437fc83373925a070bec997eaa612}{00244}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1main_a4cf437fc83373925a070bec997eaa612}{resolve\_variables}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00245}00245\ \ \ \ \ values:\ Iterable[Tuple[str,\ Optional[str]]],}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00246}00246\ \ \ \ \ override:\ bool,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00247}00247\ )\ -\/>\ Mapping[str,\ Optional[str]]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00248}00248\ \ \ \ \ new\_values:\ Dict[str,\ Optional[str]]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00249}00249\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00250}00250\ \ \ \ \ \textcolor{keywordflow}{for}\ name,\ value\ \textcolor{keywordflow}{in}\ values:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00251}00251\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ value\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ result\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00253}00253\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00254}00254\ \ \ \ \ \ \ \ \ \ \ \ \ atoms\ =\ parse\_variables(value)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00255}00255\ \ \ \ \ \ \ \ \ \ \ \ \ env:\ Dict[str,\ Optional[str]]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00256}00256\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ override:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00257}00257\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ env.update(os.environ)\ \ \textcolor{comment}{\#\ type:\ ignore}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00258}00258\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ env.update(new\_values)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00259}00259\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00260}00260\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ env.update(new\_values)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00261}00261\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ env.update(os.environ)\ \ \textcolor{comment}{\#\ type:\ ignore}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00262}00262\ \ \ \ \ \ \ \ \ \ \ \ \ result\ =\ \textcolor{stringliteral}{"{}"{}}.join(atom.resolve(env)\ \textcolor{keywordflow}{for}\ atom\ \textcolor{keywordflow}{in}\ atoms)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00263}00263\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00264}00264\ \ \ \ \ \ \ \ \ new\_values[name]\ =\ result}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00265}00265\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00266}00266\ \ \ \ \ \textcolor{keywordflow}{return}\ new\_values}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00267}00267\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00268}00268\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00269}\doxymbox{\hyperlink{namespacedotenv_1_1main_a9b2ee5e3ea95d2b3b56c88c85c475622}{00269}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1main_a9b2ee5e3ea95d2b3b56c88c85c475622}{\_walk\_to\_root}}(path:\ str)\ -\/>\ Iterator[str]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00270}00270\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00271}00271\ \textcolor{stringliteral}{\ \ \ \ Yield\ directories\ starting\ from\ the\ given\ directory\ up\ to\ the\ root}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00272}00272\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00273}00273\ \ \ \ \ \textcolor{keywordflow}{if}\ \textcolor{keywordflow}{not}\ os.path.exists(path):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00274}00274\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ IOError(\textcolor{stringliteral}{"{}Starting\ path\ not\ found"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00275}00275\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00276}00276\ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.isfile(path):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00277}00277\ \ \ \ \ \ \ \ \ path\ =\ os.path.dirname(path)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00278}00278\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00279}00279\ \ \ \ \ last\_dir\ =\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00280}00280\ \ \ \ \ current\_dir\ =\ os.path.abspath(path)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00281}00281\ \ \ \ \ \textcolor{keywordflow}{while}\ last\_dir\ !=\ current\_dir:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00282}00282\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{yield}\ current\_dir}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00283}00283\ \ \ \ \ \ \ \ \ parent\_dir\ =\ os.path.abspath(os.path.join(current\_dir,\ os.path.pardir))}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00284}00284\ \ \ \ \ \ \ \ \ last\_dir,\ current\_dir\ =\ current\_dir,\ parent\_dir}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00285}00285\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00286}00286\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00287}\doxymbox{\hyperlink{namespacedotenv_1_1main_ac24d6341ba42b656e705cbc3d993f0bf}{00287}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1main_ac24d6341ba42b656e705cbc3d993f0bf}{find\_dotenv}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00288}00288\ \ \ \ \ filename:\ str\ =\ \textcolor{stringliteral}{"{}.env"{}},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00289}00289\ \ \ \ \ raise\_error\_if\_not\_found:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00290}00290\ \ \ \ \ usecwd:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00291}00291\ )\ -\/>\ str:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00292}00292\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00293}00293\ \textcolor{stringliteral}{\ \ \ \ Search\ in\ increasingly\ higher\ folders\ for\ the\ given\ file}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00294}00294\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00295}00295\ \textcolor{stringliteral}{\ \ \ \ Returns\ path\ to\ the\ file\ if\ found,\ or\ an\ empty\ string\ otherwise}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00296}00296\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00297}00297\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00298}00298\ \ \ \ \ \textcolor{keyword}{def\ }\_is\_interactive():}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00299}00299\ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Decide\ whether\ this\ is\ running\ in\ a\ REPL\ or\ IPython\ notebook"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00300}00300\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ hasattr(sys,\ \textcolor{stringliteral}{"{}ps1"{}})\ \textcolor{keywordflow}{or}\ hasattr(sys,\ \textcolor{stringliteral}{"{}ps2"{}}):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00301}00301\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00302}00302\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00303}00303\ \ \ \ \ \ \ \ \ \ \ \ \ main\ =\ \_\_import\_\_(\textcolor{stringliteral}{"{}\_\_main\_\_"{}},\ \textcolor{keywordtype}{None},\ \textcolor{keywordtype}{None},\ fromlist=[\textcolor{stringliteral}{"{}\_\_file\_\_"{}}])}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00304}00304\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{except}\ ModuleNotFoundError:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00305}00305\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00306}00306\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordflow}{not}\ hasattr(main,\ \textcolor{stringliteral}{"{}\_\_file\_\_"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00307}00307\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00308}00308\ \ \ \ \ \textcolor{keyword}{def\ }\_is\_debugger():}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00309}00309\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ sys.gettrace()\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00310}00310\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00311}00311\ \ \ \ \ \textcolor{keywordflow}{if}\ usecwd\ \textcolor{keywordflow}{or}\ \_is\_interactive()\ \textcolor{keywordflow}{or}\ \_is\_debugger()\ \textcolor{keywordflow}{or}\ getattr(sys,\ \textcolor{stringliteral}{"{}frozen"{}},\ \textcolor{keyword}{False}):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00312}00312\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ Should\ work\ without\ \_\_file\_\_,\ e.g.\ in\ REPL\ or\ IPython\ notebook.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00313}00313\ \ \ \ \ \ \ \ \ path\ =\ os.getcwd()}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00314}00314\ \ \ \ \ \textcolor{keywordflow}{else}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00315}00315\ \ \ \ \ \ \ \ \ \textcolor{comment}{\#\ will\ work\ for\ .py\ files}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00316}00316\ \ \ \ \ \ \ \ \ frame\ =\ sys.\_getframe()}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00317}00317\ \ \ \ \ \ \ \ \ current\_file\ =\ \_\_file\_\_}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00318}00318\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00319}00319\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ frame.f\_code.co\_filename\ ==\ current\_file\ \textcolor{keywordflow}{or}\ \textcolor{keywordflow}{not}\ os.path.exists(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00320}00320\ \ \ \ \ \ \ \ \ \ \ \ \ frame.f\_code.co\_filename}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00321}00321\ \ \ \ \ \ \ \ \ ):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00322}00322\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{assert}\ frame.f\_back\ \textcolor{keywordflow}{is}\ \textcolor{keywordflow}{not}\ \textcolor{keywordtype}{None}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00323}00323\ \ \ \ \ \ \ \ \ \ \ \ \ frame\ =\ frame.f\_back}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00324}00324\ \ \ \ \ \ \ \ \ frame\_filename\ =\ frame.f\_code.co\_filename}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00325}00325\ \ \ \ \ \ \ \ \ path\ =\ os.path.dirname(os.path.abspath(frame\_filename))}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00326}00326\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00327}00327\ \ \ \ \ \textcolor{keywordflow}{for}\ dirname\ \textcolor{keywordflow}{in}\ \doxymbox{\hyperlink{namespacedotenv_1_1main_a9b2ee5e3ea95d2b3b56c88c85c475622}{\_walk\_to\_root}}(path):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00328}00328\ \ \ \ \ \ \ \ \ check\_path\ =\ os.path.join(dirname,\ filename)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00329}00329\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ \doxymbox{\hyperlink{namespacedotenv_1_1main_a22dcc78630931ed8c59805c2806763c2}{\_is\_file\_or\_fifo}}(check\_path):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00330}00330\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ check\_path}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00331}00331\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00332}00332\ \ \ \ \ \textcolor{keywordflow}{if}\ raise\_error\_if\_not\_found:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00333}00333\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{raise}\ IOError(\textcolor{stringliteral}{"{}File\ not\ found"{}})}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00334}00334\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00335}00335\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{stringliteral}{"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00336}00336\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00337}00337\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00338}\doxymbox{\hyperlink{namespacedotenv_1_1main_a26869ee6e60db20ec0b7adfd390e9ea2}{00338}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1main_a26869ee6e60db20ec0b7adfd390e9ea2}{load\_dotenv}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00339}00339\ \ \ \ \ dotenv\_path:\ Optional[StrPath]\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00340}00340\ \ \ \ \ stream:\ Optional[IO[str]]\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00341}00341\ \ \ \ \ verbose:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00342}00342\ \ \ \ \ override:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00343}00343\ \ \ \ \ interpolate:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00344}00344\ \ \ \ \ encoding:\ Optional[str]\ =\ \textcolor{stringliteral}{"{}utf-\/8"{}},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00345}00345\ )\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00346}00346\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}Parse\ a\ .env\ file\ and\ then\ load\ all\ the\ variables\ found\ as\ environment\ variables.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00347}00347\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00348}00348\ \textcolor{stringliteral}{\ \ \ \ Parameters:}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00349}00349\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ dotenv\_path:\ Absolute\ or\ relative\ path\ to\ .env\ file.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00350}00350\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ stream:\ Text\ stream\ (such\ as\ \`{}io.StringIO\`{})\ with\ .env\ content,\ used\ if}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00351}00351\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \`{}dotenv\_path\`{}\ is\ \`{}None\`{}.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00352}00352\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ verbose:\ Whether\ to\ output\ a\ warning\ the\ .env\ file\ is\ missing.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00353}00353\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ override:\ Whether\ to\ override\ the\ system\ environment\ variables\ with\ the\ variables}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00354}00354\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ from\ the\ \`{}.env\`{}\ file.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00355}00355\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ encoding:\ Encoding\ to\ be\ used\ to\ read\ the\ file.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00356}00356\ \textcolor{stringliteral}{\ \ \ \ Returns:}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00357}00357\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ Bool:\ True\ if\ at\ least\ one\ environment\ variable\ is\ set\ else\ False}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00358}00358\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00359}00359\ \textcolor{stringliteral}{\ \ \ \ If\ both\ \`{}dotenv\_path\`{}\ and\ \`{}stream\`{}\ are\ \`{}None\`{},\ \`{}find\_dotenv()\`{}\ is\ used\ to\ find\ the}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00360}00360\ \textcolor{stringliteral}{\ \ \ \ .env\ file\ with\ it's\ default\ parameters.\ If\ you\ need\ to\ change\ the\ default\ parameters}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00361}00361\ \textcolor{stringliteral}{\ \ \ \ of\ \`{}find\_dotenv()\`{},\ you\ can\ explicitly\ call\ \`{}find\_dotenv()\`{}\ and\ pass\ the\ result}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00362}00362\ \textcolor{stringliteral}{\ \ \ \ to\ this\ function\ as\ \`{}dotenv\_path\`{}.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00363}00363\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00364}00364\ \textcolor{stringliteral}{\ \ \ \ If\ the\ environment\ variable\ \`{}PYTHON\_DOTENV\_DISABLED\`{}\ is\ set\ to\ a\ truthy\ value,}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00365}00365\ \textcolor{stringliteral}{\ \ \ \ .env\ loading\ is\ disabled.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00366}00366\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00367}00367\ \ \ \ \ \textcolor{keywordflow}{if}\ \doxymbox{\hyperlink{namespacedotenv_1_1main_aad56c29f2201906b93a02e062ee11d2c}{\_load\_dotenv\_disabled}}():}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00368}00368\ \ \ \ \ \ \ \ \ logger.debug(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00369}00369\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}python-\/dotenv:\ .env\ loading\ disabled\ by\ PYTHON\_DOTENV\_DISABLED\ environment\ variable"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00370}00370\ \ \ \ \ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00371}00371\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00372}00372\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00373}00373\ \ \ \ \ \textcolor{keywordflow}{if}\ dotenv\_path\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ stream\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00374}00374\ \ \ \ \ \ \ \ \ dotenv\_path\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1main_ac24d6341ba42b656e705cbc3d993f0bf}{find\_dotenv}}()}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00375}00375\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00376}00376\ \ \ \ \ dotenv\ =\ \doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env}{DotEnv}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00377}00377\ \ \ \ \ \ \ \ \ dotenv\_path=dotenv\_path,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00378}00378\ \ \ \ \ \ \ \ \ stream=stream,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00379}00379\ \ \ \ \ \ \ \ \ verbose=verbose,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00380}00380\ \ \ \ \ \ \ \ \ interpolate=interpolate,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00381}00381\ \ \ \ \ \ \ \ \ override=override,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00382}00382\ \ \ \ \ \ \ \ \ encoding=encoding,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00383}00383\ \ \ \ \ )}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00384}00384\ \ \ \ \ \textcolor{keywordflow}{return}\ dotenv.set\_as\_environment\_variables()}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00385}00385\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00386}00386\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00387}\doxymbox{\hyperlink{namespacedotenv_1_1main_a21030a8e28166ef9dcb3c45cff592776}{00387}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1main_a21030a8e28166ef9dcb3c45cff592776}{dotenv\_values}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00388}00388\ \ \ \ \ dotenv\_path:\ Optional[StrPath]\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00389}00389\ \ \ \ \ stream:\ Optional[IO[str]]\ =\ \textcolor{keywordtype}{None},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00390}00390\ \ \ \ \ verbose:\ bool\ =\ \textcolor{keyword}{False},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00391}00391\ \ \ \ \ interpolate:\ bool\ =\ \textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00392}00392\ \ \ \ \ encoding:\ Optional[str]\ =\ \textcolor{stringliteral}{"{}utf-\/8"{}},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00393}00393\ )\ -\/>\ Dict[str,\ Optional[str]]:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00394}00394\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00395}00395\ \textcolor{stringliteral}{\ \ \ \ Parse\ a\ .env\ file\ and\ return\ its\ content\ as\ a\ dict.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00396}00396\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00397}00397\ \textcolor{stringliteral}{\ \ \ \ The\ returned\ dict\ will\ have\ \`{}None\`{}\ values\ for\ keys\ without\ values\ in\ the\ .env\ file.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00398}00398\ \textcolor{stringliteral}{\ \ \ \ For\ example,\ \`{}foo=bar\`{}\ results\ in\ \`{}\{"{}foo"{}:\ "{}bar"{}\}\`{}\ whereas\ \`{}foo\`{}\ alone\ results\ in}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00399}00399\ \textcolor{stringliteral}{\ \ \ \ \`{}\{"{}foo"{}:\ None\}\`{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00400}00400\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00401}00401\ \textcolor{stringliteral}{\ \ \ \ Parameters:}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00402}00402\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ dotenv\_path:\ Absolute\ or\ relative\ path\ to\ the\ .env\ file.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00403}00403\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ stream:\ \`{}StringIO\`{}\ object\ with\ .env\ content,\ used\ if\ \`{}dotenv\_path\`{}\ is\ \`{}None\`{}.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00404}00404\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ verbose:\ Whether\ to\ output\ a\ warning\ if\ the\ .env\ file\ is\ missing.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00405}00405\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ encoding:\ Encoding\ to\ be\ used\ to\ read\ the\ file.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00406}00406\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00407}00407\ \textcolor{stringliteral}{\ \ \ \ If\ both\ \`{}dotenv\_path\`{}\ and\ \`{}stream\`{}\ are\ \`{}None\`{},\ \`{}find\_dotenv()\`{}\ is\ used\ to\ find\ the}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00408}00408\ \textcolor{stringliteral}{\ \ \ \ .env\ file.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00409}00409\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00410}00410\ \ \ \ \ \textcolor{keywordflow}{if}\ dotenv\_path\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}\ \textcolor{keywordflow}{and}\ stream\ \textcolor{keywordflow}{is}\ \textcolor{keywordtype}{None}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00411}00411\ \ \ \ \ \ \ \ \ dotenv\_path\ =\ \doxymbox{\hyperlink{namespacedotenv_1_1main_ac24d6341ba42b656e705cbc3d993f0bf}{find\_dotenv}}()}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00412}00412\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00413}00413\ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classdotenv_1_1main_1_1_dot_env}{DotEnv}}(}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00414}00414\ \ \ \ \ \ \ \ \ dotenv\_path=dotenv\_path,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00415}00415\ \ \ \ \ \ \ \ \ stream=stream,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00416}00416\ \ \ \ \ \ \ \ \ verbose=verbose,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00417}00417\ \ \ \ \ \ \ \ \ interpolate=interpolate,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00418}00418\ \ \ \ \ \ \ \ \ override=\textcolor{keyword}{True},}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00419}00419\ \ \ \ \ \ \ \ \ encoding=encoding,}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00420}00420\ \ \ \ \ ).dict()}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00421}00421\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00422}00422\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00423}\doxymbox{\hyperlink{namespacedotenv_1_1main_a22dcc78630931ed8c59805c2806763c2}{00423}}\ \textcolor{keyword}{def\ }\doxymbox{\hyperlink{namespacedotenv_1_1main_a22dcc78630931ed8c59805c2806763c2}{\_is\_file\_or\_fifo}}(path:\ StrPath)\ -\/>\ bool:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00424}00424\ \ \ \ \ \textcolor{stringliteral}{"{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00425}00425\ \textcolor{stringliteral}{\ \ \ \ Return\ True\ if\ \`{}path\`{}\ exists\ and\ is\ either\ a\ regular\ file\ or\ a\ FIFO.}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00426}00426\ \textcolor{stringliteral}{\ \ \ \ "{}"{}"{}}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00427}00427\ \ \ \ \ \textcolor{keywordflow}{if}\ os.path.isfile(path):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00428}00428\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{True}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00429}00429\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00430}00430\ \ \ \ \ \textcolor{keywordflow}{try}:}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00431}00431\ \ \ \ \ \ \ \ \ st\ =\ os.stat(path)}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00432}00432\ \ \ \ \ \textcolor{keywordflow}{except}\ (FileNotFoundError,\ OSError):}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00433}00433\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{False}}
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00434}00434\ }
+\DoxyCodeLine{\Hypertarget{dotenv_2main_8py_source_l00435}00435\ \ \ \ \ \textcolor{keywordflow}{return}\ stat.S\_ISFIFO(st.st\_mode)}
+
+\end{DoxyCode}
