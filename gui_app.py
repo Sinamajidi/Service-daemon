@@ -1,4 +1,5 @@
-"""Launcher for the Service Daemon GUI."""
+"""! @file gui_app.py
+@brief Desktop GUI application (Tkinter) for the service daemon.
 
 Provides a corporative, tabbed interface for settings, database, and operations.
 """
@@ -1703,4 +1704,5 @@ TASK_INSTANCE_FIELDS = [
 
 
 if __name__ == "__main__":
-    main()
+    app = ServiceDaemonApp()
+    app.mainloop()

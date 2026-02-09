@@ -92,7 +92,7 @@ This creates sample data (buildings, units, tenants, bookings) and prints result
 ### 9) (Optional) Run the GUI
 
 ```bash
-python gui_app/main.py
+python gui_app.py
 ```
 
 The GUI lets you test DB connectivity and inspect booking data in a desktop interface.
@@ -190,12 +190,6 @@ The repository includes `examples/example_usage.py` for a full walkthrough of re
 │   └── example_usage.py
 ├── init_database.py
 ├── gui_app.py
-├── gui_app/
-│   ├── __init__.py
-│   ├── dialogs.py
-│   ├── main.py
-│   ├── tabs.py
-│   └── utils.py
 ├── diagnostic_test.py
 ├── sql_setup/
 │   └── task_tables.sql
