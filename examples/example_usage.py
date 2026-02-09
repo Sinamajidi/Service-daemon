@@ -21,7 +21,10 @@ from database.entity_access import (
     get_unit_access, 
     get_booking_access
 )
-from config import DB_CONFIG, SCHEMA_FILE
+from config import DB_CONFIG
+
+# Get schema file path
+SCHEMA_FILE = Path(__file__).parent.parent / 'database' / 'schema.sql'
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -34,7 +37,7 @@ def initialize_database():
     logger.info("STEP 1: DATABASE INITIALIZATION")
     logger.info("="*60)
     
-    db_init = DatabaseInitializer(**DB_CONFIG)
+    db_init = DatabaseInitializer(DB_CONFIG)
     
     # Initialize database (drop and recreate)
     db_init.initialize(SCHEMA_FILE, drop_if_exists=True)
@@ -334,6 +337,8 @@ def example_gui_workflow():
     logger.info("="*60)
     
     booking_access = get_booking_access()
+    booking_full=None
+    unit_bookings=None
     
     # Step 1: GUI shows list of bookings (only IDs needed)
     logger.info("GUI Action: Show booking list")
@@ -360,8 +365,10 @@ def example_gui_workflow():
     
     # Step 4: User filters bookings (database does the filtering)
     logger.info("\nGUI Action: Filter by unit")
-    unit_bookings = booking_access.get_bookings_by_unit_ids(booking_full['unit_id'])
-    logger.info(f"  - Database filtered to {len(unit_bookings)} bookings for this unit")
+    if not booking_full==None:
+        unit_bookings = booking_access.get_bookings_by_unit_ids(booking_full['unit_id'])
+    if not unit_bookings==None:
+        logger.info(f"  - Database filtered to {len(unit_bookings)} bookings for this unit")
     
     logger.info("\nWorkflow complete - minimal objects, maximum database efficiency!")
     

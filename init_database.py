@@ -4,18 +4,22 @@ Initialize Database
 Run this from the project root to initialize the database.
 """
 
+from pathlib import Path
 from database.db_init import DatabaseInitializer
-from config import DB_CONFIG, SCHEMA_FILE
+from config import DB_CONFIG
 
 def main():
+    # Get schema file path
+    schema_file = Path(__file__).parent / 'database' / 'schema.sql'
+    
     print("Initializing database...")
-    print(f"Database: {DB_CONFIG['database']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}")
-    print(f"Schema: {SCHEMA_FILE}")
+    print(f"Database: {DB_CONFIG['DB_NAME']}@{DB_CONFIG['DB_HOST']}:{DB_CONFIG['DB_PORT']}")
+    print(f"Schema: {schema_file}")
     print()
     
     try:
-        db_init = DatabaseInitializer(**DB_CONFIG)
-        db_init.initialize(SCHEMA_FILE, drop_if_exists=True)
+        db_init = DatabaseInitializer(DB_CONFIG)
+        db_init.initialize(str(schema_file), drop_if_exists=True)
         
         print()
         print("="*60)

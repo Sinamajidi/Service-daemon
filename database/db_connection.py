@@ -59,6 +59,7 @@ class DatabaseConnection:
             max_conn: Maximum connections in pool
         """
         # Use environment variables or defaults
+        import os
         self.host = host or os.getenv('DB_HOST', 'localhost')
         self.port = port or int(os.getenv('DB_PORT', 5432))
         self.database = database or os.getenv('DB_NAME', 'apartment_mgmt')
