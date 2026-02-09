@@ -1,6 +1,6 @@
 # Getting Started - Complete Setup Guide
 
-This guide walks you through setting up the entire project from scratch.
+This guide outlines the full setup process.
 
 ## Prerequisites
 
@@ -12,7 +12,7 @@ This guide walks you through setting up the entire project from scratch.
 
 ## Setup Steps
 
-### Step 1: Get the Code
+### Step 1: Retrieve the code
 
 ```bash
 # If starting fresh
@@ -24,7 +24,7 @@ cd Service-daemon
 git pull
 ```
 
-### Step 2: Set Up Python Environment (Recommended)
+### Step 2: Set up the Python environment (recommended)
 
 ```bash
 # Create virtual environment
@@ -37,16 +37,16 @@ source venv/bin/activate
 # On Windows:
 venv\Scripts\activate
 
-# You should see (venv) in your prompt
+# Prompt should display (venv)
 ```
 
-### Step 3: Install Python Dependencies
+### Step 3: Install Python dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 4: Set Up PostgreSQL
+### Step 4: Set up PostgreSQL
 
 **Option A: Automated Setup (WSL/Linux)**
 ```bash
@@ -65,7 +65,7 @@ See `POSTGRESQL_SETUP_GUIDE.md` for detailed instructions for:
 - Windows
 - Docker
 
-### Step 5: Verify Setup
+### Step 5: Verify setup
 
 ```bash
 # Run diagnostic test
@@ -75,34 +75,39 @@ python diagnostic_test.py
 python test_setup.py
 ```
 
-Both should complete successfully.
+Both checks should complete successfully.
 
-### Step 6: Initialize Database
+### Step 6: Initialize the database
 
 ```bash
 # This creates all tables and schema
 python database/db_init.py
 ```
 
-You should see:
+Expected output:
 ```
 Initializing database...
 Database initialized successfully!
 ```
 
-### Step 7: Run Example
+### Step 7: Run the example
 
 ```bash
 python examples/example_usage.py
 ```
 
-You should see the example creating sample data and running queries.
+The example creates sample data and runs queries.
+
+### Step 8: Optional SQL execution
+
+Place manual SQL files in `manual_sql/` to expose them in the GUI SQL Query Execution tab.
+The `manual_sql/task_templates_seed.sql` file can be run to insert the baseline task templates.
 
 ---
 
-## Quick Troubleshooting
+## Troubleshooting
 
-### Import errors?
+### Import errors
 ```bash
 # Make sure you're in project root
 pwd
@@ -111,7 +116,7 @@ pwd
 python test_setup.py
 ```
 
-### Database connection errors?
+### Database connection errors
 ```bash
 # Check PostgreSQL is running
 # WSL/Linux:
@@ -124,7 +129,7 @@ brew services list
 cat .env
 ```
 
-### "Module not found" errors?
+### "Module not found" errors
 ```bash
 # Make sure dependencies are installed
 pip install -r requirements.txt
@@ -138,7 +143,7 @@ which python
 
 ## Project Structure
 
-After setup, you should have:
+Expected structure after setup:
 
 ```
 Service-daemon/
@@ -161,10 +166,19 @@ Service-daemon/
 ├── docs/
 │   └── ... documentation
 │
-├── gui_app.py            # Desktop GUI
+├── gui_app.py            # GUI launcher
+├── gui_app/              # GUI package
+│   ├── __init__.py
+│   ├── dialogs.py
+│   ├── main.py
+│   ├── tabs.py
+│   └── utils.py
+├── gui_app_info.json     # Info tab configuration
 ├── init_database.py      # Convenience init wrapper
 ├── sql_setup/            # Optional SQL scripts
 │   └── task_tables.sql
+├── manual_sql/           # SQL files exposed in the GUI
+│   └── task_templates_seed.sql
 └── tests/                # Tests (future)
 ```
 

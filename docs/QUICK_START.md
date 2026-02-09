@@ -37,7 +37,7 @@ python examples/example_usage.py
 ## 5) Launch the GUI (optional)
 
 ```bash
-python gui_app.py
+python gui_app/main.py
 ```
 
 ## Minimal code sample
