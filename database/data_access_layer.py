@@ -1,5 +1,6 @@
-"""
-Data Access Layer (Communication Layer)
+"""! @file data_access_layer.py
+@brief Data access layer for database-centric operations.
+
 Provides minimal class-based access to database entities with lazy instantiation.
 All heavy processing is delegated to the database.
 """
@@ -20,6 +21,7 @@ class DataAccessLayer:
     """
     
     def __init__(self):
+        """! @brief Initialize the data access layer with a DB connection."""
         self.db = get_db()
     
     # ==================== SIMPLE DATA QUERIES ====================

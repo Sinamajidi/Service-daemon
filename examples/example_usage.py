@@ -1,5 +1,6 @@
-"""
-Example Usage and Testing
+"""! @file example_usage.py
+@brief Example usage and testing for the database layer.
+
 Demonstrates how to use the database initialization and communication layer.
 """
 
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 def initialize_database():
-    """Step 1: Initialize the database"""
+    """! @brief Step 1: Initialize the database."""
     logger.info("="*60)
     logger.info("STEP 1: DATABASE INITIALIZATION")
     logger.info("="*60)
@@ -47,9 +48,9 @@ def initialize_database():
 
 
 def example_simple_queries():
-    """
-    Demonstrate simple queries that return IDs without instantiating objects.
-    This is the preferred approach - get IDs first, then fetch complete data only when needed.
+    """! @brief Demonstrate simple queries that return IDs only.
+
+    This is the preferred approach: get IDs first, then fetch complete data only when needed.
     """
     logger.info("="*60)
     logger.info("STEP 2: SIMPLE QUERIES (IDs only)")
@@ -78,8 +79,8 @@ def example_simple_queries():
 
 
 def example_complete_data_queries():
-    """
-    Demonstrate complete data queries that return dictionaries.
+    """! @brief Demonstrate complete data queries that return dictionaries.
+
     Objects are NOT instantiated unless explicitly requested.
     """
     logger.info("="*60)
@@ -104,9 +105,7 @@ def example_complete_data_queries():
 
 
 def example_data_creation():
-    """
-    Demonstrate creating records in the database.
-    """
+    """! @brief Demonstrate creating records in the database."""
     logger.info("="*60)
     logger.info("STEP 4: DATA CREATION")
     logger.info("="*60)
@@ -202,9 +201,7 @@ def example_data_creation():
 
 
 def example_complex_queries(created_ids):
-    """
-    Demonstrate complex queries that leverage database processing.
-    """
+    """! @brief Demonstrate complex queries that leverage database processing."""
     logger.info("="*60)
     logger.info("STEP 5: COMPLEX QUERIES (Database-side processing)")
     logger.info("="*60)
@@ -250,9 +247,7 @@ def example_complex_queries(created_ids):
 
 
 def example_updates(created_ids):
-    """
-    Demonstrate updating records.
-    """
+    """! @brief Demonstrate updating records."""
     logger.info("="*60)
     logger.info("STEP 6: UPDATE OPERATIONS")
     logger.info("="*60)
@@ -293,8 +288,8 @@ def example_updates(created_ids):
 
 
 def example_lazy_instantiation():
-    """
-    Demonstrate the lazy instantiation pattern.
+    """! @brief Demonstrate the lazy instantiation pattern.
+
     Objects are only created when explicitly requested.
     """
     logger.info("="*60)
@@ -329,9 +324,7 @@ def example_lazy_instantiation():
 
 
 def example_gui_workflow():
-    """
-    Simulate a typical GUI workflow.
-    """
+    """! @brief Simulate a typical GUI workflow."""
     logger.info("="*60)
     logger.info("STEP 8: TYPICAL GUI WORKFLOW")
     logger.info("="*60)
@@ -376,9 +369,7 @@ def example_gui_workflow():
 
 
 def main():
-    """
-    Run all examples.
-    """
+    """! @brief Run all examples."""
     print("\n")
     print("*" * 60)
     print("APARTMENT MANAGEMENT DATABASE - INITIALIZATION & DEMO")

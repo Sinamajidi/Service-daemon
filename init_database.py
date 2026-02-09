@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""
-Initialize Database
-Run this from the project root to initialize the database.
+"""! @file init_database.py
+@brief Convenience wrapper to initialize the database from project root.
 """
 
 from pathlib import Path
@@ -9,6 +8,7 @@ from database.db_init import DatabaseInitializer
 from config import DB_CONFIG
 
 def main():
+    """! @brief Initialize the database using the default schema."""
     # Get schema file path
     schema_file = Path(__file__).parent / 'database' / 'schema.sql'
     

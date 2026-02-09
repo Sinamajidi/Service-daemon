@@ -1,5 +1,5 @@
-"""
-Database Package
+"""! @file __init__.py
+@brief Database package entry point.
 
 To use, import directly from modules:
     from database.db_init import DatabaseInitializer
@@ -9,4 +9,3 @@ To use, import directly from modules:
 
 # Keep this file simple to avoid circular import issues
 # Import what you need directly from the specific modules
-

@@ -17,10 +17,10 @@ This guide walks you through setting up the entire project from scratch.
 ```bash
 # If starting fresh
 git clone <your-repo-url>
-cd apartment-management
+cd Service-daemon
 
 # If already cloned
-cd apartment-management
+cd Service-daemon
 git pull
 ```
 
@@ -81,7 +81,7 @@ Both should complete successfully.
 
 ```bash
 # This creates all tables and schema
-python database/init_db.py
+python database/db_init.py
 ```
 
 You should see:
@@ -141,7 +141,7 @@ which python
 After setup, you should have:
 
 ```
-apartment-management/
+Service-daemon/
 ├── .env                    # Your database credentials
 ├── .env.example           # Template
 ├── requirements.txt       # Python packages
@@ -161,7 +161,11 @@ apartment-management/
 ├── docs/
 │   └── ... documentation
 │
-└── tests/               # Tests (future)
+├── gui_app.py            # Desktop GUI
+├── init_database.py      # Convenience init wrapper
+├── sql_setup/            # Optional SQL scripts
+│   └── task_tables.sql
+└── tests/                # Tests (future)
 ```
 
 ---
@@ -217,7 +221,7 @@ git push
 psql -h localhost -U postgres -d apartment_mgmt
 
 # Reinitialize database (DROPS ALL DATA!)
-python database/init_db.py
+python database/db_init.py
 
 # In psql shell:
 \l          # List databases
@@ -259,7 +263,7 @@ If you're a collaborator joining the project:
 1. **Clone the repository**
    ```bash
    git clone <repo-url>
-   cd apartment-management
+   cd Service-daemon
    ```
 
 2. **Follow Steps 2-7 above**
@@ -345,7 +349,7 @@ Now that you have the database layer working, you can:
 - [ ] `.env` file configured
 - [ ] `diagnostic_test.py` passes
 - [ ] `test_setup.py` passes
-- [ ] `database/init_db.py` runs successfully
+- [ ] `database/db_init.py` runs successfully
 - [ ] `examples/example_usage.py` works
 
 Once all are checked, you're ready to start developing! 🚀

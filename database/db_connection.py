@@ -1,6 +1,5 @@
-"""
-Database Connection Manager
-Provides connection pooling and management for the communication layer.
+"""! @file db_connection.py
+@brief Database connection manager with pooling and query helpers.
 """
 
 import psycopg2
@@ -24,6 +23,7 @@ class DatabaseConnection:
     _pool: Optional[pool.SimpleConnectionPool] = None
     
     def __new__(cls):
+        """! @brief Create or reuse the singleton instance."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance

@@ -70,7 +70,13 @@ DB_PASSWORD=your_password_here
 ### 7) Initialize the database schema
 
 ```bash
-python database/init_db.py
+python database/db_init.py
+```
+
+Alternatively, you can run the convenience wrapper:
+
+```bash
+python init_database.py
 ```
 
 You should see “Database initialized successfully!”.
@@ -137,7 +143,7 @@ export DB_PASSWORD=postgres
 The schema lives at `database/schema.sql`. Initialize or reset via:
 
 ```bash
-python database/init_db.py
+python database/db_init.py
 ```
 
 ### Core usage (data access layer)
@@ -161,7 +167,9 @@ The repository includes `examples/example_usage.py` for a full walkthrough of re
 
 - `diagnostic_test.py`: quick checks for Python path, imports, and DB connectivity
 - `test_setup.py`: larger end-to-end validation
+- `init_database.py`: convenience wrapper for initializing the schema
 - `setup_postgresql.sh`: WSL/Linux PostgreSQL setup automation
+- `sql_setup/`: optional SQL scripts (loaded via the GUI SQL panel)
 
 ---
 
@@ -172,14 +180,17 @@ The repository includes `examples/example_usage.py` for a full walkthrough of re
 ├── config.py
 ├── database/
 │   ├── schema.sql
-│   ├── init_db.py
+│   ├── db_init.py
 │   ├── db_connection.py
 │   ├── data_access_layer.py
 │   └── entity_access.py
 ├── examples/
 │   └── example_usage.py
+├── init_database.py
 ├── gui_app.py
 ├── diagnostic_test.py
+├── sql_setup/
+│   └── task_tables.sql
 └── test_setup.py
 ```
 

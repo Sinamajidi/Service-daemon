@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""
-Diagnostic Test - Find Which Import is Hanging
+"""! @file diagnostic_test.py
+@brief Diagnostic test for isolating slow or failing imports.
 
 This script tests each import individually to identify the problem.
 """
@@ -18,7 +18,7 @@ print("="*70)
 print()
 
 def test_import(module_name, import_statement):
-    """Test a single import and report if it hangs."""
+    """! @brief Test a single import and report if it hangs."""
     print(f"Testing: {import_statement}")
     start = time.time()
     

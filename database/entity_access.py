@@ -1,5 +1,6 @@
-"""
-Entity Access Classes
+"""! @file entity_access.py
+@brief Entity access wrappers and lightweight dataclasses.
+
 Minimal class-based wrappers for specific entities.
 Objects are only instantiated when explicitly requested.
 All processing is delegated to the database.
@@ -231,6 +232,7 @@ class UserAccess:
     """
     
     def __init__(self):
+        """! @brief Initialize the user access layer."""
         self.dal = get_dal()
         self.table = 'users'
     
@@ -313,6 +315,7 @@ class TenantAccess:
     """
     
     def __init__(self):
+        """! @brief Initialize the tenant access layer."""
         self.dal = get_dal()
         self.table = 'tenants'
     
@@ -376,6 +379,7 @@ class UnitAccess:
     """
     
     def __init__(self):
+        """! @brief Initialize the unit access layer."""
         self.dal = get_dal()
         self.table = 'units'
     
@@ -429,6 +433,7 @@ class BookingAccess:
     """
     
     def __init__(self):
+        """! @brief Initialize the booking access layer."""
         self.dal = get_dal()
         self.table = 'bookings'
     

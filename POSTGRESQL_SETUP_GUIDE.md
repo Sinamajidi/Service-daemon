@@ -101,7 +101,7 @@ DB_PASSWORD=your_password_here  # The password you set in Step 3
 
 ```bash
 # Run the initialization script
-python database/init_db.py
+python database/db_init.py
 ```
 
 ### Auto-start PostgreSQL on WSL Boot (Optional)
@@ -378,7 +378,7 @@ python diagnostic_test.py
 
 ### Test 3: Initialize database
 ```bash
-python database/init_db.py
+python database/db_init.py
 ```
 
 ### Test 4: Run example
@@ -426,6 +426,6 @@ DB_PASSWORD=mypassword" > .env
 psql -h localhost -U postgres -d apartment_mgmt
 ```
 
-Then run: `python database/init_db.py`
+Then run: `python database/db_init.py`
 
 Done! 🎉

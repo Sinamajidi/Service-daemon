@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""
-Test Script - Verify Folder Structure and Imports
+"""! @file test_setup.py
+@brief Verify folder structure and imports for a local setup.
 
 Run this from the project root to verify everything is set up correctly.
 Usage: python test_setup.py
