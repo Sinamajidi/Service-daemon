@@ -24,6 +24,9 @@ from database.data_access_layer import get_dal
 from config import DB_CONFIG
 
 
+SQL_SCRIPTS_DIR = PROJECT_ROOT / "sql_setup"
+
+
 @dataclass
 class AppSettings:
     env_path: Path
@@ -1083,6 +1086,47 @@ class TaskTemplatesTab(BaseTab):
         )
         if not filename:
             return
+        sql_files = sorted(SQL_SCRIPTS_DIR.glob("*.sql"))
+        if not sql_files:
+            self.app.notifications.notify("There are no SQL files to import.")
+            return
+        filename = filedialog.askopenfilename(
+            title="Select SQL File",
+            filetypes=[("SQL Files", "*.sql")],
+            initialdir=str(SQL_SCRIPTS_DIR),
+        )
+        if not filename:
+            return
+        selected_path = Path(filename)
+        if SQL_SCRIPTS_DIR not in selected_path.parents:
+            self.app.notifications.notify("Select a SQL file from the sql_setup folder.")
+            return
+        self.loaded_sql_path = selected_path
+        self.query_text.delete("1.0", "end")
+        self.query_text.insert("1.0", selected_path.read_text())
+        self.app.notifications.notify(f"Loaded {selected_path.name}.")
+
+    def _execute_queries(self) -> None:
+        raw = self.query_text.get("1.0", "end").strip()
+        if not raw:
+            self.app.notifications.notify("Enter SQL before executing.")
+            return
+        statements = [stmt.strip() for stmt in raw.split(";") if stmt.strip()]
+        for statement in statements:
+            self._execute_statement(statement)
+        if self.loaded_sql_path and messagebox.askyesno(
+            "Delete SQL file?",
+            f"Delete {self.loaded_sql_path.name} after execution?",
+        ):
+            try:
+                self.loaded_sql_path.unlink()
+                self.app.notifications.notify("SQL file deleted.")
+            except OSError as exc:
+                self._append_log(f"Delete failed: {exc}", is_error=True)
+            self.loaded_sql_path = None
+
+    def _execute_statement(self, statement: str) -> None:
+        db = get_db()
         try:
             with open(filename, newline="", encoding="utf-8") as handle:
                 reader = csv.DictReader(handle)
