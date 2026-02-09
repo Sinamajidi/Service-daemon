@@ -27,24 +27,6 @@ CREATE TABLE IF NOT EXISTS task_templates (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS task_instances (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  template_id text NOT NULL,
-  target_entity_id text,
-  creator_id text,
-  assignee_ids jsonb,
-  scheduled_time text,
-  status text,
-  parameters jsonb,
-  attempts integer,
-  result jsonb,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  logs jsonb,
-  attached_files jsonb,
-  idempotency_key text
-);
-
 INSERT INTO task_templates (
   id, title, category, description, classification, scheduling_options,
   allowed_frequencies, parameters, preconditions, postconditions,
@@ -352,42 +334,3 @@ INSERT INTO task_templates (
   '["operator_id","start_time","end_time","signature"]'
 )
 ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO users (
-  email,
-  full_name,
-  role
-) VALUES
-  ('operator@example.com', 'Operations Agent', 'provider_staff'),
-  ('manager@example.com', 'Operations Manager', 'admin')
-ON CONFLICT (email) DO NOTHING;
-
-INSERT INTO task_instances (
-  id,
-  template_id,
-  target_entity_id,
-  creator_id,
-  assignee_ids,
-  scheduled_time,
-  status,
-  parameters,
-  attempts,
-  result,
-  logs,
-  attached_files,
-  idempotency_key
-) VALUES (
-  gen_random_uuid(),
-  'hall_cleaning',
-  NULL,
-  (SELECT id FROM users WHERE email = 'manager@example.com'),
-  jsonb_build_array((SELECT id FROM users WHERE email = 'operator@example.com')),
-  to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-  'scheduled',
-  '{"intensity":"standard"}',
-  0,
-  NULL,
-  '[]',
-  '[]',
-  'seed-hall-cleaning'
-);
