@@ -11,8 +11,7 @@ from datetime import datetime
 from pathlib import Path
 import csv
 import json
-import platform
-import subprocess
+import logging
 import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -145,6 +144,7 @@ class NotificationCenter:
         """! @brief Update the status message and show a toast."""
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.message_var.set(f"[{timestamp}] {message}")
+        logger.info(message)
         self._show_toast(message)
 
     def _show_toast(self, message: str) -> None:
@@ -234,6 +234,14 @@ class CorporateStyle:
             foreground="#1f2a44",
         )
         self.style.map("Treeview", background=[("selected", "#c7d6f2")])
+
+def is_valid_uuid(value: str) -> bool:
+    """! @brief Validate that a string is a valid UUID."""
+    try:
+        UUID(str(value))
+        return True
+    except (ValueError, TypeError):
+        return False
 
 
 def is_valid_uuid(value: str) -> bool:
@@ -372,22 +380,7 @@ class SettingsTab(BaseTab):
             command=self._test_connection,
         ).grid(row=0, column=2, padx=4)
 
-        service_frame = ttk.LabelFrame(container, text="PostgreSQL Service")
-        service_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=(10, 0))
-        service_frame.grid_columnconfigure(1, weight=1)
-
-        self.service_status_var = tk.StringVar(value="Service status: Off")
-        service_status = ttk.Label(service_frame, textvariable=self.service_status_var)
-        service_status.grid(row=0, column=0, sticky="w", padx=8, pady=6)
-
-        service_buttons = ttk.Frame(service_frame)
-        service_buttons.grid(row=0, column=1, sticky="e", padx=8, pady=6)
-        ttk.Button(service_buttons, text="Start", command=self._start_postgres).grid(
-            row=0, column=0, padx=4
-        )
-        ttk.Button(service_buttons, text="Stop", command=self._stop_postgres).grid(
-            row=0, column=1, padx=4
-        )
+        self.after(200, self._test_connection)
 
         self.after(200, self._test_connection)
 
@@ -471,6 +464,7 @@ class DatabaseTab(BaseTab):
         super().__init__(parent, app)
         self.dal = get_dal()
         self.columns: list[str] = []
+        self.column_types: dict[str, str] = {}
         self._build()
 
     def _build(self) -> None:
@@ -540,7 +534,7 @@ class DatabaseTab(BaseTab):
     def _get_columns(self, table: str) -> list[str]:
         """! @brief Fetch column names for a selected table."""
         query = """
-            SELECT column_name
+            SELECT column_name, data_type
             FROM information_schema.columns
             WHERE table_schema = 'public' AND table_name = %s
             ORDER BY ordinal_position
@@ -551,6 +545,9 @@ class DatabaseTab(BaseTab):
         )
         if results is None:
             return []
+        self.column_types = {
+            row["column_name"]: row["data_type"] for row in results if row
+        }
         return [row["column_name"] for row in results] if results else []
 
     def refresh(self) -> None:
@@ -585,7 +582,15 @@ class DatabaseTab(BaseTab):
         if "id" not in data:
             self.app.notifications.notify("Selected table lacks an 'id' column.")
             return
-        RecordEditorDialog(self, self.app, self.table_var.get(), data, self.refresh)
+        field_specs = self._build_field_specs(self.table_var.get(), self.columns)
+        RecordEditorDialog(
+            self,
+            self.app,
+            self.table_var.get(),
+            data,
+            field_specs,
+            self.refresh,
+        )
 
     def _add_entry(self) -> None:
         """! @brief Open a dialog to add a new record."""
@@ -719,6 +724,7 @@ class RecordEditorDialog(tk.Toplevel):
         app: "ServiceDaemonApp",
         table: str,
         data: dict,
+        field_specs: list[dict],
         on_save,
     ) -> None:
         """! @brief Initialize the record editor dialog."""
@@ -726,6 +732,7 @@ class RecordEditorDialog(tk.Toplevel):
         self.app = app
         self.table = table
         self.data = data
+        self.field_specs = field_specs
         self.on_save = on_save
         self.entries: dict[str, tk.Entry] = {}
         self.title(f"Edit {table} record")
@@ -738,6 +745,7 @@ class RecordEditorDialog(tk.Toplevel):
         self.grid_columnconfigure(0, weight=1)
         container.grid_columnconfigure(1, weight=1)
 
+        field_map = {field["name"]: field for field in self.field_specs}
         for idx, (key, value) in enumerate(self.data.items()):
             label = "password" if self.table == "users" and key == "password_hash" else key
             ttk.Label(container, text=label).grid(row=idx, column=0, sticky="w")
@@ -787,6 +795,7 @@ class RecordEditorDialog(tk.Toplevel):
                 self.app.notifications.notify("No changes were saved.")
         except Exception as exc:
             self.app.notifications.notify(f"Update failed: {exc}")
+            logger.exception("Update failed", exc_info=exc)
 
 
 class AddRecordDialog(tk.Toplevel):
@@ -805,6 +814,7 @@ class AddRecordDialog(tk.Toplevel):
         self.field_specs = field_specs
         self.on_save = on_save
         self.entries: dict[str, tk.Entry] = {}
+        self.placeholders: dict[str, str] = {}
         self.title(title)
         self._build()
 
