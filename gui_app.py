@@ -360,7 +360,7 @@ class SettingsTab(BaseTab):
         self.connection_status_label = tk.Label(
             container,
             textvariable=self.connection_status_var,
-            fg="#6b7280",
+            fg="#7c2d12",
             bg="#f3f5f8",
         )
         self.connection_status_label.grid(row=6, column=0, sticky="w", pady=(8, 2))
@@ -378,8 +378,6 @@ class SettingsTab(BaseTab):
             text="Test Connection",
             command=self._test_connection,
         ).grid(row=0, column=2, padx=4)
-
-        self.after(200, self._test_connection)
 
         self.after(200, self._test_connection)
 
@@ -947,32 +945,18 @@ class JsonRecordDialog(tk.Toplevel):
                 return
 
             if field.get("json") and value:
-                parsed = self._parse_json_field(field, value)
-                if parsed is None:
+                try:
+                    payload[field["name"]] = json.loads(value)
+                except json.JSONDecodeError:
+                    self.app.notifications.notify(
+                        f"Field '{field['label']}' must be valid JSON."
+                    )
                     return
-                payload[field["name"]] = parsed
             else:
                 payload[field["name"]] = value or None
 
         self.on_save(payload)
         self.destroy()
-
-    def _parse_json_field(self, field: dict, raw_value: str) -> object | None:
-        """! @brief Parse JSON fields with helpful fallbacks."""
-        try:
-            return json.loads(raw_value)
-        except json.JSONDecodeError:
-            field_name = field.get("name", "field")
-            if field_name.endswith("_ids"):
-                entries = [item.strip() for item in raw_value.split(",") if item.strip()]
-                if entries:
-                    return entries
-            example = '["id1","id2"]' if field_name.endswith("_ids") else '{"key":"value"}'
-            self.app.notifications.notify(
-                f"Field '{field.get('label', field_name)}' must be JSON. "
-                f"Example: {example}"
-            )
-            return None
 
 
 class TasksTab(BaseTab):
