@@ -169,9 +169,7 @@ The repository includes `examples/example_usage.py` for a full walkthrough of re
 - `test_setup.py`: larger end-to-end validation
 - `init_database.py`: convenience wrapper for initializing the schema
 - `setup_postgresql.sh`: WSL/Linux PostgreSQL setup automation
-- `sql_setup/`: optional SQL scripts (legacy)
-- `manual_sql/`: SQL files exposed in the GUI SQL Query Execution tab
-- `gui_app_info.json`: Info tab content for the GUI
+- `sql_setup/`: optional SQL scripts (loaded via the GUI SQL panel)
 
 ---
 
@@ -193,16 +191,12 @@ The repository includes `examples/example_usage.py` for a full walkthrough of re
 ├── diagnostic_test.py
 ├── sql_setup/
 │   └── task_tables.sql
-├── manual_sql/
-│   ├── README.md
-│   └── task_templates_seed.sql
-├── gui_app_info.json
 └── test_setup.py
 ```
 
 ---
 
-## Additional documentation
+## Need more detail?
 
-- Setup guide: `GETTING_STARTED.md`
+- Full setup guide: `GETTING_STARTED.md`
 - PostgreSQL walkthrough: `POSTGRESQL_SETUP_GUIDE.md`
