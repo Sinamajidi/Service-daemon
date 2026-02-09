@@ -17,7 +17,7 @@ If you are new, follow the **Novice Setup** below. If you are experienced and wa
 ### 2) Get the code
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Sinamajidi/Service-daemon/edit/main/README.md
 cd Service-daemon
 ```
 
@@ -55,7 +55,7 @@ Follow the instructions in `POSTGRESQL_SETUP_GUIDE.md`.
 
 ### 6) Configure your database connection
 
-If you used the script, a `.env` file should already exist. Otherwise, create one at the project root with:
+If you used the script, a `.env` file should already exist. Otherwise, create one at the root with:
 
 ```
 DB_HOST=localhost
@@ -81,7 +81,7 @@ python init_database.py
 
 You should see “Database initialized successfully!”.
 
-### 8) Try the example usage
+### 8) (optional for developers) Try the example usage
 
 ```bash
 python examples/example_usage.py
@@ -89,15 +89,7 @@ python examples/example_usage.py
 
 This creates sample data (buildings, units, tenants, bookings) and prints results.
 
-### 9) (Optional) Run the GUI
-
-```bash
-python gui_app.py
-```
-
-The GUI lets you test DB connectivity and inspect booking data in a desktop interface.
-
-### 10) Run diagnostics
+### 9) Run diagnostics
 
 ```bash
 python diagnostic_test.py
@@ -105,6 +97,16 @@ python test_setup.py
 ```
 
 If these complete without errors, your setup is correct.
+
+---
+
+### 10) (Optional) Run the GUI
+
+```bash
+python gui_app.py
+```
+
+The GUI lets you test DB connectivity and inspect booking data in a desktop interface.
 
 ---
 
