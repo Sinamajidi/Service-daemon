@@ -10,6 +10,9 @@ from uuid import UUID
 from datetime import datetime, date
 from .db_connection import get_db
 import logging
+import base64
+import hashlib
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,25 @@ class DataAccessLayer:
     def __init__(self):
         """! @brief Initialize the data access layer with a DB connection."""
         self.db = get_db()
+
+    def _hash_password(self, password: str) -> str:
+        """! @brief Hash a plaintext password for storage."""
+        salt = os.urandom(16)
+        iterations = 120_000
+        digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+        return "pbkdf2_sha256${}${}${}".format(
+            iterations,
+            base64.b64encode(salt).decode("utf-8"),
+            base64.b64encode(digest).decode("utf-8"),
+        )
+
+    def _maybe_hash_password(self, value: Optional[str]) -> Optional[str]:
+        """! @brief Hash plaintext passwords while leaving existing hashes intact."""
+        if not value:
+            return None
+        if value.startswith("pbkdf2_sha256$"):
+            return value
+        return self._hash_password(value)
     
     # ==================== SIMPLE DATA QUERIES ====================
     # These methods return simple data (IDs, counts, lists) without instantiating objects
@@ -181,6 +203,9 @@ class DataAccessLayer:
         Returns:
             UUID of inserted record as string
         """
+        if table == "users" and "password_hash" in data:
+            data["password_hash"] = self._maybe_hash_password(data.get("password_hash"))
+
         columns = ', '.join(data.keys())
         placeholders = ', '.join(['%s'] * len(data))
         values = tuple(data.values())
@@ -206,6 +231,9 @@ class DataAccessLayer:
         Returns:
             True if record was updated
         """
+        if table == "users" and "password_hash" in data:
+            data["password_hash"] = self._maybe_hash_password(data.get("password_hash"))
+
         set_clause = ', '.join([f"{key} = %s" for key in data.keys()])
         values = tuple(data.values()) + (str(id_value),)
         
