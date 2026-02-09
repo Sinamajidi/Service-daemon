@@ -61,7 +61,7 @@ INSERT INTO task_templates (
   'vacuum_cleaning',
   'Vacuum Cleaning',
   'Cleaning',
-  'Vacuum carpets & rugs; adjustable by suction level.',
+  'Vacuum carpets & rugs, adjustable by suction level.',
   '["requires-staff","on-site"]',
   '{"modes":["on-demand","scheduled"],"time_window":true}',
   '["daily","weekly","custom"]',
