@@ -8,17 +8,25 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+import csv
+import hashlib
 import json
+import platform
+import subprocess
 import sys
 import tkinter as tk
-from tkinter import ttk
+from tkinter import filedialog, messagebox, ttk
+from uuid import UUID, uuid4
 
 PROJECT_ROOT = Path(__file__).parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from database.data_access_layer import get_dal
-from database.entity_access import get_booking_access
+from database.db_connection import get_db
 from config import DB_CONFIG
+
+
+SQL_SCRIPTS_DIR = PROJECT_ROOT / "sql_setup"
 
 
 @dataclass
@@ -123,6 +131,30 @@ class NotificationCenter:
     def notify(self, message: str) -> None:
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.message_var.set(f"[{timestamp}] {message}")
+        self._show_toast(message)
+
+    def _show_toast(self, message: str) -> None:
+        toast = tk.Toplevel(self.frame)
+        toast.overrideredirect(True)
+        toast.attributes("-topmost", True)
+        toast.configure(bg="#fef9c3")
+
+        label = tk.Label(
+            toast,
+            text=message,
+            bg="#fef9c3",
+            fg="#1f2a44",
+            font=("Segoe UI", 10, "bold"),
+            padx=12,
+            pady=8,
+        )
+        label.pack()
+
+        toast.update_idletasks()
+        x = toast.winfo_screenwidth() - toast.winfo_reqwidth() - 24
+        y = toast.winfo_screenheight() - toast.winfo_reqheight() - 72
+        toast.geometry(f"+{x}+{y}")
+        toast.after(3200, toast.destroy)
 
 
 class CorporateStyle:
@@ -245,12 +277,43 @@ class SettingsTab(BaseTab):
             row=5, column=1, sticky="ew", padx=6, pady=4
         )
 
+        self.connection_status_var = tk.StringVar(value="Connection not tested")
+        self.connection_status_label = tk.Label(
+            container,
+            textvariable=self.connection_status_var,
+            fg="#7c2d12",
+            bg="#f3f5f8",
+        )
+        self.connection_status_label.grid(row=6, column=0, sticky="w", pady=(8, 2))
+
         button_frame = ttk.Frame(container)
         button_frame.grid(row=6, column=1, sticky="e", pady=10)
         ttk.Button(button_frame, text="Save Settings", command=self._save).grid(
             row=0, column=0, padx=4
         )
         ttk.Button(button_frame, text="Reload", command=self._reload).grid(
+            row=0, column=1, padx=4
+        )
+        ttk.Button(
+            button_frame,
+            text="Test Connection",
+            command=self._test_connection,
+        ).grid(row=0, column=2, padx=4)
+
+        service_frame = ttk.LabelFrame(container, text="PostgreSQL Service")
+        service_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=(10, 0))
+        service_frame.grid_columnconfigure(1, weight=1)
+
+        self.service_status_var = tk.StringVar(value="Service status: Off")
+        service_status = ttk.Label(service_frame, textvariable=self.service_status_var)
+        service_status.grid(row=0, column=0, sticky="w", padx=8, pady=6)
+
+        service_buttons = ttk.Frame(service_frame)
+        service_buttons.grid(row=0, column=1, sticky="e", padx=8, pady=6)
+        ttk.Button(service_buttons, text="Start", command=self._start_postgres).grid(
+            row=0, column=0, padx=4
+        )
+        ttk.Button(service_buttons, text="Stop", command=self._stop_postgres).grid(
             row=0, column=1, padx=4
         )
 
@@ -272,7 +335,7 @@ class SettingsTab(BaseTab):
         self.app.settings.refresh_interval_seconds = max(5, refresh_interval)
         self.app.settings.save()
         self.app.notifications.notify("Settings saved. Restart to apply DB changes.")
-        self.app.operations_tab.update_refresh_interval()
+        self._test_connection()
 
     def _reload(self) -> None:
         self.app.settings.load()
@@ -283,6 +346,63 @@ class SettingsTab(BaseTab):
         self.password_var.set(self.app.settings.db_password)
         self.refresh_var.set(str(self.app.settings.refresh_interval_seconds))
         self.app.notifications.notify("Settings reloaded.")
+        self._test_connection()
+
+    def _test_connection(self) -> None:
+        import psycopg2
+
+        try:
+            psycopg2.connect(
+                host=self.host_var.get().strip(),
+                port=int(self.port_var.get().strip()),
+                dbname=self.name_var.get().strip(),
+                user=self.user_var.get().strip(),
+                password=self.password_var.get().strip(),
+                connect_timeout=4,
+            ).close()
+        except Exception as exc:  # pragma: no cover - UI status
+            self.connection_status_var.set(f"Connection failed: {exc}")
+            self.connection_status_label.configure(fg="#b91c1c")
+            self.app.notifications.notify("Database connection failed.")
+            return
+        self.connection_status_var.set("Connection OK")
+        self.connection_status_label.configure(fg="#15803d")
+        self.app.notifications.notify("Database connection OK.")
+
+    def _start_postgres(self) -> None:
+        self._run_service_command("start")
+
+    def _stop_postgres(self) -> None:
+        self._run_service_command("stop")
+
+    def _run_service_command(self, action: str) -> None:
+        commands: list[list[str]] = []
+        system = platform.system().lower()
+        if system == "windows":
+            commands.append(["sc", action, "postgresql"])
+        elif system == "darwin":
+            commands.append(["brew", "services", action, "postgresql"])
+        else:
+            commands.append(["systemctl", action, "postgresql"])
+            commands.append(["service", "postgresql", action])
+
+        for cmd in commands:
+            try:
+                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                self.service_status_var.set(
+                    f"Service status: {action.capitalize()} OK"
+                )
+                self.app.notifications.notify(
+                    result.stdout.strip() or f"PostgreSQL {action} command executed."
+                )
+                return
+            except (OSError, subprocess.CalledProcessError):
+                continue
+
+        self.service_status_var.set(f"Service status: {action.capitalize()} failed")
+        self.app.notifications.notify(
+            f"Unable to {action} PostgreSQL service. Check system permissions."
+        )
 
 
 class DatabaseTab(BaseTab):
@@ -315,11 +435,20 @@ class DatabaseTab(BaseTab):
         ttk.Button(toolbar, text="Refresh", command=self.refresh).grid(
             row=0, column=3, padx=6
         )
-        ttk.Button(toolbar, text="Edit Selected", command=self._edit_selected).grid(
+        ttk.Button(toolbar, text="Add Entry", command=self._add_entry).grid(
             row=0, column=4, padx=6
         )
+        ttk.Button(toolbar, text="Delete Selected", command=self._delete_selected).grid(
+            row=0, column=5, padx=6
+        )
+        ttk.Button(toolbar, text="Import CSV", command=self._import_csv).grid(
+            row=0, column=6, padx=6
+        )
+        ttk.Button(toolbar, text="Edit Selected", command=self._edit_selected).grid(
+            row=0, column=7, padx=6
+        )
 
-        self.tree = ttk.Treeview(self, show="headings")
+        self.tree = ttk.Treeview(self, show="headings", selectmode="extended")
         self.tree.grid(row=2, column=0, sticky="nsew", padx=12, pady=12)
         self.grid_rowconfigure(2, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -388,6 +517,155 @@ class DatabaseTab(BaseTab):
             return
         RecordEditorDialog(self, self.app, self.table_var.get(), data, self.refresh)
 
+    def _add_entry(self) -> None:
+        if not self.columns:
+            self.app.notifications.notify("Load a table before adding entries.")
+            return
+        field_specs = self._build_field_specs()
+        AddRecordDialog(
+            self,
+            self.app,
+            f"Add {self.table_var.get()} record",
+            field_specs,
+            on_save=self._insert_record,
+        )
+
+    def _build_field_specs(self) -> list[dict]:
+        specs: list[dict] = []
+        table = self.table_var.get()
+        for column in self.columns:
+            if column == "id":
+                continue
+            if table == "users" and column == "password_hash":
+                specs.append(
+                    {
+                        "name": "password",
+                        "label": "Password",
+                        "show": "•",
+                    }
+                )
+                continue
+            specs.append({"name": column, "label": column})
+        return specs
+
+    def _insert_record(self, data: dict[str, str | None]) -> None:
+        cleaned = {key: value for key, value in data.items() if value not in (None, "")}
+        if not self._validate_uuid_fields(cleaned):
+            return
+        table = self.table_var.get()
+        if table == "users":
+            password = cleaned.pop("password", None)
+            if password:
+                cleaned["password_hash"] = self._hash_password(password)
+        try:
+            get_dal().insert_record(table, cleaned)
+        except Exception as exc:
+            self.app.notifications.notify(f"Insert failed: {exc}")
+            return
+        self.app.notifications.notify("Record added successfully.")
+        self.refresh()
+
+    def _delete_selected(self) -> None:
+        selection = self.tree.selection()
+        if not selection:
+            self.app.notifications.notify("Select one or more rows to delete.")
+            return
+        if not messagebox.askyesno(
+            "Confirm Delete",
+            f"Delete {len(selection)} selected record(s)?",
+        ):
+            return
+        table = self.table_var.get()
+        deleted = 0
+        for item_id in selection:
+            values = self.tree.item(item_id, "values")
+            data = dict(zip(self.columns, values))
+            record_id = data.get("id")
+            if not record_id:
+                continue
+            try:
+                if get_dal().delete_record(table, record_id):
+                    deleted += 1
+            except Exception as exc:
+                self.app.notifications.notify(f"Delete failed: {exc}")
+                return
+        self.app.notifications.notify(f"Deleted {deleted} record(s).")
+        self.refresh()
+
+    def _import_csv(self) -> None:
+        filename = filedialog.askopenfilename(
+            title="Select CSV File",
+            filetypes=[("CSV Files", "*.csv")],
+        )
+        if not filename:
+            return
+        try:
+            with open(filename, newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                if not reader.fieldnames:
+                    self.app.notifications.notify("CSV file has no header row.")
+                    return
+                fieldnames = [name.strip() for name in reader.fieldnames]
+                required_columns = [
+                    col
+                    for col in self.columns
+                    if col != "id" and col != "password_hash"
+                ]
+                if "password" in fieldnames:
+                    required_columns = [
+                        col for col in required_columns if col != "password_hash"
+                    ]
+                missing = [col for col in required_columns if col not in fieldnames]
+                if missing:
+                    self.app.notifications.notify(
+                        f"CSV missing columns: {', '.join(missing)}"
+                    )
+                    return
+                count = 0
+                for row in reader:
+                    payload = self._build_csv_payload(row)
+                    if not self._validate_uuid_fields(payload):
+                        return
+                    get_dal().insert_record(self.table_var.get(), payload)
+                    count += 1
+        except Exception as exc:
+            self.app.notifications.notify(f"CSV import failed: {exc}")
+            return
+        self.app.notifications.notify(f"Imported {count} record(s).")
+        self.refresh()
+
+    def _build_csv_payload(self, row: dict[str, str]) -> dict[str, str | None]:
+        table = self.table_var.get()
+        payload = {
+            key: (value if value != "" else None)
+            for key, value in row.items()
+            if key in self.columns and key != "id"
+        }
+        if table == "users":
+            password = row.get("password") or None
+            if password:
+                payload["password_hash"] = self._hash_password(password)
+        return payload
+
+    def _hash_password(self, password: str) -> str:
+        return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+    def _validate_uuid_fields(self, payload: dict[str, str | None]) -> bool:
+        for key, value in payload.items():
+            if not value:
+                continue
+            if key == "id":
+                continue
+            if key.endswith("_id") or key in {"user_id", "tenant_id", "unit_id"}:
+                try:
+                    UUID(str(value))
+                except ValueError:
+                    self.app.notifications.notify(
+                        f"Field '{key}' must be a valid UUID."
+                    )
+                    return False
+        return True
+
 
 class RecordEditorDialog(tk.Toplevel):
     def __init__(
@@ -450,183 +728,594 @@ class RecordEditorDialog(tk.Toplevel):
             self.app.notifications.notify(f"Update failed: {exc}")
 
 
-class OperationsTab(BaseTab):
-    def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
-        super().__init__(parent, app)
-        self.booking_access = get_booking_access()
-        self.refresh_job: str | None = None
+class AddRecordDialog(tk.Toplevel):
+    def __init__(
+        self,
+        parent: tk.Widget,
+        app: "ServiceDaemonApp",
+        title: str,
+        field_specs: list[dict],
+        on_save,
+    ) -> None:
+        super().__init__(parent)
+        self.app = app
+        self.field_specs = field_specs
+        self.on_save = on_save
+        self.entries: dict[str, tk.Entry] = {}
+        self.title(title)
         self._build()
-        self.schedule_refresh()
 
     def _build(self) -> None:
-        header = ttk.Label(self, text="Operations", style="Header.TLabel")
+        container = ttk.Frame(self)
+        container.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
+        self.grid_columnconfigure(0, weight=1)
+        container.grid_columnconfigure(1, weight=1)
+
+        for idx, field in enumerate(self.field_specs):
+            ttk.Label(container, text=field["label"]).grid(row=idx, column=0, sticky="w")
+            entry = ttk.Entry(container, show=field.get("show", ""))
+            entry.grid(row=idx, column=1, sticky="ew", padx=6, pady=2)
+            self.entries[field["name"]] = entry
+
+        button_frame = ttk.Frame(container)
+        button_frame.grid(row=len(self.field_specs), column=1, sticky="e", pady=8)
+        ttk.Button(button_frame, text="Add", command=self._save).grid(
+            row=0, column=0, padx=4
+        )
+        ttk.Button(button_frame, text="Cancel", command=self.destroy).grid(
+            row=0, column=1, padx=4
+        )
+
+    def _save(self) -> None:
+        payload = {key: entry.get().strip() or None for key, entry in self.entries.items()}
+        self.on_save(payload)
+        self.destroy()
+
+
+class JsonStore:
+    def __init__(self, path: Path) -> None:
+        self.path = path
+
+    def load(self) -> list[dict]:
+        if not self.path.exists():
+            return []
+        try:
+            return json.loads(self.path.read_text())
+        except json.JSONDecodeError:
+            return []
+
+    def save(self, records: list[dict]) -> None:
+        self.path.write_text(json.dumps(records, indent=2) + "\n")
+
+
+class JsonRecordDialog(tk.Toplevel):
+    def __init__(
+        self,
+        parent: tk.Widget,
+        app: "ServiceDaemonApp",
+        title: str,
+        field_specs: list[dict],
+        on_save,
+    ) -> None:
+        super().__init__(parent)
+        self.app = app
+        self.field_specs = field_specs
+        self.on_save = on_save
+        self.inputs: dict[str, tk.Widget] = {}
+        self.title(title)
+        self._build()
+
+    def _build(self) -> None:
+        container = ttk.Frame(self)
+        container.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
+        self.grid_columnconfigure(0, weight=1)
+        container.grid_columnconfigure(1, weight=1)
+
+        for idx, field in enumerate(self.field_specs):
+            ttk.Label(container, text=field["label"]).grid(row=idx, column=0, sticky="w")
+            if field.get("widget") == "text":
+                widget = tk.Text(container, height=3, width=40)
+                widget.grid(row=idx, column=1, sticky="ew", padx=6, pady=2)
+            else:
+                widget = ttk.Entry(container)
+                widget.grid(row=idx, column=1, sticky="ew", padx=6, pady=2)
+            self.inputs[field["name"]] = widget
+
+        button_frame = ttk.Frame(container)
+        button_frame.grid(row=len(self.field_specs), column=1, sticky="e", pady=8)
+        ttk.Button(button_frame, text="Add", command=self._save).grid(
+            row=0, column=0, padx=4
+        )
+        ttk.Button(button_frame, text="Cancel", command=self.destroy).grid(
+            row=0, column=1, padx=4
+        )
+
+    def _save(self) -> None:
+        payload: dict[str, object] = {}
+        for field in self.field_specs:
+            widget = self.inputs[field["name"]]
+            if isinstance(widget, tk.Text):
+                value = widget.get("1.0", "end").strip()
+            else:
+                value = widget.get().strip()
+
+            if field.get("required") and not value:
+                self.app.notifications.notify(
+                    f"Field '{field['label']}' is required."
+                )
+                return
+
+            if field.get("json") and value:
+                try:
+                    payload[field["name"]] = json.loads(value)
+                except json.JSONDecodeError:
+                    self.app.notifications.notify(
+                        f"Field '{field['label']}' must be valid JSON."
+                    )
+                    return
+            else:
+                payload[field["name"]] = value or None
+
+        self.on_save(payload)
+        self.destroy()
+
+
+class TasksTab(BaseTab):
+    def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
+        super().__init__(parent, app)
+        self.store = JsonStore(PROJECT_ROOT / "task_instances.json")
+        self.records: list[dict] = []
+        self._build()
+        self.refresh()
+
+    def _build(self) -> None:
+        header = ttk.Label(self, text="Tasks", style="Header.TLabel")
         header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
 
         toolbar = ttk.Frame(self)
         toolbar.grid(row=1, column=0, sticky="ew", padx=12)
-        toolbar.grid_columnconfigure(5, weight=1)
+        toolbar.grid_columnconfigure(6, weight=1)
 
         ttk.Button(toolbar, text="Refresh", command=self.refresh).grid(
             row=0, column=0, padx=4
         )
-
-        ttk.Label(toolbar, text="Status").grid(row=0, column=1, padx=4)
-        self.status_var = tk.StringVar(value="scheduled")
-        self.status_combo = ttk.Combobox(
-            toolbar,
-            textvariable=self.status_var,
-            values=["requested", "scheduled", "assigned", "in_progress", "completed", "cancelled"],
-            width=16,
-            state="readonly",
+        ttk.Button(toolbar, text="Add Task", command=self._add_task).grid(
+            row=0, column=1, padx=4
         )
-        self.status_combo.grid(row=0, column=2, padx=4)
-
-        ttk.Button(toolbar, text="Update Status", command=self.update_status).grid(
+        ttk.Button(toolbar, text="Delete Selected", command=self._delete_selected).grid(
+            row=0, column=2, padx=4
+        )
+        ttk.Button(toolbar, text="Import CSV", command=self._import_csv).grid(
             row=0, column=3, padx=4
-        )
-
-        ttk.Button(toolbar, text="Schedule", command=self.schedule_booking).grid(
-            row=0, column=4, padx=4
-        )
-
-        schedule_frame = ttk.Frame(self)
-        schedule_frame.grid(row=2, column=0, sticky="ew", padx=12, pady=(0, 8))
-        schedule_frame.grid_columnconfigure(1, weight=1)
-
-        ttk.Label(schedule_frame, text="Start (YYYY-MM-DD HH:MM)").grid(
-            row=0, column=0, sticky="w"
-        )
-        self.start_var = tk.StringVar()
-        ttk.Entry(schedule_frame, textvariable=self.start_var).grid(
-            row=0, column=1, sticky="ew", padx=6
-        )
-
-        ttk.Label(schedule_frame, text="End (YYYY-MM-DD HH:MM)").grid(
-            row=1, column=0, sticky="w"
-        )
-        self.end_var = tk.StringVar()
-        ttk.Entry(schedule_frame, textvariable=self.end_var).grid(
-            row=1, column=1, sticky="ew", padx=6
         )
 
         self.tree = ttk.Treeview(
             self,
             columns=(
-                "id",
+                "instance_id",
+                "template_id",
+                "target_entity_id",
+                "scheduled_time",
                 "status",
-                "priority",
-                "unit_id",
-                "scheduled_start",
-                "scheduled_end",
+                "assignee_ids",
             ),
             show="headings",
+            selectmode="extended",
         )
-        self.tree.grid(row=3, column=0, sticky="nsew", padx=12, pady=12)
-        self.grid_rowconfigure(3, weight=1)
+        self.tree.grid(row=2, column=0, sticky="nsew", padx=12, pady=12)
+        self.grid_rowconfigure(2, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
         for col in self.tree["columns"]:
             self.tree.heading(col, text=col)
             self.tree.column(col, width=140, anchor="w")
 
-        self.tree.bind("<<TreeviewSelect>>", self._populate_schedule_fields)
-
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
-        scrollbar.grid(row=3, column=1, sticky="ns")
+        scrollbar.grid(row=2, column=1, sticky="ns")
         self.tree.configure(yscrollcommand=scrollbar.set)
-
-    def update_refresh_interval(self) -> None:
-        if self.refresh_job:
-            self.after_cancel(self.refresh_job)
-        self.schedule_refresh()
-
-    def schedule_refresh(self) -> None:
-        interval_ms = self.app.settings.refresh_interval_seconds * 1000
-        self.refresh_job = self.after(interval_ms, self._auto_refresh)
-
-    def _auto_refresh(self) -> None:
-        self.refresh()
-        self.schedule_refresh()
 
     def refresh(self) -> None:
         for item in self.tree.get_children():
             self.tree.delete(item)
-        try:
-            bookings = get_dal().get_filtered_records("bookings", "1=1", (), limit=200)
-            for booking in bookings:
-                self.tree.insert(
-                    "",
-                    "end",
-                    values=(
-                        booking.get("id"),
-                        booking.get("status"),
-                        booking.get("priority"),
-                        booking.get("unit_id"),
-                        booking.get("scheduled_start"),
-                        booking.get("scheduled_end"),
-                    ),
-                )
-            self.app.notifications.notify(f"Loaded {len(bookings)} bookings.")
-        except Exception as exc:
-            self.app.notifications.notify(f"Booking refresh failed: {exc}")
+        self.records = self.store.load()
+        for record in self.records:
+            self.tree.insert(
+                "",
+                "end",
+                values=(
+                    record.get("instance_id"),
+                    record.get("template_id"),
+                    record.get("target_entity_id"),
+                    record.get("scheduled_time"),
+                    record.get("status"),
+                    self._format_cell(record.get("assignee_ids")),
+                ),
+            )
+        self.app.notifications.notify(f"Loaded {len(self.records)} tasks.")
 
-    def _selected_booking_id(self) -> str | None:
+    def _format_cell(self, value: object) -> str:
+        if isinstance(value, (dict, list)):
+            return json.dumps(value)
+        return "" if value is None else str(value)
+
+    def _add_task(self) -> None:
+        JsonRecordDialog(
+            self,
+            self.app,
+            "Add Task",
+            TASK_INSTANCE_FIELDS,
+            self._save_task,
+        )
+
+    def _save_task(self, data: dict[str, object]) -> None:
+        if not data.get("instance_id"):
+            data["instance_id"] = str(uuid4())
+        self.records.append(data)
+        self.store.save(self.records)
+        self.app.notifications.notify("Task added successfully.")
+        self.refresh()
+
+    def _delete_selected(self) -> None:
         selection = self.tree.selection()
         if not selection:
-            return None
-        return self.tree.item(selection[0], "values")[0]
+            self.app.notifications.notify("Select one or more tasks to delete.")
+            return
+        if not messagebox.askyesno(
+            "Confirm Delete",
+            f"Delete {len(selection)} selected task(s)?",
+        ):
+            return
+        ids_to_remove = {self.tree.item(item, "values")[0] for item in selection}
+        self.records = [
+            record
+            for record in self.records
+            if record.get("instance_id") not in ids_to_remove
+        ]
+        self.store.save(self.records)
+        self.app.notifications.notify("Tasks deleted.")
+        self.refresh()
 
-    def _populate_schedule_fields(self, _event) -> None:
+    def _import_csv(self) -> None:
+        filename = filedialog.askopenfilename(
+            title="Select CSV File",
+            filetypes=[("CSV Files", "*.csv")],
+        )
+        if not filename:
+            return
+        try:
+            with open(filename, newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                if not reader.fieldnames:
+                    self.app.notifications.notify("CSV file has no header row.")
+                    return
+                missing = [
+                    field["name"]
+                    for field in TASK_INSTANCE_FIELDS
+                    if field["name"] not in reader.fieldnames
+                ]
+                if missing:
+                    self.app.notifications.notify(
+                        f"CSV missing columns: {', '.join(missing)}"
+                    )
+                    return
+                count = 0
+                for row in reader:
+                    payload = self._parse_csv_row(row, TASK_INSTANCE_FIELDS)
+                    if not payload.get("instance_id"):
+                        payload["instance_id"] = str(uuid4())
+                    self.records.append(payload)
+                    count += 1
+        except Exception as exc:
+            self.app.notifications.notify(f"CSV import failed: {exc}")
+            return
+        self.store.save(self.records)
+        self.app.notifications.notify(f"Imported {count} task(s).")
+        self.refresh()
+
+    def _parse_csv_row(self, row: dict[str, str], fields: list[dict]) -> dict:
+        payload: dict[str, object] = {}
+        field_map = {field["name"]: field for field in fields}
+        for key, value in row.items():
+            field = field_map.get(key)
+            if not field:
+                continue
+            cleaned = value.strip()
+            if field.get("json") and cleaned:
+                payload[key] = json.loads(cleaned)
+            else:
+                payload[key] = cleaned or None
+        for field in fields:
+            if field.get("required") and not payload.get(field["name"]):
+                raise ValueError(f"Missing required field {field['name']}")
+        return payload
+
+
+class TaskTemplatesTab(BaseTab):
+    def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
+        super().__init__(parent, app)
+        self.store = JsonStore(PROJECT_ROOT / "task_templates.json")
+        self.records: list[dict] = []
+        self._build()
+        self.refresh()
+
+    def _build(self) -> None:
+        header = ttk.Label(self, text="Task Templates", style="Header.TLabel")
+        header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
+
+        toolbar = ttk.Frame(self)
+        toolbar.grid(row=1, column=0, sticky="ew", padx=12)
+        toolbar.grid_columnconfigure(6, weight=1)
+
+        ttk.Button(toolbar, text="Refresh", command=self.refresh).grid(
+            row=0, column=0, padx=4
+        )
+        ttk.Button(toolbar, text="Add Template", command=self._add_template).grid(
+            row=0, column=1, padx=4
+        )
+        ttk.Button(toolbar, text="Delete Selected", command=self._delete_selected).grid(
+            row=0, column=2, padx=4
+        )
+        ttk.Button(toolbar, text="Import CSV", command=self._import_csv).grid(
+            row=0, column=3, padx=4
+        )
+
+        self.tree = ttk.Treeview(
+            self,
+            columns=(
+                "id",
+                "title",
+                "category",
+                "description",
+                "safety_level",
+                "visibility",
+            ),
+            show="headings",
+            selectmode="extended",
+        )
+        self.tree.grid(row=2, column=0, sticky="nsew", padx=12, pady=12)
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        for col in self.tree["columns"]:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, width=160, anchor="w")
+
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
+        scrollbar.grid(row=2, column=1, sticky="ns")
+        self.tree.configure(yscrollcommand=scrollbar.set)
+
+    def refresh(self) -> None:
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        self.records = self.store.load()
+        for record in self.records:
+            self.tree.insert(
+                "",
+                "end",
+                values=(
+                    record.get("id"),
+                    record.get("title"),
+                    record.get("category"),
+                    record.get("description"),
+                    record.get("safety_level"),
+                    self._format_cell(record.get("visibility")),
+                ),
+            )
+        self.app.notifications.notify(
+            f"Loaded {len(self.records)} task templates."
+        )
+
+    def _format_cell(self, value: object) -> str:
+        if isinstance(value, (dict, list)):
+            return json.dumps(value)
+        return "" if value is None else str(value)
+
+    def _add_template(self) -> None:
+        JsonRecordDialog(
+            self,
+            self.app,
+            "Add Task Template",
+            TASK_TEMPLATE_FIELDS,
+            self._save_template,
+        )
+
+    def _save_template(self, data: dict[str, object]) -> None:
+        if not data.get("id"):
+            data["id"] = str(uuid4())
+        self.records.append(data)
+        self.store.save(self.records)
+        self.app.notifications.notify("Task template added successfully.")
+        self.refresh()
+
+    def _delete_selected(self) -> None:
         selection = self.tree.selection()
         if not selection:
+            self.app.notifications.notify("Select templates to delete.")
             return
-        values = self.tree.item(selection[0], "values")
-        self.start_var.set(values[4] or "")
-        self.end_var.set(values[5] or "")
-
-    def update_status(self) -> None:
-        booking_id = self._selected_booking_id()
-        if not booking_id:
-            self.app.notifications.notify("Select a booking first.")
+        if not messagebox.askyesno(
+            "Confirm Delete",
+            f"Delete {len(selection)} selected template(s)?",
+        ):
             return
-        try:
-            success = self.booking_access.update_booking_status(
-                booking_id, self.status_var.get()
-            )
-            if success:
-                self.app.notifications.notify("Booking status updated.")
-                self.refresh()
-            else:
-                self.app.notifications.notify("Status update failed.")
-        except Exception as exc:
-            self.app.notifications.notify(f"Status update error: {exc}")
+        ids_to_remove = {self.tree.item(item, "values")[0] for item in selection}
+        self.records = [
+            record for record in self.records if record.get("id") not in ids_to_remove
+        ]
+        self.store.save(self.records)
+        self.app.notifications.notify("Templates deleted.")
+        self.refresh()
 
-    def schedule_booking(self) -> None:
-        booking_id = self._selected_booking_id()
-        if not booking_id:
-            self.app.notifications.notify("Select a booking first.")
+    def _import_csv(self) -> None:
+        filename = filedialog.askopenfilename(
+            title="Select CSV File",
+            filetypes=[("CSV Files", "*.csv")],
+        )
+        if not filename:
             return
         try:
-            start = self._parse_datetime(self.start_var.get())
-            end = self._parse_datetime(self.end_var.get())
-            success = self.booking_access.update_booking(
-                booking_id,
-                scheduled_start=start,
-                scheduled_end=end,
-            )
-            if success:
-                self.app.notifications.notify("Booking scheduled.")
-                self.refresh()
-            else:
-                self.app.notifications.notify("Scheduling failed.")
+            with open(filename, newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                if not reader.fieldnames:
+                    self.app.notifications.notify("CSV file has no header row.")
+                    return
+                missing = [
+                    field["name"]
+                    for field in TASK_TEMPLATE_FIELDS
+                    if field["name"] not in reader.fieldnames
+                ]
+                if missing:
+                    self.app.notifications.notify(
+                        f"CSV missing columns: {', '.join(missing)}"
+                    )
+                    return
+                count = 0
+                for row in reader:
+                    payload = self._parse_csv_row(row, TASK_TEMPLATE_FIELDS)
+                    if not payload.get("id"):
+                        payload["id"] = str(uuid4())
+                    self.records.append(payload)
+                    count += 1
         except Exception as exc:
-            self.app.notifications.notify(f"Schedule error: {exc}")
+            self.app.notifications.notify(f"CSV import failed: {exc}")
+            return
+        self.store.save(self.records)
+        self.app.notifications.notify(f"Imported {count} template(s).")
+        self.refresh()
 
-    def _parse_datetime(self, value: str | None) -> datetime | None:
-        if not value:
-            return None
-        cleaned = value.strip()
-        return datetime.fromisoformat(cleaned)
+    def _parse_csv_row(self, row: dict[str, str], fields: list[dict]) -> dict:
+        payload: dict[str, object] = {}
+        field_map = {field["name"]: field for field in fields}
+        for key, value in row.items():
+            field = field_map.get(key)
+            if not field:
+                continue
+            cleaned = value.strip()
+            if field.get("json") and cleaned:
+                payload[key] = json.loads(cleaned)
+            else:
+                payload[key] = cleaned or None
+        for field in fields:
+            if field.get("required") and not payload.get(field["name"]):
+                raise ValueError(f"Missing required field {field['name']}")
+        return payload
+
+
+class SqlExecutionTab(BaseTab):
+    def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
+        super().__init__(parent, app)
+        self.loaded_sql_path: Path | None = None
+        self._build()
+
+    def _build(self) -> None:
+        header = ttk.Label(self, text="SQL Query Execution", style="Header.TLabel")
+        header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
+
+        toolbar = ttk.Frame(self)
+        toolbar.grid(row=1, column=0, sticky="ew", padx=12)
+        toolbar.grid_columnconfigure(2, weight=1)
+
+        ttk.Button(toolbar, text="Execute", command=self._execute_queries).grid(
+            row=0, column=0, padx=4
+        )
+        ttk.Button(toolbar, text="Import SQL", command=self._import_sql).grid(
+            row=0, column=1, padx=4
+        )
+
+        query_frame = ttk.Frame(self)
+        query_frame.grid(row=2, column=0, sticky="nsew", padx=12, pady=6)
+        query_frame.grid_columnconfigure(0, weight=1)
+        query_frame.grid_rowconfigure(0, weight=1)
+
+        self.query_text = tk.Text(query_frame, height=10, wrap="none")
+        self.query_text.grid(row=0, column=0, sticky="nsew")
+
+        query_scroll = ttk.Scrollbar(query_frame, command=self.query_text.yview)
+        query_scroll.grid(row=0, column=1, sticky="ns")
+        self.query_text.configure(yscrollcommand=query_scroll.set)
+
+        log_frame = ttk.Frame(self)
+        log_frame.grid(row=3, column=0, sticky="nsew", padx=12, pady=(0, 12))
+        log_frame.grid_columnconfigure(0, weight=1)
+        log_frame.grid_rowconfigure(0, weight=1)
+
+        self.log_text = tk.Text(log_frame, height=10, wrap="word", state="disabled")
+        self.log_text.grid(row=0, column=0, sticky="nsew")
+        self.log_text.tag_configure("error", foreground="#b91c1c")
+
+        log_scroll = ttk.Scrollbar(log_frame, command=self.log_text.yview)
+        log_scroll.grid(row=0, column=1, sticky="ns")
+        self.log_text.configure(yscrollcommand=log_scroll.set)
+
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(3, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+    def _import_sql(self) -> None:
+        if not SQL_SCRIPTS_DIR.exists():
+            self.app.notifications.notify("SQL scripts folder does not exist.")
+            return
+        sql_files = sorted(SQL_SCRIPTS_DIR.glob("*.sql"))
+        if not sql_files:
+            self.app.notifications.notify("There are no SQL files to import.")
+            return
+        filename = filedialog.askopenfilename(
+            title="Select SQL File",
+            filetypes=[("SQL Files", "*.sql")],
+            initialdir=str(SQL_SCRIPTS_DIR),
+        )
+        if not filename:
+            return
+        selected_path = Path(filename)
+        if SQL_SCRIPTS_DIR not in selected_path.parents:
+            self.app.notifications.notify("Select a SQL file from the sql_setup folder.")
+            return
+        self.loaded_sql_path = selected_path
+        self.query_text.delete("1.0", "end")
+        self.query_text.insert("1.0", selected_path.read_text())
+        self.app.notifications.notify(f"Loaded {selected_path.name}.")
+
+    def _execute_queries(self) -> None:
+        raw = self.query_text.get("1.0", "end").strip()
+        if not raw:
+            self.app.notifications.notify("Enter SQL before executing.")
+            return
+        statements = [stmt.strip() for stmt in raw.split(";") if stmt.strip()]
+        for statement in statements:
+            self._execute_statement(statement)
+        if self.loaded_sql_path and messagebox.askyesno(
+            "Delete SQL file?",
+            f"Delete {self.loaded_sql_path.name} after execution?",
+        ):
+            try:
+                self.loaded_sql_path.unlink()
+                self.app.notifications.notify("SQL file deleted.")
+            except OSError as exc:
+                self._append_log(f"Delete failed: {exc}", is_error=True)
+            self.loaded_sql_path = None
+
+    def _execute_statement(self, statement: str) -> None:
+        db = get_db()
+        try:
+            with db.get_cursor(dict_cursor=True) as cursor:
+                cursor.execute(statement)
+                if cursor.description:
+                    rows = cursor.fetchall()
+                    self._append_log(
+                        f"Query OK ({len(rows)} rows): {statement[:120]}"
+                    )
+                    for row in rows[:5]:
+                        self._append_log(json.dumps(row))
+                else:
+                    self._append_log(f"Statement OK: {statement[:120]}")
+        except Exception as exc:
+            self._append_log(f"Error: {exc} | {statement[:120]}", is_error=True)
+
+    def _append_log(self, message: str, is_error: bool = False) -> None:
+        self.log_text.configure(state="normal")
+        tag = "error" if is_error else None
+        self.log_text.insert("end", message + "\n", tag)
+        self.log_text.configure(state="disabled")
+        self.log_text.see("end")
 
 
 class ServiceDaemonApp(tk.Tk):
@@ -659,11 +1348,15 @@ class ServiceDaemonApp(tk.Tk):
 
         self.settings_tab = SettingsTab(notebook, self)
         self.database_tab = DatabaseTab(notebook, self)
-        self.operations_tab = OperationsTab(notebook, self)
+        self.operations_tab = TasksTab(notebook, self)
+        self.task_templates_tab = TaskTemplatesTab(notebook, self)
+        self.sql_execution_tab = SqlExecutionTab(notebook, self)
 
         notebook.add(self.settings_tab, text="Settings")
         notebook.add(self.database_tab, text="Database")
-        notebook.add(self.operations_tab, text="Operations")
+        notebook.add(self.operations_tab, text="Tasks")
+        notebook.add(self.task_templates_tab, text="Task Templates")
+        notebook.add(self.sql_execution_tab, text="SQL Query Execution")
 
         self.applications_menu = tk.Menu(self)
         self.config(menu=self.applications_menu)
@@ -676,7 +1369,170 @@ class ServiceDaemonApp(tk.Tk):
     def _refresh_all(self) -> None:
         self.database_tab.refresh()
         self.operations_tab.refresh()
+        self.task_templates_tab.refresh()
         self.notifications.notify("All tabs refreshed.")
+
+
+TASK_TEMPLATE_FIELDS = [
+    {"name": "id", "label": "Template ID"},
+    {"name": "title", "label": "Title", "required": True},
+    {"name": "category", "label": "Category", "required": True},
+    {"name": "description", "label": "Description", "required": True, "widget": "text"},
+    {
+        "name": "classification",
+        "label": "Classification Tags (JSON)",
+        "json": True,
+        "required": True,
+    },
+    {
+        "name": "scheduling_options",
+        "label": "Scheduling Options (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {
+        "name": "allowed_frequencies",
+        "label": "Allowed Frequencies (JSON)",
+        "json": True,
+        "required": True,
+    },
+    {
+        "name": "parameters",
+        "label": "Parameters (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {
+        "name": "preconditions",
+        "label": "Preconditions (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {
+        "name": "postconditions",
+        "label": "Postconditions (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {
+        "name": "resources_required",
+        "label": "Resources Required (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {
+        "name": "time_estimate",
+        "label": "Time Estimate (JSON)",
+        "json": True,
+        "required": True,
+    },
+    {
+        "name": "cost_model",
+        "label": "Cost Model (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {"name": "safety_level", "label": "Safety Level", "required": True},
+    {
+        "name": "output_schema",
+        "label": "Output Schema (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {
+        "name": "quality_checks",
+        "label": "Quality Checks (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {
+        "name": "retry_policy",
+        "label": "Retry Policy (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {
+        "name": "concurrency_limits",
+        "label": "Concurrency Limits (JSON)",
+        "json": True,
+        "required": True,
+    },
+    {
+        "name": "visibility",
+        "label": "Visibility (JSON)",
+        "json": True,
+        "required": True,
+    },
+    {
+        "name": "virtual_effects",
+        "label": "Virtual Effects (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {
+        "name": "audit_fields_required",
+        "label": "Audit Fields Required (JSON)",
+        "json": True,
+        "required": True,
+    },
+]
+
+TASK_INSTANCE_FIELDS = [
+    {"name": "instance_id", "label": "Instance ID"},
+    {"name": "template_id", "label": "Template ID", "required": True},
+    {"name": "target_entity_id", "label": "Target Entity ID", "required": True},
+    {"name": "creator_id", "label": "Creator ID", "required": True},
+    {
+        "name": "assignee_ids",
+        "label": "Assignee IDs (JSON)",
+        "json": True,
+        "required": True,
+    },
+    {"name": "scheduled_time", "label": "Scheduled Time", "required": True},
+    {
+        "name": "parameters",
+        "label": "Parameters (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {"name": "status", "label": "Status", "required": True},
+    {"name": "attempts", "label": "Attempts", "required": True},
+    {
+        "name": "result",
+        "label": "Result (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {"name": "created_at", "label": "Created At", "required": True},
+    {"name": "updated_at", "label": "Updated At", "required": True},
+    {
+        "name": "logs",
+        "label": "Logs (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {
+        "name": "attached_files",
+        "label": "Attached Files (JSON)",
+        "json": True,
+        "required": True,
+        "widget": "text",
+    },
+    {"name": "idempotency_key", "label": "Idempotency Key", "required": True},
+]
 
 
 if __name__ == "__main__":
