@@ -1031,6 +1031,7 @@ class TasksTab(BaseTab):
         """! @brief Initialize the tasks tab and load records."""
         super().__init__(parent, app)
         self.store = JsonStore(PROJECT_ROOT / "task_instances.json")
+        self.use_db = table_exists(self.app, "task_instances")
         self.records: list[dict] = []
         self._build()
         self.refresh()
@@ -1094,7 +1095,7 @@ class TasksTab(BaseTab):
         """! @brief Reload task instances from disk and render them."""
         for item in self.tree.get_children():
             self.tree.delete(item)
-        self.records = self.store.load()
+        self.records = self._load_records()
         for record in self.records:
             self.tree.insert(
                 "",
@@ -1185,7 +1186,18 @@ class TasksTab(BaseTab):
                     payload = self._parse_csv_row(row, TASK_INSTANCE_FIELDS)
                     if not payload.get("instance_id"):
                         payload["instance_id"] = str(uuid4())
-                    self.records.append(payload)
+                    if self.use_db:
+                        db_payload = prepare_db_payload(TASK_INSTANCE_FIELDS, payload)
+                        db_payload["id"] = db_payload.pop("instance_id")
+                        self.app.run_db_action(
+                            lambda db_payload=db_payload: get_dal().insert_record(
+                                "task_instances",
+                                db_payload,
+                            ),
+                            "Unable to import operation",
+                        )
+                    else:
+                        self.records.append(payload)
                     count += 1
         except Exception as exc:
             self.app.notifications.notify(f"CSV import failed: {exc}")
@@ -1219,6 +1231,7 @@ class TaskTemplatesTab(BaseTab):
         """! @brief Initialize the tasks tab."""
         super().__init__(parent, app)
         self.store = JsonStore(PROJECT_ROOT / "task_templates.json")
+        self.use_db = table_exists(self.app, "task_templates")
         self.records: list[dict] = []
         self._build()
         self.refresh()
@@ -1282,7 +1295,7 @@ class TaskTemplatesTab(BaseTab):
         """! @brief Reload tasks from disk and render them."""
         for item in self.tree.get_children():
             self.tree.delete(item)
-        self.records = self.store.load()
+        self.records = self._load_records()
         for record in self.records:
             self.tree.insert(
                 "",
@@ -1371,7 +1384,17 @@ class TaskTemplatesTab(BaseTab):
                     payload = self._parse_csv_row(row, TASK_TEMPLATE_FIELDS)
                     if not payload.get("id"):
                         payload["id"] = str(uuid4())
-                    self.records.append(payload)
+                    if self.use_db:
+                        db_payload = prepare_db_payload(TASK_TEMPLATE_FIELDS, payload)
+                        self.app.run_db_action(
+                            lambda db_payload=db_payload: get_dal().insert_record(
+                                "task_templates",
+                                db_payload,
+                            ),
+                            "Unable to import task",
+                        )
+                    else:
+                        self.records.append(payload)
                     count += 1
         except Exception as exc:
             self.app.notifications.notify(f"CSV import failed: {exc}")
