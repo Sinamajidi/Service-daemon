@@ -9,20 +9,18 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 import csv
-import hashlib
 import json
 import platform
 import subprocess
 import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 PROJECT_ROOT = Path(__file__).parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from database.data_access_layer import get_dal
-from database.db_connection import get_db
 from config import DB_CONFIG
 
 
@@ -521,44 +519,18 @@ class DatabaseTab(BaseTab):
         if not self.columns:
             self.app.notifications.notify("Load a table before adding entries.")
             return
-        field_specs = self._build_field_specs()
         AddRecordDialog(
             self,
             self.app,
             f"Add {self.table_var.get()} record",
-            field_specs,
+            self.columns,
             on_save=self._insert_record,
         )
 
-    def _build_field_specs(self) -> list[dict]:
-        specs: list[dict] = []
-        table = self.table_var.get()
-        for column in self.columns:
-            if column == "id":
-                continue
-            if table == "users" and column == "password_hash":
-                specs.append(
-                    {
-                        "name": "password",
-                        "label": "Password",
-                        "show": "•",
-                    }
-                )
-                continue
-            specs.append({"name": column, "label": column})
-        return specs
-
     def _insert_record(self, data: dict[str, str | None]) -> None:
         cleaned = {key: value for key, value in data.items() if value not in (None, "")}
-        if not self._validate_uuid_fields(cleaned):
-            return
-        table = self.table_var.get()
-        if table == "users":
-            password = cleaned.pop("password", None)
-            if password:
-                cleaned["password_hash"] = self._hash_password(password)
         try:
-            get_dal().insert_record(table, cleaned)
+            get_dal().insert_record(self.table_var.get(), cleaned)
         except Exception as exc:
             self.app.notifications.notify(f"Insert failed: {exc}")
             return
@@ -605,17 +577,9 @@ class DatabaseTab(BaseTab):
                 if not reader.fieldnames:
                     self.app.notifications.notify("CSV file has no header row.")
                     return
-                fieldnames = [name.strip() for name in reader.fieldnames]
-                required_columns = [
-                    col
-                    for col in self.columns
-                    if col != "id" and col != "password_hash"
+                missing = [
+                    col for col in self.columns if col not in reader.fieldnames
                 ]
-                if "password" in fieldnames:
-                    required_columns = [
-                        col for col in required_columns if col != "password_hash"
-                    ]
-                missing = [col for col in required_columns if col not in fieldnames]
                 if missing:
                     self.app.notifications.notify(
                         f"CSV missing columns: {', '.join(missing)}"
@@ -623,9 +587,11 @@ class DatabaseTab(BaseTab):
                     return
                 count = 0
                 for row in reader:
-                    payload = self._build_csv_payload(row)
-                    if not self._validate_uuid_fields(payload):
-                        return
+                    payload = {
+                        key: (value if value != "" else None)
+                        for key, value in row.items()
+                        if key in self.columns
+                    }
                     get_dal().insert_record(self.table_var.get(), payload)
                     count += 1
         except Exception as exc:
@@ -633,38 +599,6 @@ class DatabaseTab(BaseTab):
             return
         self.app.notifications.notify(f"Imported {count} record(s).")
         self.refresh()
-
-    def _build_csv_payload(self, row: dict[str, str]) -> dict[str, str | None]:
-        table = self.table_var.get()
-        payload = {
-            key: (value if value != "" else None)
-            for key, value in row.items()
-            if key in self.columns and key != "id"
-        }
-        if table == "users":
-            password = row.get("password") or None
-            if password:
-                payload["password_hash"] = self._hash_password(password)
-        return payload
-
-    def _hash_password(self, password: str) -> str:
-        return hashlib.sha256(password.encode("utf-8")).hexdigest()
-
-    def _validate_uuid_fields(self, payload: dict[str, str | None]) -> bool:
-        for key, value in payload.items():
-            if not value:
-                continue
-            if key == "id":
-                continue
-            if key.endswith("_id") or key in {"user_id", "tenant_id", "unit_id"}:
-                try:
-                    UUID(str(value))
-                except ValueError:
-                    self.app.notifications.notify(
-                        f"Field '{key}' must be a valid UUID."
-                    )
-                    return False
-        return True
 
 
 class RecordEditorDialog(tk.Toplevel):
@@ -734,12 +668,12 @@ class AddRecordDialog(tk.Toplevel):
         parent: tk.Widget,
         app: "ServiceDaemonApp",
         title: str,
-        field_specs: list[dict],
+        columns: list[str],
         on_save,
     ) -> None:
         super().__init__(parent)
         self.app = app
-        self.field_specs = field_specs
+        self.columns = columns
         self.on_save = on_save
         self.entries: dict[str, tk.Entry] = {}
         self.title(title)
@@ -751,14 +685,14 @@ class AddRecordDialog(tk.Toplevel):
         self.grid_columnconfigure(0, weight=1)
         container.grid_columnconfigure(1, weight=1)
 
-        for idx, field in enumerate(self.field_specs):
-            ttk.Label(container, text=field["label"]).grid(row=idx, column=0, sticky="w")
-            entry = ttk.Entry(container, show=field.get("show", ""))
+        for idx, key in enumerate(self.columns):
+            ttk.Label(container, text=key).grid(row=idx, column=0, sticky="w")
+            entry = ttk.Entry(container)
             entry.grid(row=idx, column=1, sticky="ew", padx=6, pady=2)
-            self.entries[field["name"]] = entry
+            self.entries[key] = entry
 
         button_frame = ttk.Frame(container)
-        button_frame.grid(row=len(self.field_specs), column=1, sticky="e", pady=8)
+        button_frame.grid(row=len(self.columns), column=1, sticky="e", pady=8)
         ttk.Button(button_frame, text="Add", command=self._save).grid(
             row=0, column=0, padx=4
         )
@@ -1152,6 +1086,47 @@ class TaskTemplatesTab(BaseTab):
         )
         if not filename:
             return
+        sql_files = sorted(SQL_SCRIPTS_DIR.glob("*.sql"))
+        if not sql_files:
+            self.app.notifications.notify("There are no SQL files to import.")
+            return
+        filename = filedialog.askopenfilename(
+            title="Select SQL File",
+            filetypes=[("SQL Files", "*.sql")],
+            initialdir=str(SQL_SCRIPTS_DIR),
+        )
+        if not filename:
+            return
+        selected_path = Path(filename)
+        if SQL_SCRIPTS_DIR not in selected_path.parents:
+            self.app.notifications.notify("Select a SQL file from the sql_setup folder.")
+            return
+        self.loaded_sql_path = selected_path
+        self.query_text.delete("1.0", "end")
+        self.query_text.insert("1.0", selected_path.read_text())
+        self.app.notifications.notify(f"Loaded {selected_path.name}.")
+
+    def _execute_queries(self) -> None:
+        raw = self.query_text.get("1.0", "end").strip()
+        if not raw:
+            self.app.notifications.notify("Enter SQL before executing.")
+            return
+        statements = [stmt.strip() for stmt in raw.split(";") if stmt.strip()]
+        for statement in statements:
+            self._execute_statement(statement)
+        if self.loaded_sql_path and messagebox.askyesno(
+            "Delete SQL file?",
+            f"Delete {self.loaded_sql_path.name} after execution?",
+        ):
+            try:
+                self.loaded_sql_path.unlink()
+                self.app.notifications.notify("SQL file deleted.")
+            except OSError as exc:
+                self._append_log(f"Delete failed: {exc}", is_error=True)
+            self.loaded_sql_path = None
+
+    def _execute_statement(self, statement: str) -> None:
+        db = get_db()
         try:
             with open(filename, newline="", encoding="utf-8") as handle:
                 reader = csv.DictReader(handle)
@@ -1200,124 +1175,6 @@ class TaskTemplatesTab(BaseTab):
         return payload
 
 
-class SqlExecutionTab(BaseTab):
-    def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
-        super().__init__(parent, app)
-        self.loaded_sql_path: Path | None = None
-        self._build()
-
-    def _build(self) -> None:
-        header = ttk.Label(self, text="SQL Query Execution", style="Header.TLabel")
-        header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
-
-        toolbar = ttk.Frame(self)
-        toolbar.grid(row=1, column=0, sticky="ew", padx=12)
-        toolbar.grid_columnconfigure(2, weight=1)
-
-        ttk.Button(toolbar, text="Execute", command=self._execute_queries).grid(
-            row=0, column=0, padx=4
-        )
-        ttk.Button(toolbar, text="Import SQL", command=self._import_sql).grid(
-            row=0, column=1, padx=4
-        )
-
-        query_frame = ttk.Frame(self)
-        query_frame.grid(row=2, column=0, sticky="nsew", padx=12, pady=6)
-        query_frame.grid_columnconfigure(0, weight=1)
-        query_frame.grid_rowconfigure(0, weight=1)
-
-        self.query_text = tk.Text(query_frame, height=10, wrap="none")
-        self.query_text.grid(row=0, column=0, sticky="nsew")
-
-        query_scroll = ttk.Scrollbar(query_frame, command=self.query_text.yview)
-        query_scroll.grid(row=0, column=1, sticky="ns")
-        self.query_text.configure(yscrollcommand=query_scroll.set)
-
-        log_frame = ttk.Frame(self)
-        log_frame.grid(row=3, column=0, sticky="nsew", padx=12, pady=(0, 12))
-        log_frame.grid_columnconfigure(0, weight=1)
-        log_frame.grid_rowconfigure(0, weight=1)
-
-        self.log_text = tk.Text(log_frame, height=10, wrap="word", state="disabled")
-        self.log_text.grid(row=0, column=0, sticky="nsew")
-        self.log_text.tag_configure("error", foreground="#b91c1c")
-
-        log_scroll = ttk.Scrollbar(log_frame, command=self.log_text.yview)
-        log_scroll.grid(row=0, column=1, sticky="ns")
-        self.log_text.configure(yscrollcommand=log_scroll.set)
-
-        self.grid_rowconfigure(2, weight=1)
-        self.grid_rowconfigure(3, weight=1)
-        self.grid_columnconfigure(0, weight=1)
-
-    def _import_sql(self) -> None:
-        if not SQL_SCRIPTS_DIR.exists():
-            self.app.notifications.notify("SQL scripts folder does not exist.")
-            return
-        sql_files = sorted(SQL_SCRIPTS_DIR.glob("*.sql"))
-        if not sql_files:
-            self.app.notifications.notify("There are no SQL files to import.")
-            return
-        filename = filedialog.askopenfilename(
-            title="Select SQL File",
-            filetypes=[("SQL Files", "*.sql")],
-            initialdir=str(SQL_SCRIPTS_DIR),
-        )
-        if not filename:
-            return
-        selected_path = Path(filename)
-        if SQL_SCRIPTS_DIR not in selected_path.parents:
-            self.app.notifications.notify("Select a SQL file from the sql_setup folder.")
-            return
-        self.loaded_sql_path = selected_path
-        self.query_text.delete("1.0", "end")
-        self.query_text.insert("1.0", selected_path.read_text())
-        self.app.notifications.notify(f"Loaded {selected_path.name}.")
-
-    def _execute_queries(self) -> None:
-        raw = self.query_text.get("1.0", "end").strip()
-        if not raw:
-            self.app.notifications.notify("Enter SQL before executing.")
-            return
-        statements = [stmt.strip() for stmt in raw.split(";") if stmt.strip()]
-        for statement in statements:
-            self._execute_statement(statement)
-        if self.loaded_sql_path and messagebox.askyesno(
-            "Delete SQL file?",
-            f"Delete {self.loaded_sql_path.name} after execution?",
-        ):
-            try:
-                self.loaded_sql_path.unlink()
-                self.app.notifications.notify("SQL file deleted.")
-            except OSError as exc:
-                self._append_log(f"Delete failed: {exc}", is_error=True)
-            self.loaded_sql_path = None
-
-    def _execute_statement(self, statement: str) -> None:
-        db = get_db()
-        try:
-            with db.get_cursor(dict_cursor=True) as cursor:
-                cursor.execute(statement)
-                if cursor.description:
-                    rows = cursor.fetchall()
-                    self._append_log(
-                        f"Query OK ({len(rows)} rows): {statement[:120]}"
-                    )
-                    for row in rows[:5]:
-                        self._append_log(json.dumps(row))
-                else:
-                    self._append_log(f"Statement OK: {statement[:120]}")
-        except Exception as exc:
-            self._append_log(f"Error: {exc} | {statement[:120]}", is_error=True)
-
-    def _append_log(self, message: str, is_error: bool = False) -> None:
-        self.log_text.configure(state="normal")
-        tag = "error" if is_error else None
-        self.log_text.insert("end", message + "\n", tag)
-        self.log_text.configure(state="disabled")
-        self.log_text.see("end")
-
-
 class ServiceDaemonApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
@@ -1350,13 +1207,11 @@ class ServiceDaemonApp(tk.Tk):
         self.database_tab = DatabaseTab(notebook, self)
         self.operations_tab = TasksTab(notebook, self)
         self.task_templates_tab = TaskTemplatesTab(notebook, self)
-        self.sql_execution_tab = SqlExecutionTab(notebook, self)
 
         notebook.add(self.settings_tab, text="Settings")
         notebook.add(self.database_tab, text="Database")
         notebook.add(self.operations_tab, text="Tasks")
         notebook.add(self.task_templates_tab, text="Task Templates")
-        notebook.add(self.sql_execution_tab, text="SQL Query Execution")
 
         self.applications_menu = tk.Menu(self)
         self.config(menu=self.applications_menu)
