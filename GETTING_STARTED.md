@@ -98,15 +98,7 @@ python examples/example_usage.py
 
 The example creates sample data and runs queries.
 
-### Step 8: Optional GUI
-
-```bash
-python gui_app.py
-# or
-python -m gui_app
-```
-
-### Step 9: Optional SQL execution
+### Step 8: Optional SQL execution
 
 Place manual SQL files in `manual_sql/` to expose them in the GUI SQL Query Execution tab.
 The `manual_sql/task_templates_seed.sql` file can be run to insert the baseline task templates.
@@ -174,13 +166,7 @@ Service-daemon/
 ├── docs/
 │   └── ... documentation
 │
-├── gui_app.py            # GUI launcher
-├── gui_app/              # GUI package
-│   ├── __init__.py
-│   ├── dialogs.py
-│   ├── main.py
-│   ├── tabs.py
-│   └── utils.py
+├── gui_app.py            # Desktop GUI
 ├── gui_app_info.json     # Info tab configuration
 ├── init_database.py      # Convenience init wrapper
 ├── sql_setup/            # Optional SQL scripts

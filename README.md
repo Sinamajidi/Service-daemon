@@ -92,9 +92,7 @@ This creates sample data (buildings, units, tenants, bookings) and prints result
 ### 9) (Optional) Run the GUI
 
 ```bash
-python gui_app.py
-# or
-python -m gui_app
+python gui_app/main.py
 ```
 
 The GUI lets you test DB connectivity and inspect booking data in a desktop interface.

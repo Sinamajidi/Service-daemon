@@ -2,18 +2,12 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 import tkinter as tk
 from tkinter import ttk
 
 import psycopg2
 
-if __package__ is None:  # pragma: no cover - support running as a script
-    PROJECT_ROOT = Path(__file__).resolve().parents[1]
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-from gui_app.tabs import (  # noqa: E402
+from .tabs import (
     DatabaseTab,
     InfoTab,
     SettingsTab,
@@ -21,14 +15,7 @@ from gui_app.tabs import (  # noqa: E402
     TaskTemplatesTab,
     TasksTab,
 )
-from gui_app.utils import (  # noqa: E402
-    AppSettings,
-    CorporateStyle,
-    NotificationCenter,
-    PROJECT_ROOT,
-    configure_logging,
-    logger,
-)
+from .utils import AppSettings, CorporateStyle, NotificationCenter, PROJECT_ROOT, configure_logging, logger
 
 
 class ServiceDaemonApp(tk.Tk):
