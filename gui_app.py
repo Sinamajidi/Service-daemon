@@ -29,7 +29,6 @@ from config import DB_CONFIG
 
 
 SQL_EXECUTION_DIR = PROJECT_ROOT / "manual_sql"
-INFO_CONFIG_PATH = PROJECT_ROOT / "gui_app_info.json"
 
 
 @dataclass
@@ -268,13 +267,7 @@ class PostgresServiceManager:
                 return True, message
             except (OSError, subprocess.CalledProcessError) as exc:
                 detail = getattr(exc, "stderr", None) or str(exc)
-                detail = detail.strip()
-                if "1060" in detail:
-                    errors.append("PostgreSQL service not found. Is it installed?")
-                elif detail.startswith("Command ['sc'"):
-                    errors.append("Unable to manage PostgreSQL via Windows services.")
-                else:
-                    errors.append(detail)
+                errors.append(detail.strip())
 
         error_summary = "; ".join(error for error in errors if error)
         message = (
@@ -1452,63 +1445,6 @@ class SQLQueryTab(BaseTab):
             self._append_log(f"{type(exc).__name__}: {exc}", is_error=True)
 
 
-class InfoTab(BaseTab):
-    """! @brief Tab for displaying application information."""
-    def __init__(self, parent: ttk.Notebook, app: "ServiceDaemonApp") -> None:
-        super().__init__(parent, app)
-        self._build()
-
-    def _build(self) -> None:
-        header = ttk.Label(self, text="Info", style="Header.TLabel")
-        header.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 6))
-
-        container = ttk.Frame(self)
-        container.grid(row=1, column=0, sticky="nsew", padx=12, pady=6)
-        container.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
-        self.grid_columnconfigure(0, weight=1)
-
-        info_text = tk.Text(container, wrap="word", height=18)
-        info_text.grid(row=0, column=0, sticky="nsew", padx=6, pady=6)
-        info_text.configure(state="disabled")
-
-        info = self._load_info()
-        info_text.configure(state="normal")
-        info_text.insert("1.0", self._format_info(info))
-        info_text.configure(state="disabled")
-
-    def _load_info(self) -> dict:
-        if not INFO_CONFIG_PATH.exists():
-            return {"title": "Service Daemon", "description": "Info file missing."}
-        try:
-            return json.loads(INFO_CONFIG_PATH.read_text())
-        except json.JSONDecodeError:
-            return {"title": "Service Daemon", "description": "Invalid info file."}
-
-    def _format_info(self, info: dict) -> str:
-        lines = []
-        title = info.get("title")
-        if title:
-            lines.append(title)
-            lines.append("=" * len(title))
-        description = info.get("description")
-        if description:
-            lines.append(description)
-            lines.append("")
-        authors = info.get("authors")
-        if authors:
-            lines.append("Authors:")
-            for author in authors:
-                lines.append(f"- {author}")
-            lines.append("")
-        metadata = info.get("metadata")
-        if isinstance(metadata, dict):
-            lines.append("Details:")
-            for key, value in metadata.items():
-                lines.append(f"- {key}: {value}")
-        return "\n".join(lines).strip() + "\n"
-
-
 class ServiceDaemonApp(tk.Tk):
     """! @brief Main Tkinter application for Service Daemon."""
     def __init__(self) -> None:
@@ -1572,14 +1508,12 @@ class ServiceDaemonApp(tk.Tk):
         self.operations_tab = TasksTab(notebook, self)
         self.task_templates_tab = TaskTemplatesTab(notebook, self)
         self.sql_query_tab = SQLQueryTab(notebook, self)
-        self.info_tab = InfoTab(notebook, self)
 
         notebook.add(self.settings_tab, text="Settings")
         notebook.add(self.database_tab, text="Database")
         notebook.add(self.operations_tab, text="Tasks")
         notebook.add(self.task_templates_tab, text="Task Templates")
         notebook.add(self.sql_query_tab, text="SQL Query Execution")
-        notebook.add(self.info_tab, text="Info")
 
         self.applications_menu = tk.Menu(self)
         self.config(menu=self.applications_menu)
